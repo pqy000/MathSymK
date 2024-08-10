@@ -16,7 +16,7 @@ import cn.mathsymk.function.BiMathOperator
  * @author liyicheng
  * 2018-02-27 17:09
  */
-interface SemigroupModel<T> : EqualPredicate<T>, BiMathOperator<T>{
+interface SemigroupModel<T : Any> : EqualPredicate<T>, BiMathOperator<T> {
 
     /**
      * Determines whether this semigroup contains the specified element.
@@ -30,7 +30,7 @@ interface SemigroupModel<T> : EqualPredicate<T>, BiMathOperator<T>{
 }
 
 
-interface MonoidModel<T> : SemigroupModel<T> {
+interface MonoidModel<T : Any> : SemigroupModel<T> {
 
     /**
      * Gets the identity element of this semigroup.
@@ -41,8 +41,24 @@ interface MonoidModel<T> : SemigroupModel<T> {
 
 }
 
-
-interface GroupModel<T : Any> : MonoidModel<T>{
+/**
+ * A group is an algebraic structure consisting of a set of elements and an operation.
+ *
+ *
+ * Assume the operation is "*", then
+ *
+ *  * It is *associative*: `(a*b)*c = a*(b*c)`
+ *  * There exists an identity element `e` that: `e*a = a*e = a`
+ *  * For every element `a`, there exists an inverse element `a^-1` such that `a*a^-1 = a^-1*a = e`
+ *
+ *
+ *
+ * Note that most of the methods defined on the interface are optional and it can throw an UnsupportedOperation
+ * if necessary.
+ *
+ * @author LI Yicheng,  2018-02-27 17:32
+ */
+interface GroupModel<T : Any> : MonoidModel<T> {
 
     /**
      * Gets the inverse of the element.
