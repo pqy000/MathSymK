@@ -1,7 +1,7 @@
 /*
  * 2018-02-28
  */
-package cn.mathsymk.model
+package cn.mathsymk.structure
 
 import java.util.*
 
