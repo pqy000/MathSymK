@@ -2,7 +2,7 @@ plugins {
     kotlin("jvm") version "2.0.0"
 }
 
-group = "cn.mathsymk"
+group = "io.github.ezrnest"
 version = "0.0.1"
 
 repositories {
