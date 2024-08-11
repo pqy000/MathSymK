@@ -16,4 +16,5 @@ fun main() {
         println("i = $i")
     }
     println(GroupModel::class.java)
+    println(GroupModel::class.java.simpleName)
 }
