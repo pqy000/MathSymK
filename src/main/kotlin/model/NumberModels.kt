@@ -38,7 +38,7 @@ interface MulMonoidModel<T : MulMonoidModel<T>> {
 
 
 /**
- * Describes a number model which is suitable for a group. The operations are named as addition group.
+ *
  */
 interface AddGroupModel<T : AddGroupModel<T>> : AddMonoidModel<T> {
     /**
@@ -133,7 +133,6 @@ interface DivisionRingModel<T : DivisionRingModel<T>> : RingModel<T>, MulGroupMo
 //inline operator fun <T : DivisionRingNumberModel<T>> DivisionRingNumberModel<T>.div(y: T): T = divide(y)
 /**
  * Describes a number model which is suitable for a field.
- * @see cn.mathsymj.math.algebra.abs.structure.Field
  */
 interface FieldModel<T : FieldModel<T>> : DivisionRingModel<T>
 
@@ -248,7 +247,7 @@ object NumberModels {
         }
     }
 
-    fun <T : FieldModel<T>> asField(zero: T, one: T,characteristic : Long = 0) = object : Field<T> {
+    fun <T : FieldModel<T>> asField(zero: T, one: T, characteristic: Long = 0) = object : Field<T> {
         override fun contains(x: T): Boolean {
             return true
         }
@@ -257,7 +256,7 @@ object NumberModels {
 
         override val one: T = one
 
-        override val characteristic: Long = 0
+        override val characteristic: Long = characteristic
 
         override fun add(x: T, y: T): T {
             return x + y

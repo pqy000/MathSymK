@@ -57,11 +57,6 @@ object ExceptionUtil {
         throw NumberValueException("Too big.", expr)
     }
 
-    @JvmStatic
-    fun notImplemented(reason: String): Nothing {
-        throw NotImplementedError(reason)
-    }
-
     /**
      * Throws an exception indicating the division can not be done because [x] is not exact divisible by [y].
      *
