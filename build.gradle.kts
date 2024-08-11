@@ -8,6 +8,9 @@ group = "io.github.ezrnest"
 version = "0.0.1"
 
 repositories {
+    maven {
+        url = uri("https://maven.aliyun.com/repository/public/")
+    }
     mavenCentral()
 }
 
@@ -35,7 +38,6 @@ publishing {
                 url.set("https://github.com/ezrnest/mathsymk")
                 licenses {
                     license {
-                        // MIT
                         name.set("MIT License")
                         url.set("https://opensource.org/licenses/MIT")
                     }
@@ -57,15 +59,15 @@ publishing {
     }
 
     repositories {
-    maven {
-        name = "OSSRH"
-        url = uri("https://oss.sonatype.org/service/local/staging/deploy/maven2/")
-        credentials {
-            username = project.findProperty("ossrhToken") as String? ?: ""
-            password = ""
+        maven {
+            name = "OSSRH"
+            url = uri("https://oss.sonatype.org/service/local/staging/deploy/maven2/")
+            credentials {
+                username = project.findProperty("ossrhToken") as String? ?: ""
+                password = ""
+            }
         }
     }
-}
 }
 
 signing {
