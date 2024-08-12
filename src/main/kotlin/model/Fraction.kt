@@ -1,6 +1,7 @@
 package cn.mathsymk.model
 
 import cn.mathsymj.math.exceptions.ExceptionUtil
+import cn.mathsymk.model.struct.FieldModel
 import cn.mathsymk.number_theory.NTFunctions
 import util.ArraySup
 import util.MathUtils
@@ -22,7 +23,6 @@ import kotlin.math.*
  */
 @JvmRecord
 data class Fraction
-//numerator,denominator
 /**
  * A constructor without checking num and den.
  * @param nume the numerator
@@ -229,7 +229,7 @@ internal constructor(
      * @param num a number
      * @return `this + num`
      */
-    fun add(num: Long): Fraction {
+    operator fun plus(num: Long): Fraction {
         val nNum = nume + num * deno
         if (nNum == 0L) {
             return ZERO

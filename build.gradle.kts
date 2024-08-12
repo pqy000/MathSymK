@@ -14,8 +14,17 @@ repositories {
     mavenCentral()
 }
 
+sourceSets {
+    create("example") {
+        kotlin.srcDir("src/example/kotlin")
+        compileClasspath += sourceSets["main"].output
+        runtimeClasspath += sourceSets["main"].output
+    }
+}
+
 dependencies {
     testImplementation(kotlin("test"))
+    "exampleImplementation"(sourceSets["main"].output)
 }
 
 tasks.test {
