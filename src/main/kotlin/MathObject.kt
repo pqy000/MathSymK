@@ -44,7 +44,7 @@ interface IMathObject<T> {
  * @author liyicheng
  * @see MathObjectReal
  */
-interface MathObject<T, S : EqualPredicate<T>> : CalculatorHolder<T, S>, IMathObject<T> {
+interface MathObject<T : Any, S : EqualPredicate<T>> : CalculatorHolder<T, S>, IMathObject<T> {
 
     /**
      * Gets the calculator of this math object.
@@ -60,12 +60,20 @@ interface MathObject<T, S : EqualPredicate<T>> : CalculatorHolder<T, S>, IMathOb
 //     */
 //    override fun toString(): String
 
-//    /**
-//     * Maps this math object to use a new calculator.
-//     *
-//     * @param newCalculator a calculator that is of the same type as `S` but with generic parameter `N`.
-//     */
-//    fun <N> mapTo(newCalculator: EqualPredicate<N>, mapper: Function<T, N>): MathObject<N, *>
+    /**
+     * Maps this math object to use a new calculator.
+     *
+     * @param newCalculator a calculator that is of the same type as `S` but with generic parameter `N`.
+     */
+    fun <N : Any> mapTo(newCalculator: EqualPredicate<N>, mapper: Function<T, N>): MathObject<N, *>
 
 }
 
+
+abstract class AbstractMathObject<T : Any, S : EqualPredicate<T>>(override val calculator: S) : MathObject<T, S> {
+//    override fun toString(): String {
+//        return toString(NumberFormatter.defaultFormatter())
+//    }
+
+
+}
