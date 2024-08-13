@@ -1,5 +1,7 @@
 package cn.mathsymk.model.struct
 
+import cn.mathsymj.math.exceptions.ExceptionUtil
+
 
 /**
  * Describes a number model which is suitable for a ring.
@@ -27,7 +29,7 @@ interface DivisionRingModel<T : DivisionRingModel<T>> : RingModel<T>, MulGroupMo
  * Created at 2018/12/8 17:15
  * @author  liyicheng
  */
-interface EuclidRingNumberModel<T : EuclidRingNumberModel<T>> : RingNumberModel<T> {
+interface EuclidRingNumberModel<T : EuclidRingNumberModel<T>> : RingModel<T> {
 
     /**
      * Determines whether this number is a unit in the ring, which mean it is invertible with respect to multiplication.
@@ -44,7 +46,7 @@ interface EuclidRingNumberModel<T : EuclidRingNumberModel<T>> : RingNumberModel<
         var t: T
         while (!b.isZero()) {
             t = b
-            b = a.remainder(b)
+            b = a.rem(b)
             a = t
         }
         return a
@@ -74,7 +76,7 @@ interface EuclidRingNumberModel<T : EuclidRingNumberModel<T>> : RingNumberModel<
 
     fun divideAndRemainder(y: T): Pair<T, T> {
         val q = divideToInteger(y)
-        val r = remainder(y)
+        val r = rem(y)
         return q to r
     }
 
@@ -88,9 +90,9 @@ interface EuclidRingNumberModel<T : EuclidRingNumberModel<T>> : RingNumberModel<
         return q
     }
 
-    fun remainder(y: T): T = divideAndRemainder(y).second
+    operator fun rem(y: T): T = divideAndRemainder(y).second
 
-    fun mod(y: T): T = remainder(y)
+    fun mod(y: T): T = rem(y)
 
 
     fun isCoprime(y: T): Boolean
