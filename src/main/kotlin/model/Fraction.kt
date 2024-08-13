@@ -3,6 +3,7 @@ package cn.mathsymk.model
 import cn.mathsymj.math.exceptions.ExceptionUtil
 import cn.mathsymk.model.struct.FieldModel
 import cn.mathsymk.number_theory.NTFunctions
+import cn.mathsymk.structure.Quotients
 import util.ArraySup
 import util.MathUtils
 
@@ -12,13 +13,14 @@ import kotlin.math.*
 
 
 /**
- * A simple class that provides fractional calculation, which means unless either numerator or denominator
- * is out of range of long, no precision will be lost. This class provides some math calculation with satisfying
- * results,as well normal time-performance.
+ * This class represents a fraction, which is a number that can be expressed as the quotient of two integers.
+ * The class provides basic arithmetic operations for fractions.
  *
  * A fraction is composed of two co-prime integers [nume] and the [deno].
  * The sign of the numerator represents the sign of this fraction and
  * the denominator is always positive.
+ *
+ *
  * @author lyc
  */
 @JvmRecord
@@ -29,11 +31,6 @@ data class Fraction
  * @param deno the denominator
  */
 internal constructor(
-    /**
-     * The numerator and denominator of this fraction,
-     * which must be co-prime.
-     * Also make sure that denominator != 0
-     */
     /**
      * Gets the numerator of this Fraction, the numerator may be positive, zero or negative.
      * @return numerator
@@ -102,10 +99,10 @@ internal constructor(
         }
         return nume
     }
-
-    fun toFloat(): Float {
-        return nume.toFloat() / deno.toFloat()
-    }
+//
+//    fun toFloat(): Float {
+//        return nume.toFloat() / deno.toFloat()
+//    }
 
     fun toDouble(): Double {
         return nume.toDouble() / deno.toDouble()
@@ -449,10 +446,10 @@ internal constructor(
     }
 
 
-    fun divideAndRemainder(divisor: Fraction): Array<Fraction> {
+    fun divideAndRemainder(divisor: Fraction): Pair<Fraction,Fraction> {
         val result0 = this.divideToIntegralValue(divisor)
         val result1 = this.minus(result0 * divisor)
-        return arrayOf(result0, result1)
+        return result0 to result1
     }
 
     /**
@@ -470,7 +467,7 @@ internal constructor(
      */
     fun remainder(divisor: Fraction): Fraction {
         val divrem = this.divideAndRemainder(divisor)
-        return divrem[1]
+        return divrem.second
     }
 
     /**
@@ -519,40 +516,7 @@ internal constructor(
     }
 
 
-//    internal class FractionSimplifier internal constructor() : Simplifier<Fraction> {
-//
-//        override fun simplify(numbers: List<Fraction>): List<Fraction> {
-//            //first find the GCD of numerator and LCM of denominator.
-//            val len = numbers.size
-//            val numes = LongArray(len)
-//            val denos = LongArray(len)
-//            var i = 0
-//            val it = numbers.listIterator()
-//            while (it.hasNext()) {
-//                val f = it.next()
-//                numes[i] = f.nume
-//                denos[i] = f.deno
-//                i++
-//            }
-//            val gcd = MathUtils.gcd(*numes)
-//            val lcm = MathUtils.lcm(*denos)
-//            //			Printer.print(lcm);
-//            i = 0
-//            while (i < len) {
-//                numes[i] = numes[i] / gcd * (lcm / denos[i])
-//                i++
-//            }
-//            //denos are all set to one.
-//            val list = ArrayList<Fraction>(len)
-//            i = 0
-//            while (i < len) {
-//                list.add(adjustSign(numes[i], 1L))
-//                i++
-//            }
-//            return list
-//        }
-//
-//    }
+
 
     companion object {
         /**
@@ -891,15 +855,15 @@ internal constructor(
         ////		print((double)f.numerator/f.denominator);
         //	}
 
-//        /**
-//         * Get the calculator of the class Fraction, the calculator ignores overflow.
-//         *
-//         * The calculator does not have any constant values.
-//         * @return a fraction calculator
-//         */
-//        @JvmStatic
-//        val calculator: FractionCalculator
-//            get() = FractionCalculator.cal
+        /**
+         * Get the calculator of the class Fraction, the calculator ignores overflow.
+         *
+         * The calculator does not have any constant values.
+         * @return a fraction calculator
+         */
+        @JvmStatic
+        val calculator: FractionAsQuotient
+            get() = FractionAsQuotient
 //
 //        /**
 //         * Get the Simplifier of the class Fraction,this simplifier will take the input numbers
@@ -913,12 +877,99 @@ internal constructor(
 //        val fractionSimplifier: Simplifier<Fraction> = FractionSimplifier()
     }
 
+    /**
+     * A calculator for the class Fraction.
+     */
+    object FractionAsQuotient : Quotients<Fraction>{
+        override fun isEqual(x: Fraction, y: Fraction): Boolean {
+            return x == y
+        }
+
+        override fun negate(x: Fraction): Fraction {
+            return -x
+        }
+
+        override val zero: Fraction
+            get() = ZERO
+        override val one: Fraction
+            get() = ONE
+
+        override fun contains(x: Fraction): Boolean {
+            return true
+        }
+
+        override fun add(x: Fraction, y: Fraction): Fraction {
+            return x + y
+        }
+
+        override fun subtract(x: Fraction, y: Fraction): Fraction {
+            return x-y
+        }
+
+        override fun multiply(x: Fraction, y: Fraction): Fraction {
+            return x * y
+        }
+
+        override fun divide(x: Fraction, y: Fraction): Fraction {
+            return x / y
+        }
+
+
+        override fun reciprocal(x: Fraction): Fraction {
+            return x.reciprocal()
+        }
+
+        override fun compare(o1: Fraction, o2: Fraction): Int {
+            return o1.compareTo(o2)
+        }
+
+        override fun pow(x: Fraction, n: Long): Fraction {
+            return x.pow(n)
+        }
+    }
+
 
 }
 
 fun Long.toFrac(): Fraction = Fraction.of(this)
 
 fun Int.toFrac(): Fraction = Fraction.of(this.toLong())
+
+
+//    internal class FractionSimplifier internal constructor() : Simplifier<Fraction> {
+//
+//        override fun simplify(numbers: List<Fraction>): List<Fraction> {
+//            //first find the GCD of numerator and LCM of denominator.
+//            val len = numbers.size
+//            val numes = LongArray(len)
+//            val denos = LongArray(len)
+//            var i = 0
+//            val it = numbers.listIterator()
+//            while (it.hasNext()) {
+//                val f = it.next()
+//                numes[i] = f.nume
+//                denos[i] = f.deno
+//                i++
+//            }
+//            val gcd = MathUtils.gcd(*numes)
+//            val lcm = MathUtils.lcm(*denos)
+//            //			Printer.print(lcm);
+//            i = 0
+//            while (i < len) {
+//                numes[i] = numes[i] / gcd * (lcm / denos[i])
+//                i++
+//            }
+//            //denos are all set to one.
+//            val list = ArrayList<Fraction>(len)
+//            i = 0
+//            while (i < len) {
+//                list.add(adjustSign(numes[i], 1L))
+//                i++
+//            }
+//            return list
+//        }
+//
+//    }
 
 //fun main(args: Array<String>) {
 ////    val f1 = Fraction.valueOf(-4, 3)

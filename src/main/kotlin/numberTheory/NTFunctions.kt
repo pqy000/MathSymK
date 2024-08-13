@@ -371,9 +371,6 @@ object NTFunctions {
     }
 
 
-
-
-
     /**
      * Returns a non-negative integer of `a mod m`, it is required that
      * `m` is positive.
@@ -524,6 +521,53 @@ object NTFunctions {
             throw ArithmeticException("a and p is not coprime: a=$a, p=$p")
         }
         return arr[1]
+    }
+
+    /**
+     * Returns a solution for the modular equations: <pre>x mod m<sub>i</sub> = r<sub>i</sub>,</pre> where
+     * `m<sub>i</sub>` are co-prime integers.
+     * The result is guaranteed to be minimal non-negative solution.
+     *
+     * @param mods       an array of modular, `m<sub>i</sub>`
+     * @param remainders an array of remainders,
+     * @return the solution of the modular equation
+     */
+    @JvmStatic
+    fun chineseRemainder(mods: LongArray, remainders: LongArray): Long {
+//        long M = product(mods);
+//        long x = 0;
+//        for (int i = 0; i < mods.length; i++) {
+//            var m = mods[i];
+//            var r = remainders[i];
+//            var t = M / m;
+//            var inv = modInverse(t, m);
+//            x += r * t * inv;
+//            x %= M;
+//        }
+//        return x;
+        //Created by lyc at 2021-04-20 20:31
+        /*
+        Proof of this algorithm:
+        Invariant: x satisfies: x = rem[j] mod m[j] for j < i
+         */
+        var m = mods[0]
+        var x = remainders[0]
+        for (i in 1 until mods.size) {
+            val t = gcdUV(m, mods[i])
+            val u = t[1]
+            val v = t[2]
+            // um + v m[i] = 1
+            x = u * m * remainders[i] + v * mods[i] * x
+            // x mod m[i] = um*rem[i] mod m[i] =(1-v m[i])rem[i] mod m[i] = rem[i]
+            // for j < i, x mod m[j] = v * m[i] * x mod m[j] = (1-um)x mod m[j] = x
+            m *= mods[i]
+            x %= m
+            // x in (-m,m)
+        }
+        if (x < 0) {
+            x += m //make it non-negative
+        }
+        return x
     }
 
 
@@ -780,51 +824,6 @@ object NTFunctions {
 
 
 
-    /**
-     * Returns a solution for the modular equations: <pre>x mod m<sub>i</sub> = r<sub>i</sub>,</pre> where
-     * `m<sub>i</sub>` are co-prime integers.
-     * The result is guaranteed to be minimal non-negative solution.
-     *
-     * @param mods       an array of modular, `m<sub>i</sub>`
-     * @param remainders an array of remainders,
-     * @return the solution of the modular equation
-     */
-    fun chineseRemainder(mods: LongArray, remainders: LongArray): Long {
-//        long M = product(mods);
-//        long x = 0;
-//        for (int i = 0; i < mods.length; i++) {
-//            var m = mods[i];
-//            var r = remainders[i];
-//            var t = M / m;
-//            var inv = modInverse(t, m);
-//            x += r * t * inv;
-//            x %= M;
-//        }
-//        return x;
-        //Created by lyc at 2021-04-20 20:31
-        /*
-        Proof of this algorithm:
-        Invariant: x satisfies: x = rem[j] mod m[j] for j < i
-         */
-        var m = mods[0]
-        var x = remainders[0]
-        for (i in 1 until mods.size) {
-            val t = gcdUV(m, mods[i])
-            val u = t[1]
-            val v = t[2]
-            // um + v m[i] = 1
-            x = u * m * remainders[i] + v * mods[i] * x
-            // x mod m[i] = um*rem[i] mod m[i] =(1-v m[i])rem[i] mod m[i] = rem[i]
-            // for j < i, x mod m[j] = v * m[i] * x mod m[j] = (1-um)x mod m[j] = x
-            m *= mods[i]
-            x %= m
-            // x in (-m,m)
-        }
-        if (x < 0) {
-            x += m //make it non-negative
-        }
-        return x
-    }
 
     /**
      * Returns the primitive root modulo `p`, that is,
