@@ -1,6 +1,6 @@
-/**
- *
- */
+///**
+// *
+// */
 package discrete
 
 import util.ArraySup
@@ -14,7 +14,7 @@ import java.util.function.Predicate
  * @author liyicheng
  */
 abstract class Enumer
-internal constructor(val elementCount: Int) : Iterable<IntArray?> {
+internal constructor(val elementCount: Int) : Iterable<IntArray> {
     /**
      * Returns all the int[] arrays, ordered in a proper way.
      *
@@ -25,10 +25,13 @@ internal constructor(val elementCount: Int) : Iterable<IntArray?> {
     /**
      * Returns an iterator, this iterator will always return n copy of the array.
      */
-    abstract override fun iterator(): MutableIterator<IntArray>
+    abstract override fun iterator(): Iterator<IntArray>
+
+    abstract val total : Long
 
     internal class LEnumer(val toSelect : Int, m: Int, val filter: Predicate<IntArray>) : Enumer(m) {
-        private var total: Long = CombUtils.permutation(toSelect, m)
+        override var total: Long = CombUtils.permutation(toSelect, m)
+
 //        private val toSelect:  Int
 //        private val filter: Predicate<IntArray>
 
@@ -90,16 +93,16 @@ internal constructor(val elementCount: Int) : Iterable<IntArray?> {
         /* (non-Javadoc)
          * @see cn.ancono.math.prob.Enumer#iterator()
          */
-        override fun iterator(): MutableIterator<IntArray> {
+        override fun iterator(): Iterator<IntArray> {
             return Lit()
         }
 
-        private inner class Lit : MutableIterator<IntArray> {
-            private val en = IntArray(this.elementCount)
+        private inner class Lit : Iterator<IntArray> {
+            private val en = IntArray(this@LEnumer.elementCount)
             private val selected = BooleanArray(toSelect)
 
             fun increase(): Boolean {
-                var i: Int = this.elementCount - 1
+                var i: Int = this@LEnumer.elementCount - 1
                 while (i > -1) {
                     // pos is equal to i in the loop
                     var pos = en[i] + 1
@@ -116,7 +119,7 @@ internal constructor(val elementCount: Int) : Iterable<IntArray?> {
                         en[i] = pos
                         i++
                         var lastPos = 0
-                        while (i < this.elementCount) {
+                        while (i < this@LEnumer.elementCount) {
                             for (j in lastPos until toSelect) {
                                 if (!selected[j]) {
                                     // put this
@@ -139,12 +142,12 @@ internal constructor(val elementCount: Int) : Iterable<IntArray?> {
             private var ended = false
 
             init {
-                for (i in 0 until this.elementCount - 1) {
+                for (i in 0 until this@LEnumer.elementCount - 1) {
                     en[i] = i
                     selected[i] = true
                 }
                 //a trick to increase firstly
-                en[this.elementCount - 1] = this.elementCount - 2
+                en[this@LEnumer.elementCount - 1] = this@LEnumer.elementCount - 2
             }
 
             /* (non-Javadoc)
@@ -184,7 +187,7 @@ internal constructor(val elementCount: Int) : Iterable<IntArray?> {
         /* (non-Javadoc)
          * @see cn.ancono.math.prob.Enumer#getEnumCount()
          */
-        override fun getEnumCount(): Long {
+        fun getEnumCount(): Long {
             return total
         }
 
@@ -194,7 +197,7 @@ internal constructor(val elementCount: Int) : Iterable<IntArray?> {
     }
 
     class EnumBuilder internal constructor(private val n: Int, private val m: Int) {
-        private val rs: MutableList<Predicate<IntArray>> = LinkedList()
+        private val rs: MutableList<Predicate<IntArray>> = arrayListOf()
 
         fun addRule(rule: Predicate<IntArray>): EnumBuilder {
             rs.add(rule)
@@ -202,10 +205,9 @@ internal constructor(val elementCount: Int) : Iterable<IntArray?> {
         }
 
         fun build(): Enumer {
-            val rsa: Array<Predicate<IntArray>> = rs.toArray<Predicate<*>>(arrayOf<Predicate<*>>())
             return LEnumer(n, m, Predicate<IntArray> { a: IntArray ->
-                for (i in rsa.indices) {
-                    if (!rsa[i].test(a)) {
+                for (i in rs.indices) {
+                    if (!rs[i].test(a)) {
                         return@Predicate false
                     }
                 }
@@ -237,7 +239,8 @@ internal constructor(val elementCount: Int) : Iterable<IntArray?> {
          * @return
          */
         fun combination(n: Int, m: Int): Enumer {
-            return CEnumer(n, m)
+            TODO()
+//            return CEnumer(n, m)
         }
 
 

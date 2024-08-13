@@ -1,140 +1,118 @@
 /**
  * 2018-03-01
  */
-package discrete;
+package discrete
 
+import discrete.Permutations.Rotate
+import discrete.Permutations.Swap
+import discrete.Permutations.isEqual
+import discrete.Permutations.valueOf
 
-import org.jetbrains.annotations.NotNull;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * @author liyicheng
  * 2018-03-01 19:49
  */
-public abstract class AbstractPermutation implements Permutation {
-    protected final int size;
-
-    /**
-     *
-     */
-    public AbstractPermutation(int size) {
-        this.size = size;
-    }
-
-    /*
-     * @see cn.ancono.math.numberTheory.combination.Permutation#size()
-     */
-    @Override
-    public int size() {
-        return size;
-    }
+abstract class AbstractPermutation(override val size: Int) : Permutation {
 
     /*
      * @see cn.ancono.math.numberTheory.combination.Permutation#compose(cn.ancono.math.numberTheory.combination.Permutation)
      */
-    @NotNull
-    @Override
-    public Permutation compose(@NotNull Permutation before) {
-        return Permutations.valueOf(apply(before.getArray()));
+    override fun compose(before: Permutation): Permutation {
+        return valueOf(*apply(before.getArray()))
     }
 
     /*
      * @see cn.ancono.math.numberTheory.combination.Permutation#andThen(cn.ancono.math.numberTheory.combination.Permutation)
      */
-    @NotNull
-    @Override
-    public Permutation andThen(@NotNull Permutation after) {
-        return after.compose(this);
+    override fun andThen(after: Permutation): Permutation {
+        return after.compose(this)
     }
 
     /*
      * @see cn.ancono.math.numberTheory.combination.Permutation#reduce()
      */
-    @Override
-    public List<Transposition> decomposeTransposition() {
-        int size = size();
-        List<Transposition> list = new ArrayList<>(size);
-        int[] arr = getArray();
-        for (int i = 0; i < size; i++) {
+    override fun decomposeTransposition(): List<Transposition> {
+        val list: MutableList<Transposition> = ArrayList(size)
+        val arr = getArray()
+        for (i in 0 until size) {
             if (arr[i] == i) {
-                continue;
+                continue
             }
-            int j = i + 1;
-            for (; j < size; j++) {
+            var j = i + 1
+            while (j < size) {
                 if (arr[j] == i) {
-                    break;
+                    break
                 }
+                j++
             }
             //arr[j] = i
             //swap i,j
-            arr[j] = arr[i];
-            arr[i] = i;
-            list.add(new Permutations.Swap(size, i, j));
+            arr[j] = arr[i]
+            arr[i] = i
+            list.add(Swap(size, i, j))
         }
-        return list;
+        return list
     }
 
     /*
      * @see cn.ancono.math.numberTheory.combination.Permutation#rotateReduce()
      */
-    @Override
-    public List<Cycle> decompose() {
-        int[] arr = getArray();
-        int length = arr.length;
-        List<Cycle> list = new ArrayList<>(size);
-        boolean[] mark = new boolean[length];
-        for (int i = 0; i < length; i++) {
+    override fun decompose(): List<Cycle> {
+        val arr = getArray()
+        val length = arr.size
+        val list: MutableList<Cycle> = ArrayList(
+            size
+        )
+        val mark = BooleanArray(length)
+        for (i in 0 until length) {
             if (mark[i]) {
-                continue;
+                continue
             }
-            int t = i;
-            boolean[] temp = new boolean[length];
-            int n = 0;
+            var t = i
+            val temp = BooleanArray(length)
+            var n = 0
             while (!temp[t]) {
-                temp[t] = true;
-                t = arr[t];
-                n++;
+                temp[t] = true
+                t = arr[t]
+                n++
             }
             if (n == 1) {
-                mark[i] = true;
-                continue;
+                mark[i] = true
+                continue
             }
-            int[] elements = new int[n];
-            for (int j = 0; j < n; j++) {
-                elements[j] = t;
-                mark[t] = true;
-                t = arr[t];
+            val elements = IntArray(n)
+            for (j in 0 until n) {
+                elements[j] = t
+                mark[t] = true
+                t = arr[t]
             }
-            list.add(new Permutations.Rotate(length, elements));
+            list.add(Rotate(length, elements))
         }
-        return list;
+        return list
     }
 
     /*
      * @see java.lang.Object#equals(java.lang.Object)
      */
-    @Override
-    public boolean equals(Object obj) {
-        if (!(obj instanceof AbstractPermutation)) {
-            return false;
+    override fun equals(other: Any?): Boolean {
+        if (other !is AbstractPermutation) {
+            return false
         }
-        return Permutations.isEqual(this, (AbstractPermutation) obj);
+        return isEqual(this, other)
     }
 
     /*
      * @see java.lang.Object#toString()
      */
-    @Override
-    public String toString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append('(');
-        for (int i = 0; i < size; i++) {
-            sb.append(apply(i)).append(',');
+    override fun toString(): String {
+        val sb = StringBuilder()
+        sb.append('(')
+        for (i in 0 until size) {
+            sb.append(apply(i)).append(',')
         }
-        sb.deleteCharAt(sb.length() - 1);
-        sb.append(')');
-        return sb.toString();
+        sb.deleteCharAt(sb.length - 1)
+        sb.append(')')
+        return sb.toString()
     }
 }

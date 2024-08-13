@@ -3,7 +3,10 @@
  */
 package discrete
 
-import cn.ancono.math.MathUtils
+import cn.mathsymk.model.Fraction
+import cn.mathsymk.number_theory.NTFunctions.degFactorial
+import util.MathUtils
+import util.exceptions.NumberValueException
 import java.math.BigInteger
 import kotlin.math.abs
 
@@ -65,45 +68,45 @@ object CombUtils {
     }
 
 
-    private fun multiplyPrimePowers(pr: Primes, pp: IntArray): BigInteger {
-        var result = BigInteger.ONE
-        for (i in pp.size - 1 downTo -1 + 1) {
-            when (pp[i]) {
-                0 -> {}
-                1 -> {
-                    result = result.multiply(BigInteger.valueOf(pr.getPrime(i)))
-                }
-
-                else -> {
-                    result = result.multiply(BigInteger.valueOf(pr.getPrime(i)).pow(pp[i]))
-                }
-            }
-        }
-        return result
-    }
-
-    /**
-     * Returns the factorial of n.
-     * <pre>n!</pre>
-     * @param n a number
-     * @return the factorial of n.
-     */
-    fun factorialX(n: Int): BigInteger {
-        if (n < 0) {
-            throwFor(n.toLong())
-        }
-        if (n <= MAX_FAC) {
-            return BigInteger.valueOf(fac_temp[n])
-        }
-        val pr: Primes = Primes.getInstance()
-        pr.enlargePrime(n)
-        val len: Int = pr.getCount(n)
-        val pp = IntArray(len)
-        for (i in 0 until len) {
-            pp[i] = intOrTooBig(MathUtils.degFactorial(pr.getPrime(i), n))
-        }
-        return multiplyPrimePowers(pr, pp)
-    }
+//    private fun multiplyPrimePowers(pr: Primes, pp: IntArray): BigInteger {
+//        var result = BigInteger.ONE
+//        for (i in pp.size - 1 downTo -1 + 1) {
+//            when (pp[i]) {
+//                0 -> {}
+//                1 -> {
+//                    result = result.multiply(BigInteger.valueOf(pr.getPrime(i)))
+//                }
+//
+//                else -> {
+//                    result = result.multiply(BigInteger.valueOf(pr.getPrime(i)).pow(pp[i]))
+//                }
+//            }
+//        }
+//        return result
+//    }
+//
+//    /**
+//     * Returns the factorial of n.
+//     * <pre>n!</pre>
+//     * @param n a number
+//     * @return the factorial of n.
+//     */
+//    fun factorialX(n: Int): BigInteger {
+//        if (n < 0) {
+//            throwFor(n.toLong())
+//        }
+//        if (n <= MAX_FAC) {
+//            return BigInteger.valueOf(fac_temp[n])
+//        }
+//        val pr: Primes = Primes.getInstance()
+//        pr.enlargePrime(n)
+//        val len: Int = pr.getCount(n)
+//        val pp = IntArray(len)
+//        for (i in 0 until len) {
+//            pp[i] = intOrTooBig(MathUtils.degFactorial(pr.getPrime(i), n))
+//        }
+//        return multiplyPrimePowers(pr, pp)
+//    }
 
     /**
      * Returns the subfactorial of n.
@@ -187,17 +190,16 @@ object CombUtils {
      * @throws NumberValueException if the result is too big for BigInteger.
      */
     fun permutationB(n: Long, m: Long): BigInteger {
-        var n = n
-        var m = m
-        m = abs(m.toDouble()).toLong()
-        n = abs(n.toDouble()).toLong()
+        var n = abs(n)
+        var m = abs(m)
         require(m <= n) { "m>n" }
         //special cases 
         if (n == m) {
             if (n > Int.MAX_VALUE) {
                 throw NumberValueException("Too big", "$n!")
             }
-            return factorialX(n.toInt())
+//            return factorialX(n.toInt())
+            TODO()
         }
         var r = BigInteger.valueOf(n)
         for (i in m + 1 until n) {
@@ -216,46 +218,44 @@ object CombUtils {
      * @return
      */
     fun degPermutation(n: Long, m: Long, p: Long): Long {
-        var n = n
-        var m = m
-        m = abs(m.toDouble()).toLong()
-        n = abs(n.toDouble()).toLong()
+        var n = abs(n)
+        var m = abs(m)
         require(m <= n) { "m>n" }
         if (m == n) {
-            return MathUtils.degFactorial(p, n)
+            return degFactorial(p, n)
         }
         return degFactorial(p, n) - degFactorial(p, m)
     }
 
-    /**
-     * Returns the combination of `m,n`.<br></br>
-     * **C**<sub>n</sub><sup>m</sup><br></br>
-     * @param n
-     * @param m
-     * @return combination of `m,n`.
-     */
-    fun combinationB(n: Int, m: Int): BigInteger {
-        if (m == 0) {
-            return BigInteger.ONE
-        }
-        if (m == 1) {
-            return BigInteger.valueOf(n.toLong())
-        }
-        // n! / m!(n-m)!
-        val t = n - m
-        if (t < 0) {
-            throw ArithmeticException("n<m")
-        }
-        val pr: Primes = Primes.getInstance()
-        pr.enlargePrime(n)
-        val len: Int = pr.getCount(n)
-        val pp = IntArray(len)
-        for (i in 0 until len) {
-            val p: Long = pr.getPrime(i)
-            pp[i] = intOrTooBig(degFactorial(p, n) - degFactorial(p, t) - degFactorial(p, m))
-        }
-        return multiplyPrimePowers(pr, pp)
-    }
+//    /**
+//     * Returns the combination of `m,n`.<br></br>
+//     * **C**<sub>n</sub><sup>m</sup><br></br>
+//     * @param n
+//     * @param m
+//     * @return combination of `m,n`.
+//     */
+//    fun combinationB(n: Int, m: Int): BigInteger {
+//        if (m == 0) {
+//            return BigInteger.ONE
+//        }
+//        if (m == 1) {
+//            return BigInteger.valueOf(n.toLong())
+//        }
+//        // n! / m!(n-m)!
+//        val t = n - m
+//        if (t < 0) {
+//            throw ArithmeticException("n<m")
+//        }
+//        val pr: Primes = Primes.getInstance()
+//        pr.enlargePrime(n)
+//        val len: Int = pr.getCount(n)
+//        val pp = IntArray(len)
+//        for (i in 0 until len) {
+//            val p: Long = pr.getPrime(i)
+//            pp[i] = intOrTooBig(degFactorial(p, n) - degFactorial(p, t) - degFactorial(p, m))
+//        }
+//        return multiplyPrimePowers(pr, pp)
+//    }
 
     /**
      * Returns the combination of `m,n`.<br></br>
@@ -280,21 +280,22 @@ object CombUtils {
         return try {
             permutation(n, t) / factorial(m)
         } catch (ae: ArithmeticException) {
-            combinationDeg(n, m, t)
+//            combinationDeg(n, m, t)
+            TODO()
         }
     }
 
-    private fun combinationDeg(n: Int, m: Int, t: Int): Long {
-        val pr: Primes = Primes.getInstance()
-        pr.enlargePrime(n)
-        val len: Int = pr.getCount(n)
-        val pp = IntArray(len)
-        for (i in 0 until len) {
-            val p: Long = pr.getPrime(i)
-            pp[i] = intOrTooBig(degFactorial(p, n) - degFactorial(p, t) - degFactorial(p, m))
-        }
-        return MathUtils.fromFactorPowers(pp)
-    }
+//    private fun combinationDeg(n: Int, m: Int, t: Int): Long {
+//        val pr: Primes = Primes.getInstance()
+//        pr.enlargePrime(n)
+//        val len: Int = pr.getCount(n)
+//        val pp = IntArray(len)
+//        for (i in 0 until len) {
+//            val p: Long = pr.getPrime(i)
+//            pp[i] = intOrTooBig(degFactorial(p, n) - degFactorial(p, t) - degFactorial(p, m))
+//        }
+//        return MathUtils.fromFactorPowers(pp)
+//    }
 
     /**
      * Returns the binomial of (n,k), which is
@@ -334,7 +335,8 @@ object CombUtils {
         } else if (n < k) {
             return BigInteger.ZERO
         }
-        return combinationB(n, k)
+//        return combinationB(n, k)
+        TODO()
     }
 
     /**
@@ -364,7 +366,7 @@ object CombUtils {
      * @return
      */
     fun multinomial(p: Int, vararg ns: Int): Long {
-        checkSumArray(p, MathUtils.sum(ns), ns)
+        checkSumArray(p, ns.sum(), ns)
         var r = factorial(p)
         for (n in ns) {
             r /= factorial(n)
@@ -387,20 +389,21 @@ object CombUtils {
      * @return
      */
     fun multinomialB(p: Int, vararg ns: Int): BigInteger {
-        checkSumArray(p, MathUtils.sum(ns), ns)
-        val pr: Primes = Primes.getInstance()
-        pr.enlargePrime(p)
-        val len: Int = pr.getCount(p)
-        val pp = IntArray(len)
-        for (i in 0 until len) {
-            val prime: Long = pr.getPrime(i)
-            var power: Long = degFactorial(prime, p)
-            for (n in ns) {
-                power -= degFactorial(prime, n)
-            }
-            pp[i] = intOrTooBig(power)
-        }
-        return multiplyPrimePowers(pr, pp)
+        checkSumArray(p, ns.sum(), ns)
+        TODO()
+//        val pr: Primes = Primes.getInstance()
+//        pr.enlargePrime(p)
+//        val len: Int = pr.getCount(p)
+//        val pp = IntArray(len)
+//        for (i in 0 until len) {
+//            val prime: Long = pr.getPrime(i)
+//            var power: Long = degFactorial(prime, p)
+//            for (n in ns) {
+//                power -= degFactorial(prime, n)
+//            }
+//            pp[i] = intOrTooBig(power)
+//        }
+//        return multiplyPrimePowers(pr, pp)
     }
 
     /**
@@ -430,7 +433,8 @@ object CombUtils {
      */
     fun multisetNumberB(n: Int, k: Int): BigInteger {
         require(!(n < 0 || k < 0))
-        return combinationB(n + k - 1, k)
+        TODO()
+//        return combinationB(n + k - 1, k)
     }
 
     /**
@@ -470,26 +474,26 @@ object CombUtils {
         require(!(n < 2 || m < 1))
         val t = m - 1
         val re = (if (n % 2 == 0) t else -t).toLong()
-        return re + MathUtils.pow(t, n)
+        return re + MathUtils.pow(t.toLong(), n)
     }
 
-    /**
-     * Returns the number of different ways of passing a
-     * ball: Among `n` persons, a person holds a ball, now
-     * they pass the ball for `m` times, and after the final
-     * passing, the first person holds the ball again.
-     * <pre>[(n-1)*(-1)^m+(n-1)^m]/n</pre>
-     * @param n the number of people
-     * @param m times of passing
-     * @return
-     */
-    fun passBall(n: Int, m: Int): Long {
-        require(!(n < 2 || m < 0))
-        val t = n - 1
-        var re = (if (m % 2 == 0) t else -t).toLong()
-        re += MathUtils.pow(t, m)
-        return re / n
-    }
+//    /**
+//     * Returns the number of different ways of passing a
+//     * ball: Among `n` persons, a person holds a ball, now
+//     * they pass the ball for `m` times, and after the final
+//     * passing, the first person holds the ball again.
+//     * <pre>[(n-1)*(-1)^m+(n-1)^m]/n</pre>
+//     * @param n the number of people
+//     * @param m times of passing
+//     * @return
+//     */
+//    fun passBall(n: Int, m: Int): Long {
+//        require(!(n < 2 || m < 0))
+//        val t = n - 1
+//        var re = (if (m % 2 == 0) t else -t).toLong()
+//        re += MathUtils.pow(t.toLong(), m)
+//        return re / n
+//    }
 
     /**
      * Returns the number of partitions of the number `n`, in which the biggest number is `m`.
@@ -560,30 +564,30 @@ object CombUtils {
                 integerPartitionRecur(n - m, m)
     }
 
-    /**
-     * Returns a progression `a(m) = C(n,m)`
-     */
-    fun binomialsOf(n: Int): Progression<Long> {
-        //C(n,m) = n!/(m!*(n-m)!) = n! / (m-1)!*(n-m+1)! * (n-m+1)/m
-        return Progression.createProgressionRecur1WithIndex({ with ->
-            val prev: Long = with.getObj()
-            val m: Long = with.getLong()
-            prev * (n - m + 1) / m
-        }, n + 1, Calculators.longCal(), 1L)
-    }
-
-    /**
-     * Returns a progression `a(m) = C(n,m)`
-     */
-    fun binomialsBigOf(n: Int): Progression<BigInteger> {
-        return Progression.createProgressionRecur1WithIndex({ with ->
-            val prev: BigInteger = with.getObj()
-            val m: Long = with.getLong()
-            val t = BigInteger.valueOf(n - m + 1)
-            val mBig = BigInteger.valueOf(m)
-            prev.multiply(t).divide(mBig)
-        }, n + 1, Calculators.bigInteger(), BigInteger.ONE)
-    }
+//    /**
+//     * Returns a progression `a(m) = C(n,m)`
+//     */
+//    fun binomialsOf(n: Int): Progression<Long> {
+//        //C(n,m) = n!/(m!*(n-m)!) = n! / (m-1)!*(n-m+1)! * (n-m+1)/m
+//        return Progression.createProgressionRecur1WithIndex({ with ->
+//            val prev: Long = with.getObj()
+//            val m: Long = with.getLong()
+//            prev * (n - m + 1) / m
+//        }, n + 1, Calculators.longCal(), 1L)
+//    }
+//
+//    /**
+//     * Returns a progression `a(m) = C(n,m)`
+//     */
+//    fun binomialsBigOf(n: Int): Progression<BigInteger> {
+//        return Progression.createProgressionRecur1WithIndex({ with ->
+//            val prev: BigInteger = with.getObj()
+//            val m: Long = with.getLong()
+//            val t = BigInteger.valueOf(n - m + 1)
+//            val mBig = BigInteger.valueOf(m)
+//            prev.multiply(t).divide(mBig)
+//        }, n + 1, Calculators.bigInteger(), BigInteger.ONE)
+//    }
 
     /**
      * Returns the reverse count of the array.
@@ -649,47 +653,47 @@ object CombUtils {
     }
 
 
-    /**
-     * Returns a progression of Euler number of even index. The progression starts from 0 and has the length of
-     * `n`.
-     *
-     *
-     * The leading several terms are
-     * <pre>1, -1, 5, -61, 1385, -50521, 2702765, -199360981</pre>
-     *
-     * @param n the length of the progression
-     */
-    fun numEulerEvenBig(n: Int): Progression<BigInteger> {
-//        if(n % 2 == 1){
-//            return BigInteger.ZERO;
-//        }
-//        if(n < EULER_NUMBER_EVEN_LONG.length){
-//            return BigInteger.valueOf(numEuler(n));
-//        }
-        val initials: Array<BigInteger> = ArraySup.mapTo(
-            EULER_NUMBER_EVEN_LONG, BigInteger::valueOf,
-            BigInteger::class.java
-        )
-        return Progression.createProgressionRecur({ p: Progression<BigInteger?>, idx: Long ->
-            var sum = BigInteger.ZERO
-            val comb: Progression<BigInteger> = binomialsBigOf(Math.toIntExact(idx * 2))
-            for (i in 0 until idx) {
-                sum = sum.add(comb.get(i * 2L).multiply(p.get(i)))
-            }
-            sum.negate()
-        }, n, Calculators.bigInteger(), initials)
-        //        n = n/2;
-//        BigInteger[] tempTable = new BigInteger[n+1];
-//        for(int i=0;i<EULER_NUMBER_EVEN_LONG.length;i++){
-//            tempTable =
-//        }
-//        for(int i=0;i<n;i++){
-//            var combs = binomialsOf()
-//        }
-//        return null;
-    }
+//    /**
+//     * Returns a progression of Euler number of even index. The progression starts from 0 and has the length of
+//     * `n`.
+//     *
+//     *
+//     * The leading several terms are
+//     * <pre>1, -1, 5, -61, 1385, -50521, 2702765, -199360981</pre>
+//     *
+//     * @param n the length of the progression
+//     */
+//    fun numEulerEvenBig(n: Int): Progression<BigInteger> {
+////        if(n % 2 == 1){
+////            return BigInteger.ZERO;
+////        }
+////        if(n < EULER_NUMBER_EVEN_LONG.length){
+////            return BigInteger.valueOf(numEuler(n));
+////        }
+//        val initials: Array<BigInteger> = ArraySup.mapTo(
+//            EULER_NUMBER_EVEN_LONG, BigInteger::valueOf,
+//            BigInteger::class.java
+//        )
+//        return Progression.createProgressionRecur({ p: Progression<BigInteger?>, idx: Long ->
+//            var sum = BigInteger.ZERO
+//            val comb: Progression<BigInteger> = binomialsBigOf(Math.toIntExact(idx * 2))
+//            for (i in 0 until idx) {
+//                sum = sum.add(comb.get(i * 2L).multiply(p.get(i)))
+//            }
+//            sum.negate()
+//        }, n, Calculators.bigInteger(), initials)
+//        //        n = n/2;
+////        BigInteger[] tempTable = new BigInteger[n+1];
+////        for(int i=0;i<EULER_NUMBER_EVEN_LONG.length;i++){
+////            tempTable =
+////        }
+////        for(int i=0;i<n;i++){
+////            var combs = binomialsOf()
+////        }
+////        return null;
+//    }
 
-    private var BernoulliNumbers: Array<Fraction>?
+    private var BernoulliNumbers: Array<Fraction>? = null
 
     @Synchronized
     private fun initBernoulli() {
@@ -735,7 +739,7 @@ object CombUtils {
     fun numBernoulli(n: Int): Fraction {
         var n = n
         if (n == 1) {
-            return Fraction.HALF.negate()
+            return -Fraction.HALF
         }
         if (n % 2 == 1) {
             return Fraction.ZERO
@@ -748,37 +752,38 @@ object CombUtils {
         return BernoulliNumbers!![n]
     }
 
-    /**
-     * Returns a progression containing Bernoulli number of even index. The progression's index starts from 0 and
-     * is smaller than `n`.
-     *
-     *
-     * The leading several terms are
-     * <pre>1, 1/6, -1/30, 1/42, -1/30, 5/66, -691/2730, 7/6, -3617/510, 43867/798 ...</pre>
-     * @param n the length of the progression
-     */
-    fun numBernoulliEvenBig(n: Int): Progression<BigFraction> {
-        initBernoulli()
-        val initials: Array<BigFraction> = ArraySup.mapTo(
-            BernoulliNumbers, BigFraction::fromFraction,
-            BigFraction::class.java
-        )
-        return Progression.createProgressionRecur({ p, k ->
-            var sum: BigFraction = BigFraction.ZERO
-            val comb: Progression<BigInteger> = binomialsBigOf(Math.toIntExact((2 * k + 1).toLong()))
-            for (i in 0 until k) {
-                val term: Unit = p.get(i).multiply(comb.get(2 * i))
-                sum = sum.add(term)
-            }
-            if (k >= 1) {
-                val term: Unit = BigFraction.fromFraction(numBernoulli(1)).multiply(comb.get(1))
-                sum = sum.add(term)
-            }
-            val coe: Unit = comb.get(2 * k)
-            sum = sum.divide(coe)
-            sum.negate()
-        }, n, BigFraction.getCalculator(), initials)
-    } //	static long integerPartitionDp(long n,long m) {
+//    /**
+//     * Returns a progression containing Bernoulli number of even index. The progression's index starts from 0 and
+//     * is smaller than `n`.
+//     *
+//     *
+//     * The leading several terms are
+//     * <pre>1, 1/6, -1/30, 1/42, -1/30, 5/66, -691/2730, 7/6, -3617/510, 43867/798 ...</pre>
+//     * @param n the length of the progression
+//     */
+//    fun numBernoulliEvenBig(n: Int): Progression<BigFraction> {
+//        initBernoulli()
+//        val initials: Array<BigFraction> = ArraySup.mapTo(
+//            BernoulliNumbers, BigFraction::fromFraction,
+//            BigFraction::class.java
+//        )
+//        return Progression.createProgressionRecur({ p, k ->
+//            var sum: BigFraction = BigFraction.ZERO
+//            val comb: Progression<BigInteger> = binomialsBigOf(Math.toIntExact((2 * k + 1).toLong()))
+//            for (i in 0 until k) {
+//                val term: Unit = p.get(i).multiply(comb.get(2 * i))
+//                sum = sum.add(term)
+//            }
+//            if (k >= 1) {
+//                val term: Unit = BigFraction.fromFraction(numBernoulli(1)).multiply(comb.get(1))
+//                sum = sum.add(term)
+//            }
+//            val coe: Unit = comb.get(2 * k)
+//            sum = sum.divide(coe)
+//            sum.negate()
+//        }, n, BigFraction.getCalculator(), initials)
+//    }
+// 	static long integerPartitionDp(long n,long m) {
     //		
     //	}
     //    public static void main(String[] args) {

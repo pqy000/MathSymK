@@ -1,7 +1,8 @@
 package discrete
 
+import cn.mathsymk.model.struct.FiniteGroup
+import cn.mathsymk.structure.Group
 import cn.mathsymk.util.IterUtils
-import discrete.Permutation.Transposition
 import util.ArraySup
 
 /**
@@ -94,7 +95,7 @@ object Permutations {
         return rotateAll(n, n - shift)
     }
 
-    fun rotate(size: Int, vararg elements: Int): Permutation.Cycle {
+    fun rotate(size: Int, vararg elements: Int): Cycle {
         sizeCheck(size)
         rangeAndDuplicateCheck(elements, size)
         return Rotate(size, elements)
@@ -158,10 +159,10 @@ object Permutations {
      */
     @JvmStatic
     fun isEqual(p1: Permutation, p2: Permutation): Boolean {
-        if (p1.size() != p2.size()) {
+        if (p1.size != p2.size) {
             return false
         }
-        val size = p1.size()
+        val size = p1.size
         for (i in 0 until size) {
             if (p1.apply(i) != p2.apply(i)) {
                 return false
@@ -170,7 +171,7 @@ object Permutations {
         return true
     }
 
-    fun getCalculator(size: Int): GroupCalculator<Permutation> {
+    fun getCalculator(size: Int): Group<Permutation> {
         return PermutationCalculator(size)
     }
 
@@ -185,20 +186,21 @@ object Permutations {
     fun universe(n: Int): List<Permutation> {
         require(!(n <= 0 || n > 12)) { "Invalid n=$n" }
         val list = ArrayList<Permutation>(CombUtils.factorial(n).toInt())
-        for (arr in Enumer.permutation(n, n)) {
-            list.add(ArrPermutation(arr))
-        }
-        return list
+        TODO()
+//        for (arr in Enumer.permutation(n, n)) {
+//            list.add(ArrPermutation(arr))
+//        }
+//        return list
     }
 
-    fun  universeIterable(n: Int): Iterable<Permutation> {
+    fun universeIterable(n: Int): Iterable<Permutation> {
         require(n > 0) { "Invalid n=$n" }
         val seq: Sequence<Permutation> = IterUtils.perm(n, n, false).map { parr: IntArray -> ArrPermutation(parr) }
         return seq.asIterable()
     }
 
 
-    fun even(n: Int): FiniteSet<Permutation> {
+    fun even(n: Int): FiniteGroup<Permutation> {
         require(!(n <= 0 || n > 12)) { "Invalid n=$n" }
         val list = arrayOfNulls<Permutation>(CombUtils.factorial(n).toInt() / 2)
         var i = 0
@@ -208,7 +210,8 @@ object Permutations {
                 list[i++] = p
             }
         }
-        return MathSets.asSet(getCalculator(n), list)
+        TODO()
+//        return MathSets.asSet(getCalculator(n), list)
     }
 
     /**
@@ -248,10 +251,7 @@ object Permutations {
     //        print(p1.apply(p2.getArray()));
     //    }
 
-    internal class ArrPermutation
-    /**
-     *
-     */(protected val parr: IntArray) : AbstractPermutation(parr.size) {
+    internal class ArrPermutation(protected val parr: IntArray) : AbstractPermutation(parr.size) {
         /*
                * @see cn.ancono.math.numberTheory.combination.Permutation#apply(int)
                */
@@ -376,26 +376,21 @@ object Permutations {
         override fun toString(): String {
             return "Swap(" + first + "," + second + ")"
         }
+
+        override fun decomposeTransposition(): List<Transposition> {
+            return super<Transposition>.decomposeTransposition()
+        }
+
+        override fun decompose(): List<Cycle> {
+            return super<Transposition>.decompose()
+        }
     }
 
-    internal class Identity
-    /**
-     * @param size
-     */
-        (size: Int) : AbstractPermutation(size), Transposition {
+    internal class Identity(size: Int) : AbstractPermutation(size), Transposition {
         override val first: Int
-            /*
-                     * @see
-                     * cn.ancono.math.numberTheory.combination.Permutation.ElementaryPermutation#getFirst
-                     * ()
-                     */
             get() = 0
 
         override val second: Int
-            /*
-                     * @see cn.ancono.math.numberTheory.combination.Permutation.ElementaryPermutation#
-                     * getSecond()
-                     */
             get() = 0
 
         /*
@@ -521,12 +516,17 @@ object Permutations {
         override fun compose(before: Permutation): Permutation {
             return before
         }
+
+        override fun decomposeTransposition(): List<Transposition> {
+            return super<Transposition>.decomposeTransposition()
+        }
+
+        override fun decompose(): List<Cycle> {
+            return super<Transposition>.decompose()
+        }
     }
 
-    internal class RotateAll
-    /**
-     * @param size
-     */(size: Int, private val shift: Int) : AbstractPermutation(size) {
+    internal class RotateAll(size: Int, private val shift: Int) : AbstractPermutation(size) {
         /*
                * @see cn.ancono.math.numberTheory.combination.Permutation#apply(int)
                */
@@ -563,12 +563,7 @@ object Permutations {
         }
     }
 
-    internal class Rotate
-    /**
-     * Elements:
-     *
-     * @param size
-     */(size: Int, override val elements: IntArray) : AbstractPermutation(size), Permutation.Cycle {
+    internal class Rotate(size: Int, override val elements: IntArray) : AbstractPermutation(size), Cycle {
         /*
                * @see cn.ancono.math.numberTheory.combination.Permutation#inverse(int)
                */
@@ -595,12 +590,13 @@ object Permutations {
             return Rotate(size, ArraySup.flip(elements, 0, elements.size))
         }
 
-        /*
-         * @see cn.ancono.math.numberTheory.combination.Permutation.RotationPermutation#getElements()
-         */
-        override fun getElements(): IntArray {
-            return elements.clone()
-        }
+//        /*
+//         * @see cn.ancono.math.numberTheory.combination.Permutation.RotationPermutation#getElements()
+//         */
+//        override fun getElements(): IntArray {
+//            return elements.clone()
+//        }
+        
 
         /*
          * @see cn.ancono.math.numberTheory.combination.Permutation.RotationPermutation#containsElement(int)
@@ -733,10 +729,16 @@ object Permutations {
             sb.append(")")
             return sb.toString()
         }
+
+        override fun decompose(): List<Cycle> {
+            return super<Cycle>.decompose()
+        }
     }
 
     @JvmRecord
-    private data class PermutationCalculator(val size: Int) : GroupCalculator<Permutation> {
+    private data class PermutationCalculator(val size: Int,
+                                             override val identity: Permutation = identity(size),
+                                             override val numberClass: Class<Permutation> = Permutation::class.java) : Group<Permutation> {
         override fun isEqual(x: Permutation, y: Permutation): Boolean {
             return Permutations.isEqual(x, y)
         }
@@ -745,15 +747,17 @@ object Permutations {
             return x.inverse()
         }
 
-        val identity: Permutation
-            get() = identity(this.size)
+        override fun contains(element: Permutation): Boolean {
+            return element.size == size
+        }
+
+        override val isCommutative: Boolean
+            get() = false
 
         override fun apply(x: Permutation, y: Permutation): Permutation {
             return x.compose(y)
         }
 
-        val numberClass: Class<Permutation>
-            get() = Permutation::class.java
 
         init {
             require(size > 0) { "size < 0" }
