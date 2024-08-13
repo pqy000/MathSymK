@@ -275,14 +275,14 @@ interface Reals<T : Any> : Quotients<T>, CompleteField<T> {
      * This method provides a default implement by computing:
      * `divide(ln(b),ln(a))`.
      *
-     * @param a a number
-     * @param b another number
+     * @param base a number
+     * @param x another number
      * @return `log(a,b) = ln(b) / ln(a)`
      * @throws UnsupportedOperationException if this operation can not be done.(optional)
      * @throws ArithmeticException             if this operation causes an exceptional arithmetic condition.
      */
-    fun log(a: T, b: T): T {
-        return divide(ln(b), ln(a))
+    fun log(base: T, x: T): T {
+        return divide(ln(x), ln(base))
     }
 
     /**

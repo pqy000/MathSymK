@@ -142,8 +142,6 @@ interface AddSemigroup<T : Any> : EqualPredicate<T> {
      * @see multiplyLong
      */
     operator fun T.times(n: Long) = multiplyLong(this, n)
-
-
 }
 
 
@@ -410,7 +408,7 @@ interface MulMonoid<T> : MulSemigroup<T> {
  *
  * We often denote `x * (y^-1)` as `x / y`, and the corresponding method is [divide].
  *
- * This interface is generally isomorphic to [GroupCalculator],
+ * This interface is generally isomorphic to [Group],
  * but the method names differ and extra operator functions are provided.
  *
  *

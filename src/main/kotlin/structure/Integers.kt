@@ -8,7 +8,7 @@ import java.math.BigInteger
  * A calculator for unique factorization domain(UFD). It supports computing the greatest common divisor of
  * two elements.
  *
- * **Implementation Notes:** Subclasses should always implements the method [UnitRingCalculator.isUnit].
+ * **Implementation Notes:** Subclasses should always implement the method [UnitRing.isUnit].
  *
  *
  */
@@ -50,9 +50,9 @@ interface UFDCalculator<T : Any> : UnitRing<T> {
     }
 
     /**
-     * Returns the result of exact division `x/y`, throws an `UnsupportedOperationException` if it is not exact division.
+     * Returns the result of exact division `a/b`, throws an `UnsupportedOperationException` if it is not exact division.
      */
-    override fun exactDivide(x: T, y: T): T
+    override fun exactDivide(a: T, b: T): T
 
     /**
      * Determines whether `x` exactly divides `y`.
@@ -111,10 +111,10 @@ interface EUDCalculator<T : Any> : UFDCalculator<T> {
      */
     fun mod(a: T, b: T): T = remainder(a, b)
 
-    override fun exactDivide(x: T, y: T): T {
-        val (q, r) = divideAndRemainder(x, y)
+    override fun exactDivide(a: T, b: T): T {
+        val (q, r) = divideAndRemainder(a, b)
         if (!isZero(r)) {
-            ExceptionUtil.notExactDivision(x, y)
+            ExceptionUtil.notExactDivision(a, b)
         }
         return q
     }
@@ -256,27 +256,27 @@ interface EUDCalculator<T : Any> : UFDCalculator<T> {
      *
      * For example, `powerAndMod(2,2,3) = 1`, and `powerAndMod(3,9,7) = 6`.
      *
-     * @param x a number
+     * @param a a number
      * @param n the power, a non-negative number.
      * @param m the modular.
      */
-    fun powMod(x: T, n: Long, m: T): T {
-        var a = x
+    fun powMod(a: T, n: Long, m: T): T {
+        var x = a
         require(n >= 0) { "n must be non-negative!" }
         if (isEqual(m, one)) {
             return zero
         }
-        if (isEqual(a, one)) {
+        if (isEqual(x, one)) {
             return one
         }
         var ans = one
         var p = n
-        a = mod(a, m)
+        x = mod(x, m)
         while (p > 0) {
             if (p and 1 == 1L) {
-                ans = mod(multiply(a, ans), m)
+                ans = mod(multiply(x, ans), m)
             }
-            a = mod(multiply(a, a), m)
+            x = mod(multiply(x, x), m)
             p = p shr 1
         }
         return ans
@@ -394,7 +394,7 @@ interface EUDCalculator<T : Any> : UFDCalculator<T> {
  *
  * @author liyicheng 2017-09-09 20:33
  */
-interface Integers<T:Any> : EUDCalculator<T>, OrderedRing<T> {
+interface Integers<T : Any> : EUDCalculator<T>, OrderedRing<T> {
     /**
      * Returns the integer `1` of type T.
      */
@@ -636,17 +636,17 @@ interface Integers<T:Any> : EUDCalculator<T>, OrderedRing<T> {
      * @return `gcd(|a|,|b|)`
      */
     override fun gcd(a: T, b: T): T {
-        var a = a
-        var b = b
-        a = abs(a)
-        b = abs(b)
+        var x = a
+        var y = b
+        x = abs(x)
+        y = abs(y)
         var t: T
-        while (!isZero(b)) {
-            t = b
-            b = mod(a, b)
-            a = t
+        while (!isZero(y)) {
+            t = y
+            y = mod(x, y)
+            x = t
         }
-        return a
+        return x
     }
 
 
@@ -662,15 +662,15 @@ interface Integers<T:Any> : EUDCalculator<T>, OrderedRing<T> {
      * @return lcm(|a|,|b|).
      */
     fun lcm(a: T, b: T): T {
-        var a = a
-        var b = b
-        if (isZero(a) || isZero(b)) {
+        var x = a
+        var y = b
+        if (isZero(x) || isZero(y)) {
             return zero
         }
-        a = abs(a)
-        b = abs(b)
-        val gcd = gcd(a, b)
-        return multiply(exactDivide(a, gcd), b)
+        x = abs(x)
+        y = abs(y)
+        val gcd = gcd(x, y)
+        return multiply(exactDivide(x, gcd), y)
     }
 
     /**
@@ -682,19 +682,19 @@ interface Integers<T:Any> : EUDCalculator<T>, OrderedRing<T> {
      * @return deg(a, b)
      */
     fun deg(a: T, b: T): T {
-        var a = a
-        var b = b
-        a = abs(a)
-        b = abs(b)
-        require(!(isZero(a) || isEqual(a, one))) { "a==0 or |a|==1" }
+        var x = a
+        var y = b
+        x = abs(x)
+        y = abs(y)
+        require(!(isZero(x) || isEqual(x, one))) { "a==0 or |a|==1" }
         var k: T = zero
-        var dar = divideAndRemainder(b, a)
+        var dar = divideAndRemainder(y, x)
         while (isZero(dar.second)) {
             // b%a==0
             k = increase(k)
-            b = dar.first
+            y = dar.first
             // b = b/a;
-            dar = divideAndRemainder(b, a)
+            dar = divideAndRemainder(y, x)
         }
         // while(b % a ==0){
         // k++;
@@ -715,26 +715,26 @@ interface Integers<T:Any> : EUDCalculator<T>, OrderedRing<T> {
      * @param m the modular.
      */
     fun powMod(a: T, n: T, m: T): T {
-        var a = a
-        var n = n
-        require(!isNegative(n)) { "n < 0" }
+        var x = a
+        var p = n
+        require(!isNegative(p)) { "n < 0" }
 
         val one = one
         if (isEqual(m, one)) {
             return zero
         }
-        if (isEqual(a, one)) {
+        if (isEqual(x, one)) {
             return one
         }
         var ans = one
         val two: T = add(one, one)
-        a = mod(a, m)
-        while (!isZero(n)) {
-            if (isOdd(n)) {
-                ans = mod(multiply(a, ans), m)
+        x = mod(x, m)
+        while (!isZero(p)) {
+            if (isOdd(p)) {
+                ans = mod(multiply(x, ans), m)
             }
-            a = mod(multiply(a, a), m)
-            n = divideToInteger(n, two)
+            x = mod(multiply(x, x), m)
+            p = divideToInteger(p, two)
         }
         return ans
     }

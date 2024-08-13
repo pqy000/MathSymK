@@ -25,7 +25,7 @@ interface UnitRing<T : Any> : Ring<T>, MulMonoid<T> {
         return multiplyLong(one, n)
     }
 
-    fun exactDivide(x: T, y: T): T {
+    fun exactDivide(a: T, b: T): T {
         throw UnsupportedOperationException()
     }
 }
@@ -35,8 +35,8 @@ interface DivisionRing<T : Any> : UnitRing<T>, MulGroup<T> {
         return !isZero(x)
     }
 
-    override fun exactDivide(x: T, y: T): T {
-        return divide(x, y)
+    override fun exactDivide(a: T, b: T): T {
+        return divide(a, b)
     }
 
     fun divideLong(x: T, n: Long): T {
