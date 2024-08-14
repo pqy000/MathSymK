@@ -622,7 +622,7 @@ interface Tensor<T : Any> : MathObject<T, EqualPredicate<T>>, AlgebraModel<T, Te
          *
          *
          *
-         * @see multiply
+         * @see times
          * @see wedge
          * @see inner
          * @see matmul

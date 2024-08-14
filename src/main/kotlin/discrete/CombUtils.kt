@@ -174,7 +174,7 @@ object CombUtils {
             return factorial(n)
         }
         var r = n.toLong()
-        for (i in m + 1 until n) {
+        for (i in n - 1 downTo n - m + 1) {
             r *= i.toLong()
         }
         return r
@@ -193,16 +193,16 @@ object CombUtils {
         var n = abs(n)
         var m = abs(m)
         require(m <= n) { "m>n" }
-        //special cases 
-        if (n == m) {
-            if (n > Int.MAX_VALUE) {
-                throw NumberValueException("Too big", "$n!")
-            }
+
+//        if (n == m) {
+//            if (n > Int.MAX_VALUE) {
+//                throw NumberValueException("Too big", "$n!")
+//            }
 //            return factorialX(n.toInt())
-            TODO()
-        }
+//            TODO()
+//        }
         var r = BigInteger.valueOf(n)
-        for (i in m + 1 until n) {
+        for (i in n - 1 downTo n - m + 1) {
             r = r.multiply(BigInteger.valueOf(i))
         }
         return r

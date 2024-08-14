@@ -76,7 +76,7 @@ interface Group<T : Any> : Monoid<T> {
 
 
 /**
- * An abelian semigroup calculator defines an associative and commutative operation [add], which
+ * An Abelian semigroup calculator defines an associative and commutative operation [add], which
  * we usually denote as `+`.
  *
  * The elements form a semi-group with respect to this calculator.

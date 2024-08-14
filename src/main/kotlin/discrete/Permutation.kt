@@ -66,7 +66,7 @@ interface Permutation : Composable<Permutation>, Invertible<Permutation>, Compar
 
     /**
      * Returns the index of this permutation. The index is
-     * a number ranged in [0,size! - 1]. It represents the index of this
+     * a number ranged in `[0,size! - 1]`. It represents the index of this
      * permutation in all the permutations of the identity size ordered by
      * the natural of their representative array. The identity permutation always
      * has the index of `0` and the total flip permutation always has the
@@ -101,6 +101,7 @@ interface Permutation : Composable<Permutation>, Invertible<Permutation>, Compar
      * be equal to `(0,4)(0,1)(2,4)(3,4)`.
      *
      * @return
+     * @see Transposition
      */
     fun decomposeTransposition(): List<Transposition>
 
@@ -131,15 +132,17 @@ interface Permutation : Composable<Permutation>, Invertible<Permutation>, Compar
      * be equal to `(1,3,5,2)(6,8)`, and
      *
      * @return
+     *
+     * @see Cycle
      */
     fun decompose(): List<Cycle>
 
     /**
-     * Returns the rank of this permutation.<P>
+     * Returns the rank of this permutation.
      * `this^rank=identity`
      *
      * @return
-    </P> */
+     */
     fun rank(): Int {
         val list = decompose()
         var rank = 1
@@ -149,11 +152,6 @@ interface Permutation : Composable<Permutation>, Invertible<Permutation>, Compar
         return rank
     }
 
-    /*
-     * Returns a composed permutation that first applies the {@code before}
-     * permutation to its input, and then applies this permutation to the result.
-     *
-     */
     override fun compose(before: Permutation): Permutation
 
     /**
@@ -215,8 +213,6 @@ interface Permutation : Composable<Permutation>, Invertible<Permutation>, Compar
     }
 
 
-
-
     val isIdentity: Boolean
         get() {
             for (i in 0 until size) {
@@ -227,12 +223,12 @@ interface Permutation : Composable<Permutation>, Invertible<Permutation>, Compar
             return true
         }
 
-    override fun compareTo(o: Permutation): Int {
-        val comp = size - o.size
+    override fun compareTo(other: Permutation): Int {
+        val comp = size - other.size
         if (comp != 0) {
             return comp
         }
-        return java.lang.Long.signum(index() - o.index())
+        return java.lang.Long.signum(index() - other.index())
     }
 }
 
@@ -254,7 +250,7 @@ interface Cycle : Permutation {
      */
     val elements: IntArray
 
-    val cycleLength : Int
+    val cycleLength: Int
         get() = elements.size
 
     /**
@@ -279,7 +275,6 @@ interface Cycle : Permutation {
     override fun decompose(): List<Cycle> {
         return listOf(this)
     }
-
 
 
     override fun apply(x: Int): Int {

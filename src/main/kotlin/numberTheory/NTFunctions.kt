@@ -524,11 +524,11 @@ object NTFunctions {
     }
 
     /**
-     * Returns a solution for the modular equations: <pre>x mod m<sub>i</sub> = r<sub>i</sub>,</pre> where
-     * `m<sub>i</sub>` are co-prime integers.
+     * Returns a solution for the modular equations: <pre>x mod m_i = r_i,</pre> where
+     * `m_i` are co-prime integers.
      * The result is guaranteed to be minimal non-negative solution.
      *
-     * @param mods       an array of modular, `m<sub>i</sub>`
+     * @param mods       an array of modular, `m_i`
      * @param remainders an array of remainders,
      * @return the solution of the modular equation
      */

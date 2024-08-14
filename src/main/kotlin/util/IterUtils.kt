@@ -462,14 +462,15 @@ object IterUtils {
 
     /**
      * Returns a sequence of arrays representing permutations of `m` integers in the range of `0, 1, ..., n-1`.
+     * The resulting sequences are ordered in lexicographical order.
      *
      * For example, `perm(3,2)` will return a sequence of `[0,1], [0,2], [1,0], [1,2], [2,0], [2,1]`.
      */
-    fun perm(n: Int, m: Int = n, copy: Boolean = true): Sequence<IntArray> {
+    fun perm(n: Int, m: Int = n, copy: Boolean = true): Iterable<IntArray> {
         if (n < m) {
-            return emptySequence()
+            return emptyList()
         }
-        val seq = Sequence { PermutationIterNoCopy(n, m) }
+        val seq = Iterable { PermutationIterNoCopy(n, m) }
         if (copy) {
             return seq.map { it.clone() }
         }

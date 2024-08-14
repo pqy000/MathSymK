@@ -1,51 +1,44 @@
 /**
  *
  */
-package util.exceptions;
+package util.exceptions
 
 /**
  * An exception to indicate the value exceeds the capacity of a number model.
  * @author liyicheng
- *
  */
-public class NumberValueException extends RuntimeException {
-    private String expr;
+class NumberValueException : RuntimeException {
     /**
-     *
+     * Gets the expression that cause this exception, `null` value
+     * is possible.
+     * @return the expression
      */
-    private static final long serialVersionUID = 8724288820557054251L;
+    var expression: String? = null
+        private set
 
     /**
      *
      */
-    public NumberValueException() {
-    }
+    constructor()
 
     /**
      * @param message
      */
-    public NumberValueException(String message) {
-        super(message);
-
-    }
+    constructor(message: String?) : super(message)
 
 
     /**
      * @param message
      * @param expr
      */
-    public NumberValueException(String message, String expr) {
-        super(message);
-        this.expr = expr;
+    constructor(message: String?, expr: String?) : super(message) {
+        this.expression = expr
     }
 
-    /**
-     * Gets the expression that cause this exception, {@code null} value
-     *  is possible.
-     * @return the expression
-     */
-    public String getExpression() {
-        return expr;
+    companion object {
+        /**
+         *
+         */
+        private const val serialVersionUID = 8724288820557054251L
     }
-
 }
