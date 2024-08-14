@@ -1,46 +1,45 @@
-package util;
+package util
 
-import java.lang.reflect.Array;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Random;
-import java.util.Set;
-import java.util.function.*;
+import java.util.*
+import java.util.function.*
+import java.util.function.Function
+import kotlin.math.max
 
-public class ArraySup {
+
+object ArraySup {
     /**
      * The maximum size of array to allocate.
      * Some VMs reserve some header words in an array.
      * Attempts to allocate larger arrays may result in
      * OutOfMemoryError: Requested array size exceeds VM limit
      */
-    public static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;
+    const val MAX_ARRAY_SIZE: Int = Int.MAX_VALUE - 8
 
 
-    @SuppressWarnings("unchecked")
-    public static <T> T[] fillArr(int length, T t, Class<T> clazz) {
-        T[] array = (T[]) Array.newInstance(clazz, length);
-        Arrays.fill(array, t);
-        return array;
+    @Suppress("UNCHECKED_CAST")
+    fun <T> fillArr(length: Int, t: T, clazz: Class<T>?): Array<T> {
+        val array = java.lang.reflect.Array.newInstance(clazz, length) as Array<T>
+        Arrays.fill(array, t)
+        return array
     }
 
 
-    public static int[] fillArr(int length, int num) {
-        int[] arr = new int[length];
-        Arrays.fill(arr, num);
-        return arr;
+    fun fillArr(length: Int, num: Int): IntArray {
+        val arr = IntArray(length)
+        Arrays.fill(arr, num)
+        return arr
     }
 
-    public static char[] fillArr(int length, char num) {
-        char[] arr = new char[length];
-        Arrays.fill(arr, num);
-        return arr;
+    fun fillArr(length: Int, num: Char): CharArray {
+        val arr = CharArray(length)
+        Arrays.fill(arr, num)
+        return arr
     }
 
-    public static void ranFillArr(int[] arr) {
-        Random rd = new Random();
-        for (int i = 0; i < arr.length; i++) {
-            arr[i] = rd.nextInt();
+    fun ranFillArr(arr: IntArray) {
+        val rd = Random()
+        for (i in arr.indices) {
+            arr[i] = rd.nextInt()
         }
     }
 
@@ -48,16 +47,16 @@ public class ArraySup {
      * Randomly fill the array by given random
      *
      */
-    public static void ranFillArr(int[] arr, Random rd) {
-        for (int i = 0; i < arr.length; i++) {
-            arr[i] = rd.nextInt();
+    fun ranFillArr(arr: IntArray, rd: Random) {
+        for (i in arr.indices) {
+            arr[i] = rd.nextInt()
         }
     }
 
-    public static void ranFillArr(int[] arr, int bound) {
-        Random rd = new Random();
-        for (int i = 0; i < arr.length; i++) {
-            arr[i] = rd.nextInt(bound);
+    fun ranFillArr(arr: IntArray, bound: Int) {
+        val rd = Random()
+        for (i in arr.indices) {
+            arr[i] = rd.nextInt(bound)
         }
     }
 
@@ -67,24 +66,24 @@ public class ArraySup {
      * @param arr
      * @param rd
      */
-    public static void ranFillArr(int[] arr, int bound, Random rd) {
-        for (int i = 0; i < arr.length; i++) {
-            arr[i] = rd.nextInt(bound);
+    fun ranFillArr(arr: IntArray, bound: Int, rd: Random) {
+        for (i in arr.indices) {
+            arr[i] = rd.nextInt(bound)
         }
     }
 
 
-    public static void ranFillArr(double[] arr) {
-        Random rd = new Random();
-        for (int i = 0; i < arr.length; i++) {
-            arr[i] = rd.nextDouble();
+    fun ranFillArr(arr: DoubleArray) {
+        val rd = Random()
+        for (i in arr.indices) {
+            arr[i] = rd.nextDouble()
         }
     }
 
-    public static void ranFillArr(double[] arr, double mutilplier) {
-        Random rd = new Random();
-        for (int i = 0; i < arr.length; i++) {
-            arr[i] = rd.nextDouble() * mutilplier;
+    fun ranFillArr(arr: DoubleArray, mutilplier: Double) {
+        val rd = Random()
+        for (i in arr.indices) {
+            arr[i] = rd.nextDouble() * mutilplier
         }
     }
 
@@ -94,12 +93,12 @@ public class ArraySup {
      * @param arr
      * @param mutilplier
      */
-    public static void ranFillArrNe(double[] arr, double mutilplier) {
-        Random rd = new Random();
-        for (int i = 0; i < arr.length; i++) {
-            double temp = rd.nextDouble();
-            temp = rd.nextBoolean() ? temp : -temp;
-            arr[i] = temp * mutilplier;
+    fun ranFillArrNe(arr: DoubleArray, mutilplier: Double) {
+        val rd = Random()
+        for (i in arr.indices) {
+            var temp = rd.nextDouble()
+            temp = if (rd.nextBoolean()) temp else -temp
+            arr[i] = temp * mutilplier
         }
     }
 
@@ -109,10 +108,10 @@ public class ArraySup {
      * @param length
      * @return
      */
-    public static int[] ranArr(int length) {
-        int[] arr = new int[length];
-        ranFillArr(arr);
-        return arr;
+    fun ranArr(length: Int): IntArray {
+        val arr = IntArray(length)
+        ranFillArr(arr)
+        return arr
     }
 
     /**
@@ -122,10 +121,10 @@ public class ArraySup {
      * @param length
      * @return
      */
-    public static int[] ranArr(int length, Random rd) {
-        int[] arr = new int[length];
-        ranFillArr(arr, rd);
-        return arr;
+    fun ranArr(length: Int, rd: Random): IntArray {
+        val arr = IntArray(length)
+        ranFillArr(arr, rd)
+        return arr
     }
 
     /**
@@ -136,11 +135,11 @@ public class ArraySup {
      * @param bound
      * @return
      */
-    public static int[] ranArr(int length, int bound) {
+    fun ranArr(length: Int, bound: Int): IntArray {
 //		return new Random().ints(length,0,bound).toArray();
-        int[] arr = new int[length];
-        ranFillArr(arr, bound);
-        return arr;
+        val arr = IntArray(length)
+        ranFillArr(arr, bound)
+        return arr
     }
 
     /**
@@ -152,10 +151,10 @@ public class ArraySup {
      * @param bound
      * @return
      */
-    public static int[] ranArr(int length, int bound, Random rd) {
-        int[] arr = new int[length];
-        ranFillArr(arr, bound, rd);
-        return arr;
+    fun ranArr(length: Int, bound: Int, rd: Random): IntArray {
+        val arr = IntArray(length)
+        ranFillArr(arr, bound, rd)
+        return arr
     }
 
     /**
@@ -168,27 +167,22 @@ public class ArraySup {
      * @return an random array
      * @throws IllegalArgumentException if length>bound
      */
-    public static int[] ranArrNoSame(int length, int bound) {
-        if (length > bound) {
-            throw new IllegalArgumentException("Length>bound");
-        }
-        int[] arr = new int[length];
-        Random rd = new Random();
-        for (int c = 0; c < length; c++) {
-            cal:
-            while (true) {
-                int t = rd.nextInt(bound);
+    fun ranArrNoSame(length: Int, bound: Int): IntArray {
+        require(length <= bound) { "Length>bound" }
+        val arr = IntArray(length)
+        val rd = Random()
+        for (c in 0 until length) {
+            cal@ while (true) {
+                val t = rd.nextInt(bound)
                 //check for the identity
-                for (int i = 0; i < c; i++) {
-                    if (arr[i] == t)
-                        continue cal;
+                for (i in 0 until c) {
+                    if (arr[i] == t) continue@cal
                 }
-                arr[c] = t;
-                break;
+                arr[c] = t
+                break
             }
-
         }
-        return arr;
+        return arr
     }
 
     /**
@@ -202,26 +196,21 @@ public class ArraySup {
      * @return an random array
      * @throws IllegalArgumentException if length>bound
      */
-    public static int[] ranArrNoSame(int length, int bound, Random rd) {
-        if (length > bound) {
-            throw new IllegalArgumentException("Length>bound");
-        }
-        int[] arr = new int[length];
-        for (int c = 0; c < length; c++) {
-            cal:
-            while (true) {
-                int t = rd.nextInt(bound);
+    fun ranArrNoSame(length: Int, bound: Int, rd: Random): IntArray {
+        require(length <= bound) { "Length>bound" }
+        val arr = IntArray(length)
+        for (c in 0 until length) {
+            cal@ while (true) {
+                val t = rd.nextInt(bound)
                 //check for the identity
-                for (int i = 0; i < c; i++) {
-                    if (arr[i] == t)
-                        continue cal;
+                for (i in 0 until c) {
+                    if (arr[i] == t) continue@cal
                 }
-                arr[c] = t;
-                break;
+                arr[c] = t
+                break
             }
-
         }
-        return arr;
+        return arr
     }
 
     /**
@@ -230,10 +219,10 @@ public class ArraySup {
      * @param length
      * @return
      */
-    public static double[] ranDoubleArr(int length) {
-        double[] arr = new double[length];
-        ranFillArr(arr);
-        return arr;
+    fun ranDoubleArr(length: Int): DoubleArray {
+        val arr = DoubleArray(length)
+        ranFillArr(arr)
+        return arr
     }
 
     /**
@@ -243,10 +232,10 @@ public class ArraySup {
      * @param mutilplier
      * @return
      */
-    public static double[] ranDoubleArr(int length, double mutilplier) {
-        double[] arr = new double[length];
-        ranFillArr(arr, mutilplier);
-        return arr;
+    fun ranDoubleArr(length: Int, mutilplier: Double): DoubleArray {
+        val arr = DoubleArray(length)
+        ranFillArr(arr, mutilplier)
+        return arr
     }
 
     /**
@@ -256,90 +245,84 @@ public class ArraySup {
      * @param mutilplier
      * @return
      */
-    public static double[] ranDoubleArrNe(int length, double mutilplier) {
-        double[] arr = new double[length];
-        ranFillArrNe(arr, mutilplier);
-        return arr;
+    fun ranDoubleArrNe(length: Int, mutilplier: Double): DoubleArray {
+        val arr = DoubleArray(length)
+        ranFillArrNe(arr, mutilplier)
+        return arr
     }
 
 
-    public static int findMaxPos(int[] arr) {
-        int maxPos = 0;
-        for (int i = 1; i < arr.length; i++) {
-            maxPos = (arr[i] > arr[maxPos]) ? i : maxPos;
+    fun findMaxPos(arr: IntArray): Int {
+        var maxPos = 0
+        for (i in 1 until arr.size) {
+            maxPos = if ((arr[i] > arr[maxPos])) i else maxPos
         }
-        return maxPos;
+        return maxPos
     }
 
-    public static int findMax(int[] arr) {
-        int max = arr[0];
-        for (int i = 1; i < arr.length; ++i) {
-            max = Math.max(arr[i], max);
+    fun findMax(arr: IntArray): Int {
+        var max = arr[0]
+        for (i in 1 until arr.size) {
+            max = max(arr[i].toDouble(), max.toDouble()).toInt()
         }
-        return max;
+        return max
     }
 
 
-//    /**
-//     * make the array random
-//     *
-//     * @param arr
-//     */
-//    public static void desort(int[] arr) {
-//        Random rd = new Random();
-//        int len = arr.length;
-//        for (int i = 0; i < len - 1; i++) {
-//            int npos = rd.nextInt(len - i) + i;
-//            int t = arr[npos];
-//            arr[npos] = arr[i];
-//            arr[i] = t;
-//        }
-//    }
-
-//    /**
-//     * make the array random
-//     *
-//     * @param arr
-//     */
-//    public static void desort(Object[] arr) {
-//        Random rd = new Random();
-//        int len = arr.length;
-//        for (int i = 0; i < len - 1; i++) {
-//            int npos = rd.nextInt(len - i) + i;
-//            Object t = arr[npos];
-//            arr[npos] = arr[i];
-//            arr[i] = t;
-//        }
-//
-//    }
-
+    //    /**
+    //     * make the array random
+    //     *
+    //     * @param arr
+    //     */
+    //    public static void desort(int[] arr) {
+    //        Random rd = new Random();
+    //        int len = arr.length;
+    //        for (int i = 0; i < len - 1; i++) {
+    //            int npos = rd.nextInt(len - i) + i;
+    //            int t = arr[npos];
+    //            arr[npos] = arr[i];
+    //            arr[i] = t;
+    //        }
+    //    }
+    //    /**
+    //     * make the array random
+    //     *
+    //     * @param arr
+    //     */
+    //    public static void desort(Object[] arr) {
+    //        Random rd = new Random();
+    //        int len = arr.length;
+    //        for (int i = 0; i < len - 1; i++) {
+    //            int npos = rd.nextInt(len - i) + i;
+    //            Object t = arr[npos];
+    //            arr[npos] = arr[i];
+    //            arr[i] = t;
+    //        }
+    //
+    //    }
     /**
      * An array whose element is its index.
      *
      * @param length
      * @return
      */
-    public static int[] indexArray(int length) {
-        int[] a = new int[length];
-        for (int i = 0; i < length; i++) {
-            a[i] = i;
-        }
-        return a;
+    fun indexArray(length: Int): IntArray {
+        return IntArray(length) { i -> i }
     }
 
 
-    public static int[][] turnMatrix(int[][] mat) {
-        int width = -1;
-        for (int[] arr : mat) {
-            width = Math.max(arr.length, width);
+    fun turnMatrix(mat: Array<IntArray>): Array<IntArray> {
+        var width = -1
+        for (arr in mat) {
+            width = max(arr.size.toDouble(), width.toDouble()).toInt()
         }
-        int[][] re = new int[width][mat.length];
-        for (int i = 0; i < mat.length; i++) {
-            for (int j = 0; j < mat[i].length; j++) {
-                re[j][i] = mat[i][j];
+        val re = Array(width) { IntArray(mat.size) }
+        for (i in mat.indices) {
+            for (j in mat[i].indices) {
+                re[j][i] = mat[i][j]
             }
         }
-        return re;
+        return re
     }
 
     /**
@@ -348,165 +331,157 @@ public class ArraySup {
      * @param arr the array
      * @return a flipped array
      */
-    public static <T> T[] filp(T[] arr) {
-        int len = arr.length;
-        @SuppressWarnings("unchecked")
-        T[] re = (T[]) Array.newInstance(arr.getClass().getComponentType(), len);
-        for (int i = 0; i < len; i++) {
-            re[len - i - 1] = arr[i];
+    @Suppress("UNCHECKED_CAST")
+    fun <T> filp(arr: Array<T>): Array<T> {
+        val len = arr.size
+        val re = java.lang.reflect.Array.newInstance(arr.javaClass.componentType, len) as Array<T>
+        for (i in 0 until len) {
+            re[len - i - 1] = arr[i]
         }
-        return re;
+        return re
     }
 
     /**
-     * Reverse the array.For example,input {@code reverse("123456789",3)}
-     * returns a result {@code "456789123"}. This method will only use constant storage.
+     * Reverse the array.For example,input `reverse("123456789",3)`
+     * returns a result `"456789123"`. This method will only use constant storage.
      *
      * @param arr
      * @param len
      * @return
      */
-    public static <T> void reverse(T[] arr, int len) {
-        if (len > arr.length) {
-            throw new IllegalArgumentException();
-        }
-        reverse0(arr, len);
+    fun <T> reverse(arr: Array<T>, len: Int) {
+        require(len <= arr.size)
+        reverse0(arr, len)
     }
 
     /**
-     * Reverse the array. For example,input {@code reverse(123456789,3)}
-     * returns a result {@code 456789123}. This method will only use constant storage.
+     * Reverse the array. For example,input `reverse(123456789,3)`
+     * returns a result `456789123`. This method will only use constant storage.
      *
      * @param arr
      * @param len
      */
-    public static void reverse(int[] arr, int len) {
-        if (len > arr.length) {
-            throw new IllegalArgumentException();
-        }
-        reverse0(arr, len);
+    fun reverse(arr: IntArray, len: Int) {
+        require(len <= arr.size)
+        reverse0(arr, len)
     }
 
     /**
-     * Flip the array in the given range. For example, {@code flip(ABCDEFG,2,6)}
-     * returns {@code ABFEDCG}.
+     * Flip the array in the given range. For example, `flip(ABCDEFG,2,6)`
+     * returns `ABFEDCG`.
      *
      * @param arr  the array
      * @param from index,inclusive
      * @param to   exclusive
      */
-    public static <T> void flip(T[] arr, int from, int to) {
-        if (to <= from) {
-            throw new IllegalArgumentException();
-        }
+    fun <T> flip(arr: Array<T>, from: Int, to: Int) {
+        require(to > from)
         if (to == from + 1) {
-            return;
+            return
         }
-        T t;
-        int top = from + to - 1;
-        int mid = (to + from) / 2;
-        for (int i = to; i < mid; i++) {
-            int j = top - i;
-            t = arr[i];
-            arr[i] = arr[j];
-            arr[j] = t;
+        var t: T
+        val top = from + to - 1
+        val mid = (to + from) / 2
+        for (i in to until mid) {
+            val j = top - i
+            t = arr[i]
+            arr[i] = arr[j]
+            arr[j] = t
         }
     }
 
     /**
-     * Flip the array in the given range. For example, {@code flip(1234567,2,6)}
-     * returns {@code 1265437}.
+     * Flip the array in the given range. For example, `flip(1234567,2,6)`
+     * returns `1265437`.
      *
      * @param arr  the array
      * @param from index,inclusive
      * @param to   exclusive
      */
-    public static int[] flip(int[] arr, int from, int to) {
-        if (to <= from) {
-            throw new IllegalArgumentException();
-        }
+    fun flip(arr: IntArray, from: Int, to: Int): IntArray {
+        require(to > from)
         if (to == from + 1) {
-            return arr;
+            return arr
         }
-        int t;
-        int top = from + to - 1;
-        int mid = (to + from) / 2;
-        for (int i = from; i < mid; i++) {
-            int j = top - i;
-            t = arr[i];
-            arr[i] = arr[j];
-            arr[j] = t;
+        var t: Int
+        val top = from + to - 1
+        val mid = (to + from) / 2
+        for (i in from until mid) {
+            val j = top - i
+            t = arr[i]
+            arr[i] = arr[j]
+            arr[j] = t
         }
-        return arr;
+        return arr
     }
 
-    private static void reverse0(Object[] arr, int flipLen) {
-        int length = arr.length;
-        int start = 0;
-        int exchangeSize;
-        boolean bigger;
-        Object t;
+    private  fun <T> reverse0(arr: Array<T>, flipLen: Int) {
+        var flipLen = flipLen
+        var length = arr.size
+        var start = 0
+        var exchangeSize: Int
+        var bigger: Boolean
+        var t: T
         while (flipLen > 0) {
-            int re = length - flipLen;
-            int place;
+            val re = length - flipLen
+            var place: Int
 
             if (flipLen < re) {
-                bigger = false;
-                exchangeSize = flipLen;
-                place = re;
+                bigger = false
+                exchangeSize = flipLen
+                place = re
             } else {
-                bigger = true;
-                exchangeSize = re;
-                place = flipLen;
+                bigger = true
+                exchangeSize = re
+                place = flipLen
             }
-            for (int i = start; i < start + exchangeSize; i++) {
-                t = arr[place + i];
-                arr[place + i] = arr[i];
-                arr[i] = t;
+            for (i in start until start + exchangeSize) {
+                t = arr[place + i]
+                arr[place + i] = arr[i]
+                arr[i] = t
             }
-            length -= exchangeSize;
+            length -= exchangeSize
             if (bigger) {
-                start += exchangeSize;
-                flipLen = place - exchangeSize;
+                start += exchangeSize
+                flipLen = place - exchangeSize
             } else {
-                flipLen = exchangeSize;
+                flipLen = exchangeSize
             }
-
         }
     }
 
-    private static void reverse0(int[] arr, int flipLen) {
-        int length = arr.length;
-        int start = 0;
-        int exchangeSize;
-        boolean bigger;
-        int t;
+    private fun reverse0(arr: IntArray, flipLen: Int) {
+        var flipLen = flipLen
+        var length = arr.size
+        var start = 0
+        var exchangeSize: Int
+        var bigger: Boolean
+        var t: Int
         while (flipLen > 0) {
-            int re = length - flipLen;
-            int place;
+            val re = length - flipLen
+            var place: Int
 
             if (flipLen < re) {
-                bigger = false;
-                exchangeSize = flipLen;
-                place = re;
+                bigger = false
+                exchangeSize = flipLen
+                place = re
             } else {
-                bigger = true;
-                exchangeSize = re;
-                place = flipLen;
+                bigger = true
+                exchangeSize = re
+                place = flipLen
             }
-            for (int i = start; i < start + exchangeSize; i++) {
-                t = arr[place + i];
-                arr[place + i] = arr[i];
-                arr[i] = t;
+            for (i in start until start + exchangeSize) {
+                t = arr[place + i]
+                arr[place + i] = arr[i]
+                arr[i] = t
             }
-            length -= exchangeSize;
+            length -= exchangeSize
             if (bigger) {
-                start += exchangeSize;
-                flipLen = place - exchangeSize;
+                start += exchangeSize
+                flipLen = place - exchangeSize
             } else {
-                flipLen = exchangeSize;
+                flipLen = exchangeSize
             }
-
         }
     }
 
@@ -519,64 +494,62 @@ public class ArraySup {
      * @param testEqual a function that test whether two given object is equal, return true if equal
      * @return
      */
-    public static <T> boolean arrayEqualNoOrder(T[] a1, T[] a2, BiFunction<T, T, Boolean> testEqual) {
-        final int length = a1.length;
-        if (a2.length != length) {
-            return false;
+    fun <T> arrayEqualNoOrder(a1: Array<T>, a2: Array<T>, testEqual: BiFunction<T, T, Boolean>): Boolean {
+        val length = a1.size
+        if (a2.size != length) {
+            return false
         }
-        boolean[] mapped = new boolean[length];
-        for (int i = 0; i < length; i++) {
-            T t = a1[i];
-            boolean suc = false;
-            for (int j = 0; j < length; j++) {
-                if (mapped[j])
-                    continue;
+        val mapped = BooleanArray(length)
+        for (i in 0 until length) {
+            val t = a1[i]
+            var suc = false
+            for (j in 0 until length) {
+                if (mapped[j]) continue
                 if (testEqual.apply(t, a2[j])) {
-                    mapped[j] = true;
-                    suc = true;
-                    break;
+                    mapped[j] = true
+                    suc = true
+                    break
                 }
             }
             if (!suc) {
-                return false;
+                return false
             }
         }
-        return true;
+        return true
     }
 
     /**
      * Determines whether the two array is equal, this method will ignore the order of
      * specific element. The length of the two array should be the identity.(Two elements <tt>e1</tt> and
-     * <tt>e2</tt> are <i>equal</i> if <tt>(e1==null ? e2==null :
+     * <tt>e2</tt> are *equal* if <tt>(e1==null ? e2==null :
      * e1.equals(e2))</tt>.)
      *
      * @param a1
      * @param a2
      * @return
      */
-    public static <T> boolean arrayEqualNoOrder(T[] a1, T[] a2) {
-        final int length = a1.length;
-        if (a2.length != length) {
-            return false;
+    fun <T> arrayEqualNoOrder(a1: Array<T>, a2: Array<T>): Boolean {
+        val length = a1.size
+        if (a2.size != length) {
+            return false
         }
-        boolean[] mapped = new boolean[length];
-        for (T t : a1) {
-            boolean suc = false;
-            for (int j = 0; j < length; j++) {
-                if (mapped[j])
-                    continue;
-                T t2 = a2[j];
-                if (t == null ? t2 == null : t.equals(t2)) {
-                    mapped[j] = true;
-                    suc = true;
-                    break;
+        val mapped = BooleanArray(length)
+        for (t in a1) {
+            var suc = false
+            for (j in 0 until length) {
+                if (mapped[j]) continue
+                val t2: T? = a2[j]
+                if (if (t == null) t2 == null else (t == t2)) {
+                    mapped[j] = true
+                    suc = true
+                    break
                 }
             }
             if (!suc) {
-                return false;
+                return false
             }
         }
-        return true;
+        return true
     }
 
 
@@ -588,22 +561,22 @@ public class ArraySup {
      * @param testEqual a function to determines whether the two objects are the identity.
      * @return
      */
-    public static <T, S> boolean arrayContains(T[] arr, S element, BiFunction<T, S, Boolean> testEqual) {
-        for (T anArr : arr) {
+    fun <T, S> arrayContains(arr: Array<T>, element: S, testEqual: BiFunction<T, S, Boolean>): Boolean {
+        for (anArr in arr) {
             if (testEqual.apply(anArr, element)) {
-                return true;
+                return true
             }
         }
-        return false;
+        return false
     }
 
-    public static boolean arrayContains(int[] arr, int element) {
-        for (int t : arr) {
+    fun arrayContains(arr: IntArray, element: Int): Boolean {
+        for (t in arr) {
             if (t == element) {
-                return true;
+                return true
             }
         }
-        return false;
+        return false
     }
 
     /**
@@ -613,14 +586,14 @@ public class ArraySup {
      * @param to      exclusive
      * @return
      */
-    public static boolean arrayContains(int element, int[] arr, int from, int to) {
-        for (int i = from; i < to; i++) {
-            int t = arr[i];
+    fun arrayContains(element: Int, arr: IntArray, from: Int, to: Int): Boolean {
+        for (i in from until to) {
+            val t = arr[i]
             if (t == element) {
-                return true;
+                return true
             }
         }
-        return false;
+        return false
     }
 
     /**
@@ -630,13 +603,13 @@ public class ArraySup {
      * @param mapper
      * @return
      */
-    public static <N, T> N[] mapTo(T[] arr, Function<? super T, ? extends N> mapper) {
-        @SuppressWarnings("unchecked")
-        N[] re = (N[]) new Object[arr.length];
-        for (int i = 0; i < arr.length; i++) {
-            re[i] = mapper.apply(arr[i]);
+    @Suppress("UNCHECKED_CAST")
+    fun <N, T> mapTo(arr: Array<T>, mapper: Function<in T, out N>): Array<N?> {
+        val re = arrayOfNulls<Any>(arr.size) as Array<N?>
+        for (i in arr.indices) {
+            re[i] = mapper.apply(arr[i])
         }
-        return re;
+        return re
     }
 
     /**
@@ -646,22 +619,21 @@ public class ArraySup {
      * @param mapper
      * @return
      */
-    public static <N, T> N[] mapTo(T[] arr, Function<? super T, ? extends N> mapper, Class<N> clazz) {
-        @SuppressWarnings("unchecked")
-        N[] re = (N[]) Array.newInstance(clazz, arr.length);
-        for (int i = 0; i < arr.length; i++) {
-            re[i] = mapper.apply(arr[i]);
+    @Suppress("UNCHECKED_CAST")
+    fun <N, T> mapTo(arr: Array<T>, mapper: Function<in T, out N>, clazz: Class<N>?): Array<N> {
+        val re = java.lang.reflect.Array.newInstance(clazz, arr.size) as Array<N>
+        for (i in arr.indices) {
+            re[i] = mapper.apply(arr[i])
         }
-        return re;
+        return re
     }
-
-    public static <T> T[] mapTo(long[] arr, LongFunction<T> f, Class<T> clazz) {
-        @SuppressWarnings("unchecked")
-        T[] re = (T[]) Array.newInstance(clazz, arr.length);
-        for (int i = 0; i < arr.length; i++) {
-            re[i] = f.apply(arr[i]);
+    @Suppress("UNCHECKED_CAST")
+    fun <T> mapTo(arr: LongArray, f: LongFunction<T>, clazz: Class<T>?): Array<T> {
+        val re = java.lang.reflect.Array.newInstance(clazz, arr.size) as Array<T>
+        for (i in arr.indices) {
+            re[i] = f.apply(arr[i])
         }
-        return re;
+        return re
     }
 
     /**
@@ -671,54 +643,52 @@ public class ArraySup {
      * @param mapper
      * @return
      */
-    @SuppressWarnings("unchecked")
-    public static <N, T> N[][] mapTo2(T[][] arr, Function<? super T, ? extends N> mapper, Class<N> clazz) {
-        Class<?> narrayType = Array.newInstance(clazz, 0).getClass();
-        N[][] re = (N[][]) Array.newInstance(narrayType, arr.length);
-        for (int i = 0; i < arr.length; i++) {
-            re[i] = (N[]) Array.newInstance(clazz, arr[i].length);
-            for (int j = 0; j < re[i].length; j++) {
-                re[i][j] = mapper.apply(arr[i][j]);
+    @Suppress("UNCHECKED_CAST")
+    fun <N, T> mapTo2(arr: Array<Array<T>>, mapper: Function<in T, out N>, clazz: Class<N>?): Array<Array<N>> {
+        val narrayType: Class<*> = java.lang.reflect.Array.newInstance(clazz, 0).javaClass
+        val re = java.lang.reflect.Array.newInstance(narrayType, arr.size) as Array<Array<N>>
+        for (i in arr.indices) {
+            re[i] = java.lang.reflect.Array.newInstance(clazz, arr[i].size) as Array<N>
+            for (j in re[i].indices) {
+                re[i][j] = mapper.apply(arr[i][j])
             }
         }
-        return re;
+        return re
     }
 
-    public static <T> int[][] mapTo2(T[][] arr, ToIntFunction<? super T> mapper) {
-        int[][] re = new int[arr.length][];
-        for (int i = 0; i < arr.length; i++) {
-            re[i] = new int[arr[i].length];
-            for (int j = 0; j < re[i].length; j++) {
-                re[i][j] = mapper.applyAsInt(arr[i][j]);
+    fun <T> mapTo2(arr: Array<Array<T>>, mapper: ToIntFunction<in T>): Array<IntArray?> {
+        val re = arrayOfNulls<IntArray>(arr.size)
+        for (i in arr.indices) {
+            re[i] = IntArray(arr[i].size)
+            for (j in re[i]!!.indices) {
+                re[i]!![j] = mapper.applyAsInt(arr[i][j])
             }
         }
-        return re;
+        return re
     }
-
-    @SuppressWarnings({"unchecked", "Duplicates"})
-    public static <T> T[][] mapTo2(double[][] arr, DoubleFunction<? extends T> mapper, Class<T> clazz) {
-        Class<?> narrayType = Array.newInstance(clazz, 0).getClass();
-        T[][] re = (T[][]) Array.newInstance(narrayType, arr.length);
-        for (int i = 0; i < arr.length; i++) {
-            re[i] = (T[]) Array.newInstance(clazz, arr[i].length);
-            for (int j = 0; j < re[i].length; j++) {
-                re[i][j] = mapper.apply(arr[i][j]);
+    @Suppress("UNCHECKED_CAST")
+    fun <T> mapTo2(arr: Array<DoubleArray>, mapper: DoubleFunction<out T>, clazz: Class<T>?): Array<Array<T>> {
+        val narrayType: Class<*> = java.lang.reflect.Array.newInstance(clazz, 0).javaClass
+        val re = java.lang.reflect.Array.newInstance(narrayType, arr.size) as Array<Array<T>>
+        for (i in arr.indices) {
+            re[i] = java.lang.reflect.Array.newInstance(clazz, arr[i].size) as Array<T>
+            for (j in re[i].indices) {
+                re[i][j] = mapper.apply(arr[i][j])
             }
         }
-        return re;
+        return re
     }
-
-    @SuppressWarnings({"unchecked", "Duplicates"})
-    public static <T> T[][] mapTo2(int[][] arr, IntFunction<T> mapper, Class<T> clazz) {
-        Class<?> narrayType = Array.newInstance(clazz, 0).getClass();
-        T[][] re = (T[][]) Array.newInstance(narrayType, arr.length);
-        for (int i = 0; i < arr.length; i++) {
-            re[i] = (T[]) Array.newInstance(clazz, arr[i].length);
-            for (int j = 0; j < re[i].length; j++) {
-                re[i][j] = mapper.apply(arr[i][j]);
+    @Suppress("UNCHECKED_CAST")
+    fun <T> mapTo2(arr: Array<IntArray>, mapper: IntFunction<T>, clazz: Class<T>?): Array<Array<T>> {
+        val narrayType: Class<*> = java.lang.reflect.Array.newInstance(clazz, 0).javaClass
+        val re = java.lang.reflect.Array.newInstance(narrayType, arr.size) as Array<Array<T>>
+        for (i in arr.indices) {
+            re[i] = java.lang.reflect.Array.newInstance(clazz, arr[i].size) as Array<T>
+            for (j in re[i].indices) {
+                re[i][j] = mapper.apply(arr[i][j])
             }
         }
-        return re;
+        return re
     }
 
 
@@ -728,12 +698,12 @@ public class ArraySup {
      * @param arr
      * @return
      */
-    public static <T> Set<T> createSet(T[] arr) {
-        Set<T> set = new HashSet<>(arr.length);
-        for (int i = 0; i < arr.length; i++) {
-            set.add(arr[i]);
+    fun <T> createSet(arr: Array<T>): Set<T> {
+        val set: MutableSet<T> = HashSet(arr.size)
+        for (i in arr.indices) {
+            set.add(arr[i])
         }
-        return set;
+        return set
     }
 
     /**
@@ -743,48 +713,47 @@ public class ArraySup {
      * @param sup
      * @return
      */
-    public static <T> Set<T> createSet(T[] arr, Supplier<Set<T>> sup) {
-        Set<T> set = sup.get();
-        for (int i = 0; i < arr.length; i++) {
-            set.add(arr[i]);
+    fun <T> createSet(arr: Array<T>, sup: Supplier<MutableSet<T>>): Set<T> {
+        val set = sup.get()
+        for (i in arr.indices) {
+            set.add(arr[i])
         }
-        return set;
+        return set
     }
 
     /**
-     * Sort the {@code null} values to the back of the array, returns the number of non-null
+     * Sort the `null` values to the back of the array, returns the number of non-null
      * objects in the array. The order of the original non-null objects will not be effected
      * but null values between them will be removed.
      *
      * @param objs an array to sort
      * @return the number of non-null objects.
      */
-    @SuppressWarnings("unchecked")
-    public static <T> int sortNull(T[] objs) {
-        Object[] temp = new Object[objs.length];
-        int n = 0;
-        for (T t : objs) {
+    fun <T> sortNull(objs: Array<T?>): Int {
+        val temp = arrayOfNulls<Any>(objs.size)
+        var n = 0
+        for (t in objs) {
             if (t != null) {
-                temp[n++] = t;
+                temp[n++] = t
             }
         }
-        for (int i = 0; i < objs.length; i++) {
-            objs[i] = (T) temp[i];
+        for (i in objs.indices) {
+            objs[i] = temp[i] as T?
         }
-        return n;
+        return n
     }
 
 
     /**
-     * Test that this array contains no {@code null} element.
+     * Test that this array contains no `null` element.
      */
-    public static <T> T[] notEmpty(T[] arr) {
-        for (T anArr : arr) {
+    fun <T> notEmpty(arr: Array<T>): Array<T> {
+        for (anArr in arr) {
             if (anArr == null) {
-                throw new NullPointerException();
+                throw NullPointerException()
             }
         }
-        return arr;
+        return arr
     }
 
     /**
@@ -793,49 +762,48 @@ public class ArraySup {
      * @param arr
      * @return
      */
-    @SuppressWarnings("unchecked")
-    public static <T> T[] deepCopy(T[] arr) {
-        if (arr.length == 0) {
-            return arr.clone();
+    fun <T> deepCopy(arr: Array<T>): Array<T> {
+        if (arr.size == 0) {
+            return arr.clone()
         }
-        return (T[]) deepCopy0(arr);
+        return deepCopy0(arr) as Array<T>
     }
 
-    static Object[] deepCopy0(Object[] arr) {
-        Object[] result = (Object[]) Array.newInstance(arr.getClass().getComponentType(), arr.length);
-        for (int i = 0; i < arr.length; i++) {
-            Object element = arr[i];
-            if (element instanceof Object[])
-                result[i] = deepCopy0((Object[]) arr[i]);
-            else if (element instanceof byte[]) {
-                byte[] t = (byte[]) arr[i];
-                result[i] = t.clone();
-            } else if (element instanceof short[]) {
-                short[] t = (short[]) arr[i];
-                result[i] = t.clone();
-            } else if (element instanceof int[]) {
-                int[] t = (int[]) arr[i];
-                result[i] = t.clone();
-            } else if (element instanceof long[]) {
-                long[] t = (long[]) arr[i];
-                result[i] = t.clone();
-            } else if (element instanceof char[]) {
-                char[] t = (char[]) arr[i];
-                result[i] = t.clone();
-            } else if (element instanceof float[]) {
-                float[] t = (float[]) arr[i];
-                result[i] = t.clone();
-            } else if (element instanceof double[]) {
-                double[] t = (double[]) arr[i];
-                result[i] = t.clone();
-            } else if (element instanceof boolean[]) {
-                boolean[] t = (boolean[]) arr[i];
-                result[i] = t.clone();
+    @Suppress("UNCHECKED_CAST")
+    fun <T> deepCopy0(arr: Array<T>): Array<T> {
+        val result = java.lang.reflect.Array.newInstance(arr.javaClass.componentType, arr.size) as Array<Any>
+        for (i in arr.indices) {
+            val element = arr[i]
+            if (element is Array<*> && element.isArrayOf<Any>()) result[i] = deepCopy0(arr[i] as Array<Any>)
+            else if (element is ByteArray) {
+                val t = arr[i] as ByteArray
+                result[i] = t.clone()
+            } else if (element is ShortArray) {
+                val t = arr[i] as ShortArray
+                result[i] = t.clone()
+            } else if (element is IntArray) {
+                val t = arr[i] as IntArray
+                result[i] = t.clone()
+            } else if (element is LongArray) {
+                val t = arr[i] as LongArray
+                result[i] = t.clone()
+            } else if (element is CharArray) {
+                val t = arr[i] as CharArray
+                result[i] = t.clone()
+            } else if (element is FloatArray) {
+                val t = arr[i] as FloatArray
+                result[i] = t.clone()
+            } else if (element is DoubleArray) {
+                val t = arr[i] as DoubleArray
+                result[i] = t.clone()
+            } else if (element is BooleanArray) {
+                val t = arr[i] as BooleanArray
+                result[i] = t.clone()
             } else {
-                result[i] = arr[i];
+                result[i] = arr[i] as Array<Any>
             }
         }
-        return result;
+        return result as Array<T>
     }
 
     /**
@@ -844,69 +812,69 @@ public class ArraySup {
      * @param arr
      * @return
      */
-    public static <T> T[] modifyAll(T[] arr, Function<? super T, ? extends T> f) {
-        for (int i = 0; i < arr.length; i++) {
-            T t = arr[i];
+    fun <T> modifyAll(arr: Array<T>, f: Function<in T, out T>): Array<T> {
+        for (i in arr.indices) {
+            val t: T? = arr[i]
             if (t != null) {
-                arr[i] = f.apply(t);
+                arr[i] = f.apply(t)
             }
         }
-        return arr;
-
+        return arr
     }
 
     /**
-     * Set the given index to {@code x}, lengthen the array by 1.5x when needed.
+     * Set the given index to `x`, lengthen the array by 1.5x when needed.
      *
      * @param arr
      * @param x
      * @param index
      * @return
      */
-    public static long[] ensureCapacityAndAdd(long[] arr, long x, int index) {
-        if (arr.length <= index) {
-            arr = Arrays.copyOf(arr, Math.max(arr.length * 3 / 2, index + 1));
+    fun ensureCapacityAndAdd(arr: LongArray, x: Long, index: Int): LongArray {
+        var arr = arr
+        if (arr.size <= index) {
+            arr = arr.copyOf(max((arr.size * 3 / 2).toDouble(), (index + 1).toDouble()).toInt())
         }
-        arr[index] = x;
-        return arr;
+        arr[index] = x
+        return arr
     }
 
-    public static int[] ensureCapacityAndAdd(int[] arr, int x, int index) {
-        if (index >= arr.length) {
-            arr = Arrays.copyOf(arr, arr.length * 3 / 2);
+    fun ensureCapacityAndAdd(arr: IntArray, x: Int, index: Int): IntArray {
+        var arr = arr
+        if (index >= arr.size) {
+            arr = arr.copyOf(arr.size * 3 / 2)
         }
-        arr[index] = x;
-        return arr;
+        arr[index] = x
+        return arr
     }
 
     /**
-     * Set the given index to {@code x}, lengthen the array by 1.5x when needed.
+     * Set the given index to `x`, lengthen the array by 1.5x when needed.
      *
      * @param arr
      * @param x
      * @param index
      * @return
      */
-    public static <T> T[] ensureCapacityAndAdd(T[] arr, T x, int index) {
-        if (arr.length <= index) {
-            arr = Arrays.copyOf(arr, Math.max(arr.length * 3 / 2, index + 1));
+    fun <T> ensureCapacityAndAdd(arr: Array<T?>, x: T, index: Int): Array<T?> {
+        var arr = arr
+        if (arr.size <= index) {
+            arr = arr.copyOf(max((arr.size * 3 / 2).toDouble(), (index + 1).toDouble()).toInt())
         }
-        arr[index] = x;
-        return arr;
+        arr[index] = x
+        return arr
     }
 
     /**
-     * Cast the number {@code n} to an integer as the length of an array, checking
-     * whether it exceeds. Throws an exception if {@code n<0 || n> MAX_ARRAY_SIZE}
+     * Cast the number `n` to an integer as the length of an array, checking
+     * whether it exceeds. Throws an exception if `n<0 || n> MAX_ARRAY_SIZE`
      *
      * @param n
      * @return
      */
-    public static int castToArrayLength(long n) {
-        if (n < 0 || n > MAX_ARRAY_SIZE) {
-            throw new IllegalArgumentException("Size exceeds: " + n);
-        }
-        return (int) n;
+    fun castToArrayLength(n: Long): Int {
+        require(!(n < 0 || n > MAX_ARRAY_SIZE)) { "Size exceeds: $n" }
+        return n.toInt()
     }
 
     /**
@@ -916,139 +884,144 @@ public class ArraySup {
      * @param parr
      * @return
      */
-    public static <T> T[] applyPermutation(T[] arr, int[] parr) {
-        T[] copy = Arrays.copyOf(arr, arr.length);
-        for (int i = 0; i < arr.length; i++) {
-            arr[parr[i]] = copy[i];
+    fun <T> applyPermutation(arr: Array<T?>, parr: IntArray): Array<T?> {
+        val copy = arr.copyOf(arr.size)
+        for (i in arr.indices) {
+            arr[parr[i]] = copy[i]
         }
-        return arr;
+        return arr
     }
 
-    public static void swap(Object[] arr, int i, int j) {
-        Object t = arr[i];
-        arr[i] = arr[j];
-        arr[j] = t;
+    fun <T> swap(arr: Array<T>, i: Int, j: Int) {
+        val t = arr[i]
+        arr[i] = arr[j]
+        arr[j] = t
     }
 
-    public static void swap(int[] arr, int i, int j) {
-        int t = arr[i];
-        arr[i] = arr[j];
-        arr[j] = t;
+    fun swap(arr: IntArray, i: Int, j: Int) {
+        val t = arr[i]
+        arr[i] = arr[j]
+        arr[j] = t
     }
 
-    public static void swap(boolean[] arr, int i, int j) {
-        boolean t = arr[i];
-        arr[i] = arr[j];
-        arr[j] = t;
+    fun swap(arr: BooleanArray, i: Int, j: Int) {
+        val t = arr[i]
+        arr[i] = arr[j]
+        arr[j] = t
     }
 
-    public static void swap(long[] arr, int i, int j) {
-        long t = arr[i];
-        arr[i] = arr[j];
-        arr[j] = t;
+    fun swap(arr: LongArray, i: Int, j: Int) {
+        val t = arr[i]
+        arr[i] = arr[j]
+        arr[j] = t
     }
 
-    public static void swap(double[] arr, int i, int j) {
-        double t = arr[i];
-        arr[i] = arr[j];
-        arr[j] = t;
+    fun swap(arr: DoubleArray, i: Int, j: Int) {
+        val t = arr[i]
+        arr[i] = arr[j]
+        arr[j] = t
     }
 
-    public static void swap(float[] arr, int i, int j) {
-        float t = arr[i];
-        arr[i] = arr[j];
-        arr[j] = t;
+    fun swap(arr: FloatArray, i: Int, j: Int) {
+        val t = arr[i]
+        arr[i] = arr[j]
+        arr[j] = t
     }
 
 
-    public static int firstIndexOf(int x, int[] arr) {
-        for (int i = 0; i < arr.length; i++) {
+    fun firstIndexOf(x: Int, arr: IntArray): Int {
+        for (i in arr.indices) {
             if (arr[i] == x) {
-                return i;
+                return i
             }
         }
-        return -1;
+        return -1
     }
 
-    public static <T> int firstIndexOf(T[] arr, Predicate<T> matcher) {
-        for (int i = 0; i < arr.length; i++) {
+    fun <T> firstIndexOf(arr: Array<T>, matcher: Predicate<T>): Int {
+        for (i in arr.indices) {
             if (matcher.test(arr[i])) {
-                return i;
+                return i
             }
         }
-        return -1;
+        return -1
     }
 
     /**
      * Returns the index of the max element that is smaller or equal to target.
      * If no such element exists, -1 will be returned.
      */
-    public static int binarySearchFloor(int[] arr, int lo, int hi, int target) {
+    fun binarySearchFloor(arr: IntArray, lo: Int, hi: Int, target: Int): Int {
+        var lo = lo
+        var hi = hi
         while (lo < hi) {
-            int mid = (lo + hi) / 2;
+            val mid = (lo + hi) / 2
             if (target < arr[mid]) {
-                hi = mid;
+                hi = mid
             } else {
-                lo = mid + 1;
+                lo = mid + 1
             }
         }
-        return lo - 1;
+        return lo - 1
     }
 
     /**
      * Returns the index of the min element that is bigger or equal to target.
      * If no such element exists, hi+1 will be returned.
      */
-    public static int binarySearchCeiling(int[] arr, int lo, int hi, int target) {
+    fun binarySearchCeiling(arr: IntArray, lo: Int, hi: Int, target: Int): Int {
+        var lo = lo
+        var hi = hi
         while (lo < hi) {
-            int mid = (lo + hi) / 2;
+            val mid = (lo + hi) / 2
             if (arr[mid] < target) {
-                lo = mid + 1;
+                lo = mid + 1
             } else {
-                hi = mid;
+                hi = mid
             }
         }
-        return lo; // lo == hi
+        return lo // lo == hi
     }
 
     /**
      * Returns the index of the max element that is smaller or equal to target.
      * If no such element exists, -1 will be returned.
      */
-    public static int binarySearchFloor(double[] arr, int lo, int hi, double target) {
+    fun binarySearchFloor(arr: DoubleArray, lo: Int, hi: Int, target: Double): Int {
+        var lo = lo
+        var hi = hi
         while (lo < hi) {
-            int mid = (lo + hi) / 2;
+            val mid = (lo + hi) / 2
             if (target < arr[mid]) {
-                hi = mid;
+                hi = mid
             } else {
-                lo = mid + 1;
+                lo = mid + 1
             }
         }
-        return lo - 1;
+        return lo - 1
     }
 
     /**
      * Returns the index of the min element that is bigger or equal to target.
      * If no such element exists, hi+1 will be returned.
      */
-    public static int binarySearchCeiling(double[] arr, int lo, int hi, double target) {
+    fun binarySearchCeiling(arr: DoubleArray, lo: Int, hi: Int, target: Double): Int {
+        var lo = lo
+        var hi = hi
         while (lo < hi) {
-            int mid = (lo + hi) / 2;
+            val mid = (lo + hi) / 2
             if (arr[mid] < target) {
-                lo = mid + 1;
+                lo = mid + 1
             } else {
-                hi = mid;
+                hi = mid
             }
         }
-        return lo; // lo == hi
-    }
-
-
-//	public static void main(String[] args) {
-//		Integer[] arr = new Integer[10]; 
-//		Arrays.setAll(arr, i -> i);  
-//		reverse(arr,0);
-//		print(arr);
-//		print(flip(indexArray(10),1,8));
-//	}
-}	
+        return lo // lo == hi
+    } //	public static void main(String[] args) {
+    //		Integer[] arr = new Integer[10]; 
+    //		Arrays.setAll(arr, i -> i);  
+    //		reverse(arr,0);
+    //		print(arr);
+    //		print(flip(indexArray(10),1,8));
+    //	}
+}

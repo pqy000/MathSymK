@@ -3,10 +3,11 @@
  */
 package discrete
 
-import discrete.Permutations.Rotate
+import discrete.Permutations.CycleImpl
 import discrete.Permutations.Swap
 import discrete.Permutations.isEqual
 import discrete.Permutations.valueOf
+import util.ArraySup
 
 
 /**
@@ -19,7 +20,7 @@ abstract class AbstractPermutation(override val size: Int) : Permutation {
      * @see cn.ancono.math.numberTheory.combination.Permutation#compose(cn.ancono.math.numberTheory.combination.Permutation)
      */
     override fun compose(before: Permutation): Permutation {
-        return valueOf(*apply(before.getArray()))
+        return valueOf(*permute(before.getArray()))
     }
 
     /*
@@ -61,33 +62,26 @@ abstract class AbstractPermutation(override val size: Int) : Permutation {
     override fun decompose(): List<Cycle> {
         val arr = getArray()
         val length = arr.size
-        val list: MutableList<Cycle> = ArrayList(
-            size
-        )
+        val list: MutableList<Cycle> = ArrayList(size)
         val mark = BooleanArray(length)
+        val temp = IntArray(length)
         for (i in 0 until length) {
             if (mark[i]) {
                 continue
             }
             var t = i
-            val temp = BooleanArray(length)
-            var n = 0
-            while (!temp[t]) {
-                temp[t] = true
-                t = arr[t]
-                n++
-            }
-            if (n == 1) {
-                mark[i] = true
-                continue
-            }
-            val elements = IntArray(n)
-            for (j in 0 until n) {
-                elements[j] = t
+            var count = 0
+            do {
+                temp[count++] = t
                 mark[t] = true
                 t = arr[t]
+            } while (!mark[t])
+            if (count == 1) {
+                continue
             }
-            list.add(Rotate(length, elements))
+            val elements = IntArray(count)
+            System.arraycopy(temp, 0, elements, 0, count)
+            list.add(CycleImpl(length, elements))
         }
         return list
     }
@@ -102,17 +96,12 @@ abstract class AbstractPermutation(override val size: Int) : Permutation {
         return isEqual(this, other)
     }
 
-    /*
-     * @see java.lang.Object#toString()
+    /**
+     * Returns the string representation of this permutation, which is the array representation of the permutation.
      */
     override fun toString(): String {
-        val sb = StringBuilder()
-        sb.append('(')
-        for (i in 0 until size) {
-            sb.append(apply(i)).append(',')
-        }
-        sb.deleteCharAt(sb.length - 1)
-        sb.append(')')
-        return sb.toString()
+        val idArr = ArraySup.indexArray(size)
+        val arr = permute(idArr)
+        return arr.joinToString(prefix = "(", postfix = ")")
     }
 }

@@ -120,7 +120,7 @@ open class SlicedView<T:Any>(
         for (i in am.indices) {
             am[i] = axisMap[am[i]]
         }
-        return SlicedView(t, ranges, am, p.apply(shape))
+        return SlicedView(t, ranges, am, p.permute(shape))
     }
 
 }

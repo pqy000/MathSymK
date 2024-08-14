@@ -108,7 +108,6 @@ object NumberModels {
         }
     }
 
-
     object IntAsIntegers : Integers<Int> {
 
         override fun contains(x: Int): Boolean {

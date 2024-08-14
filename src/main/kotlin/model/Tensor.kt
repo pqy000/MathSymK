@@ -395,18 +395,18 @@ interface Tensor<T : Any> : MathObject<T, EqualPredicate<T>>, AlgebraModel<T, Te
 
 
     /**
-     * Returns a axis-permuted view of this tensor.
+     * Returns an axis-permuted view of this tensor.
      * The `i`-th axis in the resulting tensor corresponds to the `p.apply(i)`-th axis in this tensor.
      */
     fun permute(p: Permutation): Tensor<T> {
         require(p.size == dim)
         val sh = this.shape
         val ranges = shape.map { 0 until it }
-        return SlicedView(this, ranges, p.getArray(), p.apply(sh))
+        return SlicedView(this, ranges, p.getArray(), p.permute(sh))
     }
 
     /**
-     * Returns a axis-permuted view of this tensor.
+     * Returns an axis-permuted view of this tensor.
      * The `i`-th axis in the resulting tensor corresponds to the `newAxis[ i ]`-th axis in this tensor.
      *
      * @param newAxis its size should be equal to `this.dim`.
@@ -919,7 +919,7 @@ interface MutableTensor<T:Any> : Tensor<T> {
         require(p.size == dim)
         val sh = this.shape
         val ranges = shape.map { 0 until it }
-        return MutableSliceView(this, ranges, p.getArray(), p.apply(sh))
+        return MutableSliceView(this, ranges, p.getArray(), p.permute(sh))
     }
 
     override fun permute(vararg newAxis: Int): MutableTensor<T> {

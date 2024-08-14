@@ -10,9 +10,22 @@ import util.ArraySup
 
 /**
  * A permutation describes a transformation on a finite set of elements.
- * Different from the mathematical permutation,
- * the smallest index in this permutation should be **zero**.
  *
+ * A permutation is a bijective function `σ: S -> S`, from a finite set, `S = {0,1, ... size-1}`, to itself.
+ * This bijective function is described by the methods [apply(Int)] and [inverse].
+ * Moreover, [getArray] returns an array that represents this function.
+ *
+ *
+ *
+ * A permutation can naturally [permute] an array (a list) of elements by moving `i`-th element to the `apply(i)`-th position.
+ * Namely, if we have an array `arr`, and  `newArr = p.permute(arr)` where `p` is a permutation,
+ * then `newArr[p.apply(i)] = arr[i]`.
+ * Mathematically, we have `(σf)(i) = f(σ⁻¹(i))` or `g(σ(i)) = f(i)` where `g = σf`.
+ * This convention is consistent with composition: `(σ₁·σ₂)(f) = σ₁(σ₂(f))`,
+ * which is proven by `(σ₁·σ₂)(f)(i) = f( (σ₁·σ₂)⁻¹(i) ) = f(σ₂⁻¹(σ₁⁻¹(i))) = σ₂(f(σ₁⁻¹(i))) = σ₂(σ₁(f))(i)`.
+ *
+ *
+ * Alternatively, there is a cycle representation of a permutation. A cycle is a permutation that shifts some elements in this permutation by one.
  *
  * See: [Permutation](https://en.wikipedia.org/wiki/Permutation)
  *
@@ -26,7 +39,7 @@ interface Permutation : Composable<Permutation>, Invertible<Permutation>, Compar
      * size of the finite set.
      *
      */
-    val size : Int
+    val size: Int
 
     /**
      * Returns the index of the element of index `x` after this permutation.
@@ -150,96 +163,59 @@ interface Permutation : Composable<Permutation>, Invertible<Permutation>, Compar
     override fun andThen(after: Permutation): Permutation
 
     /**
-     * Gets a copy of array representing this permutation. For each index n in the range,
-     * `arr[n]==apply(n)`
+     * Gets a copy of array representing this permutation mapping:
+     * Let `arr = getArray()`, then `arr[i] = apply(i)`.
      *
      */
     fun getArray(): IntArray {
-        val length = size
-        val arr = IntArray(length)
-        for (i in 0 until length) {
-            arr[i] = apply(i)
-        }
-        return arr
+        return IntArray(size) { apply(it) }
     }
 
     /**
-     * Applies this permutation to an array. The `i`-th element in the resulting
-     * array will be equal to the `apply(i)`-th element in the original array.
+     * Permutes the array by this permutation in place.
+     * Let `arr2 = permute(arr)`, then `arr2[apply(i)] = arr[i]`.
+     *
+     * @param array the array to permute, which will be modified.
      */
-    fun <T> apply(array: Array<T>): Array<T> {
-        require(array.size >= size) { "array's length!=" + size }
-        val copy = array.clone()
+    fun <T> permute(array: Array<T>): Array<T> {
+        require(array.size >= size) { "The array's length ${array.size} is not enough." }
+        val origin = array.clone()
         for (i in array.indices) {
-            array[i] = copy[apply(i)]
+            array[apply(i)] = origin[i]
         }
         return array
     }
 
-    fun <T> apply(list: List<T>): List<T> {
+    /**
+     * Permutes the array by this permutation in place.
+     * Let `arr2 = permute(arr)`, then `arr2[apply(i)] = arr[i]`.
+     *
+     * @param array the array to permute, which will be modified.
+     * @see Permutation.permute
+     */
+    fun permute(array: IntArray): IntArray {
+        require(array.size >= size) { "The array's length ${array.size} is not enough." }
+        val origin = array.clone()
+        for (i in array.indices) {
+            array[apply(i)] = origin[i]
+        }
+        return array
+    }
+
+    /**
+     * Permutes the list by this permutation and returns a new list.
+     */
+    fun <T> permute(list: List<T>): List<T> {
         require(list.size >= size) { "The list's length ${list.size} is not enough." }
-        val newList = ArrayList<T>(list.size)
+        val newList = list.toMutableList()
         for (i in list.indices) {
-            newList.add(list[apply(i)])
+            newList[apply(i)] = list[i]
         }
         return newList
     }
 
-    /**
-     * Applies this permutation to an integer array.
-     * The `i`-th element in the resulting
-     * array will be equal to the `apply(i)`-th element in the original array.
-     */
-    fun apply(array: IntArray): IntArray {
-        require(array.size >= size) { "array's length!=" + size }
-        val copy = array.clone()
-        for (i in array.indices) {
-            array[i] = copy[apply(i)]
-        }
-        return array
-    }
 
-    /**
-     * Applies this permutation to an array.
-     * The `i`-th element in the resulting
-     * array will be equal to the `apply(i)`-th element in the original array.
-     */
-    fun apply(array: DoubleArray): DoubleArray {
-        require(array.size >= size) { "array's length!=" + size }
-        val copy = array.clone()
-        for (i in array.indices) {
-            array[i] = copy[apply(i)]
-        }
-        return array
-    }
 
-    /**
-     * Applies this permutation to an array.
-     * The `i`-th element in the resulting
-     * array will be equal to the `apply(i)`-th element in the original array.
-     */
-    fun apply(array: BooleanArray): BooleanArray {
-        require(array.size >= size) { "array's length!=" + size }
-        val copy = array.clone()
-        for (i in array.indices) {
-            array[i] = copy[apply(i)]
-        }
-        return array
-    }
-
-    /**
-     * Applies this permutation to an array.
-     * The `i`-th element in the resulting
-     * array will be equal to the `apply(i)`-th element in the original array.
-     */
-    fun apply(array: LongArray): LongArray {
-        require(array.size >= size) { "array's length!=" + size }
-        val copy = array.clone()
-        for (i in array.indices) {
-            array[i] = copy[apply(i)]
-        }
-        return array
-    }
 
     val isIdentity: Boolean
         get() {
@@ -271,12 +247,15 @@ interface Permutation : Composable<Permutation>, Invertible<Permutation>, Compar
 </P> */
 interface Cycle : Permutation {
     /**
-     * Gets an array that contains all the elements that
-     * should be rotated.
+     * Gets an array that contains all the elements in the Cycle's order.
+     * The permutation satisfies that `apply(elements[i])=elements[(i+1)%length]`.
      *
      * @return
      */
     val elements: IntArray
+
+    val cycleLength : Int
+        get() = elements.size
 
     /**
      * Determines whether the element should be rotated.
@@ -284,21 +263,14 @@ interface Cycle : Permutation {
      * @param x
      * @return
      */
-    fun containsElement(x: Int): Boolean
+    fun containsInCycle(x: Int): Boolean
 
-    /**
-     * Gets the number of the elements to rotate, the result should not be
-     * bigger than `size()`
-     *
-     * @return
-     */
-    fun length(): Int
 
     /*
      * @see cn.ancono.math.numberTheory.combination.Permutation#rank()
      */
     override fun rank(): Int {
-        return length()
+        return cycleLength
     }
 
     /*
@@ -308,14 +280,13 @@ interface Cycle : Permutation {
         return listOf(this)
     }
 
-    /*
-     * @see cn.ancono.math.numberTheory.combination.Permutation#apply(int)
-     */
+
+
     override fun apply(x: Int): Int {
-        if (!containsElement(x)) {
+        if (!containsInCycle(x)) {
             return x
         }
-        if (length() == 1) {
+        if (cycleLength == 1) {
             return x
         }
         val earr = elements
@@ -330,8 +301,8 @@ interface Cycle : Permutation {
     /*
      * @see cn.ancono.math.numberTheory.combination.Permutation#apply(int[])
      */
-    override fun apply(array: IntArray): IntArray {
-        if (length() == 1) {
+    override fun permute(array: IntArray): IntArray {
+        if (cycleLength == 1) {
             return array
         }
         val earr = elements
@@ -343,59 +314,59 @@ interface Cycle : Permutation {
         return array
     }
 
-    /*
-     * @see cn.ancono.math.numberTheory.combination.Permutation#apply(boolean[])
-     */
-    override fun apply(array: BooleanArray): BooleanArray {
-        if (length() == 1) {
-            return array
-        }
-        val earr = elements
-        val t = array[earr[0]]
-        for (i in 0 until earr.size - 1) {
-            array[earr[i]] = array[earr[i + 1]]
-        }
-        array[earr[earr.size - 1]] = t
-        return array
-    }
-
-    /*
-     * @see cn.ancono.math.numberTheory.combination.Permutation#apply(double[])
-     */
-    override fun apply(array: DoubleArray): DoubleArray {
-        if (length() == 1) {
-            return array
-        }
-        val earr = elements
-        val t = array[earr[0]]
-        for (i in 0 until earr.size - 1) {
-            array[earr[i]] = array[earr[i + 1]]
-        }
-        array[earr[earr.size - 1]] = t
-        return array
-    }
-
-    /*
-     * @see cn.ancono.math.numberTheory.combination.Permutation#apply(long[])
-     */
-    override fun apply(array: LongArray): LongArray {
-        if (length() == 1) {
-            return array
-        }
-        val earr = elements
-        val t = array[earr[0]]
-        for (i in 0 until earr.size - 1) {
-            array[earr[i]] = array[earr[i + 1]]
-        }
-        array[earr[earr.size - 1]] = t
-        return array
-    }
+//    /*
+//     * @see cn.ancono.math.numberTheory.combination.Permutation#apply(boolean[])
+//     */
+//    override fun permute(array: BooleanArray): BooleanArray {
+//        if (length() == 1) {
+//            return array
+//        }
+//        val earr = elements
+//        val t = array[earr[0]]
+//        for (i in 0 until earr.size - 1) {
+//            array[earr[i]] = array[earr[i + 1]]
+//        }
+//        array[earr[earr.size - 1]] = t
+//        return array
+//    }
+//
+//    /*
+//     * @see cn.ancono.math.numberTheory.combination.Permutation#apply(double[])
+//     */
+//    override fun permute(array: DoubleArray): DoubleArray {
+//        if (length() == 1) {
+//            return array
+//        }
+//        val earr = elements
+//        val t = array[earr[0]]
+//        for (i in 0 until earr.size - 1) {
+//            array[earr[i]] = array[earr[i + 1]]
+//        }
+//        array[earr[earr.size - 1]] = t
+//        return array
+//    }
+//
+//    /*
+//     * @see cn.ancono.math.numberTheory.combination.Permutation#apply(long[])
+//     */
+//    override fun permute(array: LongArray): LongArray {
+//        if (length() == 1) {
+//            return array
+//        }
+//        val earr = elements
+//        val t = array[earr[0]]
+//        for (i in 0 until earr.size - 1) {
+//            array[earr[i]] = array[earr[i + 1]]
+//        }
+//        array[earr[earr.size - 1]] = t
+//        return array
+//    }
 
     /*
      * @see cn.ancono.math.numberTheory.combination.Permutation#apply(java.lang.Object[])
      */
-    override fun <T> apply(array: Array<T>): Array<T> {
-        if (length() == 1) {
+    override fun <T> permute(array: Array<T>): Array<T> {
+        if (cycleLength == 1) {
             return array
         }
         val earr = elements
@@ -409,8 +380,8 @@ interface Cycle : Permutation {
 }
 
 /**
- * An transposition permutation is a permutation that only swap two elements.
- * By convenience, it is not strictly required that the two elements aren't the identity.
+ * A transposition permutation is a permutation that only swap two elements.
+ * By convenience, it is not strictly required that the two elements are not equal.
  *
  * @author liyicheng
  * 2018-03-02 20:47
@@ -432,6 +403,8 @@ interface Transposition : Cycle {
      */
     val second: Int
 
+    override val cycleLength: Int
+        get() = if (first == second) 1 else 2
     override val elements: IntArray
         /*
                   */
@@ -446,13 +419,7 @@ interface Transposition : Cycle {
 
     /*
      */
-    override fun length(): Int {
-        return if (first == second) 1 else 2
-    }
-
-    /*
-     */
-    override fun containsElement(x: Int): Boolean {
+    override fun containsInCycle(x: Int): Boolean {
         return x == first || x == second
     }
 
@@ -499,42 +466,42 @@ interface Transposition : Cycle {
     }
 
 
-    /*
-     * @see cn.ancono.math.numberTheory.combination.Permutation#apply(boolean[])
-     */
-    override fun apply(array: BooleanArray): BooleanArray {
-        ArraySup.swap(array, first, second)
-        return array
-    }
-
-    /*
-     * @see cn.ancono.math.numberTheory.combination.Permutation#apply(double[])
-     */
-    override fun apply(array: DoubleArray): DoubleArray {
-        ArraySup.swap(array, first, second)
-        return array
-    }
+//    /*
+//     * @see cn.ancono.math.numberTheory.combination.Permutation#apply(boolean[])
+//     */
+//    override fun permute(array: BooleanArray): BooleanArray {
+//        ArraySup.swap(array, first, second)
+//        return array
+//    }
+//
+//    /*
+//     * @see cn.ancono.math.numberTheory.combination.Permutation#apply(double[])
+//     */
+//    override fun permute(array: DoubleArray): DoubleArray {
+//        ArraySup.swap(array, first, second)
+//        return array
+//    }
 
     /*
      * @see cn.ancono.math.numberTheory.combination.Permutation#apply(int[])
      */
-    override fun apply(array: IntArray): IntArray {
+    override fun permute(array: IntArray): IntArray {
         ArraySup.swap(array, first, second)
         return array
     }
 
-    /*
-     * @see cn.ancono.math.numberTheory.combination.Permutation#apply(long[])
-     */
-    override fun apply(array: LongArray): LongArray {
-        ArraySup.swap(array, first, second)
-        return array
-    }
+//    /*
+//     * @see cn.ancono.math.numberTheory.combination.Permutation#apply(long[])
+//     */
+//    override fun permute(array: LongArray): LongArray {
+//        ArraySup.swap(array, first, second)
+//        return array
+//    }
 
     /*
      * @see cn.ancono.math.numberTheory.combination.Permutation#apply(java.lang.Object[])
      */
-    override fun <T> apply(array: Array<T>): Array<T> {
+    override fun <T> permute(array: Array<T>): Array<T> {
         ArraySup.swap(array, first, second)
         return array
     }
@@ -544,6 +511,6 @@ interface Transposition : Cycle {
      */
     override fun getArray(): IntArray {
         val arr: IntArray = ArraySup.indexArray(size)
-        return apply(arr)
+        return permute(arr)
     }
 }
