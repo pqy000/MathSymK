@@ -1,30 +1,29 @@
 package discrete
 
-import cn.mathsymk.model.struct.FiniteGroup
 import cn.mathsymk.number_theory.NTFunctions
-import cn.mathsymk.structure.Group
-import cn.mathsymk.util.IterUtils
 import util.ArraySup
 
 
 /**
- * A cycle permutation is a permutation that shifts some elements in this permutation by one.
- * <P>For example, a rotation permutation whose element array is (0,2,4,1) should
- * have a permutation array of (2,0,4,3,1,5,6,7), which means the permutation map 0 to 2,
- * 2 to 4,4 to 1 and 1 to 0.
+ * A cycle is a permutation that shifts some [elements] in this permutation by one.
+ * For example, a cycle whose [elements] are `(0,2,4,1)` maps `0 -> 2, 2 -> 4, 4 -> 1, 1 -> 0`,
+ * while other elements are not changed.
  *
  * @author liyicheng
  * 2018-03-03 15:44
-</P> */
+ */
 interface Cycle : Permutation {
     /**
      * Gets an array that contains all the elements in the Cycle's order.
-     * The permutation satisfies that `apply(elements[i])=elements[(i+1)%length]`.
+     * The permutation satisfies that `apply(elements[i ])=elements[(i+1)%length]`.
      *
      * @return
      */
     val elements: IntArray
 
+    /**
+     * Gets the length of the cycle, `cycleLength = elements.size`.
+     */
     val cycleLength: Int
         get() = elements.size
 
@@ -262,7 +261,7 @@ abstract class AbstractPermutation(override val size: Int) : Permutation {
     }
 
     override fun equals(other: Any?): Boolean {
-        if (other !is AbstractPermutation) {
+        if (other !is Permutation) {
             return false
         }
         return Permutation.isEqual(this, other)
@@ -278,6 +277,8 @@ abstract class AbstractPermutation(override val size: Int) : Permutation {
     override fun toString(): String {
         return getArray().joinToString(prefix = "(", postfix = ")")
     }
+
+
 }
 
 internal class ArrPermutation(protected val parr: IntArray) : AbstractPermutation(parr.size) {
@@ -326,34 +327,30 @@ internal class ArrPermutation(protected val parr: IntArray) : AbstractPermutatio
         return parr.clone()
     }
 
-
-    override fun compose(before: Permutation): Permutation {
-        return ArrPermutation(permute(before.getArray()))
+    override fun toString(): String {
+        return parr.joinToString(prefix = "(", postfix = ")")
     }
 
-
-    override fun andThen(after: Permutation): Permutation {
-        return ArrPermutation(after.permute(getArray()))
+    override fun hashCode(): Int {
+        return parr.contentHashCode()
     }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if(other is ArrPermutation){
+            return parr.contentEquals(other.parr)
+        }
+        return super.equals(other)
+    }
+
 }
 
 internal class TranspositionImpl(size: Int, i: Int, j: Int) : AbstractPermutation(size), Transposition {
 
-    override val first: Int
+    override val first: Int = minOf(i, j)
 
 
-    override val second: Int
-
-    /**
-     * Swap `i` and `j` if `i>j`
-     *
-     * @param size
-     */
-    init {
-        this.first = minOf(i, j)
-        this.second = maxOf(i, j)
-    }
-
+    override val second: Int = maxOf(i, j)
 
     override fun toString(): String {
         return "Swap($first,$second)"
@@ -434,14 +431,14 @@ internal class IdentityPerm(size: Int) : AbstractPermutation(size), Cycle {
 
 internal class RotateAll(size: Int, private val shift: Int) : AbstractPermutation(size) {
     override fun apply(x: Int): Int {
-        var x = x
-        x += shift
-        if (x < 0) {
-            x += size
-        } else if (x >= size) {
-            x -= size
+        var res = x
+        res += shift
+        if (res < 0) {
+            res += size
+        } else if (res >= size) {
+            res -= size
         }
-        return x
+        return res
     }
 
     override fun inverse(): Permutation {
@@ -450,14 +447,14 @@ internal class RotateAll(size: Int, private val shift: Int) : AbstractPermutatio
 
 
     override fun invert(y: Int): Int {
-        var y = y
-        y -= shift
-        if (y < 0) {
-            y += size
-        } else if (y >= size) {
-            y -= size
+        var res = y
+        res -= shift
+        if (res < 0) {
+            res += size
+        } else if (res >= size) {
+            res -= size
         }
-        return y
+        return res
     }
 }
 

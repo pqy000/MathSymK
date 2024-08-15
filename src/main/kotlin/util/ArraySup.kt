@@ -4,6 +4,7 @@ import java.util.*
 import java.util.function.*
 import java.util.function.Function
 import kotlin.math.max
+import kotlin.math.min
 
 
 object ArraySup {
@@ -1007,6 +1008,21 @@ object ArraySup {
             index[i] = withIndex[i].second
         }
         return Pair(sorted, index)
+    }
+
+    /**
+     * Compare two arrays lexicographically.
+     */
+    fun compareLexi(arr1: IntArray, arr2: IntArray): Int {
+        val len = min(arr1.size, arr2.size)
+        for (i in 0 until len) {
+            if (arr1[i] < arr2[i]) {
+                return -1
+            } else if (arr1[i] > arr2[i]) {
+                return 1
+            }
+        }
+        return arr1.size.compareTo(arr2.size)
     }
 
 }

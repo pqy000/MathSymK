@@ -170,7 +170,7 @@ interface Tensor<T : Any> : MathObject<T, EqualPredicate<T>>, AlgebraModel<T, Te
      *     z[i,j] = x[i] * y[j]
      *
      *
-     * @see multiply
+     * @see times
      * @see inner
      * @see matmul
      * @see einsum
@@ -182,7 +182,7 @@ interface Tensor<T : Any> : MathObject<T, EqualPredicate<T>>, AlgebraModel<T, Te
     /**
      * Returns the inner product of this tensor and [y], which is the sum of the element-wise product of this and `y`.
      *
-     * @see multiply
+     * @see times
      * @see wedge
      * @see matmul
      * @see einsum
@@ -204,7 +204,7 @@ interface Tensor<T : Any> : MathObject<T, EqualPredicate<T>>, AlgebraModel<T, Te
      *
      *     z[i,j] = sum(k, x[i,k] * y[k,j])
      *
-     * @see multiply
+     * @see times
      * @see wedge
      * @see inner
      * @see einsum
@@ -406,7 +406,7 @@ interface Tensor<T : Any> : MathObject<T, EqualPredicate<T>>, AlgebraModel<T, Te
 
     /**
      * Re-orders the axes in this tensor according to the given `reorderedAxes`.
-     * The `i`-th axis in the resulting tensor corresponds to the `reorderedAxes[i]`-th axis in this tensor.
+     * The `i`-th axis in the resulting tensor corresponds to the `reorderedAxes[i ]`-th axis in this tensor.
      * For example, if we have a tensor of shape `(a,b,c)`, then `permute(1,2,0)` will result in a tensor of shape `(b,c,a)`.
      *
      * @param reorderedAxes its size should be equal to `this.dim`.

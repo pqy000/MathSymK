@@ -4,7 +4,6 @@
 package discrete
 
 import cn.mathsymk.model.struct.Composable
-import cn.mathsymk.model.struct.FiniteGroup
 import cn.mathsymk.number_theory.NTFunctions
 import cn.mathsymk.structure.Group
 import cn.mathsymk.util.IterUtils
@@ -22,10 +21,13 @@ import util.ArraySup
  *
  * A permutation can naturally [permute] an array (a list) of elements by moving `i`-th element to the `apply(i)`-th position.
  * Namely, if we have an array `arr`, and  `newArr = p.permute(arr)` where `p` is a permutation,
- * then `newArr[p.apply(i)] = arr[i]`.
+ * then `newArr[p.apply(i)] = arr[i ]`.
  * Mathematically, we have `(σf)(i) = f(σ⁻¹(i))` or `g(σ(i)) = f(i)` where `g = σf`.
  * This convention is consistent with composition: `(σ₁·σ₂)(f) = σ₁(σ₂(f))`,
  * which is proven by `(σ₁·σ₂)(f)(i) = f( (σ₁·σ₂)⁻¹(i) ) = f(σ₂⁻¹(σ₁⁻¹(i))) = σ₂(f(σ₁⁻¹(i))) = σ₂(σ₁(f))(i)`.
+ *
+ * Permutations are composable by the method [compose] and [andThen].
+ * `p1.compose(p2)` is equivalent to `p1.andThen(p2)`, which means first applying `p2` and then applying `p1`.
  *
  *
  * Alternatively, there is a cycle representation of a permutation. A cycle is a permutation that shifts some elements in this permutation by one.
@@ -34,7 +36,9 @@ import util.ArraySup
  *
  * @author liyicheng
  * 2018-03-01 19:26
- * @see Permutations
+ *
+ * @see Cycle
+ * @see Transposition
  */
 interface Permutation : BijectiveOperator<Int>, Composable<Permutation>, Comparable<Permutation> {
     /**
@@ -84,13 +88,13 @@ interface Permutation : BijectiveOperator<Int>, Composable<Permutation>, Compara
     /**
      * Returns the index of this permutation. The index is
      * a number ranged in `[0,size! - 1]`. It represents the index of this
-     * permutation in all the Permutation.of the identity size ordered by
+     * permutation in all the permutations of the identity size ordered by
      * the natural of their representative array. The identity permutation always
      * has the index of `0` and the total flip permutation always has the
      * index of `size! - 1`
      *
      * For example, the index of `(1,0,2)` is `2`, because all
-     * 3-Permutation.are sorted as
+     * 3-permutations are sorted as
      * `(0,1,2),(0,2,1),(1,0,2),(1,2,0),(2,0,1),(2,1,0)`.
      */
     fun index(): Long {
@@ -108,10 +112,10 @@ interface Permutation : BijectiveOperator<Int>, Composable<Permutation>, Compara
     }
 
     /**
-     * Reduces this permutation to several elementary Permutation. The last element in the
+     * Reduces this permutation to several elementary permutations  The last element in the
      * list is the first permutation that should be applied. Therefore, assume the elements
      * in the list in order are `p1,p2,p3...pn`, then `p1·p2·...·pn == this`, where
-     * `·` is the compose of Permutation.
+     * `·` is the compose of permutations 
      *
      *
      * For example, if `this=(4,0,3,1,2)`, then the returned list can
@@ -124,7 +128,7 @@ interface Permutation : BijectiveOperator<Int>, Composable<Permutation>, Compara
 
     /**
      * Returns the count of reverse in the array representing this permutation,
-     * which is the number of pairs `(i,j)` such that `i<j` and `arr[i]>arr[j]`.
+     * which is the number of pairs `(i,j)` such that `i<j` and `arr[i ] > arr[j ]`.
      *
      * @return
      */
@@ -132,34 +136,33 @@ interface Permutation : BijectiveOperator<Int>, Composable<Permutation>, Compara
         return CombUtils.reverseCount(getArray())
     }
 
+    /**
+     * Determines whether this permutation is an even permutation.
+     *
+     * @return
+     */
     val isEven: Boolean
-        /**
-         * Determines whether this permutation is an even permutation.
-         *
-         * @return
-         */
         get() = reverseCount() % 2 == 0
 
     /**
-     * Decompose this permutation to several non-intersecting rotation Permutation. The order is not
-     * strictly restricted because the rotation Permutation.are commutative. The list may omit
-     * rotations of length 1. Therefore, an empty list means this permutation is an identity.
+     * Decomposes this permutation to several non-intersecting and thus commutative cycles.
+     * The list may omit rotations of length 1, so an empty list may be returned, meaning that this permutation is the identity.
      *
+     * For example, if `this.getArray()=(1,0,3,2,4)`, then the returned list will be `[(0,1),(2,3)]`.
      *
-     * For example, if `this=(2,0,4,3,1,7,6,5)`, then the returned list can
-     * be equal to `(1,3,5,2)(6,8)`, and
+     * We have `this = cycle[0] · cycle[1] · ... · cycle[n-1]`, namely, `this == Permutation.composeAll(decompose(),this.size)`.
      *
-     * @return
+     * @return a list of cycles
      *
      * @see Cycle
      */
     fun decompose(): List<Cycle>
 
     /**
-     * Returns the rank of this permutation.
-     * `this^rank=identity`
+     * Returns the rank of this permutation, which is defined as the smallest positive integer `r` such that
+     * `this^r = identity`, where `this^r` means applying this permutation `r` times.
      *
-     * @return
+     * Mathematically, the rank of a permutation is the least common multiple of the lengths of the cycles in its cycle decomposition.
      */
     fun rank(): Int {
         val list = decompose()
@@ -170,18 +173,27 @@ interface Permutation : BijectiveOperator<Int>, Composable<Permutation>, Compara
         return rank
     }
 
+    /**
+     * Returns `this · before`, which means first applying the `before` and then applying `this`.
+     *
+     * More specifically, `this.compose(before).apply(i) = this.apply(before.apply(i))`.
+     */
     override fun compose(before: Permutation): Permutation
 
     /**
-     * Returns a composed permutation that first applies this permutation to
-     * its input, and then applies the `after` permutation to the result.
+     * Returns `after · this`, which means first applying the `this` and then applying `after`.
+     *
+     * We have `this.andThen(after) = after.compose(this)`.
+     *
+     * @see compose
      */
     override fun andThen(after: Permutation): Permutation
 
     /**
      * Gets a copy of array representing this permutation mapping:
-     * Let `arr = getArray()`, then `arr[i] = apply(i)`.
+     * Let `arr = getArray()`, then `arr[i ] = apply(i)`.
      *
+     * @return a new array representing this permutation
      */
     fun getArray(): IntArray {
         return IntArray(size) { apply(it) }
@@ -189,9 +201,10 @@ interface Permutation : BijectiveOperator<Int>, Composable<Permutation>, Compara
 
     /**
      * Permutes the array by this permutation in place.
-     * Let `arr2 = permute(arr)`, then `arr2[apply(i)] = arr[i]`.
+     * Let `arr2 = permute(arr)`, then `arr2[apply(i)] = arr[i ]`.
      *
-     * @param array the array to permute, which will be modified.
+     * @param array the array to permute
+     * @param inPlace whether to permute the array in place
      */
     @Suppress("DuplicatedCode") // for non-generic types
     fun <T> permute(array: Array<T>, inPlace: Boolean = false): Array<T> {
@@ -206,10 +219,10 @@ interface Permutation : BijectiveOperator<Int>, Composable<Permutation>, Compara
 
     /**
      * Permutes the array by this permutation in place.
-     * Let `arr2 = permute(arr)`, then `arr2[apply(i)] = arr[i]`.
+     * Let `arr2 = permute(arr)`, then `arr2[apply(i)] = arr[i ]`.
      *
-     * @param array the array to permute, which will be modified.
-     * @see Permutation.permute
+     * @param array the array to permute
+     * @param inPlace whether to permute the array in place
      */
     @Suppress("DuplicatedCode") // for non-generic types
     fun permute(array: IntArray, inPlace: Boolean = false): IntArray {
@@ -234,7 +247,9 @@ interface Permutation : BijectiveOperator<Int>, Composable<Permutation>, Compara
         return newList
     }
 
-
+    /**
+     * Determines whether this permutation is the identity permutation.
+     */
     val isIdentity: Boolean
         get() {
             for (i in 0 until size) {
@@ -245,12 +260,22 @@ interface Permutation : BijectiveOperator<Int>, Composable<Permutation>, Compara
             return true
         }
 
+    /**
+     * Compares this permutation with another permutation in first the size and then in the lexicographical order.
+     */
     override fun compareTo(other: Permutation): Int {
         val comp = size - other.size
         if (comp != 0) {
             return comp
         }
-        return java.lang.Long.signum(index() - other.index())
+        for (i in 0 until size) {
+            val c = apply(i) - other.apply(i)
+            if (c != 0) {
+                return c
+            }
+        }
+        return 0
+//        return ArraySup.compareLexi(getArray(), other.getArray())
     }
 
     companion object{
@@ -265,7 +290,9 @@ interface Permutation : BijectiveOperator<Int>, Composable<Permutation>, Compara
         }
 
         /**
-         * Gets a permutation of the specific array as the method [Permutation.getArray] in Permutation.
+         * Returns a permutation represented by the given array, namely a permutation `p` such that `p.getArray() = array`.
+         *
+         * It is required that the array contains distinct elements in `[0, array.size-1]`.
          */
         @JvmStatic
         fun valueOf(vararg array: Int): Permutation {
@@ -334,7 +361,7 @@ interface Permutation : BijectiveOperator<Int>, Composable<Permutation>, Compara
          * `i -> (i+shift)%n`.
          *
          *
-         * For example, `rotateAll(5,2).permute([0,1,2,3,4]) = [3,4,0,1,2]`.
+         * For example, `rotate(5,2).permute([a,b,c,d,e]) = [d,e,a,b,c]`.
          *
          *
          * @param n the size of the permutation
@@ -351,7 +378,9 @@ interface Permutation : BijectiveOperator<Int>, Composable<Permutation>, Compara
         }
 
         /**
-         * A left-version of [.rotateAll]
+         * A left-version of [Permutation.rotate].
+         *
+         * This method is equivalent to `rotate(n,-shift)`.
          */
         fun rotateLeft(n: Int, shift: Int): Permutation {
             return rotate(n, -shift)
@@ -360,8 +389,12 @@ interface Permutation : BijectiveOperator<Int>, Composable<Permutation>, Compara
 
         /**
          * Returns a new permutation that cycles each one in the given [elements] to the next one.
-         * For example, `cycle(1,2,0) = (0,1,2)`.
+         * `cycle(a,b,c)` maps `a -> b`, `b -> c`, `c -> a`.
+         * The size of the permutation is determined by the maximum element in the array.
          *
+         * In terms of the array, we have `cycle(1,2,0) = (0,1,2)` and `cycle(1,3,5).getArray() = (0,3,2,5,4,1)`.
+         *
+         * @see cycleSized
          * @see Cycle
          */
         fun cycle(vararg elements: Int): Cycle {
@@ -371,8 +404,11 @@ interface Permutation : BijectiveOperator<Int>, Composable<Permutation>, Compara
 
         /**
          * Returns a new permutation that cycles each one in the given [elements] to the next one.
+         * `cycle(a,b,c)` maps `a -> b`, `b -> c`, `c -> a`.
          *
-         * @param size the size of the resulting permutation
+         * In terms of the array, we have `cycle(1,2,0) = (0,1,2)` and `cycle(1,3,5).getArray() = (0,3,2,5,4,1)`.
+         *
+         * @see Cycle
          */
         fun cycleSized(size: Int, vararg elements: Int): Cycle {
             checkDistinct(elements, size)
@@ -400,10 +436,9 @@ interface Permutation : BijectiveOperator<Int>, Composable<Permutation>, Compara
         }
 
         /**
-         * Parse the Permutation from the given non-negative index and the given size.
+         * Returns a permutation that is the [index]-th permutation in the [size]-sized permutations in the lexicographical order.
          *
          * @param index the index of the permutation in [size]-sized permutations
-         * @return
          */
         fun fromIndex(index: Long, size: Int): Permutation {
             var index = index
@@ -431,11 +466,10 @@ interface Permutation : BijectiveOperator<Int>, Composable<Permutation>, Compara
         }
 
         /**
-         * Determines whether the two permutation is equal.
+         * Determines whether the two permutation are equal.
          *
          * @param p1 a permutation
          * @param p2 another permutation
-         * @return {@true} if they are equal
          */
         @JvmStatic
         fun isEqual(p1: Permutation, p2: Permutation): Boolean {
@@ -453,8 +487,8 @@ interface Permutation : BijectiveOperator<Int>, Composable<Permutation>, Compara
 
 
         /**
-         * Returns a list of Permutation.that contains all the `n`-size Permutation.
-         * The Permutation.are ordered by the [Permutation.index] of the permutation.
+         * Returns a list of all the `n`-size permutations 
+         * The permutations are ordered by the [Permutation.index] of the permutation.
          *
          * This method only supports `n` smaller than 13.
          *
@@ -468,30 +502,34 @@ interface Permutation : BijectiveOperator<Int>, Composable<Permutation>, Compara
             return list
         }
 
+        /**
+         * Returns an iterable of all the `n`-size permutations.
+         */
         fun universeIterable(n: Int): Iterable<Permutation> {
             require(n > 0) { "Invalid n=$n" }
             return IterUtils.perm(n, n, false).map { parr: IntArray -> ArrPermutation(parr) }
         }
 
-
-        fun even(n: Int): FiniteGroup<Permutation> {
+        /**
+         * Returns a list of all the even permutations of the given size.
+         * An even permutation is a permutation that can be represented as the composition of an even number of transpositions.
+         */
+        fun even(n: Int): List<Permutation> {
             require(!(n <= 0 || n > 12)) { "Invalid n=$n" }
-            val list = arrayOfNulls<Permutation>(CombUtils.factorial(n).toInt() / 2)
+            val list = ArrayList<Permutation>(CombUtils.factorial(n).toInt() / 2)
             var i = 0
             IterUtils.permRev(n, false).forEach { (arr, revCount) ->
                 if (revCount % 2 == 0) {
                     list[i++] = ArrPermutation(arr.clone())
                 }
             }
-
-            TODO()
-//        return MathSets.asSet(getCalculator(n), list)
+            return list
         }
 
         /**
-         * Composes all the Permutation.in the list: `list[0] · list[1] · ... · list[n-1]`.
+         * Composes all the permutations in the list: `list[0] · list[1] · ... · list[n-1]`.
          *
-         * @param list a list of Permutation. not empty
+         * @param list a list of permutations  not empty
          * @return the result as a permutation
          */
         fun composeAll(list: List<Permutation>): Permutation {
@@ -501,7 +539,7 @@ interface Permutation : BijectiveOperator<Int>, Composable<Permutation>, Compara
         }
 
         /**
-         * Composes all the Permutation.in the list: `list[0] · list[1] · ... · list[n-1]`.
+         * Composes all the permutations in the list: `list[0] · list[1] · ... · list[n-1]`.
          * If the list is empty, returns the identity permutation.
          *
          * @param list a list of permutations
