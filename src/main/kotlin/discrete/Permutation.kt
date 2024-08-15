@@ -4,7 +4,10 @@
 package discrete
 
 import cn.mathsymk.model.struct.Composable
+import cn.mathsymk.model.struct.FiniteGroup
 import cn.mathsymk.number_theory.NTFunctions
+import cn.mathsymk.structure.Group
+import cn.mathsymk.util.IterUtils
 import function.BijectiveOperator
 import util.ArraySup
 
@@ -81,13 +84,13 @@ interface Permutation : BijectiveOperator<Int>, Composable<Permutation>, Compara
     /**
      * Returns the index of this permutation. The index is
      * a number ranged in `[0,size! - 1]`. It represents the index of this
-     * permutation in all the permutations of the identity size ordered by
+     * permutation in all the Permutation.of the identity size ordered by
      * the natural of their representative array. The identity permutation always
      * has the index of `0` and the total flip permutation always has the
      * index of `size! - 1`
      *
      * For example, the index of `(1,0,2)` is `2`, because all
-     * 3-permutations are sorted as
+     * 3-Permutation.are sorted as
      * `(0,1,2),(0,2,1),(1,0,2),(1,2,0),(2,0,1),(2,1,0)`.
      */
     fun index(): Long {
@@ -105,10 +108,10 @@ interface Permutation : BijectiveOperator<Int>, Composable<Permutation>, Compara
     }
 
     /**
-     * Reduces this permutation to several elementary permutations. The last element in the
+     * Reduces this permutation to several elementary Permutation. The last element in the
      * list is the first permutation that should be applied. Therefore, assume the elements
      * in the list in order are `p1,p2,p3...pn`, then `p1·p2·...·pn == this`, where
-     * `·` is the compose of permutations.
+     * `·` is the compose of Permutation.
      *
      *
      * For example, if `this=(4,0,3,1,2)`, then the returned list can
@@ -138,8 +141,8 @@ interface Permutation : BijectiveOperator<Int>, Composable<Permutation>, Compara
         get() = reverseCount() % 2 == 0
 
     /**
-     * Decompose this permutation to several non-intersecting rotation permutations. The order is not
-     * strictly restricted because the rotation permutations are commutative. The list may omit
+     * Decompose this permutation to several non-intersecting rotation Permutation. The order is not
+     * strictly restricted because the rotation Permutation.are commutative. The list may omit
      * rotations of length 1. Therefore, an empty list means this permutation is an identity.
      *
      *
@@ -249,187 +252,310 @@ interface Permutation : BijectiveOperator<Int>, Composable<Permutation>, Compara
         }
         return java.lang.Long.signum(index() - other.index())
     }
-}
 
-/**
- * A cycle permutation is a permutation that shifts some elements in this permutation by one.
- * <P>For example, a rotation permutation whose element array is (0,2,4,1) should
- * have a permutation array of (2,0,4,3,1,5,6,7), which means the permutation map 0 to 2,
- * 2 to 4,4 to 1 and 1 to 0.
- *
- * @author liyicheng
- * 2018-03-03 15:44
-</P> */
-interface Cycle : Permutation {
-    /**
-     * Gets an array that contains all the elements in the Cycle's order.
-     * The permutation satisfies that `apply(elements[i])=elements[(i+1)%length]`.
-     *
-     * @return
-     */
-    val elements: IntArray
+    companion object{
 
-    val cycleLength: Int
-        get() = elements.size
-
-    /**
-     * Determines whether the element should be rotated.
-     *
-     * @param x
-     * @return
-     */
-    fun containsInCycle(x: Int): Boolean
-
-
-    override fun rank(): Int {
-        return cycleLength
-    }
-
-
-    override fun decompose(): List<Cycle> {
-        return listOf(this)
-    }
-
-
-    override fun apply(x: Int): Int {
-        if (cycleLength <= 1 || !containsInCycle(x)) {
-            return x
-        }
-        val earr = elements
-        var index: Int = ArraySup.firstIndexOf(x, earr)
-        index--
-        if (index < 0) {
-            index += earr.size
-        }
-        return earr[index]
-    }
-
-
-    @Suppress("DuplicatedCode") // for non-generic types
-    override fun permute(array: IntArray, inPlace: Boolean): IntArray {
-        val result = if (inPlace) array else array.clone()
-        if (cycleLength <= 1) {
-            return result
-        }
-        val cycle = elements
-        // place elements[i] to elements[i+1]
-        val t = result[cycle.last()]
-        for (i in 0 until cycle.size - 1) {
-            result[cycle[i + 1]] = result[cycle[i]]
-        }
-        result[cycle[0]] = t
-        return result
-    }
-
-    @Suppress("DuplicatedCode") // for non-generic types
-    override fun <T> permute(array: Array<T>, inPlace: Boolean): Array<T> {
-        val result = if (inPlace) array else array.clone()
-        if (cycleLength <= 1) {
-            return result
-        }
-        val cycle = elements
-        // place elements[i] to elements[i+1]
-        val t = result[cycle.last()]
-        for (i in 0 until cycle.size - 1) {
-            result[cycle[i + 1]] = result[cycle[i]]
-        }
-        result[cycle[0]] = t
-        return result
-    }
-}
-
-/**
- * A transposition permutation is a permutation that only swap two elements.
- * By convenience, it is not strictly required that the two elements are not equal.
- *
- * @author liyicheng
- * 2018-03-02 20:47
- */
-interface Transposition : Cycle {
-    /**
-     * Gets the index of the first element of the swapping, which has
-     * a smaller index.
-     *
-     * @return
-     */
-    val first: Int
-
-    /**
-     * Gets the index of the second element of the swapping, which has
-     * a bigger index.
-     *
-     * @return
-     */
-    val second: Int
-
-    override val cycleLength: Int
-        get() = if (first == second) 1 else 2
-
-    override val elements: IntArray
-        get() {
-            val a = first
-            val b = second
-            if (a == b) {
-                return intArrayOf(a)
+        fun checkDistinct(array: IntArray, ubound: Int) {
+            val marks = BooleanArray(ubound)
+            for (j in array) {
+                require(!(j < 0 || j >= ubound)) { "Invalid index=$j" }
+                require(!marks[j]) { "Duplicated index=$j" }
+                marks[j] = true
             }
-            return intArrayOf(a, b)
         }
 
-    /*
-     */
-    override fun containsInCycle(x: Int): Boolean {
-        return x == first || x == second
-    }
-
-
-    override fun apply(x: Int): Int {
-        val f = first
-        val s = second
-        if (x == f) {
-            return s
+        /**
+         * Gets a permutation of the specific array as the method [Permutation.getArray] in Permutation.
+         */
+        @JvmStatic
+        fun valueOf(vararg array: Int): Permutation {
+            require(array.isNotEmpty()) { "Empty array" }
+            checkDistinct(array, array.size)
+            return ArrPermutation(array)
         }
-        if (x == s) {
-            return f
+
+        /**
+         * Returns a permutation `p` such that `p.permute(0 .. size-1) = permuted`.
+         * It is required that `permuted` is a permutation of `0 .. size-1`.
+         */
+        fun fromPermuted(vararg permuted: Int): Permutation {
+            require(permuted.isNotEmpty()) { "Empty array" }
+            checkDistinct(permuted, permuted.size)
+            val arr = IntArray(permuted.size)
+            for (i in permuted.indices) {
+                arr[permuted[i]] = i
+            }
+            return ArrPermutation(arr)
         }
-        return x
-    }
+
+//    fun fromPermuted(origin: )
+
+        /**
+         * Returns the permutation of swapping the `i`-th element and the `j`-th element.
+         *
+         * @param size the size of the permutation
+         */
+        fun swap(size: Int, i: Int, j: Int): Transposition {
+            require(size > 0) { "Invalid size=$size" }
+            require(!(i < 0 || j < 0 || i >= size || j >= size)) { "Invalid index i=$i,j=$j" }
+            return TranspositionImpl(size, i, j)
+        }
+
+        fun identity(size: Int): Permutation {
+            require(size >= 0) { "Invalid size=$size" }
+            return IdentityPerm(size)
+        }
+
+        /**
+         * Returns a new permutation that reverse the order of the array, which can be
+         * written as `(n-1,n-2,...2,1,0)`
+         *
+         */
+        fun flipAll(n: Int): Permutation {
+            require(n > 0)
+            return object : AbstractPermutation(n) {
+                override fun inverse(): Permutation {
+                    return this
+                }
+
+                override fun invert(y: Int): Int {
+                    return size - y - 1
+                }
+
+                override fun apply(x: Int): Int {
+                    return size - x - 1
+                }
+
+            }
+        }
+
+        /**
+         * Returns a new permutation that shifts all the elements to the right by [shift] circularly:
+         * `i -> (i+shift)%n`.
+         *
+         *
+         * For example, `rotateAll(5,2).permute([0,1,2,3,4]) = [3,4,0,1,2]`.
+         *
+         *
+         * @param n the size of the permutation
+         * @param shift the shift number, can be negative
+         */
+        fun rotate(n: Int, shift: Int): Permutation {
+            require(n > 0) { "Invalid size=$n" }
+            var s = shift
+            s %= n
+            if (s == 0) {
+                return IdentityPerm(n)
+            }
+            return RotateAll(n, s)
+        }
+
+        /**
+         * A left-version of [.rotateAll]
+         */
+        fun rotateLeft(n: Int, shift: Int): Permutation {
+            return rotate(n, -shift)
+        }
 
 
-    override fun invert(y: Int): Int {
-        //symmetry
-        return apply(y)
-    }
+        /**
+         * Returns a new permutation that cycles each one in the given [elements] to the next one.
+         * For example, `cycle(1,2,0) = (0,1,2)`.
+         *
+         * @see Cycle
+         */
+        fun cycle(vararg elements: Int): Cycle {
+            val size = elements.max() + 1
+            return cycleSized(size, *elements)
+        }
+
+        /**
+         * Returns a new permutation that cycles each one in the given [elements] to the next one.
+         *
+         * @param size the size of the resulting permutation
+         */
+        fun cycleSized(size: Int, vararg elements: Int): Cycle {
+            checkDistinct(elements, size)
+            if (elements.isEmpty()) {
+                return IdentityPerm(0)
+            }
+            return CycleImpl(size, elements)
+        }
+
+        /**
+         * Returns the flip permutation. For example,
+         * `flipRange(5,2,5) = (0,1,4,3,2)`
+         *
+         * @param size
+         * @param i    inclusive
+         * @param j    exclusive
+         * @return
+         */
+        fun flipRange(size: Int, i: Int, j: Int): Permutation {
+            require(size > 0) { "Invalid size=$size" }
+            require(!(i < 0 || j < 0 || i >= size || j >= size)) { "Invalid index i=$i,j=$j" }
+            val arr = ArraySup.indexArray(size)
+            ArraySup.flip(arr, i, j)
+            return ArrPermutation(arr)
+        }
+
+        /**
+         * Parse the Permutation from the given non-negative index and the given size.
+         *
+         * @param index the index of the permutation in [size]-sized permutations
+         * @return
+         */
+        fun fromIndex(index: Long, size: Int): Permutation {
+            var index = index
+            require(index >= 0) { "Negative index=$index" }
+            require(index < CombUtils.factorial(size)) { "Invalid index=$index for size=$size" }
+            val arr = IntArray(size)
+            for (i in 0 until size) {
+                val f = CombUtils.factorial(size - i - 1)
+                var t = 0
+                while (index >= f) {
+                    index -= f
+                    t++
+                }
+                arr[i] = t
+            }
+            for (i in size - 2 downTo 0) {
+                val t = arr[i]
+                for (j in i + 1 until size) {
+                    if (arr[j] >= t) {
+                        arr[j]++
+                    }
+                }
+            }
+            return ArrPermutation(arr)
+        }
+
+        /**
+         * Determines whether the two permutation is equal.
+         *
+         * @param p1 a permutation
+         * @param p2 another permutation
+         * @return {@true} if they are equal
+         */
+        @JvmStatic
+        fun isEqual(p1: Permutation, p2: Permutation): Boolean {
+            if (p1.size != p2.size) {
+                return false
+            }
+            val size = p1.size
+            for (i in 0 until size) {
+                if (p1.apply(i) != p2.apply(i)) {
+                    return false
+                }
+            }
+            return true
+        }
 
 
-    override fun inverse(): Transposition {
-        return this
-    }
+        /**
+         * Returns a list of Permutation.that contains all the `n`-size Permutation.
+         * The Permutation.are ordered by the [Permutation.index] of the permutation.
+         *
+         * This method only supports `n` smaller than 13.
+         *
+         * @param n
+         * @return
+         */
+        fun universe(n: Int): List<Permutation> {
+            require(!(n <= 0 || n > 12)) { "Invalid n=$n" }
+            val list = ArrayList<Permutation>(CombUtils.factorial(n).toInt())
+            IterUtils.perm(n, n, true).forEach { parr: IntArray -> list.add(ArrPermutation(parr)) }
+            return list
+        }
+
+        fun universeIterable(n: Int): Iterable<Permutation> {
+            require(n > 0) { "Invalid n=$n" }
+            return IterUtils.perm(n, n, false).map { parr: IntArray -> ArrPermutation(parr) }
+        }
 
 
-    override fun decomposeTransposition(): List<Transposition> {
-        return listOf(this)
-    }
+        fun even(n: Int): FiniteGroup<Permutation> {
+            require(!(n <= 0 || n > 12)) { "Invalid n=$n" }
+            val list = arrayOfNulls<Permutation>(CombUtils.factorial(n).toInt() / 2)
+            var i = 0
+            IterUtils.permRev(n, false).forEach { (arr, revCount) ->
+                if (revCount % 2 == 0) {
+                    list[i++] = ArrPermutation(arr.clone())
+                }
+            }
+
+            TODO()
+//        return MathSets.asSet(getCalculator(n), list)
+        }
+
+        /**
+         * Composes all the Permutation.in the list: `list[0] · list[1] · ... · list[n-1]`.
+         *
+         * @param list a list of Permutation. not empty
+         * @return the result as a permutation
+         */
+        fun composeAll(list: List<Permutation>): Permutation {
+            require(list.isNotEmpty()) { "Empty list" }
+            val size = list[0].size
+            return composeAll(list, size)
+        }
+
+        /**
+         * Composes all the Permutation.in the list: `list[0] · list[1] · ... · list[n-1]`.
+         * If the list is empty, returns the identity permutation.
+         *
+         * @param list a list of permutations
+         * @param size the size of the permutations
+         * @return the result as a permutation
+         */
+        fun composeAll(list: List<Permutation>, size: Int): Permutation {
+            if (list.isEmpty()) {
+                return identity(size)
+            }
+            val arr = ArraySup.indexArray(size)
+            for (p in list.reversed()) {
+                p.applyAll(arr, inPlace = true)
+            }
+            return valueOf(*arr)
+        }
 
 
-    override fun decompose(): List<Cycle> {
-        return listOf<Cycle>(this)
-    }
+        /**
+         *
+         */
+        fun getCalculator(size: Int): Group<Permutation> {
+            return PermutationCalculator(size)
+        }
 
-    override fun permute(array: IntArray, inPlace: Boolean): IntArray {
-        val result = if (inPlace) array else array.clone()
-        ArraySup.swap(result, first, second)
-        return result
-    }
+        @JvmRecord
+        private data class PermutationCalculator(
+            val size: Int,
+            override val identity: Permutation = identity(size),
+            override val numberClass: Class<Permutation> = Permutation::class.java
+        ) : Group<Permutation> {
+            override fun isEqual(x: Permutation, y: Permutation): Boolean {
+                return Permutation.isEqual(x, y)
+            }
 
-    override fun <T> permute(array: Array<T>, inPlace: Boolean): Array<T> {
-        val result = if (inPlace) array else array.clone()
-        ArraySup.swap(result, first, second)
-        return result
-    }
+            override fun inverse(element: Permutation): Permutation {
+                return element.inverse()
+            }
+
+            override fun contains(element: Permutation): Boolean {
+                return element.size == size
+            }
+
+            override val isCommutative: Boolean
+                get() = false
+
+            override fun apply(x: Permutation, y: Permutation): Permutation {
+                return x.compose(y)
+            }
 
 
-    override fun getArray(): IntArray {
-        val arr: IntArray = ArraySup.indexArray(size)
-        return permute(arr)
+            init {
+                require(size > 0) { "size < 0" }
+            }
+        }
     }
 }

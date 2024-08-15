@@ -11,7 +11,6 @@ import cn.mathsymk.model.struct.Index
 import cn.mathsymk.structure.*
 import cn.mathsymk.util.IterUtils
 import discrete.Permutation
-import discrete.Permutations
 import util.MathUtils
 import java.util.*
 import java.util.function.Function
@@ -413,7 +412,7 @@ interface Tensor<T : Any> : MathObject<T, EqualPredicate<T>>, AlgebraModel<T, Te
      * @param reorderedAxes its size should be equal to `this.dim`.
      */
     fun permute(vararg reorderedAxes: Int): Tensor<T> {
-        return permute(Permutations.fromPermuted(*reorderedAxes))
+        return permute(Permutation.fromPermuted(*reorderedAxes))
     }
 
     /**
@@ -422,7 +421,7 @@ interface Tensor<T : Any> : MathObject<T, EqualPredicate<T>>, AlgebraModel<T, Te
      */
     fun transpose(axis1: Int = -1, axis2: Int = -2): Tensor<T> {
         return permute(
-            Permutations.swap(dim,
+            Permutation.swap(dim,
                 TensorImpl.addIfNegative(axis1, dim),
                 TensorImpl.addIfNegative(axis2, dim)))
     }
@@ -924,11 +923,11 @@ interface MutableTensor<T:Any> : Tensor<T> {
     }
 
     override fun permute(vararg reorderedAxes: Int): MutableTensor<T> {
-        return permute(Permutations.fromPermuted(*reorderedAxes))
+        return permute(Permutation.fromPermuted(*reorderedAxes))
     }
 
     override fun transpose(axis1: Int, axis2: Int): MutableTensor<T> {
-        return permute(Permutations.swap(dim,
+        return permute(Permutation.swap(dim,
                 TensorImpl.addIfNegative(axis1, dim),
                 TensorImpl.addIfNegative(axis2, dim)))
     }
