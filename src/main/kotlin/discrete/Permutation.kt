@@ -41,6 +41,10 @@ import util.ArraySup
  * @see Transposition
  */
 interface Permutation : BijectiveOperator<Int>, Composable<Permutation>, Comparable<Permutation> {
+    /*
+    Newly modified from 2024/08/12
+     */
+
     /**
      * Returns the size of this permutation, which is equal to the
      * size of the finite set.
@@ -441,15 +445,15 @@ interface Permutation : BijectiveOperator<Int>, Composable<Permutation>, Compara
          * @param index the index of the permutation in [size]-sized permutations
          */
         fun fromIndex(index: Long, size: Int): Permutation {
-            var index = index
             require(index >= 0) { "Negative index=$index" }
             require(index < CombUtils.factorial(size)) { "Invalid index=$index for size=$size" }
+            var idx = index
             val arr = IntArray(size)
             for (i in 0 until size) {
                 val f = CombUtils.factorial(size - i - 1)
                 var t = 0
-                while (index >= f) {
-                    index -= f
+                while (idx >= f) {
+                    idx -= f
                     t++
                 }
                 arr[i] = t
@@ -493,7 +497,6 @@ interface Permutation : BijectiveOperator<Int>, Composable<Permutation>, Compara
          * This method only supports `n` smaller than 13.
          *
          * @param n
-         * @return
          */
         fun universe(n: Int): List<Permutation> {
             require(!(n <= 0 || n > 12)) { "Invalid n=$n" }

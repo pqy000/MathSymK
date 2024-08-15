@@ -24,13 +24,7 @@ import kotlin.math.*
  * @author lyc
  */
 @JvmRecord
-data class Fraction
-/**
- * A constructor without checking num and den.
- * @param nume the numerator
- * @param deno the denominator
- */
-internal constructor(
+data class Fraction internal constructor(
     /**
      * Gets the numerator of this Fraction, the numerator may be positive, zero or negative.
      * @return numerator
@@ -446,7 +440,7 @@ internal constructor(
     }
 
 
-    fun divideAndRemainder(divisor: Fraction): Pair<Fraction,Fraction> {
+    fun divideAndRemainder(divisor: Fraction): Pair<Fraction, Fraction> {
         val result0 = this.divideToIntegralValue(divisor)
         val result1 = this.minus(result0 * divisor)
         return result0 to result1
@@ -514,8 +508,6 @@ internal constructor(
     override fun compareTo(other: Fraction): Int {
         return (this - other).signum
     }
-
-
 
 
     companion object {
@@ -741,9 +733,9 @@ internal constructor(
         }
 
         /**
-         * Computes the result of the continuous fraction stored in the array and
-         * returns an array of the numerator and denominator.
-         * @param index the highest element in the array to compute from
+         * Computes the result of the continuous fraction stored in the array.
+         *
+         * @param array the highest element in the array to compute from
          */
         @JvmStatic
         fun computeContinuousFractionAll(array: LongArray, length: Int = array.size): List<Fraction> {
@@ -880,7 +872,7 @@ internal constructor(
     /**
      * A calculator for the class Fraction.
      */
-    object FractionAsQuotient : Quotients<Fraction>{
+    object FractionAsQuotient : Quotients<Fraction> {
         override fun isEqual(x: Fraction, y: Fraction): Boolean {
             return x == y
         }
@@ -903,7 +895,7 @@ internal constructor(
         }
 
         override fun subtract(x: Fraction, y: Fraction): Fraction {
-            return x-y
+            return x - y
         }
 
         override fun multiply(x: Fraction, y: Fraction): Fraction {

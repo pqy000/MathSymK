@@ -17,8 +17,12 @@ import kotlin.math.abs
  *
  * @author liyicheng
  * 2018-02-27 17:09
+ *
  */
 interface Semigroup<T : Any> : EqualPredicate<T>, BiMathOperator<T> {
+    /*
+    Re-designed by lyc on 2024/8/11
+     */
 
     /**
      * Determines whether this semigroup contains the specified element.
@@ -61,6 +65,10 @@ interface Monoid<T : Any> : Semigroup<T> {
  * @author LI Yicheng,  2018-02-27 17:32
  */
 interface Group<T : Any> : Monoid<T> {
+    /*
+    Re-designed by lyc on 2024/8/11
+     */
+
 
     /**
      * Gets the inverse of the element.
@@ -91,6 +99,7 @@ interface Group<T : Any> : Monoid<T> {
  */
 interface AddSemigroup<T : Any> : EqualPredicate<T> {
     //Created by lyc at 2021-05-03 22:09
+    //Updated by lyc at 2024-08-11
 
     operator fun contains(x: T): Boolean
 
@@ -152,6 +161,7 @@ interface AddSemigroup<T : Any> : EqualPredicate<T> {
  * @author liyicheng 2021-05-07 18:44
  */
 interface AddMonoid<T : Any> : AddSemigroup<T> {
+    //Updated by lyc at 2024-08-11
 
     /**
      * The zero element, which we often denote as `0`.
@@ -230,6 +240,7 @@ interface AddMonoid<T : Any> : AddSemigroup<T> {
  * @author liyicheng 2021-05-07 18:45
  */
 interface AddGroup<T : Any> : AddMonoid<T> {
+    //Updated by lyc at 2024-08-11
 
     /**
      * Returns `-x`, the inverse with respect to addition of [x].
@@ -296,6 +307,7 @@ interface AddGroup<T : Any> : AddMonoid<T> {
  * @see Semigroup
  */
 interface MulSemigroup<T> : EqualPredicate<T> {
+    //Updated by lyc at 2024-08-11
 
 
     operator fun contains(x: T): Boolean
@@ -342,6 +354,7 @@ interface MulMonoid<T> : MulSemigroup<T> {
     /*
      * Created by liyicheng at 2020-03-06 22:14
      */
+    //Updated by lyc at 2024-08-11
 
 
     /**
@@ -416,6 +429,8 @@ interface MulMonoid<T> : MulSemigroup<T> {
  * @see Group
  */
 interface MulGroup<T> : MulMonoid<T> {
+    //Updated by lyc at 2024-08-11
+
     /**
      * Returns `x^-1`, the multiplicative inverse of the element [x].
      *
