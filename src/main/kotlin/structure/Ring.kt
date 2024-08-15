@@ -25,11 +25,17 @@ interface UnitRing<T : Any> : Ring<T>, MulMonoid<T> {
         return multiplyLong(one, n)
     }
 
+    /**
+     *
+     */
     fun exactDivide(a: T, b: T): T {
         throw UnsupportedOperationException()
     }
 }
 
+/**
+ * A division ring is a ring in which every non-zero element has a multiplicative inverse.
+ */
 interface DivisionRing<T : Any> : UnitRing<T>, MulGroup<T> {
     override fun isUnit(x: T): Boolean {
         return !isZero(x)

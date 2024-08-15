@@ -1,19 +1,24 @@
 package cn.mathsymk.structure
 
 import cn.mathsymj.math.exceptions.ExceptionUtil
+import cn.mathsymk.model.struct.EuclidRingNumberModel
 import java.math.BigInteger
 
 
 /**
- * A calculator for unique factorization domain(UFD). It supports computing the greatest common divisor of
+ * A calculator for unique factorization domain (UFD). It supports computing the greatest common divisor of
  * two elements.
  *
  * **Implementation Notes:** Subclasses should always implement the method [UnitRing.isUnit].
  *
  *
  */
-interface UFDCalculator<T : Any> : UnitRing<T> {
+interface UniqueFactorizationDomain<T : Any> : UnitRing<T> {
 
+    /**
+     * Determines whether the given element is a unit, namely invertible with respect to multiplication.
+     */
+    override fun isUnit(x: T): Boolean
 
     /**
      * Returns the greatest common divisor of [a] and [b].
@@ -50,7 +55,7 @@ interface UFDCalculator<T : Any> : UnitRing<T> {
     }
 
     /**
-     * Returns the result of exact division `a/b`, throws an `UnsupportedOperationException` if it is not exact division.
+     * Returns the result of exact division `a/b`, throws an `ArithmeticException` if it is not exact division.
      */
     override fun exactDivide(a: T, b: T): T
 
@@ -64,15 +69,15 @@ interface UFDCalculator<T : Any> : UnitRing<T> {
  * Created by liyicheng at 2020-03-09 19:32
  */
 /**
- * Describes a calculator for an Euclidean domain. The fundamental operation of this type of calculator is
+ * Describes a calculator for a Euclidean domain. The fundamental operation of this type of calculator is
  * [divideAndRemainder].
  *
  *
- * For example, calculators for integers and calculators for polynomials on a field are both `EUDCalculator`,
+ * For example, integers and polynomials on a field are both `EuclideanDomain`,
  *
  * See [EuclideanDomain](https://mathworld.wolfram.com/EuclideanDomain.html) for more information.
  */
-interface EUDCalculator<T : Any> : UFDCalculator<T> {
+interface EuclideanDomain<T : Any> : UniqueFactorizationDomain<T> {
 
     /**
      * Returns a pair of `(q, r)` such that
@@ -317,15 +322,43 @@ interface EUDCalculator<T : Any> : UFDCalculator<T> {
 
     companion object {
 
+
+        fun <T : EuclidRingNumberModel<T>> gcdUV(a: T, b: T, zero: T, one: T): Triple<T, T, T> {
+            //trivial cases
+            if (a.isZero()) {
+                return Triple(b, zero, one)
+            }
+            if (b.isZero()) {
+                return Triple(a, one, zero)
+            }
+            // see EuclideanDomain.gcdUV for explanation
+            var d0 = a
+            var d1 = b
+            var u0: T = one
+            var u1: T = zero
+            while (!d1.isZero()) {
+                val (q, d2) = d0.divideAndRemainder(d1)
+                d0 = d1
+                d1 = d2
+                val u2 = u0 - q * u1
+                u0 = u1
+                u1 = u2
+            }
+            val v: T = (d0 - a * u0).divideToInteger(b) // discard the possible remainder caused by numeric imprecision
+            return Triple(d0, u0, v)
+        }
+
+
+
         /**
          * Creates a quotient field calculator with a prime element [prime].
          */
-        fun <T : Any> quotientFieldCalculator(cal: EUDCalculator<T>, prime: T): Field<T> {
+        fun <T : Any> quotientFieldCalculator(cal: EuclideanDomain<T>, prime: T): Field<T> {
             return QuotientFieldCal(cal, prime)
         }
 
 
-        class QuotientFieldCal<T : Any>(val cal: EUDCalculator<T>, val p: T) : Field<T> {
+        class QuotientFieldCal<T : Any>(val cal: EuclideanDomain<T>, val p: T) : Field<T> {
 
             override fun contains(x: T): Boolean {
                 TODO()
@@ -394,7 +427,7 @@ interface EUDCalculator<T : Any> : UFDCalculator<T> {
  *
  * @author liyicheng 2017-09-09 20:33
  */
-interface Integers<T : Any> : EUDCalculator<T>, OrderedRing<T> {
+interface Integers<T : Any> : EuclideanDomain<T>, OrderedRing<T> {
     /**
      * Returns the integer `1` of type T.
      */

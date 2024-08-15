@@ -74,11 +74,10 @@ interface EuclidRingNumberModel<T : EuclidRingNumberModel<T>> : RingModel<T> {
         return (x * y).divideToInteger(gcd)
     }
 
-    fun divideAndRemainder(y: T): Pair<T, T> {
-        val q = divideToInteger(y)
-        val r = rem(y)
-        return q to r
-    }
+    /**
+     * Returns the result of dividing `this` by `y`, and the remainder.
+     */
+    fun divideAndRemainder(y: T): Pair<T, T>
 
     fun divideToInteger(y: T): T = divideAndRemainder(y).first
 
