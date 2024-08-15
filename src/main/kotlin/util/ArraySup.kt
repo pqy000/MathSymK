@@ -269,37 +269,6 @@ object ArraySup {
     }
 
 
-    //    /**
-    //     * make the array random
-    //     *
-    //     * @param arr
-    //     */
-    //    public static void desort(int[] arr) {
-    //        Random rd = new Random();
-    //        int len = arr.length;
-    //        for (int i = 0; i < len - 1; i++) {
-    //            int npos = rd.nextInt(len - i) + i;
-    //            int t = arr[npos];
-    //            arr[npos] = arr[i];
-    //            arr[i] = t;
-    //        }
-    //    }
-    //    /**
-    //     * make the array random
-    //     *
-    //     * @param arr
-    //     */
-    //    public static void desort(Object[] arr) {
-    //        Random rd = new Random();
-    //        int len = arr.length;
-    //        for (int i = 0; i < len - 1; i++) {
-    //            int npos = rd.nextInt(len - i) + i;
-    //            Object t = arr[npos];
-    //            arr[npos] = arr[i];
-    //            arr[i] = t;
-    //        }
-    //
-    //    }
     /**
      * An array whose element is its index.
      *
@@ -552,144 +521,144 @@ object ArraySup {
         return true
     }
 
+//
+//    /**
+//     * Determines whether the array contains the specific object.
+//     *
+//     * @param arr
+//     * @param element
+//     * @param testEqual a function to determines whether the two objects are the identity.
+//     * @return
+//     */
+//    fun <T, S> arrayContains(arr: Array<T>, element: S, testEqual: BiFunction<T, S, Boolean>): Boolean {
+//        for (anArr in arr) {
+//            if (testEqual.apply(anArr, element)) {
+//                return true
+//            }
+//        }
+//        return false
+//    }
 
-    /**
-     * Determines whether the array contains the specific object.
-     *
-     * @param arr
-     * @param element
-     * @param testEqual a function to determines whether the two objects are the identity.
-     * @return
-     */
-    fun <T, S> arrayContains(arr: Array<T>, element: S, testEqual: BiFunction<T, S, Boolean>): Boolean {
-        for (anArr in arr) {
-            if (testEqual.apply(anArr, element)) {
-                return true
-            }
-        }
-        return false
-    }
+//    fun arrayContains(arr: IntArray, element: Int): Boolean {
+//        for (t in arr) {
+//            if (t == element) {
+//                return true
+//            }
+//        }
+//        return false
+//    }
+//
+//    /**
+//     * @param element
+//     * @param arr
+//     * @param from
+//     * @param to      exclusive
+//     * @return
+//     */
+//    fun arrayContains(element: Int, arr: IntArray, from: Int, to: Int): Boolean {
+//        for (i in from until to) {
+//            val t = arr[i]
+//            if (t == element) {
+//                return true
+//            }
+//        }
+//        return false
+//    }
 
-    fun arrayContains(arr: IntArray, element: Int): Boolean {
-        for (t in arr) {
-            if (t == element) {
-                return true
-            }
-        }
-        return false
-    }
-
-    /**
-     * @param element
-     * @param arr
-     * @param from
-     * @param to      exclusive
-     * @return
-     */
-    fun arrayContains(element: Int, arr: IntArray, from: Int, to: Int): Boolean {
-        for (i in from until to) {
-            val t = arr[i]
-            if (t == element) {
-                return true
-            }
-        }
-        return false
-    }
-
-    /**
-     * Return an array of the mapped elements, the actual returned type is an array of object.
-     *
-     * @param arr
-     * @param mapper
-     * @return
-     */
-    @Suppress("UNCHECKED_CAST")
-    fun <N, T> mapTo(arr: Array<T>, mapper: Function<in T, out N>): Array<N?> {
-        val re = arrayOfNulls<Any>(arr.size) as Array<N?>
-        for (i in arr.indices) {
-            re[i] = mapper.apply(arr[i])
-        }
-        return re
-    }
-
-    /**
-     * Return an array of the mapped elements, creates a new array.
-     *
-     * @param arr
-     * @param mapper
-     * @return
-     */
-    @Suppress("UNCHECKED_CAST")
-    fun <N, T> mapTo(arr: Array<T>, mapper: Function<in T, out N>, clazz: Class<N>?): Array<N> {
-        val re = java.lang.reflect.Array.newInstance(clazz, arr.size) as Array<N>
-        for (i in arr.indices) {
-            re[i] = mapper.apply(arr[i])
-        }
-        return re
-    }
-    @Suppress("UNCHECKED_CAST")
-    fun <T> mapTo(arr: LongArray, f: LongFunction<T>, clazz: Class<T>?): Array<T> {
-        val re = java.lang.reflect.Array.newInstance(clazz, arr.size) as Array<T>
-        for (i in arr.indices) {
-            re[i] = f.apply(arr[i])
-        }
-        return re
-    }
-
-    /**
-     * Return an array of the mapped elements, creates a new array.
-     *
-     * @param arr
-     * @param mapper
-     * @return
-     */
-    @Suppress("UNCHECKED_CAST")
-    fun <N, T> mapTo2(arr: Array<Array<T>>, mapper: Function<in T, out N>, clazz: Class<N>?): Array<Array<N>> {
-        val narrayType: Class<*> = java.lang.reflect.Array.newInstance(clazz, 0).javaClass
-        val re = java.lang.reflect.Array.newInstance(narrayType, arr.size) as Array<Array<N>>
-        for (i in arr.indices) {
-            re[i] = java.lang.reflect.Array.newInstance(clazz, arr[i].size) as Array<N>
-            for (j in re[i].indices) {
-                re[i][j] = mapper.apply(arr[i][j])
-            }
-        }
-        return re
-    }
-
-    fun <T> mapTo2(arr: Array<Array<T>>, mapper: ToIntFunction<in T>): Array<IntArray?> {
-        val re = arrayOfNulls<IntArray>(arr.size)
-        for (i in arr.indices) {
-            re[i] = IntArray(arr[i].size)
-            for (j in re[i]!!.indices) {
-                re[i]!![j] = mapper.applyAsInt(arr[i][j])
-            }
-        }
-        return re
-    }
-    @Suppress("UNCHECKED_CAST")
-    fun <T> mapTo2(arr: Array<DoubleArray>, mapper: DoubleFunction<out T>, clazz: Class<T>?): Array<Array<T>> {
-        val narrayType: Class<*> = java.lang.reflect.Array.newInstance(clazz, 0).javaClass
-        val re = java.lang.reflect.Array.newInstance(narrayType, arr.size) as Array<Array<T>>
-        for (i in arr.indices) {
-            re[i] = java.lang.reflect.Array.newInstance(clazz, arr[i].size) as Array<T>
-            for (j in re[i].indices) {
-                re[i][j] = mapper.apply(arr[i][j])
-            }
-        }
-        return re
-    }
-    @Suppress("UNCHECKED_CAST")
-    fun <T> mapTo2(arr: Array<IntArray>, mapper: IntFunction<T>, clazz: Class<T>?): Array<Array<T>> {
-        val narrayType: Class<*> = java.lang.reflect.Array.newInstance(clazz, 0).javaClass
-        val re = java.lang.reflect.Array.newInstance(narrayType, arr.size) as Array<Array<T>>
-        for (i in arr.indices) {
-            re[i] = java.lang.reflect.Array.newInstance(clazz, arr[i].size) as Array<T>
-            for (j in re[i].indices) {
-                re[i][j] = mapper.apply(arr[i][j])
-            }
-        }
-        return re
-    }
+//    /**
+//     * Return an array of the mapped elements, the actual returned type is an array of object.
+//     *
+//     * @param arr
+//     * @param mapper
+//     * @return
+//     */
+//    @Suppress("UNCHECKED_CAST")
+//    fun <N, T> mapTo(arr: Array<T>, mapper: Function<in T, out N>): Array<N?> {
+//        val re = arrayOfNulls<Any>(arr.size) as Array<N?>
+//        for (i in arr.indices) {
+//            re[i] = mapper.apply(arr[i])
+//        }
+//        return re
+//    }
+//
+//    /**
+//     * Return an array of the mapped elements, creates a new array.
+//     *
+//     * @param arr
+//     * @param mapper
+//     * @return
+//     */
+//    @Suppress("UNCHECKED_CAST")
+//    fun <N, T> mapTo(arr: Array<T>, mapper: Function<in T, out N>, clazz: Class<N>?): Array<N> {
+//        val re = java.lang.reflect.Array.newInstance(clazz, arr.size) as Array<N>
+//        for (i in arr.indices) {
+//            re[i] = mapper.apply(arr[i])
+//        }
+//        return re
+//    }
+//    @Suppress("UNCHECKED_CAST")
+//    fun <T> mapTo(arr: LongArray, f: LongFunction<T>, clazz: Class<T>?): Array<T> {
+//        val re = java.lang.reflect.Array.newInstance(clazz, arr.size) as Array<T>
+//        for (i in arr.indices) {
+//            re[i] = f.apply(arr[i])
+//        }
+//        return re
+//    }
+//
+//    /**
+//     * Return an array of the mapped elements, creates a new array.
+//     *
+//     * @param arr
+//     * @param mapper
+//     * @return
+//     */
+//    @Suppress("UNCHECKED_CAST")
+//    fun <N, T> mapTo2(arr: Array<Array<T>>, mapper: Function<in T, out N>, clazz: Class<N>?): Array<Array<N>> {
+//        val narrayType: Class<*> = java.lang.reflect.Array.newInstance(clazz, 0).javaClass
+//        val re = java.lang.reflect.Array.newInstance(narrayType, arr.size) as Array<Array<N>>
+//        for (i in arr.indices) {
+//            re[i] = java.lang.reflect.Array.newInstance(clazz, arr[i].size) as Array<N>
+//            for (j in re[i].indices) {
+//                re[i][j] = mapper.apply(arr[i][j])
+//            }
+//        }
+//        return re
+//    }
+//
+//    fun <T> mapTo2(arr: Array<Array<T>>, mapper: ToIntFunction<in T>): Array<IntArray?> {
+//        val re = arrayOfNulls<IntArray>(arr.size)
+//        for (i in arr.indices) {
+//            re[i] = IntArray(arr[i].size)
+//            for (j in re[i]!!.indices) {
+//                re[i]!![j] = mapper.applyAsInt(arr[i][j])
+//            }
+//        }
+//        return re
+//    }
+//    @Suppress("UNCHECKED_CAST")
+//    fun <T> mapTo2(arr: Array<DoubleArray>, mapper: DoubleFunction<out T>, clazz: Class<T>?): Array<Array<T>> {
+//        val narrayType: Class<*> = java.lang.reflect.Array.newInstance(clazz, 0).javaClass
+//        val re = java.lang.reflect.Array.newInstance(narrayType, arr.size) as Array<Array<T>>
+//        for (i in arr.indices) {
+//            re[i] = java.lang.reflect.Array.newInstance(clazz, arr[i].size) as Array<T>
+//            for (j in re[i].indices) {
+//                re[i][j] = mapper.apply(arr[i][j])
+//            }
+//        }
+//        return re
+//    }
+//    @Suppress("UNCHECKED_CAST")
+//    fun <T> mapTo2(arr: Array<IntArray>, mapper: IntFunction<T>, clazz: Class<T>?): Array<Array<T>> {
+//        val narrayType: Class<*> = java.lang.reflect.Array.newInstance(clazz, 0).javaClass
+//        val re = java.lang.reflect.Array.newInstance(narrayType, arr.size) as Array<Array<T>>
+//        for (i in arr.indices) {
+//            re[i] = java.lang.reflect.Array.newInstance(clazz, arr[i].size) as Array<T>
+//            for (j in re[i].indices) {
+//                re[i][j] = mapper.apply(arr[i][j])
+//            }
+//        }
+//        return re
+//    }
 
 
     /**
@@ -1024,4 +993,20 @@ object ArraySup {
     //		print(arr);
     //		print(flip(indexArray(10),1,8));
     //	}
+
+    /**
+     * Returns a pair of arrays, the first array is the sorted array, the second array is the index of the corresponding element in the original array.
+     */
+    fun sortWithIndex(arr: IntArray): Pair<IntArray,IntArray> {
+        val withIndex = Array(arr.size) { i -> Pair(arr[i], i) }
+        withIndex.sortBy { it.first }
+        val sorted = IntArray(arr.size)
+        val index = IntArray(arr.size)
+        for (i in withIndex.indices) {
+            sorted[i] = withIndex[i].first
+            index[i] = withIndex[i].second
+        }
+        return Pair(sorted, index)
+    }
+
 }

@@ -13,7 +13,6 @@ class PermutationTest {
     }
 
 
-
     @Test
     fun testRotate() {
         val p = Permutations.rotate(5, 2)
@@ -33,61 +32,47 @@ class PermutationTest {
     }
 
     @Test
-    fun testDecompose(){
+    fun testDecompose() {
         val identity = Permutations.identity(5)
         assertEquals(emptyList(), identity.decompose())
-        val p = Permutations.valueOf(1,0,3,2,4)
+        val p = Permutations.valueOf(1, 0, 3, 2, 4)
         assertEquals(listOf(Permutations.swap(5, 0, 1), Permutations.swap(5, 2, 3)), p.decompose())
         val p2 = Permutations.rotate(5, 2)
-        assertEquals(listOf(p2),p2.decompose())
+        assertEquals(listOf(p2), p2.decompose())
     }
 
     @Test
-    fun testIndex(){
-
-    }
-
-
-}
-
-fun generatePermutations(n: Int): List<IntArray> {
-    val permutations = mutableListOf<IntArray>()
-    val currentPermutation = IntArray(n) { it }
-
-    fun swap(array: IntArray, i: Int, j: Int) {
-        val temp = array[i]
-        array[i] = array[j]
-        array[j] = temp
-    }
-
-    fun permute(index: Int) {
-        if (index == n) {
-            permutations.add(currentPermutation.copyOf())
-            return
-        }
-        for (i in index until n) {
-            swap(currentPermutation, index, i)
-            permute(index + 1)
-            swap(currentPermutation, index, i) // backtrack
+    fun testIndex() {
+        val perms = Permutations.universe(5)
+        assertEquals(CombUtils.permutation(5, 5).toInt(), perms.size)
+        for (i in perms.indices) {
+            val idx = perms[i].index()
+            assertEquals(i.toLong(), idx)
+            assertEquals(perms[i], Permutations.fromIndex(idx, 5))
+            assertEquals(perms[i], Permutations.composeAll(perms[i].decompose(), 5))
         }
     }
 
-
-
-    permute(0)
-    return permutations
-}
-
-fun main() {
-    val n = 3 // Change this value to generate permutations for different sizes
-    val permutations = generatePermutations(n).map { Permutations.valueOf(*it) }
-
-    for (perm in permutations) {
-        println(perm)
-    }
-    println()
-    for( p in Permutations.universe(3)){
-        println(p)
+    @Test
+    fun testPermute() {
+        val p = Permutations.valueOf(1, 0, 3, 2, 4)
+        val list = listOf(1, 2, 3, 4, 5)
+        assertEquals(listOf(2, 1, 4, 3, 5), p.permute(list))
     }
 
+    @Test
+    fun testCycle() {
+        val p = Permutations.cycle(5, 0, 1, 2)
+        assertEquals(1, p.apply(0))
+        assertEquals(2, p.apply(1))
+        assertEquals(5, p.apply(2))
+        assertEquals(3, p.apply(3))
+        assertEquals(4, p.apply(4))
+        val arr = intArrayOf(1, 2, 3, 4, 5, 6)
+        val result = intArrayOf(6, 1, 2, 4, 5, 3)
+        assertEquals(result.toList(), p.permute(arr.toList()))
+    }
+
+
 }
+

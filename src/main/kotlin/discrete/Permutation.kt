@@ -4,8 +4,8 @@
 package discrete
 
 import cn.mathsymk.model.struct.Composable
-import cn.mathsymk.model.struct.Invertible
 import cn.mathsymk.number_theory.NTFunctions
+import function.BijectiveOperator
 import util.ArraySup
 
 /**
@@ -33,7 +33,7 @@ import util.ArraySup
  * 2018-03-01 19:26
  * @see Permutations
  */
-interface Permutation : Composable<Permutation>, Invertible<Permutation>, Comparable<Permutation> {
+interface Permutation : BijectiveOperator<Int>, Composable<Permutation>, Comparable<Permutation> {
     /**
      * Returns the size of this permutation, which is equal to the
      * size of the finite set.
@@ -46,17 +46,17 @@ interface Permutation : Composable<Permutation>, Invertible<Permutation>, Compar
      *
      * For example, if the permutation is (1,0,2), then `apply(1)` returns 0.
      */
-    fun apply(x: Int): Int
+    override fun apply(x: Int): Int
 
     /**
      * Returns the index before this permutation of the element of index `y` after this permutation.
-     * It is ensured that `inverse(apply(n))==n`.
+     * It is ensured that `invert(apply(n))==n`.
      *
      *
-     * For example, if the permutation is (1,0,2), then `inverse(1)` returns 0.
+     * For example, if the permutation is (1,0,2), then `invert(1)` returns 0.
      *
      */
-    fun inverse(y: Int): Int
+    override fun invert(y: Int): Int
 
     /**
      * Returns the inverse of this permutation.
@@ -125,7 +125,7 @@ interface Permutation : Composable<Permutation>, Invertible<Permutation>, Compar
     /**
      * Decompose this permutation to several non-intersecting rotation permutations. The order is not
      * strictly restricted because the rotation permutations are commutative. The list may omit
-     * rotations of length 1.
+     * rotations of length 1. Therefore, an empty list means this permutation is an identity.
      *
      *
      * For example, if `this=(2,0,4,3,1,7,6,5)`, then the returned list can
@@ -175,6 +175,7 @@ interface Permutation : Composable<Permutation>, Invertible<Permutation>, Compar
      *
      * @param array the array to permute, which will be modified.
      */
+    @Suppress("DuplicatedCode") // for non-generic types
     fun <T> permute(array: Array<T>): Array<T> {
         require(array.size >= size) { "The array's length ${array.size} is not enough." }
         val origin = array.clone()
@@ -191,6 +192,7 @@ interface Permutation : Composable<Permutation>, Invertible<Permutation>, Compar
      * @param array the array to permute, which will be modified.
      * @see Permutation.permute
      */
+    @Suppress("DuplicatedCode") // for non-generic types
     fun permute(array: IntArray): IntArray {
         require(array.size >= size) { "The array's length ${array.size} is not enough." }
         val origin = array.clone()
@@ -293,83 +295,34 @@ interface Cycle : Permutation {
         return earr[index]
     }
 
-    /*
-     * @see cn.ancono.math.numberTheory.combination.Permutation#apply(int[])
-     */
+
+    @Suppress("DuplicatedCode") // for non-generic types
     override fun permute(array: IntArray): IntArray {
-        if (cycleLength == 1) {
+        if (cycleLength <= 1) {
             return array
         }
-        val earr = elements
-        val t = array[earr[0]]
-        for (i in 0 until earr.size - 1) {
-            array[earr[i]] = array[earr[i + 1]]
+        val cycle = elements
+        // place elements[i] to elements[i+1]
+        val t = array[cycle.last()]
+        for (i in 0 until cycle.size - 1) {
+            array[cycle[i + 1]] = array[cycle[i]]
         }
-        array[earr[earr.size - 1]] = t
+        array[cycle[0]] = t
         return array
     }
 
-//    /*
-//     * @see cn.ancono.math.numberTheory.combination.Permutation#apply(boolean[])
-//     */
-//    override fun permute(array: BooleanArray): BooleanArray {
-//        if (length() == 1) {
-//            return array
-//        }
-//        val earr = elements
-//        val t = array[earr[0]]
-//        for (i in 0 until earr.size - 1) {
-//            array[earr[i]] = array[earr[i + 1]]
-//        }
-//        array[earr[earr.size - 1]] = t
-//        return array
-//    }
-//
-//    /*
-//     * @see cn.ancono.math.numberTheory.combination.Permutation#apply(double[])
-//     */
-//    override fun permute(array: DoubleArray): DoubleArray {
-//        if (length() == 1) {
-//            return array
-//        }
-//        val earr = elements
-//        val t = array[earr[0]]
-//        for (i in 0 until earr.size - 1) {
-//            array[earr[i]] = array[earr[i + 1]]
-//        }
-//        array[earr[earr.size - 1]] = t
-//        return array
-//    }
-//
-//    /*
-//     * @see cn.ancono.math.numberTheory.combination.Permutation#apply(long[])
-//     */
-//    override fun permute(array: LongArray): LongArray {
-//        if (length() == 1) {
-//            return array
-//        }
-//        val earr = elements
-//        val t = array[earr[0]]
-//        for (i in 0 until earr.size - 1) {
-//            array[earr[i]] = array[earr[i + 1]]
-//        }
-//        array[earr[earr.size - 1]] = t
-//        return array
-//    }
-
-    /*
-     * @see cn.ancono.math.numberTheory.combination.Permutation#apply(java.lang.Object[])
-     */
+    @Suppress("DuplicatedCode") // for non-generic types
     override fun <T> permute(array: Array<T>): Array<T> {
-        if (cycleLength == 1) {
+        if (cycleLength <= 1) {
             return array
         }
-        val earr = elements
-        val t = array[earr[0]]
-        for (i in 0 until earr.size - 1) {
-            array[earr[i]] = array[earr[i + 1]]
+        val cycle = elements
+        // place elements[i] to elements[i+1]
+        val t = array[cycle.last()]
+        for (i in 0 until cycle.size - 1) {
+            array[cycle[i + 1]] = array[cycle[i]]
         }
-        array[earr[earr.size - 1]] = t
+        array[cycle[0]] = t
         return array
     }
 }
@@ -435,7 +388,7 @@ interface Transposition : Cycle {
 
     /*
      */
-    override fun inverse(y: Int): Int {
+    override fun invert(y: Int): Int {
         //symmetry
         return apply(y)
     }

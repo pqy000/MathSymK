@@ -53,7 +53,7 @@ interface Composable<S : Composable<S>> {
  * @author liyicheng
  * 2018-03-02 21:13
  */
-interface Invertible<out S : Invertible<S>> {
+interface Invertible<out S> {
     /**
      * Returns the inverse of `this`.
      *

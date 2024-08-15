@@ -1,6 +1,7 @@
 package discrete
 
 import cn.mathsymk.model.struct.FiniteGroup
+import cn.mathsymk.number_theory.NTFunctions
 import cn.mathsymk.structure.Group
 import cn.mathsymk.util.IterUtils
 import discrete.Permutations.isEqual
@@ -14,23 +15,20 @@ import util.ArraySup
  */
 abstract class AbstractPermutation(override val size: Int) : Permutation {
 
-    /*
-     * @see cn.ancono.math.numberTheory.combination.Permutation#compose(cn.ancono.math.numberTheory.combination.Permutation)
-     */
+
     override fun compose(before: Permutation): Permutation {
-        return valueOf(*permute(before.getArray()))
+        val newArr = IntArray(size) { i ->
+            apply(before.apply(i))
+        }
+        return valueOf(*newArr)
     }
 
-    /*
-     * @see cn.ancono.math.numberTheory.combination.Permutation#andThen(cn.ancono.math.numberTheory.combination.Permutation)
-     */
+
     override fun andThen(after: Permutation): Permutation {
         return after.compose(this)
     }
 
-    /*
-     * @see cn.ancono.math.numberTheory.combination.Permutation#reduce()
-     */
+
     override fun decomposeTransposition(): List<Transposition> {
         val list: MutableList<Transposition> = ArrayList(size)
         val arr = getArray()
@@ -54,9 +52,7 @@ abstract class AbstractPermutation(override val size: Int) : Permutation {
         return list
     }
 
-    /*
-     * @see cn.ancono.math.numberTheory.combination.Permutation#rotateReduce()
-     */
+
     override fun decompose(): List<Cycle> {
         val arr = getArray()
         val length = arr.size
@@ -84,9 +80,6 @@ abstract class AbstractPermutation(override val size: Int) : Permutation {
         return list
     }
 
-    /*
-     * @see java.lang.Object#equals(java.lang.Object)
-     */
     override fun equals(other: Any?): Boolean {
         if (other !is AbstractPermutation) {
             return false
@@ -102,24 +95,18 @@ abstract class AbstractPermutation(override val size: Int) : Permutation {
      * Returns the string representation of this permutation, which is the array representation of the permutation.
      */
     override fun toString(): String {
-        val idArr = ArraySup.indexArray(size)
-        val arr = permute(idArr)
-        return arr.joinToString(prefix = "(", postfix = ")")
+        return getArray().joinToString(prefix = "(", postfix = ")")
     }
 }
 
 internal class ArrPermutation(protected val parr: IntArray) : AbstractPermutation(parr.size) {
-    /*
-           * @see cn.ancono.math.numberTheory.combination.Permutation#apply(int)
-           */
+
     override fun apply(x: Int): Int {
         return parr[x]
     }
 
-    /*
-     * @see cn.ancono.math.numberTheory.combination.Permutation#inverse(int)
-     */
-    override fun inverse(y: Int): Int {
+
+    override fun invert(y: Int): Int {
         for (i in 0 until size) {
             if (parr[i] == y) {
                 return i
@@ -130,9 +117,7 @@ internal class ArrPermutation(protected val parr: IntArray) : AbstractPermutatio
 
     private var inverseTemp: ArrPermutation? = null
 
-    /*
-    * @see cn.ancono.math.numberTheory.combination.Permutation#inverse()
-    */
+
     override fun inverse(): Permutation {
         if (inverseTemp == null) {
             val narr = IntArray(size)
@@ -145,16 +130,12 @@ internal class ArrPermutation(protected val parr: IntArray) : AbstractPermutatio
         return inverseTemp!!
     }
 
-    /*
-     * @see cn.ancono.math.numberTheory.combination.Permutation#getArray()
-     */
+
     override fun getArray(): IntArray {
         return parr.clone()
     }
 
-    /*
-     * @see cn.ancono.math.numberTheory.combination.Permutation#apply(java.lang.Object[])
-     */
+
     override fun <T> permute(array: Array<T>): Array<T> {
         require(array.size >= size) { "array's length!=$size" }
         val copy = array.clone()
@@ -164,9 +145,7 @@ internal class ArrPermutation(protected val parr: IntArray) : AbstractPermutatio
         return array
     }
 
-    /*
-     * @see cn.ancono.math.numberTheory.combination.Permutation#apply(int[])
-     */
+
     override fun permute(array: IntArray): IntArray {
         require(array.size >= size) { "array's length!=$size" }
         val copy = array.clone()
@@ -176,37 +155,22 @@ internal class ArrPermutation(protected val parr: IntArray) : AbstractPermutatio
         return array
     }
 
-    /*
-     * @see
-     * cn.ancono.math.numberTheory.combination.AbstractPermutation#compose(cn.timelives.
-     * java.math.combination.Permutation)
-     */
+
     override fun compose(before: Permutation): Permutation {
         return ArrPermutation(permute(before.getArray()))
     }
 
-    /*
-     * @see
-     * cn.ancono.math.numberTheory.combination.AbstractPermutation#andThen(cn.timelives.
-     * java.math.combination.Permutation)
-     */
+
     override fun andThen(after: Permutation): Permutation {
         return ArrPermutation(after.permute(getArray()))
     }
 }
 
 internal class Swap(size: Int, i: Int, j: Int) : AbstractPermutation(size), Transposition {
-    /*
-     * @see
-     * cn.ancono.math.numberTheory.combination.Permutation.ElementaryPermutation#getFirst
-     * ()
-     */
+
     override val first: Int
 
-    /*
-     * @see cn.ancono.math.numberTheory.combination.Permutation.ElementaryPermutation#
-     * getSecond()
-     */
+
     override val second: Int
 
     /**
@@ -215,21 +179,11 @@ internal class Swap(size: Int, i: Int, j: Int) : AbstractPermutation(size), Tran
      * @param size
      */
     init {
-        var i = i
-        var j = j
-        if (i > j) {
-            val t = i
-            i = j
-            j = t
-        }
-        this.first = i
-        this.second = j
+        this.first = minOf(i, j)
+        this.second = maxOf(i, j)
     }
 
 
-    /*
-    * @see cn.ancono.math.numberTheory.combination.AbstractPermutation#toString()
-    */
     override fun toString(): String {
         return "Swap($first,$second)"
     }
@@ -246,98 +200,64 @@ internal class Swap(size: Int, i: Int, j: Int) : AbstractPermutation(size), Tran
 internal class Identity(size: Int) : AbstractPermutation(size), Cycle {
 
 
-    /*
-    * @see cn.ancono.math.numberTheory.combination.Permutation#apply(int)
-    */
     override fun apply(x: Int): Int {
         return x
     }
 
-    /*
-     * @see cn.ancono.math.numberTheory.combination.Permutation#inverse(int)
-     */
-    override fun inverse(y: Int): Int {
+
+    override fun invert(y: Int): Int {
         return y
     }
 
-    /*
-     * @see cn.ancono.math.numberTheory.combination.Permutation#inverse()
-     */
+
     override fun inverse(): Cycle {
         return this
     }
 
-    /*
-     * @see cn.ancono.math.numberTheory.combination.Permutation.ElementaryPermutation#containsElement(int)
-     */
+
     override fun containsInCycle(x: Int): Boolean {
         return false
     }
 
     override val elements: IntArray
-        /*
-                 * @see cn.ancono.math.numberTheory.combination.Permutation.ElementaryPermutation#getElements()
-                 */
         get() = intArrayOf()
 
 
-    /*
-     * @see cn.ancono.math.numberTheory.combination.Permutation#apply(int[])
-     */
     override fun permute(array: IntArray): IntArray {
         return array
     }
 
-    /*
-     * @see cn.ancono.math.numberTheory.combination.Permutation#apply(java.lang.Object[])
-     */
+
     override fun <T> permute(array: Array<T>): Array<T> {
         return array
     }
 
-    /*
-     * @see cn.ancono.math.numberTheory.combination.Permutation#getArray()
-     */
+
     override fun getArray(): IntArray {
         return ArraySup.indexArray(size)
     }
 
-    /*
-     * @see cn.ancono.math.numberTheory.combination.Permutation#index()
-     */
+
     override fun index(): Long {
         return 0
     }
 
-    /*
-     * @see cn.ancono.math.numberTheory.combination.Permutation#rank()
-     */
+
     override fun rank(): Int {
         return 1
     }
 
-    /*
-     * @see cn.ancono.math.numberTheory.combination.Permutation#inverseCount()
-     */
+
     override fun reverseCount(): Int {
         return 0
     }
 
 
-    /*
-     * @see
-     * cn.ancono.math.numberTheory.combination.AbstractPermutation#andThen(cn.timelives.
-     * java.math.combination.Permutation)
-     */
     override fun andThen(after: Permutation): Permutation {
         return after
     }
 
-    /*
-     * @see
-     * cn.ancono.math.numberTheory.combination.AbstractPermutation#compose(cn.timelives.
-     * java.math.combination.Permutation)
-     */
+
     override fun compose(before: Permutation): Permutation {
         return before
     }
@@ -352,9 +272,6 @@ internal class Identity(size: Int) : AbstractPermutation(size), Cycle {
 }
 
 internal class RotateAll(size: Int, private val shift: Int) : AbstractPermutation(size) {
-    /*
-           * @see cn.ancono.math.numberTheory.combination.Permutation#apply(int)
-           */
     override fun apply(x: Int): Int {
         var x = x
         x += shift
@@ -366,17 +283,12 @@ internal class RotateAll(size: Int, private val shift: Int) : AbstractPermutatio
         return x
     }
 
-    /*
-     * @see cn.ancono.math.numberTheory.combination.Permutation#inverse()
-     */
     override fun inverse(): Permutation {
         return RotateAll(size, -shift)
     }
 
-    /*
-     * @see cn.ancono.math.numberTheory.combination.Permutation#inverse(int)
-     */
-    override fun inverse(y: Int): Int {
+
+    override fun invert(y: Int): Int {
         var y = y
         y -= shift
         if (y < 0) {
@@ -390,161 +302,55 @@ internal class RotateAll(size: Int, private val shift: Int) : AbstractPermutatio
 
 internal class CycleImpl(size: Int, override val elements: IntArray) : AbstractPermutation(size), Cycle {
 
-    //            require(elements.isNotEmpty()){"Empty cycle"}
-//            require(elements.size == elements.distinct().size){"Duplicate elements in cycle"}
-    private val entriesIn: IntArray
-    private val entriesDest: IntArray
+    private val elementsSorted: IntArray
+    private val elementsIndex: IntArray
 
     init {
-        val entries = Array(elements.size) { i -> Pair(elements[i], elements[(i + 1) % elements.size]) }
-        entries.sortBy { it.first }
-        entriesIn = IntArray(elements.size) { entries[it].first }
-        entriesDest = IntArray(elements.size) { entries[it].second }
+//        val entries = Array(elements.size) { i -> Pair(elements[i], elements[(i + 1) % elements.size]) }
+//        entries.sortBy { it.first }
+//        entriesIn = IntArray(elements.size) { entries[it].first }
+//        entriesDest = IntArray(elements.size) { entries[it].second }
+        val t = ArraySup.sortWithIndex(elements)
+        elementsSorted = t.first
+        elementsIndex = t.second
+    }
 
+    private fun getInCycle(idx: Int): Int {
+        val i = NTFunctions.mod(idx, elements.size)
+        return elements[i]
     }
 
 
-    override fun apply(y: Int): Int {
+    override fun apply(x: Int): Int {
         // binary search
-        val index = entriesIn.binarySearch(y)
-        if (index >= 0) {
-            return entriesDest[index]
+        val index = elementsSorted.binarySearch(x)
+        return if (index >= 0) {
+            getInCycle(elementsIndex[index] + 1)
         } else {
-            return y
+            x
         }
     }
 
-    /*
-     * @see cn.ancono.math.numberTheory.combination.Permutation#inverse()
-     */
+    override fun invert(y: Int): Int {
+        val index = elementsSorted.binarySearch(y)
+        return if (index >= 0) {
+            getInCycle(elementsIndex[index] - 1)
+        } else {
+            y
+        }
+    }
+
+
     override fun inverse(): CycleImpl {
         return CycleImpl(size, ArraySup.flip(elements, 0, elements.size))
     }
 
-//        /*
-//         * @see cn.ancono.math.numberTheory.combination.Permutation.RotationPermutation#getElements()
-//         */
-//        override fun getElements(): IntArray {
-//            return elements.clone()
-//        }
 
-
-    /*
-     * @see cn.ancono.math.numberTheory.combination.Permutation.RotationPermutation#containsElement(int)
-     */
     override fun containsInCycle(x: Int): Boolean {
-        for (element in elements) {
-            if (element == x) {
-                return true
-            }
-        }
-        return false
+        return elementsSorted.binarySearch(x) >= 0
     }
 
 
-    /*
-     * @see cn.ancono.math.numberTheory.combination.Permutation#apply(int)
-     */
-    override fun inverse(x: Int): Int {
-        if (!containsInCycle(x)) {
-            return x
-        }
-        if (elements.size == 1) {
-            return x
-        }
-        val earr = this.elements
-        var index = ArraySup.firstIndexOf(x, earr)
-        index--
-        if (index < 0) {
-            index += earr.size
-        }
-        return earr[index]
-    }
-
-    /*
-     * @see cn.ancono.math.numberTheory.combination.Permutation#apply(int[])
-     */
-    @Suppress("DuplicatedCode") // Duplicated code is necessary for different types
-    override fun permute(array: IntArray): IntArray {
-        if (elements.size == 1) {
-            return array
-        }
-        val earr = this.elements
-        val t = array[earr[0]]
-        for (i in 0 until earr.size - 1) {
-            array[earr[i]] = array[earr[i + 1]]
-        }
-        array[earr[earr.size - 1]] = t
-        return array
-    }
-
-//        /*
-//         * @see cn.ancono.math.numberTheory.combination.Permutation#apply(boolean[])
-//         */
-//        override fun permute(array: BooleanArray): BooleanArray {
-//            if (elements.size == 1) {
-//                return array
-//            }
-//            val earr = this.elements
-//            val t = array[earr[0]]
-//            for (i in 0 until earr.size - 1) {
-//                array[earr[i]] = array[earr[i + 1]]
-//            }
-//            array[earr[earr.size - 1]] = t
-//            return array
-//        }
-//
-//        /*
-//         * @see cn.ancono.math.numberTheory.combination.Permutation#apply(double[])
-//         */
-//        override fun permute(array: DoubleArray): DoubleArray {
-//            if (elements.size == 1) {
-//                return array
-//            }
-//            val earr = this.elements
-//            val t = array[earr[0]]
-//            for (i in 0 until earr.size - 1) {
-//                array[earr[i]] = array[earr[i + 1]]
-//            }
-//            array[earr[earr.size - 1]] = t
-//            return array
-//        }
-//
-//        /*
-//         * @see cn.ancono.math.numberTheory.combination.Permutation#apply(long[])
-//         */
-//        override fun permute(array: LongArray): LongArray {
-//            if (elements.size == 1) {
-//                return array
-//            }
-//            val earr = this.elements
-//            val t = array[earr[0]]
-//            for (i in 0 until earr.size - 1) {
-//                array[earr[i]] = array[earr[i + 1]]
-//            }
-//            array[earr[earr.size - 1]] = t
-//            return array
-//        }
-
-    /*
-     * @see cn.ancono.math.numberTheory.combination.Permutation#apply(java.lang.Object[])
-     */
-    override fun <T> permute(array: Array<T>): Array<T> {
-        if (elements.size == 1) {
-            return array
-        }
-        val earr = this.elements
-        val t = array[earr[0]]
-        for (i in 0 until earr.size - 1) {
-            array[earr[i]] = array[earr[i + 1]]
-        }
-        array[earr[earr.size - 1]] = t
-        return array
-    }
-
-    /*
-     * @see cn.ancono.math.numberTheory.combination.AbstractPermutation#toString()
-     */
     override fun toString(): String {
         val sb = StringBuilder()
         sb.append("Cycle(")
@@ -613,7 +419,7 @@ object Permutations {
                 return this
             }
 
-            override fun inverse(y: Int): Int {
+            override fun invert(y: Int): Int {
                 return size - y - 1
             }
 
@@ -745,9 +551,7 @@ object Permutations {
         return true
     }
 
-    fun getCalculator(size: Int): Group<Permutation> {
-        return PermutationCalculator(size)
-    }
+
 
 
     /**
@@ -776,12 +580,12 @@ object Permutations {
         require(!(n <= 0 || n > 12)) { "Invalid n=$n" }
         val list = arrayOfNulls<Permutation>(CombUtils.factorial(n).toInt() / 2)
         var i = 0
-        for (arr in Enumer.permutation(n, n)) {
-            val p: Permutation = ArrPermutation(arr)
-            if (p.isEven) {
-                list[i++] = p
+        IterUtils.permRev(n, false).forEach { (arr, revCount) ->
+            if (revCount % 2 == 0) {
+                list[i++] = ArrPermutation(arr.clone())
             }
         }
+
         TODO()
 //        return MathSets.asSet(getCalculator(n), list)
     }
@@ -793,7 +597,7 @@ object Permutations {
      * @return the result as a permutation
      */
     fun composeAll(list: List<Permutation>): Permutation {
-        require(!list.isEmpty())
+        require(list.isNotEmpty())
         val lit = list.listIterator(list.size)
         var p = lit.previous()
         while (lit.hasPrevious()) {
@@ -815,14 +619,15 @@ object Permutations {
             return identity(size)
         }
         return composeAll(list)
-    } //    public static void main(String[] args) {
-    //        var p1 = valueOf(new int[]{1,2,0});
-    //        var p2 = valueOf(new int[]{0,1,2});
-    //        print(p1.compose(p2));
-    //        print(p2.compose(p1));
-    //        print(p1.apply(p2.getArray()));
-    //    }
+    }
 
+
+    /**
+     *
+     */
+    fun getCalculator(size: Int): Group<Permutation> {
+        return PermutationCalculator(size)
+    }
 
     @JvmRecord
     private data class PermutationCalculator(
@@ -834,8 +639,8 @@ object Permutations {
             return Permutations.isEqual(x, y)
         }
 
-        override fun inverse(x: Permutation): Permutation {
-            return x.inverse()
+        override fun inverse(element: Permutation): Permutation {
+            return element.inverse()
         }
 
         override fun contains(element: Permutation): Boolean {
