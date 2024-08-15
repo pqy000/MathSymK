@@ -47,9 +47,9 @@ abstract class AbstractPermutation(override val size: Int) : Permutation {
             //swap i,j
             arr[j] = arr[i]
             arr[i] = i
-            list.add(Swap(size, i, j))
+            list.add(TranspositionImpl(size, i, j))
         }
-        return list
+        return list.reversed()
     }
 
 
@@ -105,14 +105,24 @@ internal class ArrPermutation(protected val parr: IntArray) : AbstractPermutatio
         return parr[x]
     }
 
+    override fun applyAll(arr: IntArray, inPlace: Boolean): IntArray {
+        val result = if (inPlace) arr else IntArray(size)
+        for (i in 0 until size) {
+            result[i] = parr[arr[i]]
+        }
+        return result
+    }
 
     override fun invert(y: Int): Int {
+        if (inverseTemp != null) {
+            return inverseTemp!!.apply(y)
+        }
         for (i in 0 until size) {
             if (parr[i] == y) {
                 return i
             }
         }
-        throw AssertionError()
+        return y
     }
 
     private var inverseTemp: ArrPermutation? = null
@@ -136,26 +146,6 @@ internal class ArrPermutation(protected val parr: IntArray) : AbstractPermutatio
     }
 
 
-    override fun <T> permute(array: Array<T>): Array<T> {
-        require(array.size >= size) { "array's length!=$size" }
-        val copy = array.clone()
-        for (i in 0 until size) {
-            array[i] = copy[parr[i]]
-        }
-        return array
-    }
-
-
-    override fun permute(array: IntArray): IntArray {
-        require(array.size >= size) { "array's length!=$size" }
-        val copy = array.clone()
-        for (i in 0 until size) {
-            array[i] = copy[parr[i]]
-        }
-        return array
-    }
-
-
     override fun compose(before: Permutation): Permutation {
         return ArrPermutation(permute(before.getArray()))
     }
@@ -166,7 +156,7 @@ internal class ArrPermutation(protected val parr: IntArray) : AbstractPermutatio
     }
 }
 
-internal class Swap(size: Int, i: Int, j: Int) : AbstractPermutation(size), Transposition {
+internal class TranspositionImpl(size: Int, i: Int, j: Int) : AbstractPermutation(size), Transposition {
 
     override val first: Int
 
@@ -197,7 +187,7 @@ internal class Swap(size: Int, i: Int, j: Int) : AbstractPermutation(size), Tran
     }
 }
 
-internal class Identity(size: Int) : AbstractPermutation(size), Cycle {
+internal class IdentityPerm(size: Int) : AbstractPermutation(size), Cycle {
 
 
     override fun apply(x: Int): Int {
@@ -222,15 +212,6 @@ internal class Identity(size: Int) : AbstractPermutation(size), Cycle {
     override val elements: IntArray
         get() = intArrayOf()
 
-
-    override fun permute(array: IntArray): IntArray {
-        return array
-    }
-
-
-    override fun <T> permute(array: Array<T>): Array<T> {
-        return array
-    }
 
 
     override fun getArray(): IntArray {
@@ -382,7 +363,7 @@ object Permutations {
     }
 
     /**
-     * Gets a permutation of the specific array as the method [getArray()] in Permutation.
+     * Gets a permutation of the specific array as the method [Permutation.getArray] in Permutation.
      */
     @JvmStatic
     fun valueOf(vararg array: Int): Permutation {
@@ -392,6 +373,22 @@ object Permutations {
     }
 
     /**
+     * Returns a permutation `p` such that `p.permute(0 .. size-1) = permuted`.
+     * It is required that `permuted` is a permutation of `0 .. size-1`.
+     */
+    fun fromPermuted(vararg permuted: Int): Permutation {
+        require(permuted.isNotEmpty()) { "Empty array" }
+        checkDistinct(permuted, permuted.size)
+        val arr = IntArray(permuted.size)
+        for (i in permuted.indices) {
+            arr[permuted[i]] = i
+        }
+        return ArrPermutation(arr)
+    }
+
+//    fun fromPermuted(origin: )
+
+    /**
      * Returns the permutation of swapping the `i`-th element and the `j`-th element.
      *
      * @param size the size of the permutation
@@ -399,12 +396,12 @@ object Permutations {
     fun swap(size: Int, i: Int, j: Int): Transposition {
         require(size > 0) { "Invalid size=$size" }
         require(!(i < 0 || j < 0 || i >= size || j >= size)) { "Invalid index i=$i,j=$j" }
-        return Swap(size, i, j)
+        return TranspositionImpl(size, i, j)
     }
 
     fun identity(size: Int): Permutation {
         require(size >= 0) { "Invalid size=$size" }
-        return Identity(size)
+        return IdentityPerm(size)
     }
 
     /**
@@ -426,6 +423,7 @@ object Permutations {
             override fun apply(x: Int): Int {
                 return size - x - 1
             }
+
         }
     }
 
@@ -445,7 +443,7 @@ object Permutations {
         var s = shift
         s %= n
         if (s == 0) {
-            return Identity(n)
+            return IdentityPerm(n)
         }
         return RotateAll(n, s)
     }
@@ -477,7 +475,7 @@ object Permutations {
     fun cycleSized(size: Int, vararg elements: Int): Cycle {
         checkDistinct(elements, size)
         if (elements.isEmpty()) {
-            return Identity(0)
+            return IdentityPerm(0)
         }
         return CycleImpl(size, elements)
     }
@@ -552,8 +550,6 @@ object Permutations {
     }
 
 
-
-
     /**
      * Returns a list of permutations that contains all the `n`-size permutations.
      * The permutations are ordered by the [Permutation.index] of the permutation.
@@ -591,23 +587,19 @@ object Permutations {
     }
 
     /**
-     * Composes all the permutations in the list, applying the last element in the list first.
+     * Composes all the permutations in the list: `list[0] · list[1] · ... · list[n-1]`.
      *
      * @param list a list of permutations, not empty
      * @return the result as a permutation
      */
     fun composeAll(list: List<Permutation>): Permutation {
-        require(list.isNotEmpty())
-        val lit = list.listIterator(list.size)
-        var p = lit.previous()
-        while (lit.hasPrevious()) {
-            p = p.andThen(lit.previous())
-        }
-        return p
+        require(list.isNotEmpty()) { "Empty list" }
+        val size = list[0].size
+        return composeAll(list, size)
     }
 
     /**
-     * Composes all the permutations in the list, applying the last element in the list first.
+     * Composes all the permutations in the list: `list[0] · list[1] · ... · list[n-1]`.
      * If the list is empty, returns the identity permutation.
      *
      * @param list a list of permutations
@@ -618,7 +610,11 @@ object Permutations {
         if (list.isEmpty()) {
             return identity(size)
         }
-        return composeAll(list)
+        val arr = ArraySup.indexArray(size)
+        for (p in list.reversed()) {
+            p.applyAll(arr, inPlace = true)
+        }
+        return valueOf(*arr)
     }
 
 

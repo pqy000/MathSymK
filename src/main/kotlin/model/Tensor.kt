@@ -395,24 +395,25 @@ interface Tensor<T : Any> : MathObject<T, EqualPredicate<T>>, AlgebraModel<T, Te
 
 
     /**
-     * Returns an axis-permuted view of this tensor.
-     * The `i`-th axis in the resulting tensor corresponds to the `p.apply(i)`-th axis in this tensor.
+     * Returns an axis-permuted view of this tensor, placing the `i`-th axis at the `p.apply(i)`-th position.
+     * The resulting tensor will have the shape of `p.permute(shape)`.
      */
     fun permute(p: Permutation): Tensor<T> {
         require(p.size == dim)
         val sh = this.shape
         val ranges = shape.map { 0 until it }
-        return SlicedView(this, ranges, p.getArray(), p.permute(sh))
+        return SlicedView(this, ranges, p.inverse().getArray(), p.permute(sh))
     }
 
     /**
-     * Returns an axis-permuted view of this tensor.
-     * The `i`-th axis in the resulting tensor corresponds to the `newAxis[ i ]`-th axis in this tensor.
+     * Re-orders the axes in this tensor according to the given `reorderedAxes`.
+     * The `i`-th axis in the resulting tensor corresponds to the `reorderedAxes[i]`-th axis in this tensor.
+     * For example, if we have a tensor of shape `(a,b,c)`, then `permute(1,2,0)` will result in a tensor of shape `(b,c,a)`.
      *
-     * @param newAxis its size should be equal to `this.dim`.
+     * @param reorderedAxes its size should be equal to `this.dim`.
      */
-    fun permute(vararg newAxis: Int): Tensor<T> {
-        return permute(Permutations.valueOf(*newAxis))
+    fun permute(vararg reorderedAxes: Int): Tensor<T> {
+        return permute(Permutations.fromPermuted(*reorderedAxes))
     }
 
     /**
@@ -919,11 +920,11 @@ interface MutableTensor<T:Any> : Tensor<T> {
         require(p.size == dim)
         val sh = this.shape
         val ranges = shape.map { 0 until it }
-        return MutableSliceView(this, ranges, p.getArray(), p.permute(sh))
+        return MutableSliceView(this, ranges, p.inverse().getArray(), p.permute(sh))
     }
 
-    override fun permute(vararg newAxis: Int): MutableTensor<T> {
-        return permute(Permutations.valueOf(*newAxis))
+    override fun permute(vararg reorderedAxes: Int): MutableTensor<T> {
+        return permute(Permutations.fromPermuted(*reorderedAxes))
     }
 
     override fun transpose(axis1: Int, axis2: Int): MutableTensor<T> {
@@ -1173,8 +1174,8 @@ abstract class AbstractMutableTensor<T:Any>(mc: EqualPredicate<T>, shape: IntArr
         return super<MutableTensor>.div(y)
     }
 
-    override fun permute(vararg newAxis: Int): MutableTensor<T> {
-        return super<MutableTensor>.permute(*newAxis)
+    override fun permute(vararg reorderedAxes: Int): MutableTensor<T> {
+        return super<MutableTensor>.permute(*reorderedAxes)
     }
 
     override fun transpose(axis1: Int, axis2: Int): MutableTensor<T> {

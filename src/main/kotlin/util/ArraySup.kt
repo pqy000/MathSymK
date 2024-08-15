@@ -690,40 +690,40 @@ object ArraySup {
         return set
     }
 
-    /**
-     * Sort the `null` values to the back of the array, returns the number of non-null
-     * objects in the array. The order of the original non-null objects will not be effected
-     * but null values between them will be removed.
-     *
-     * @param objs an array to sort
-     * @return the number of non-null objects.
-     */
-    fun <T> sortNull(objs: Array<T?>): Int {
-        val temp = arrayOfNulls<Any>(objs.size)
-        var n = 0
-        for (t in objs) {
-            if (t != null) {
-                temp[n++] = t
-            }
-        }
-        for (i in objs.indices) {
-            objs[i] = temp[i] as T?
-        }
-        return n
-    }
+//    /**
+//     * Sort the `null` values to the back of the array, returns the number of non-null
+//     * objects in the array. The order of the original non-null objects will not be effected
+//     * but null values between them will be removed.
+//     *
+//     * @param objs an array to sort
+//     * @return the number of non-null objects.
+//     */
+//    fun <T> sortNull(objs: Array<T?>): Int {
+//        val temp = arrayOfNulls<Any>(objs.size)
+//        var n = 0
+//        for (t in objs) {
+//            if (t != null) {
+//                temp[n++] = t
+//            }
+//        }
+//        for (i in objs.indices) {
+//            objs[i] = temp[i] as T?
+//        }
+//        return n
+//    }
 
 
-    /**
-     * Test that this array contains no `null` element.
-     */
-    fun <T> notEmpty(arr: Array<T>): Array<T> {
-        for (anArr in arr) {
-            if (anArr == null) {
-                throw NullPointerException()
-            }
-        }
-        return arr
-    }
+//    /**
+//     * Test that this array contains no `null` element.
+//     */
+//    fun <T> notEmpty(arr: Array<T>): Array<T> {
+//        for (anArr in arr) {
+//            if (anArr == null) {
+//                throw NullPointerException()
+//            }
+//        }
+//        return arr
+//    }
 
     /**
      * Copies the given array.

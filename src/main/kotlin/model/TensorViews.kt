@@ -116,7 +116,7 @@ open class SlicedView<T:Any>(
     }
 
     override fun permute(p: Permutation): Tensor<T> {
-        val am = p.getArray()
+        val am = p.inverse().getArray()
         for (i in am.indices) {
             am[i] = axisMap[am[i]]
         }
@@ -164,8 +164,8 @@ class MutableSliceView<T:Any>(
     }
 
     override fun permute(p: Permutation): MutableTensor<T> {
-        val ranges = this.ranges.toMutableList()
-        val am = p.getArray()
+        val ranges = this.ranges
+        val am = p.inverse().getArray()
         for (i in am.indices) {
             am[i] = axisMap[am[i]]
         }
@@ -179,8 +179,8 @@ class MutableSliceView<T:Any>(
      */
 
 
-    override fun permute(vararg newAxis: Int): MutableTensor<T> {
-        return super<MutableTensor>.permute(*newAxis)
+    override fun permute(vararg reorderedAxes: Int): MutableTensor<T> {
+        return super<MutableTensor>.permute(*reorderedAxes)
     }
 
     override fun transpose(axis1: Int, axis2: Int): MutableTensor<T> {

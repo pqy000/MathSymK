@@ -49,6 +49,20 @@ interface Permutation : BijectiveOperator<Int>, Composable<Permutation>, Compara
     override fun apply(x: Int): Int
 
     /**
+     * Applies this permutation to all the elements in the array: `arr.map { x -> apply(x) }`.
+     *
+     * @param arr the array to apply this permutation.
+     * @param inPlace whether to apply this permutation in place.
+     */
+    fun applyAll(arr: IntArray, inPlace: Boolean = false): IntArray {
+        val result = if (inPlace) arr else IntArray(size)
+        for (i in 0 until size) {
+            result[i] = apply(arr[i])
+        }
+        return result
+    }
+
+    /**
      * Returns the index before this permutation of the element of index `y` after this permutation.
      * It is ensured that `invert(apply(n))==n`.
      *
@@ -106,7 +120,8 @@ interface Permutation : BijectiveOperator<Int>, Composable<Permutation>, Compara
     fun decomposeTransposition(): List<Transposition>
 
     /**
-     * Returns the count of reverse in the array representing this permutation.
+     * Returns the count of reverse in the array representing this permutation,
+     * which is the number of pairs `(i,j)` such that `i<j` and `arr[i]>arr[j]`.
      *
      * @return
      */
@@ -176,13 +191,14 @@ interface Permutation : BijectiveOperator<Int>, Composable<Permutation>, Compara
      * @param array the array to permute, which will be modified.
      */
     @Suppress("DuplicatedCode") // for non-generic types
-    fun <T> permute(array: Array<T>): Array<T> {
+    fun <T> permute(array: Array<T>, inPlace: Boolean = false): Array<T> {
         require(array.size >= size) { "The array's length ${array.size} is not enough." }
-        val origin = array.clone()
+        val origin: Array<T> = if (inPlace) array.clone() else array
+        val dest = if (inPlace) array else array.clone()
         for (i in array.indices) {
-            array[apply(i)] = origin[i]
+            dest[apply(i)] = origin[i]
         }
-        return array
+        return dest
     }
 
     /**
@@ -193,13 +209,14 @@ interface Permutation : BijectiveOperator<Int>, Composable<Permutation>, Compara
      * @see Permutation.permute
      */
     @Suppress("DuplicatedCode") // for non-generic types
-    fun permute(array: IntArray): IntArray {
+    fun permute(array: IntArray, inPlace: Boolean = false): IntArray {
         require(array.size >= size) { "The array's length ${array.size} is not enough." }
-        val origin = array.clone()
+        val origin: IntArray = if (inPlace) array.clone() else array
+        val dest = if (inPlace) array else array.clone()
         for (i in array.indices) {
-            array[apply(i)] = origin[i]
+            dest[apply(i)] = origin[i]
         }
-        return array
+        return dest
     }
 
     /**
@@ -264,26 +281,18 @@ interface Cycle : Permutation {
     fun containsInCycle(x: Int): Boolean
 
 
-    /*
-     * @see cn.ancono.math.numberTheory.combination.Permutation#rank()
-     */
     override fun rank(): Int {
         return cycleLength
     }
 
-    /*
-     * @see cn.ancono.math.numberTheory.combination.Permutation#reduceRotate()
-     */
+
     override fun decompose(): List<Cycle> {
         return listOf(this)
     }
 
 
     override fun apply(x: Int): Int {
-        if (!containsInCycle(x)) {
-            return x
-        }
-        if (cycleLength == 1) {
+        if (cycleLength <= 1 || !containsInCycle(x)) {
             return x
         }
         val earr = elements
@@ -297,33 +306,35 @@ interface Cycle : Permutation {
 
 
     @Suppress("DuplicatedCode") // for non-generic types
-    override fun permute(array: IntArray): IntArray {
+    override fun permute(array: IntArray, inPlace: Boolean): IntArray {
+        val result = if (inPlace) array else array.clone()
         if (cycleLength <= 1) {
-            return array
+            return result
         }
         val cycle = elements
         // place elements[i] to elements[i+1]
-        val t = array[cycle.last()]
+        val t = result[cycle.last()]
         for (i in 0 until cycle.size - 1) {
-            array[cycle[i + 1]] = array[cycle[i]]
+            result[cycle[i + 1]] = result[cycle[i]]
         }
-        array[cycle[0]] = t
-        return array
+        result[cycle[0]] = t
+        return result
     }
 
     @Suppress("DuplicatedCode") // for non-generic types
-    override fun <T> permute(array: Array<T>): Array<T> {
+    override fun <T> permute(array: Array<T>, inPlace: Boolean): Array<T> {
+        val result = if (inPlace) array else array.clone()
         if (cycleLength <= 1) {
-            return array
+            return result
         }
         val cycle = elements
         // place elements[i] to elements[i+1]
-        val t = array[cycle.last()]
+        val t = result[cycle.last()]
         for (i in 0 until cycle.size - 1) {
-            array[cycle[i + 1]] = array[cycle[i]]
+            result[cycle[i + 1]] = result[cycle[i]]
         }
-        array[cycle[0]] = t
-        return array
+        result[cycle[0]] = t
+        return result
     }
 }
 
@@ -353,9 +364,8 @@ interface Transposition : Cycle {
 
     override val cycleLength: Int
         get() = if (first == second) 1 else 2
+
     override val elements: IntArray
-        /*
-                  */
         get() {
             val a = first
             val b = second
@@ -372,8 +382,6 @@ interface Transposition : Cycle {
     }
 
 
-    /*
-     */
     override fun apply(x: Int): Int {
         val f = first
         val s = second
@@ -386,77 +394,40 @@ interface Transposition : Cycle {
         return x
     }
 
-    /*
-     */
+
     override fun invert(y: Int): Int {
         //symmetry
         return apply(y)
     }
 
-    /*
-     */
+
     override fun inverse(): Transposition {
         return this
     }
 
-    /*
-     * @see cn.ancono.math.numberTheory.combination.Permutation#reduce()
-     */
+
     override fun decomposeTransposition(): List<Transposition> {
         return listOf(this)
     }
 
-    /*
-     * @see cn.ancono.math.numberTheory.combination.Permutation#reduceRotate()
-     */
+
     override fun decompose(): List<Cycle> {
         return listOf<Cycle>(this)
     }
 
-
-//    /*
-//     * @see cn.ancono.math.numberTheory.combination.Permutation#apply(boolean[])
-//     */
-//    override fun permute(array: BooleanArray): BooleanArray {
-//        ArraySup.swap(array, first, second)
-//        return array
-//    }
-//
-//    /*
-//     * @see cn.ancono.math.numberTheory.combination.Permutation#apply(double[])
-//     */
-//    override fun permute(array: DoubleArray): DoubleArray {
-//        ArraySup.swap(array, first, second)
-//        return array
-//    }
-
-    /*
-     * @see cn.ancono.math.numberTheory.combination.Permutation#apply(int[])
-     */
-    override fun permute(array: IntArray): IntArray {
-        ArraySup.swap(array, first, second)
-        return array
+    override fun permute(array: IntArray, inPlace: Boolean): IntArray {
+        val result = if (inPlace) array else array.clone()
+        ArraySup.swap(result, first, second)
+        return result
     }
 
-//    /*
-//     * @see cn.ancono.math.numberTheory.combination.Permutation#apply(long[])
-//     */
-//    override fun permute(array: LongArray): LongArray {
-//        ArraySup.swap(array, first, second)
-//        return array
-//    }
-
-    /*
-     * @see cn.ancono.math.numberTheory.combination.Permutation#apply(java.lang.Object[])
-     */
-    override fun <T> permute(array: Array<T>): Array<T> {
-        ArraySup.swap(array, first, second)
-        return array
+    override fun <T> permute(array: Array<T>, inPlace: Boolean): Array<T> {
+        val result = if (inPlace) array else array.clone()
+        ArraySup.swap(result, first, second)
+        return result
     }
 
-    /*
-     * @see cn.ancono.math.numberTheory.combination.Permutation#getArray()
-     */
+
     override fun getArray(): IntArray {
         val arr: IntArray = ArraySup.indexArray(size)
         return permute(arr)
