@@ -18,7 +18,7 @@ interface CalculatorHolder<T, S : EqualPredicate<T>> {
      *
      * @return a calculator
      */
-    val calculator: S
+    val model: S
 
 }
 
@@ -38,18 +38,18 @@ interface IMathObject<T> {
 }
 
 /**
- * Describes a (computational) math object which holds a subclass of `EqualPredicate` as it 'calculator' for
- * computational purpose.
+ * Describes a (computational) math object which holds a [model] for its data.
+ * The model provides the operations for the math object.
+ * For example, we can have polynomials with different coefficients in `Double` or in `Fraction`, which have different models.
  *
  * @author liyicheng
- * @see MathObjectReal
  */
 interface MathObject<T : Any, S : EqualPredicate<T>> : CalculatorHolder<T, S>, IMathObject<T> {
 
     /**
-     * Gets the calculator of this math object.
+     * Gets the model of this math object.
      */
-    override val calculator: S
+    override val model: S
 
 
 //    /**
@@ -61,7 +61,7 @@ interface MathObject<T : Any, S : EqualPredicate<T>> : CalculatorHolder<T, S>, I
 //    override fun toString(): String
 
     /**
-     * Maps this math object to use a new calculator.
+     * Maps this math object to use a new model.
      *
      * @param newCalculator a calculator that is of the same type as `S` but with generic parameter `N`.
      */
@@ -70,7 +70,7 @@ interface MathObject<T : Any, S : EqualPredicate<T>> : CalculatorHolder<T, S>, I
 }
 
 
-abstract class AbstractMathObject<T : Any, S : EqualPredicate<T>>(override val calculator: S) : MathObject<T, S> {
+abstract class AbstractMathObject<T : Any, S : EqualPredicate<T>>(override val model: S) : MathObject<T, S> {
 //    override fun toString(): String {
 //        return toString(NumberFormatter.defaultFormatter())
 //    }

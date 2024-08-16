@@ -38,7 +38,7 @@ interface EqualPredicate<T> {
     /**
      * Gets the class of the number that this calculator deals with.
      */
-    val numberClass: Class<T>
+    val numberClass: Class<*>
 
     companion object {
 

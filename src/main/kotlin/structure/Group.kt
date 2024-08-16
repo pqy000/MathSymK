@@ -206,9 +206,8 @@ interface AddMonoid<T : Any> : AddSemigroup<T> {
     /**
      * Returns the class of the number.
      */
-    override val numberClass: Class<T>
-        @Suppress("UNCHECKED_CAST")
-        get() = (zero as Any).javaClass as Class<T>
+    override val numberClass: Class<*>
+        get() = zero.javaClass
 }
 
 /**
@@ -352,7 +351,7 @@ interface MulSemigroup<T> : EqualPredicate<T> {
  * @author liyicheng 2021-05-07 19:02
  * @see Monoid
  */
-interface MulMonoid<T> : MulSemigroup<T> {
+interface MulMonoid<T : Any> : MulSemigroup<T> {
     /*
      * Created by liyicheng at 2020-03-06 22:14
      */
@@ -394,9 +393,8 @@ interface MulMonoid<T> : MulSemigroup<T> {
     /**
      * Returns the class of the number.
      */
-    override val numberClass: Class<T>
-        @Suppress("UNCHECKED_CAST")
-        get() = (one as Any).javaClass as Class<T>
+    override val numberClass: Class<*>
+        get() = one.javaClass
 }
 
 
@@ -430,7 +428,7 @@ interface MulMonoid<T> : MulSemigroup<T> {
  * @author liyicheng 2021-05-07 19:05
  * @see Group
  */
-interface MulGroup<T> : MulMonoid<T> {
+interface MulGroup<T : Any> : MulMonoid<T> {
     //Updated by lyc at 2024-08-11
 
     /**
@@ -523,7 +521,7 @@ fun <T : Any> AddGroup<T>.asGroup(): Group<T> {
             return m.add(x, y)
         }
 
-        override val numberClass: Class<T>
+        override val numberClass: Class<*>
             get() = m.numberClass
     }
 }

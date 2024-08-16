@@ -18,7 +18,7 @@ interface UnitRing<T : Any> : Ring<T>, MulMonoid<T> {
         throw UnsupportedOperationException()
     }
 
-    override val numberClass: Class<T>
+    override val numberClass: Class<*>
         get() = super<Ring>.numberClass
 
     fun of(n: Long): T {

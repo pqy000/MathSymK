@@ -570,6 +570,11 @@ data class Fraction internal constructor(
             }
         }
 
+        @JvmStatic
+        fun of(number:Int) : Fraction{
+            return of(number.toLong())
+        }
+
         /**
          * Return a fraction representing the value of numerator/denominator,proper reduction
          * will be done.

@@ -8,7 +8,7 @@ import kotlin.test.assertEquals
 
 
 class PolynomialTest {
-    private val field: Field<Fraction> = Fraction.FractionAsQuotient
+    private val fractions: Field<Fraction> = Fraction.FractionAsQuotient
     private val ints = NumberModels.IntAsIntegers
 
 
@@ -45,7 +45,7 @@ class PolynomialTest {
 
 
     @Test
-    fun testApply(){
+    fun testApply() {
         val f = Polynomial.of(ints, 1, 2, 1) // (x+1)^2
         assertEquals(4, f.apply(1))
         assertEquals(0, f.apply(-1))
@@ -55,6 +55,18 @@ class PolynomialTest {
         assertEquals(16, g.apply(2))
         assertEquals(0, g.apply(0))
         assertEquals(1, g.apply(1))
+    }
+
+    @Test
+    fun testMap() {
+        val f1 = Polynomial.of(ints, 1, 2, 1) // (x+1)^2
+        val f2 = f1.mapTo(fractions, Fraction::of)
+        assertEquals(Fraction.of(4), f2.apply(Fraction.ONE))
+        assertEquals(Fraction.of(f1.apply(1)), f2.apply(Fraction.ONE))
+
+        val polyModel = NumberModels.asRing(Polynomial.zero(ints))
+        val f3 = f1.mapTo(polyModel) { c -> Polynomial.constant(ints, c) }
+        assertEquals(f1,f3.apply(Polynomial.x(ints)))
     }
 
 //    @Test

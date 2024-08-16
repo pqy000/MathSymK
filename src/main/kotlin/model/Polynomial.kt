@@ -1,19 +1,25 @@
 package model
 
+import cn.mathsymk.AbstractMathObject
+import cn.mathsymk.IMathObject
+import cn.mathsymk.MathObject
 import cn.mathsymk.function.MathOperator
 import cn.mathsymk.model.struct.AlgebraModel
 import cn.mathsymk.model.struct.EuclidRingNumberModel
 import cn.mathsymk.structure.*
+import java.util.function.Function
+import java.util.stream.Collectors
 
 typealias PTerm<T> = IndexedValue<T>
 
 class Polynomial<T : Any> internal constructor(
-    val model: Ring<T>,
+    model: Ring<T>,
     /**
      * A list of terms of this polynomial.
      */
     val terms: List<PTerm<T>>
-) : AlgebraModel<T, Polynomial<T>>, EuclidRingNumberModel<Polynomial<T>>, MathOperator<T> {
+) : AbstractMathObject<T, Ring<T>>(model),
+    AlgebraModel<T, Polynomial<T>>, EuclidRingNumberModel<Polynomial<T>>, MathOperator<T> {
 
     /**
      * The degree of this polynomial, which is the highest power of `x` in this polynomial.
@@ -51,6 +57,69 @@ class Polynomial<T : Any> internal constructor(
         return result
     }
 
+    override fun valueEquals(obj: IMathObject<T>): Boolean {
+        if (obj !is Polynomial<T>) {
+            return false
+        }
+        if (model != obj.model) {
+            return false
+        }
+        for ((t1, t2) in terms.zip(obj.terms)) {
+            if (t1.index != t2.index || model.isEqual(t1.value, t2.value)) {
+                return false
+            }
+        }
+        return true
+    }
+
+    override fun <N : Any> mapTo(newCalculator: EqualPredicate<N>, mapper: Function<T, N>): Polynomial<N> {
+        val newModel = newCalculator as Ring<N>
+        val newTerms = terms.map { PTerm(it.index, mapper.apply(it.value)) } // possibly zero after mapping
+        mergeTerms(newModel, newTerms)
+        return Polynomial(newModel, newTerms)
+    }
+
+    override fun toString(): String {
+        if (isZero()) {
+            return "0"
+        }
+        return terms.reversed().joinToString(" + ") { (index, value) ->
+            if (index == 0) {
+                value.toString()
+            } else if (index == 1) {
+                "$value*x"
+            } else {
+                "$value*x^$index"
+            }
+        }
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is Polynomial<*>) return false
+
+        if (model != other.model) return false
+        for ((t1, t2) in terms.zip(other.terms)) {
+            if (t1.index != t2.index || t1.value != t2.value) {
+                return false
+            }
+        }
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = model.hashCode()
+        for (term in terms) {
+            result = 31 * result + term.hashCode()
+        }
+        return result
+    }
+
+    /*
+    Polynomial methods
+     */
+
     override fun apply(x: T): T {
         if (terms.isEmpty()) {
             return model.zero
@@ -61,16 +130,16 @@ class Polynomial<T : Any> internal constructor(
         var pos = terms.lastIndex
         while (--pos >= 0) {
             term = terms[pos]
-            val p_diff = power - term.index
-            result = if (p_diff == 1) {
+            val pDiff = power - term.index
+            result = if (pDiff == 1) {
                 model.eval { result * x }
             } else {
-                model.eval { result * x.pow(p_diff.toLong()) }
+                model.eval { result * x.pow(pDiff.toLong()) }
             }
             result = model.add(result, term.value)
             power = term.index
         }
-        if(power > 0){
+        if (power > 0) {
             result = model.eval { result * x.pow(power.toLong()) }
         }
         return result
@@ -140,34 +209,7 @@ class Polynomial<T : Any> internal constructor(
         TODO()
     }
 
-    override fun toString(): String {
-        if (isZero()) {
-            return "0"
-        }
-        return terms.reversed().joinToString(" + ") { (index, value) ->
-            if (index == 0) {
-                value.toString()
-            } else if (index == 1) {
-                "$value*x"
-            } else {
-                "$value*x^$index"
-            }
-        }
-    }
 
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other !is Polynomial<*>) return false
-
-        if (model != other.model) return false
-        for ((t1, t2) in terms.zip(other.terms)) {
-            if (t1.index != t2.index || t1.value != t2.value) {
-                return false
-            }
-        }
-
-        return true
-    }
 
 
     companion object {
@@ -399,5 +441,35 @@ class Polynomial<T : Any> internal constructor(
         fun <T : Any> sum(model: Ring<T>, vararg polys: Polynomial<T>): Polynomial<T> {
             return Polynomial(model, addTermsAll(model, polys.map { it.terms }))
         }
+    }
+}
+
+class PolynomialAsRing<T : Any>(val model: Ring<T>) : Ring<Polynomial<T>> {
+    override val zero: Polynomial<T>
+        get() = Polynomial.zero(model)
+
+    override fun add(x: Polynomial<T>, y: Polynomial<T>): Polynomial<T> {
+        return x + y
+    }
+
+    override fun negate(x: Polynomial<T>): Polynomial<T> {
+        return -x
+    }
+
+    override fun multiply(x: Polynomial<T>, y: Polynomial<T>): Polynomial<T> {
+        return x * y
+    }
+
+    override val numberClass: Class<*>
+        get() = Polynomial::class.java
+
+    override fun isEqual(x: Polynomial<T>, y: Polynomial<T>): Boolean {
+        return x.valueEquals(y)
+    }
+
+
+
+    override fun contains(x: Polynomial<T>): Boolean {
+        TODO("Not yet implemented")
     }
 }
