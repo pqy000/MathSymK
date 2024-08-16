@@ -915,7 +915,7 @@ data class Fraction internal constructor(
             return o1.compareTo(o2)
         }
 
-        override fun pow(x: Fraction, n: Long): Fraction {
+        override fun power(x: Fraction, n: Long): Fraction {
             return x.pow(n)
         }
     }

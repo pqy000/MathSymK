@@ -324,7 +324,7 @@ interface MulSemigroup<T> : EqualPredicate<T> {
     val isCommutative: Boolean
         get() = false
 
-    fun pow(x: T, n: Long): T {
+    fun power(x: T, n: Long): T {
         return ModelPatterns.binaryProduce(n, x, this::multiply)
     }
 
@@ -339,6 +339,8 @@ interface MulSemigroup<T> : EqualPredicate<T> {
      */
     operator fun T.times(y: T): T = multiply(this, y)
 
+
+    fun T.pow(n: Long): T = power(this, n)
 
 }
 
@@ -377,11 +379,11 @@ interface MulMonoid<T> : MulSemigroup<T> {
      *
      * @param n a non-negative integer
      */
-    override fun pow(x: T, n: Long): T {
+    override fun power(x: T, n: Long): T {
         return if (n == 0L) {
             one
         } else {
-            super.pow(x, n)
+            super.power(x, n)
         }
     }
 
@@ -461,7 +463,7 @@ interface MulGroup<T> : MulMonoid<T> {
      *
      * @param n an integer
      */
-    override fun pow(x: T, n: Long): T {
+    override fun power(x: T, n: Long): T {
         if (n == 0L) {
             return one
         }

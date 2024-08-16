@@ -330,7 +330,7 @@ object NumberModels {
             return o1.compareTo(o2)
         }
 
-        override fun pow(x: Double, n: Long): Double {
+        override fun power(x: Double, n: Long): Double {
             return Math.pow(x, n.toDouble())
         }
 

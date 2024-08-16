@@ -217,8 +217,8 @@ interface Reals<T : Any> : Quotients<T>, CompleteField<T> {
      * @return `p ^ exp`.
      * @throws ArithmeticException             if this operation causes an exceptional arithmetic condition.
      */
-    override fun pow(x: T, n: Long): T {
-        return super<Quotients>.pow(x, n)
+    override fun power(x: T, n: Long): T {
+        return super<Quotients>.power(x, n)
     }
 
     /**

@@ -1,11 +1,9 @@
 package model
 
+import cn.mathsymk.function.MathOperator
 import cn.mathsymk.model.struct.AlgebraModel
 import cn.mathsymk.model.struct.EuclidRingNumberModel
-import cn.mathsymk.structure.EuclideanDomain
-import cn.mathsymk.structure.Field
-import cn.mathsymk.structure.Ring
-import cn.mathsymk.structure.UnitRing
+import cn.mathsymk.structure.*
 
 typealias PTerm<T> = IndexedValue<T>
 
@@ -15,7 +13,7 @@ class Polynomial<T : Any> internal constructor(
      * A list of terms of this polynomial.
      */
     val terms: List<PTerm<T>>
-) : AlgebraModel<T, Polynomial<T>>, EuclidRingNumberModel<Polynomial<T>> {
+) : AlgebraModel<T, Polynomial<T>>, EuclidRingNumberModel<Polynomial<T>>, MathOperator<T> {
 
     /**
      * The degree of this polynomial, which is the highest power of `x` in this polynomial.
@@ -28,7 +26,9 @@ class Polynomial<T : Any> internal constructor(
 
     }
 
-
+    /**
+     * Returns the coefficient of the term with the specified [index].
+     */
     operator fun get(index: Int): T {
         return terms.binarySearchBy(index) { it.index }.let {
             if (it >= 0) {
@@ -37,6 +37,43 @@ class Polynomial<T : Any> internal constructor(
                 model.zero
             }
         }
+    }
+
+    /**
+     * Returns a list of coefficients of this polynomial.
+     * The coefficient of the term with index `i` is at the position `i` in the list.
+     */
+    fun coefficientList(): List<T> {
+        val result = MutableList(degree + 1) { model.zero }
+        for ((index, value) in terms) {
+            result[index] = value
+        }
+        return result
+    }
+
+    override fun apply(x: T): T {
+        if (terms.isEmpty()) {
+            return model.zero
+        }
+        var term = terms.last()
+        var power = term.index
+        var result = term.value
+        var pos = terms.lastIndex
+        while (--pos >= 0) {
+            term = terms[pos]
+            val p_diff = power - term.index
+            result = if (p_diff == 1) {
+                model.eval { result * x }
+            } else {
+                model.eval { result * x.pow(p_diff.toLong()) }
+            }
+            result = model.add(result, term.value)
+            power = term.index
+        }
+        if(power > 0){
+            result = model.eval { result * x.pow(power.toLong()) }
+        }
+        return result
     }
 
     override fun isZero(): Boolean {
@@ -51,7 +88,7 @@ class Polynomial<T : Any> internal constructor(
         return Polynomial(model, multiplyTerms(model, terms, y.terms))
     }
 
-    private inline fun mapTerms(transform: (T)->T): Polynomial<T> {
+    private inline fun mapTerms(transform: (T) -> T): Polynomial<T> {
         return Polynomial(model, terms.map { PTerm(it.index, transform(it.value)) })
     }
 
@@ -123,7 +160,7 @@ class Polynomial<T : Any> internal constructor(
         if (other !is Polynomial<*>) return false
 
         if (model != other.model) return false
-        for ((t1,t2) in terms.zip(other.terms)) {
+        for ((t1, t2) in terms.zip(other.terms)) {
             if (t1.index != t2.index || t1.value != t2.value) {
                 return false
             }
@@ -131,9 +168,6 @@ class Polynomial<T : Any> internal constructor(
 
         return true
     }
-
-
-
 
 
     companion object {
@@ -350,11 +384,11 @@ class Polynomial<T : Any> internal constructor(
             return Polynomial(model, terms)
         }
 
-        fun <T:Any> of(model: Ring<T>, vararg coef: T): Polynomial<T> {
+        fun <T : Any> of(model: Ring<T>, vararg coef: T): Polynomial<T> {
             return fromList(model, coef.asList())
         }
 
-        fun <T:Any> fromPower(model: Ring<T>, power: Int, value: T): Polynomial<T> {
+        fun <T : Any> fromPower(model: Ring<T>, power: Int, value: T): Polynomial<T> {
             if (model.isZero(value)) {
                 return zero(model)
             }
@@ -362,7 +396,7 @@ class Polynomial<T : Any> internal constructor(
         }
 
 
-        fun <T:Any> sum(model: Ring<T>, vararg polys: Polynomial<T>): Polynomial<T> {
+        fun <T : Any> sum(model: Ring<T>, vararg polys: Polynomial<T>): Polynomial<T> {
             return Polynomial(model, addTermsAll(model, polys.map { it.terms }))
         }
     }

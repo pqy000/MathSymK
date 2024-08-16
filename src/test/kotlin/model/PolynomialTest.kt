@@ -41,9 +41,21 @@ class PolynomialTest {
         assertEquals(zero, zero * f)
         assertEquals(zero, f * zero)
         assertEquals(zero, f * 0)
-
     }
 
+
+    @Test
+    fun testApply(){
+        val f = Polynomial.of(ints, 1, 2, 1) // (x+1)^2
+        assertEquals(4, f.apply(1))
+        assertEquals(0, f.apply(-1))
+        assertEquals(1, f.apply(0))
+
+        val g = Polynomial.fromPower(ints, 4, 1) // x^4
+        assertEquals(16, g.apply(2))
+        assertEquals(0, g.apply(0))
+        assertEquals(1, g.apply(1))
+    }
 
 //    @Test
 //    fun difference() {

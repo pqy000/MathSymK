@@ -198,11 +198,11 @@ object ModelPatterns {
     @JvmStatic
     fun <T> binaryProduce(pow: Long, start: T, x: T, multiply: BinaryOperator<T>): T {
         require(pow >= 0) { "pow>=0 is required" }
-        var p = pow
-        var cumulated = x
-        if (p == 0L) {
+        if (pow == 0L) {
             return start
         }
+        var p = pow
+        var cumulated = x
         var r = start
         while (p > 0) {
             if ((p and 1L) != 0L) {
