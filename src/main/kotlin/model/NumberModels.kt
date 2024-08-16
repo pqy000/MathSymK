@@ -118,6 +118,10 @@ object NumberModels {
 
         override val one: Int = 1
 
+        override fun isUnit(x: Int): Boolean {
+            return x == 1 || x == -1
+        }
+
         override fun add(x: Int, y: Int): Int {
             return x + y
         }
@@ -193,6 +197,10 @@ object NumberModels {
         override val zero: Long = 0L
 
         override val one: Long = 1L
+
+        override fun isUnit(x: Long): Boolean {
+            return x == 1L || x == -1L
+        }
 
         override fun add(x: Long, y: Long): Long {
             return x + y

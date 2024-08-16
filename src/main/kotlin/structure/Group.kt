@@ -136,7 +136,7 @@ interface AddSemigroup<T : Any> : EqualPredicate<T> {
      *
      * @param elements elements to sum
      */
-    fun sum(elements: Iterable<T>): T {
+    fun sum(elements: List<T>): T {
         return elements.reduce(this::add)
     }
 
@@ -198,7 +198,7 @@ interface AddMonoid<T : Any> : AddSemigroup<T> {
     /**
      * Returns the sum of all the elements.
      */
-    override fun sum(elements: Iterable<T>): T {
+    override fun sum(elements: List<T>): T {
         return elements.fold(zero, this::add)
     }
 
