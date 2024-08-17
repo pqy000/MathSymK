@@ -3,14 +3,19 @@ package model
 import cn.mathsymk.model.Fraction
 import cn.mathsymk.model.NumberModels
 import cn.mathsymk.structure.Field
+import cn.mathsymk.structure.Integers
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 
 class PolynomialTest {
     private val fractions: Field<Fraction> = Fraction.FractionAsQuotient
-    private val ints = NumberModels.IntAsIntegers
+    private val ints: Integers<Int> = NumberModels.IntAsIntegers
 
+
+    fun of(vararg coefficients: Int): Polynomial<Fraction> {
+        return Polynomial.of(ints, *coefficients.toTypedArray()).mapTo(fractions, Fraction::of)
+    }
 
     @Test
     fun testSum() {
@@ -27,6 +32,11 @@ class PolynomialTest {
         assertEquals(f * 3, Polynomial.sum(ints, f, f, f))
         assertEquals(f, Polynomial.sum(ints, f, -f, f))
         assertEquals(f + g, Polynomial.sum(ints, f, g))
+    }
+
+    @Test
+    fun testSum2() {
+
     }
 
 
@@ -66,7 +76,46 @@ class PolynomialTest {
 
         val polyModel = NumberModels.asRing(Polynomial.zero(ints))
         val f3 = f1.mapTo(polyModel) { c -> Polynomial.constant(ints, c) }
-        assertEquals(f1,f3.apply(Polynomial.x(ints)))
+        assertEquals(f1, f3.apply(Polynomial.x(ints)))
+    }
+
+    @Test
+    fun testCommonRoots() {
+        // Test case 1: Simple linear polynomials with no common root
+        run {
+            val poly1 = of( 1, 1)  // 1 + x
+            val poly2 = of( -1, 1) // -1 + x
+            val roots1 = poly1.hasCommonRoot(poly2)
+            assertEquals(false, roots1, "1 + x and -1 + x should not have a common root")
+        }
+
+        // Test case 2: Polynomials with a common root
+        run {
+            val poly1 = of( -1, 1)   // -1 + x
+            val poly2 = of( 1, -2, 1) // 1 - 2x + x^2
+            val roots2 = poly1.hasCommonRoot(poly2)
+            assertEquals(true, roots2, "-1 + x and 1 - 2x + x^2 should have a common root")
+        }
+    }
+
+    @Test
+    fun testPolynomialResultant() {
+        // Test case 1: Simple linear polynomials with no common root
+        run {
+            val poly1 = of( 1, 1)  // 1 + x
+            val poly2 = of( -1, 1) // -1 + x
+            val res1 = poly1.resultant(poly2)
+            assertEquals(Fraction.of(2), res1, "Resultant of 1 + x and -1 + x should be 2")
+        }
+
+
+        // Test case
+        run {
+            val poly1 = of( -1, 1)   // -1 + x
+            val poly2 = of( 1, -2, 1) // 1 - 2x + x^2
+            val res = poly1.resultant(poly2)
+            assertEquals(Fraction.ZERO, res, "Resultant of -1 + x and 1 - 2x + x^2 should be 0")
+        }
     }
 
 //    @Test

@@ -93,8 +93,12 @@ interface EuclidRingNumberModel<T : EuclidRingNumberModel<T>> : RingModel<T> {
 
     fun mod(y: T): T = rem(y)
 
-
-    fun isCoprime(y: T): Boolean
+    /**
+     * Determines whether `this` and `y` are coprime, that is, their greatest common divisor is a unit.
+     */
+    fun isCoprime(y: T): Boolean{
+        return gcd(y).isUnit()
+    }
 
     /**
      * Returns the maximal degree of [y] in this, that it, the maximum integer `n`

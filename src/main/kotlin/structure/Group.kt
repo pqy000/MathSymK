@@ -359,13 +359,18 @@ interface MulMonoid<T : Any> : MulSemigroup<T> {
 
 
     /**
-     * The zero element, which we often denote as `1`.
+     * The identity element, which we often denote as `1`.
      *
      * It satisfies that:
      *
      *     1 * x = x * 1 = x
      */
     val one: T
+
+    /**
+     * Determines whether `isEqual(one, x)`.
+     */
+    fun isOne(x: T) = isEqual(one, x)
 
     /**
      * Returns the result of multiplying [x] for [n] times, which we usually denote as `x^n`.

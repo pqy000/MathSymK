@@ -45,6 +45,11 @@ class Polynomial<T : Any> internal constructor(
 
     }
 
+
+    /*
+    Basic coefficient operations
+     */
+
     /**
      * Returns the coefficient of the term with the specified [index].
      */
@@ -58,6 +63,7 @@ class Polynomial<T : Any> internal constructor(
         }
     }
 
+
     /**
      * Returns a list of coefficients of this polynomial.
      * The coefficient of the term with index `i` is at the position `i` in the list.
@@ -69,6 +75,33 @@ class Polynomial<T : Any> internal constructor(
         }
         return result
     }
+
+    /**
+     * Returns the leading term of this polynomial.
+     *
+     * The leading term is the non-zero term with the highest power of `x`.
+     * If the polynomial is zero, then the leading term does not exist, and a `NoSuchElementException` will be thrown.
+     *
+     * @throws NoSuchElementException if this polynomial is zero.
+     */
+    fun leadTerm(): PTerm<T> = terms.last()
+
+
+    override fun isZero(): Boolean {
+        return terms.isEmpty()
+    }
+
+    /**
+     * Determines whether this polynomial is a constant polynomial, including the zero polynomial.
+     */
+    fun isConstant(): Boolean {
+        return degree <= 0
+    }
+
+
+    /*
+    MathObject
+     */
 
     override fun valueEquals(obj: IMathObject<T>): Boolean {
         if (obj !is Polynomial<T>) {
@@ -156,30 +189,82 @@ class Polynomial<T : Any> internal constructor(
         return result
     }
 
-    override fun isZero(): Boolean {
-        return terms.isEmpty()
+
+    /*
+    Coefficient-wise transformations
+     */
+
+    private inline fun mapTermsNonZeroT(transform: (PTerm<T>) -> PTerm<T>): Polynomial<T> {
+        return Polynomial(model, terms.map { transform(it) })
     }
 
-    override operator fun plus(y: Polynomial<T>): Polynomial<T> {
-        return Polynomial(model, addTerms(model, terms, y.terms))
+    private inline fun mapTermsNonZero(crossinline transform: (T) -> T): Polynomial<T> {
+        return mapTermsNonZeroT { PTerm(it.pow, transform(it.value)) }
     }
-
-    override operator fun times(y: Polynomial<T>): Polynomial<T> {
-        return Polynomial(model, multiplyTerms(model, terms, y.terms))
-    }
-
-    private inline fun mapTermsNonZero(transform: (T) -> T): Polynomial<T> {
-        return Polynomial(model, terms.map { PTerm(it.pow, transform(it.value)) })
-    }
-
 
     override fun times(k: T): Polynomial<T> {
         if (model.isZero(k)) {
             return Polynomial(model, emptyList())
         }
         return mapTermsPossiblyZero(terms, model) { model.multiply(it, k) }
-//        return mapTermsNonZero { model.multiply(it, k) }
     }
+
+    override fun unaryMinus(): Polynomial<T> {
+        return mapTermsNonZero { model.negate(it) }
+    }
+
+    fun shiftRight(shift: Int): Polynomial<T> {
+        if (isZero()) {
+            return this
+        }
+        if (shift == 0) {
+            return this
+        }
+        if (shift > 0) {
+            return Polynomial(model, terms.map { PTerm(it.pow + shift, it.value) })
+        }
+        val remainingTerms = terms.mapNotNull { term ->
+            val newPow = term.pow + shift
+            if (newPow < 0) {
+                null
+            } else {
+                PTerm(newPow, term.value)
+            }
+        }
+        return Polynomial(model, remainingTerms)
+    }
+
+//    fun timesSingle(pow : Int, c : T) : Polynomial<T> {
+//        if (model.isZero(c)) {
+//            return zero(model)
+//        }
+//        val newTerms = map
+//    }
+
+    /*
+    Polynomial as a ring
+     */
+
+
+    override operator fun plus(y: Polynomial<T>): Polynomial<T> {
+        return addTerms2(model, terms, y.terms)
+    }
+
+    override operator fun times(y: Polynomial<T>): Polynomial<T> {
+        return multiplyTerms(model, terms, y.terms)
+    }
+
+
+    /*
+    Polynomial on UnitRing
+     */
+
+
+    override fun isUnit(): Boolean {
+        require(model is UnitRing<T>) { "The model is not a unit ring." }
+        return degree == 0 && model.isUnit(terms[0].value)
+    }
+
 
     override fun div(k: T): Polynomial<T> {
         if (model.isZero(k)) {
@@ -191,22 +276,30 @@ class Polynomial<T : Any> internal constructor(
         // it is not possible to get a zero term
     }
 
-    override fun unaryMinus(): Polynomial<T> {
-        return mapTermsNonZero { model.negate(it) }
+    /**
+     * Divides this polynomial by a number to get a new polynomial whose leading coefficient is one.
+     */
+    fun toMonic(): Polynomial<T> {
+        if (isZero()) {
+            return this
+        }
+        val c = terms.last().value
+        val mc = model as UnitRing
+        if (isZero() || mc.isOne(c)) {
+            return this
+        }
+        return div(c)
     }
 
-    override fun isUnit(): Boolean {
-        require(model is UnitRing<T>) { "The model is not a unit ring." }
-        return degree == 0 && model.isUnit(terms[0].value)
-    }
+
+    /*
+    Polynomials on Field
+     */
+
 
     override fun gcdUV(y: Polynomial<T>): Triple<Polynomial<T>, Polynomial<T>, Polynomial<T>> {
         require(model is UnitRing<T>) { "The model is not a unit ring." }
         return EuclideanDomain.gcdUV(this, y, zero(model), one(model))
-    }
-
-    override fun isCoprime(y: Polynomial<T>): Boolean {
-        TODO("Not yet implemented")
     }
 
 
@@ -221,7 +314,174 @@ class Polynomial<T : Any> internal constructor(
             throw ArithmeticException("Division by zero")
         }
         require(model is Field<T>) { "The model is not a field." }
+        if (isZero()) {
+            return this to this
+        }
+        var remainder = this
+        val quotientTerms = mutableListOf<PTerm<T>>()
+
+        val leadTermY = y.leadTerm()
+        while (!remainder.isZero() && remainder.degree >= y.degree) {
+            val leadTermR = remainder.leadTerm()
+            val q = model.divide(leadTermR.value, leadTermY.value)
+            val leadPowQuotient = leadTermR.pow - leadTermY.pow
+            val quotientTerm = PTerm(leadPowQuotient, q)
+            quotientTerms.add(quotientTerm)
+
+            val subtrahend = y.mapTermsNonZeroT { PTerm(it.pow + leadPowQuotient, model.multiply(it.value, q)) }
+
+            remainder -= subtrahend
+        }
+
+        val quotient = Polynomial(model, quotientTerms)
+        return quotient to remainder
+    }
+
+
+    /*
+    Calculus operations
+     */
+
+
+    /**
+     * Returns the formal derivative of this polynomial.
+     */
+    fun derivative(): Polynomial<T> {
+        if (isConstant()) {
+            return zero(model)
+        }
+        val nonConstantTerms = if (terms[0].pow == 0) terms.subList(1, terms.size) else terms
+        return mapTermsPossiblyZeroT(nonConstantTerms, model) { t ->
+            PTerm(t.pow - 1, model.multiplyLong(t.value, t.pow.toLong()))
+        }
+    }
+
+    /**
+     * Returns the formal indefinite integral of this polynomial, with the constant of integration being zero.
+     */
+    fun integral(): Polynomial<T> {
+        if (isZero()) {
+            return zero(model)
+        }
+        require(model is Field<T>) { "The model is not a field." }
+        return mapTermsPossiblyZeroT(terms, model) { t ->
+            PTerm(t.pow + 1, model.divideLong(t.value, (t.pow + 1).toLong()))
+        }
+    }
+
+    /*
+    Extra algebraic operations for polynomials
+     */
+
+    /**
+     * Returns the `gcd` of all coefficients of this polynomial, which is referred to as the content of this polynomial.
+     *
+     * It is required that the [model] is a [EuclideanDomain].
+     *
+     * @return the greatest common divisor of all coefficients of this polynomial.
+     */
+    fun cont() : T{
+        require(model is EuclideanDomain) { "The model is not a Euclidean domain." }
+        if (isZero()) {
+            return model.zero
+        }
+        return terms.fold(model.zero) { acc, term ->
+            model.gcd(acc, term.value)
+        }
+    }
+
+    /**
+     * Returns the primitive part of this polynomial, which is the polynomial obtained by dividing this polynomial by its content.
+     *
+     * The primitive part is a polynomial whose content is one.
+     *
+     * @return the primitive part of this polynomial.
+     * @see cont
+     */
+    fun toPrimitive():Polynomial<T>{
+        if (isZero()) {
+            return this
+        }
+        return div(cont())
+    }
+
+//    /**
+//     * Returns the sylvester matrix of this and g. It is required that `this` and
+//     * `g` must not be zero at the same time.
+//     * <pre>R(this,g)</pre>
+//     *
+//     * @param g another polynomial
+//     * @return a square matrix whose size is `this.degree + g.degree`.
+//     */
+//    fun sylvesterMatrix(g: Polynomial<T>): Matrix<T> {
+//        return sylvesterDet(this, g)
+//    }
+//
+//    /**
+//     * Returns the determinant of the sylvester matrix of this and g. It is required that `this` and
+//     * `g` must not be zero at the same time.
+//     * <pre>|R(this,g)|</pre>
+//     *
+//     * @param g another polynomial
+//     * @return the determinant of the sylvester matrix
+//     */
+//    fun sylvesterDet(g: Polynomial<T>): T {
+//        return sylvesterMatrix(g).det()
+//    }
+
+
+    /**
+     * Determines whether this polynomial and another polynomial have a common root.
+     */
+    fun hasCommonRoot(y: Polynomial<T>): Boolean {
+        val gcd = gcd(y)
+        return !gcd.isConstant()
+    }
+
+
+    /**
+     * Returns the resultant of this polynomial and another polynomial.
+     *
+     * The resultant of two polynomials `f` and `g` is a scalar (an element of the field) such that
+     * the resultant of `f` and `g` is zero if and only if `f` and `g` have a common root.
+     *
+     * It is required that the [model] is a [Field].
+     *
+     * @param y another polynomial
+     * @return the resultant of this polynomial and `y`.
+     */
+    fun resultant(y: Polynomial<T>): T {
+        // 结式
         TODO()
+//        require(model is Field<T>) { "The model is not a field." }
+//
+//        // If either polynomial is zero, the resultant is zero
+//        if (this.isZero() || y.isZero()) {
+//            return model.zero
+//        }
+//
+//        // Compute the GCD of the two polynomials
+//        val gcd = gcd(y)
+//
+//        // If the GCD is not a constant polynomial, the resultant is zero
+//        if (gcd.degree > 0) {
+//            return model.zero
+//        }
+//
+//        // Otherwise, compute the resultant using the properties of polynomials
+//        // (this is simplified for a field)
+//        val n = y.degree
+//        val m = this.degree
+//
+//        val leadingCoeffThis = this.leadTerm().value
+//        val leadingCoeffY = y.leadTerm().value
+//
+//        // Compute (-1)^(m*n) * leadingCoeffThis^n * leadingCoeffY^m
+//        val sign = if ((m * n) % 2 == 0) model.one else model.negate(model.one)
+//        val resultant = model.eval {
+//            sign * leadingCoeffThis.pow(m.toLong()) * leadingCoeffY.pow(n.toLong())
+//        }
+//        return resultant
     }
 
 
@@ -233,6 +493,18 @@ class Polynomial<T : Any> internal constructor(
             return coef
         }
 
+
+        private inline fun <T : Any, R : Any> mapTermsPossiblyZeroT(
+            terms: List<PTerm<T>>,
+            model: Ring<R>,
+            transform: (PTerm<T>) -> PTerm<R>
+        ): Polynomial<R> {
+            val newTerms = terms.mapNotNullTo(ArrayList(terms.size)) { t ->
+                val t2 = transform(t)
+                if (model.isZero(t2.value)) null else t2
+            }
+            return Polynomial(model, newTerms)
+        }
 
         private inline fun <T : Any, R : Any> mapTermsPossiblyZero(
             terms: List<PTerm<T>>,
@@ -263,37 +535,42 @@ class Polynomial<T : Any> internal constructor(
         private fun <T : Any> mergeTerms(
             model: Ring<T>,
             rawTerms: List<PTerm<T>>,
-            maxMergeSizeEst: Int = 3
+            maxMergeSizeEst: Int = 3,
+            estimatedSize: Int = rawTerms.size
         ): List<PTerm<T>> {
             val tempList = ArrayList<T>(maxMergeSizeEst)
-            return DataStructureUtil.mergeRawList(rawTerms,
+            return DataStructureUtil.mergeRawList(
+                rawTerms,
                 comparing = { x, y -> x.pow - y.pow },
                 merger2 = { x, y -> add2Term(model, x, y) },
-                mergerMulti = { list -> addMultiTerm(model, list, tempList) }
+                mergerMulti = { list -> addMultiTerm(model, list, tempList) },
+                estimatedSize = estimatedSize
             )
         }
 
-        private fun <T : Any> addTerms(model: Ring<T>, a: List<PTerm<T>>, b: List<PTerm<T>>): List<PTerm<T>> {
-            return DataStructureUtil.mergeSorted2(
+        private fun <T : Any> addTerms2(model: Ring<T>, a: List<PTerm<T>>, b: List<PTerm<T>>): Polynomial<T> {
+            val result = DataStructureUtil.mergeSorted2(
                 a, b,
                 comparing = { x, y -> x.pow - y.pow },
                 merger2 = { x, y -> add2Term(model, x, y) },
             )
+            return Polynomial(model, result)
         }
 
-        private fun <T : Any> addTermsAll(model: Ring<T>, termsList: List<List<PTerm<T>>>): List<PTerm<T>> {
+        private fun <T : Any> addTermsAll(model: Ring<T>, termsList: List<List<PTerm<T>>>): Polynomial<T> {
             val tempList = ArrayList<T>(termsList.size)
-            return DataStructureUtil.mergeSortedK(
+            val resultTerms = DataStructureUtil.mergeSortedK(
                 termsList,
                 merger2 = { x, y -> add2Term(model, x, y) },
                 mergerMulti = { list -> addMultiTerm(model, list, tempList) }
             )
+            return Polynomial(model, resultTerms)
         }
 
 
-        private fun <T : Any> multiplyTerms(model: Ring<T>, a: List<PTerm<T>>, b: List<PTerm<T>>): List<PTerm<T>> {
+        private fun <T : Any> multiplyTerms(model: Ring<T>, a: List<PTerm<T>>, b: List<PTerm<T>>): Polynomial<T> {
             if (a.isEmpty() || b.isEmpty()) {
-                return emptyList()
+                return zero(model)
             }
             val result = ArrayList<PTerm<T>>(a.size * b.size)
             for (ai in a) {
@@ -305,7 +582,8 @@ class Polynomial<T : Any> internal constructor(
                     }
                 }
             }
-            return mergeTerms(model, result)
+            val resTerms = mergeTerms(model, result, estimatedSize = a.size + b.size)
+            return Polynomial(model, resTerms)
         }
 
         private fun <T : Any> addList(model: Ring<T>, a: List<T>, b: List<T>): List<T> {
@@ -393,7 +671,17 @@ class Polynomial<T : Any> internal constructor(
 
 
         fun <T : Any> sum(model: Ring<T>, vararg polys: Polynomial<T>): Polynomial<T> {
-            return Polynomial(model, addTermsAll(model, polys.map { it.terms }))
+            if (polys.isEmpty()) {
+                return zero(model)
+            }
+            if (polys.size == 1) {
+                return polys[0]
+            }
+            if (polys.size == 2) {
+                return addTerms2(model, polys[0].terms, polys[1].terms)
+            }
+
+            return addTermsAll(model, polys.map { it.terms })
         }
     }
 }

@@ -10,19 +10,23 @@ object DataStructureUtil {
         rawList: List<T>, crossinline comparing: (T, T) -> Int,
         crossinline merger2: (T, T) -> T?,
         crossinline mergerMulti: (List<T>) -> T?,
+        estimatedSize: Int = rawList.size
     ): List<T> {
         val sortedTerms = rawList.sortedWith { a, b -> comparing(a, b) }
-        return mergeSorted1(sortedTerms, comparing, merger2, mergerMulti)
+        return mergeSorted1(sortedTerms, comparing, merger2, mergerMulti,estimatedSize)
     }
 
 
-    inline fun <T> mergeSorted1(sortedList : List<T>,
-                                crossinline comparing: (T, T) -> Int,
-                                crossinline merger2: (T, T) -> T?,
-                                crossinline mergerMulti: (List<T>) -> T?
-                                ): List<T>{
+    inline fun <T> mergeSorted1(
+        sortedList: List<T>,
+        crossinline comparing: (T, T) -> Int,
+        crossinline merger2: (T, T) -> T?,
+        crossinline mergerMulti: (List<T>) -> T?,
+        estimatedSize: Int = sortedList.size
+    ): List<T> {
+        println("$estimatedSize, $sortedList")
         // merge terms with the same index
-        val result = ArrayList<T>(sortedList.size)
+        val result = ArrayList<T>(estimatedSize)
         var i = 0
         while (i < sortedList.size) {
             val term = sortedList[i]
@@ -113,7 +117,7 @@ object DataStructureUtil {
                 queue.add(MergeEntry(lists[i][0], i, 0))
             }
         }
-        while(queue.isNotEmpty()) {
+        while (queue.isNotEmpty()) {
             val entry = queue.poll()
             val arrayIndex = entry.arrayIndex
             val elementIndex = entry.elementIndex
@@ -124,7 +128,12 @@ object DataStructureUtil {
                 queue.add(MergeEntry(list[elementIndex + 1], arrayIndex, elementIndex + 1))
             }
         }
-        mergeRawList(result, { a, b -> a.compareTo(b) }, merger2, mergerMulti)
-        return result
+        return mergeSorted1(
+            result,
+            { a, b -> a.compareTo(b) },
+            merger2,
+            mergerMulti,
+            estimatedSize = result.size / lists.size + 1 // the mean size of each list
+        )
     }
 }
