@@ -2,16 +2,29 @@ package model
 
 import cn.mathsymk.AbstractMathObject
 import cn.mathsymk.IMathObject
-import cn.mathsymk.MathObject
 import cn.mathsymk.function.MathOperator
 import cn.mathsymk.model.struct.AlgebraModel
 import cn.mathsymk.model.struct.EuclidRingNumberModel
 import cn.mathsymk.structure.*
+import util.DataStructureUtil
 import java.util.function.Function
-import java.util.stream.Collectors
 
-typealias PTerm<T> = IndexedValue<T>
+/**
+ * Describes a term of a polynomial with a power and a value.
+ */
+data class PTerm<T : Any>(val pow: Int, val value: T) : Comparable<PTerm<T>> {
+    override fun toString(): String {
+        return "($pow, $value)"
+    }
 
+    override fun compareTo(other: PTerm<T>): Int {
+        return pow - other.pow
+    }
+}
+
+/**
+ * Represents a polynomial with coefficients of type [T].
+ */
 class Polynomial<T : Any> internal constructor(
     model: Ring<T>,
     /**
@@ -26,7 +39,7 @@ class Polynomial<T : Any> internal constructor(
      * If this polynomial is zero, then the degree is `-1`.
      */
     val degree: Int
-        get() = terms.lastOrNull()?.index ?: -1
+        get() = terms.lastOrNull()?.pow ?: -1
 
     init {
 
@@ -36,7 +49,7 @@ class Polynomial<T : Any> internal constructor(
      * Returns the coefficient of the term with the specified [index].
      */
     operator fun get(index: Int): T {
-        return terms.binarySearchBy(index) { it.index }.let {
+        return terms.binarySearchBy(index) { it.pow }.let {
             if (it >= 0) {
                 terms[it].value
             } else {
@@ -65,7 +78,7 @@ class Polynomial<T : Any> internal constructor(
             return false
         }
         for ((t1, t2) in terms.zip(obj.terms)) {
-            if (t1.index != t2.index || model.isEqual(t1.value, t2.value)) {
+            if (t1.pow != t2.pow || model.isEqual(t1.value, t2.value)) {
                 return false
             }
         }
@@ -74,9 +87,7 @@ class Polynomial<T : Any> internal constructor(
 
     override fun <N : Any> mapTo(newCalculator: EqualPredicate<N>, mapper: Function<T, N>): Polynomial<N> {
         val newModel = newCalculator as Ring<N>
-        val newTerms = terms.map { PTerm(it.index, mapper.apply(it.value)) } // possibly zero after mapping
-        mergeTerms(newModel, newTerms)
-        return Polynomial(newModel, newTerms)
+        return mapTermsPossiblyZero(terms, newModel) { mapper.apply(it) }
     }
 
     override fun toString(): String {
@@ -100,7 +111,7 @@ class Polynomial<T : Any> internal constructor(
 
         if (model != other.model) return false
         for ((t1, t2) in terms.zip(other.terms)) {
-            if (t1.index != t2.index || t1.value != t2.value) {
+            if (t1.pow != t2.pow || t1.value != t2.value) {
                 return false
             }
         }
@@ -125,19 +136,19 @@ class Polynomial<T : Any> internal constructor(
             return model.zero
         }
         var term = terms.last()
-        var power = term.index
+        var power = term.pow
         var result = term.value
         var pos = terms.lastIndex
         while (--pos >= 0) {
             term = terms[pos]
-            val pDiff = power - term.index
+            val pDiff = power - term.pow
             result = if (pDiff == 1) {
                 model.eval { result * x }
             } else {
                 model.eval { result * x.pow(pDiff.toLong()) }
             }
             result = model.add(result, term.value)
-            power = term.index
+            power = term.pow
         }
         if (power > 0) {
             result = model.eval { result * x.pow(power.toLong()) }
@@ -157,15 +168,17 @@ class Polynomial<T : Any> internal constructor(
         return Polynomial(model, multiplyTerms(model, terms, y.terms))
     }
 
-    private inline fun mapTerms(transform: (T) -> T): Polynomial<T> {
-        return Polynomial(model, terms.map { PTerm(it.index, transform(it.value)) })
+    private inline fun mapTermsNonZero(transform: (T) -> T): Polynomial<T> {
+        return Polynomial(model, terms.map { PTerm(it.pow, transform(it.value)) })
     }
+
 
     override fun times(k: T): Polynomial<T> {
         if (model.isZero(k)) {
             return Polynomial(model, emptyList())
         }
-        return mapTerms { model.multiply(it, k) }
+        return mapTermsPossiblyZero(terms, model) { model.multiply(it, k) }
+//        return mapTermsNonZero { model.multiply(it, k) }
     }
 
     override fun div(k: T): Polynomial<T> {
@@ -173,11 +186,13 @@ class Polynomial<T : Any> internal constructor(
             throw ArithmeticException("Division by zero")
         }
         require(model is UnitRing<T>) { "The model is not a unit ring." }
-        return mapTerms { model.exactDivide(it, k) }
+
+        return mapTermsNonZero { model.exactDivide(it, k) }
+        // it is not possible to get a zero term
     }
 
     override fun unaryMinus(): Polynomial<T> {
-        return mapTerms { model.negate(it) }
+        return mapTermsNonZero { model.negate(it) }
     }
 
     override fun isUnit(): Boolean {
@@ -210,8 +225,6 @@ class Polynomial<T : Any> internal constructor(
     }
 
 
-
-
     companion object {
         private fun <T : Any> trimZero(model: Ring<T>, coef: MutableList<T>): MutableList<T> {
             while (coef.isNotEmpty() && model.isZero(coef.last())) {
@@ -220,120 +233,61 @@ class Polynomial<T : Any> internal constructor(
             return coef
         }
 
-        private fun <T : Any> mergeTerms(model: Ring<T>, rawTerms: List<PTerm<T>>): List<PTerm<T>> {
-            val sortedTerms = rawTerms.sortedBy { it.index }
-            // merge terms with the same index
-            val result = ArrayList<PTerm<T>>(sortedTerms.size)
-            var i = 0
-            val tempList = ArrayList<T>(3)
-            while (i < sortedTerms.size) {
-                val term = sortedTerms[i]
-                val index = term.index
-                // find next terms with the same index
-                var next = i + 1
-                while (next < sortedTerms.size && sortedTerms[next].index == index) {
-                    next++
-                }
-                if (next == i + 1) {
-                    // only one term
-                    result.add(term)
-                    i = next
-                    continue
-                }
-                val sum = if (next == i + 2) {
-                    // two terms
-                    model.add(term.value, sortedTerms[i + 1].value)
-                } else {
-                    // more than two terms
-                    tempList.clear()
-                    for (j in i until next) {
-                        tempList.add(sortedTerms[j].value)
-                    }
-                    model.sum(tempList)
-                }
-                if (!model.isZero(sum)) {
-                    result.add(PTerm(index, sum))
-                }
-                i = next
+
+        private inline fun <T : Any, R : Any> mapTermsPossiblyZero(
+            terms: List<PTerm<T>>,
+            model: Ring<R>,
+            transform: (T) -> R
+        ): Polynomial<R> {
+            val newTerms = terms.mapNotNullTo(ArrayList(terms.size)) { t ->
+                val v = transform(t.value)
+                if (model.isZero(v)) null else PTerm(t.pow, v)
             }
-            return result
+            return Polynomial(model, newTerms)
+        }
+
+
+        private fun <T : Any> add2Term(model: Ring<T>, a: PTerm<T>, b: PTerm<T>): PTerm<T>? {
+            val r = model.add(a.value, b.value)
+            return if (model.isZero(r)) null else PTerm(a.pow, r)
+        }
+
+        private fun <T : Any> addMultiTerm(model: Ring<T>, list: List<PTerm<T>>, tempList: ArrayList<T>): PTerm<T>? {
+            tempList.clear()
+            list.mapTo(tempList) { it.value }
+            val sum = model.sum(tempList)
+            return if (model.isZero(sum)) null else PTerm(list[0].pow, sum)
+        }
+
+
+        private fun <T : Any> mergeTerms(
+            model: Ring<T>,
+            rawTerms: List<PTerm<T>>,
+            maxMergeSizeEst: Int = 3
+        ): List<PTerm<T>> {
+            val tempList = ArrayList<T>(maxMergeSizeEst)
+            return DataStructureUtil.mergeRawList(rawTerms,
+                comparing = { x, y -> x.pow - y.pow },
+                merger2 = { x, y -> add2Term(model, x, y) },
+                mergerMulti = { list -> addMultiTerm(model, list, tempList) }
+            )
         }
 
         private fun <T : Any> addTerms(model: Ring<T>, a: List<PTerm<T>>, b: List<PTerm<T>>): List<PTerm<T>> {
-            val size = maxOf(a.size, b.size)
-            val result = ArrayList<PTerm<T>>(size)
-            var i = 0
-            var j = 0
-            while (i < a.size && j < b.size) {
-                val ai = a[i]
-                val bj = b[j]
-                if (ai.index == bj.index) {
-                    val sum = model.add(ai.value, bj.value)
-                    if (!model.isZero(sum)) {
-                        result.add(PTerm(ai.index, sum))
-                    }
-                    i++
-                    j++
-                } else if (ai.index < bj.index) {
-                    result.add(ai)
-                    i++
-                } else {
-                    result.add(bj)
-                    j++
-                }
-            }
-            while (i < a.size) {
-                result.add(a[i])
-                i++
-            }
-            while (j < b.size) {
-                result.add(b[j])
-                j++
-            }
-            return result
+            return DataStructureUtil.mergeSorted2(
+                a, b,
+                comparing = { x, y -> x.pow - y.pow },
+                merger2 = { x, y -> add2Term(model, x, y) },
+            )
         }
 
-        private fun <T : Any> addTermsAll(model: Ring<T>, list: List<List<PTerm<T>>>): List<PTerm<T>> {
-            if (list.isEmpty()) {
-                return emptyList()
-            }
-            val size = list.maxOfOrNull { it.size } ?: 0
-            val result = ArrayList<PTerm<T>>(size)
-            val pos = IntArray(list.size) { 0 }
-//            val listSizes = IntArray(list.size) { list[it].size }
-            var power = 0
-            val valuesToSum = ArrayList<T>(list.size)
-            while (true) {
-                var nextPower = Int.MAX_VALUE
-                for ((i, terms) in list.withIndex()) {
-                    if (pos[i] >= terms.size) {
-                        continue
-                    }
-                    val term = terms[pos[i]]
-                    if (term.index == power) {
-                        valuesToSum.add(term.value)
-                        pos[i]++
-                    } else {
-                        nextPower = minOf(nextPower, term.index)
-                    }
-                }
-                val valuesCount = valuesToSum.size
-                if (valuesCount == 0) {
-                    break
-                }
-                if (valuesCount == 1) {
-                    result.add(PTerm(power, valuesToSum[0]))
-                } else {
-                    val sum = model.sum(valuesToSum)
-                    if (!model.isZero(sum)) {
-                        result.add(PTerm(power, sum))
-                    }
-                }
-                power = nextPower
-                valuesToSum.clear()
-            }
-
-            return result
+        private fun <T : Any> addTermsAll(model: Ring<T>, termsList: List<List<PTerm<T>>>): List<PTerm<T>> {
+            val tempList = ArrayList<T>(termsList.size)
+            return DataStructureUtil.mergeSortedK(
+                termsList,
+                merger2 = { x, y -> add2Term(model, x, y) },
+                mergerMulti = { list -> addMultiTerm(model, list, tempList) }
+            )
         }
 
 
@@ -344,7 +298,7 @@ class Polynomial<T : Any> internal constructor(
             val result = ArrayList<PTerm<T>>(a.size * b.size)
             for (ai in a) {
                 for (bj in b) {
-                    val index = ai.index + bj.index
+                    val index = ai.pow + bj.pow
                     val value = model.multiply(ai.value, bj.value)
                     if (!model.isZero(value)) {
                         result.add(PTerm(index, value))
@@ -466,7 +420,6 @@ class PolynomialAsRing<T : Any>(val model: Ring<T>) : Ring<Polynomial<T>> {
     override fun isEqual(x: Polynomial<T>, y: Polynomial<T>): Boolean {
         return x.valueEquals(y)
     }
-
 
 
     override fun contains(x: Polynomial<T>): Boolean {
