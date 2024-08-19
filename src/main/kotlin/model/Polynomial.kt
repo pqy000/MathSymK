@@ -103,6 +103,41 @@ class Polynomial<T : Any> internal constructor(
     MathObject
      */
 
+    override fun toString(): String {
+        if (isZero()) {
+            return "0"
+        }
+        return terms.reversed().joinToString(" + ") { (index, value) ->
+            if (index == 0) {
+                value.toString()
+            } else if (index == 1) {
+                "$value*x"
+            } else {
+                "$value*x^$index"
+            }
+        }
+    }
+
+
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is Polynomial<*>) return false
+
+        if (model != other.model) return false
+        if (terms != other.terms) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = model.hashCode()
+        for (term in terms) {
+            result = 31 * result + term.hashCode()
+        }
+        return result
+    }
+
     override fun valueEquals(obj: IMathObject<T>): Boolean {
         if (obj !is Polynomial<T>) {
             return false
@@ -123,42 +158,7 @@ class Polynomial<T : Any> internal constructor(
         return mapTermsPossiblyZero(terms, newModel) { mapper.apply(it) }
     }
 
-    override fun toString(): String {
-        if (isZero()) {
-            return "0"
-        }
-        return terms.reversed().joinToString(" + ") { (index, value) ->
-            if (index == 0) {
-                value.toString()
-            } else if (index == 1) {
-                "$value*x"
-            } else {
-                "$value*x^$index"
-            }
-        }
-    }
 
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other !is Polynomial<*>) return false
-
-        if (model != other.model) return false
-        for ((t1, t2) in terms.zip(other.terms)) {
-            if (t1.pow != t2.pow || t1.value != t2.value) {
-                return false
-            }
-        }
-
-        return true
-    }
-
-    override fun hashCode(): Int {
-        var result = model.hashCode()
-        for (term in terms) {
-            result = 31 * result + term.hashCode()
-        }
-        return result
-    }
 
     /*
     Polynomial methods
@@ -533,6 +533,9 @@ class Polynomial<T : Any> internal constructor(
         }
 
 
+        /**
+         * Merges an unordered list of terms into a polynomial.
+         */
         private fun <T : Any> mergeTerms(
             model: Ring<T>,
             rawTerms: List<PTerm<T>>,

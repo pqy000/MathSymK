@@ -1,9 +1,14 @@
 package model
 
+import cn.mathsymk.model.struct.AlgebraModel
 import cn.mathsymk.model.struct.RingModel
 import cn.mathsymk.structure.Ring
+import cn.mathsymk.structure.UnitRing
 import util.ArraySup
 import util.DataStructureUtil
+import java.util.*
+import java.util.regex.Pattern
+import kotlin.collections.ArrayList
 
 
 /*
@@ -16,20 +21,28 @@ import util.DataStructureUtil
 
 
 @JvmRecord
-data class CharacterPow(val ch: String, val pow: Int) : Comparable<CharacterPow> {
-    override fun compareTo(other: CharacterPow): Int {
+data class ChPow(val ch: String, val pow: Int) : Comparable<ChPow> {
+    override fun compareTo(other: ChPow): Int {
         val c = ch.compareTo(other.ch)
         return if (c != 0) c else pow - other.pow
     }
+
+    override fun toString(): String {
+        if (pow == 1) {
+            return ch
+        }
+        return "$ch^$pow"
+    }
 }
 
+typealias TermChs = Array<ChPow>
 
 @JvmRecord
 data class MTerm<T>(
     /**
      * A sorted array of characters and their powers.
      */
-    val chs: Array<CharacterPow>,
+    val chs: TermChs,
     val c: T
 ) : Comparable<MTerm<T>> {
 
@@ -57,25 +70,76 @@ data class MTerm<T>(
 
 
     fun getCharPow(ch: String): Int {
-        return chs.binarySearch(CharacterPow(ch, 0)).let {
+        return chs.binarySearch(ChPow(ch, 0)).let {
             if (it < 0) 0 else chs[it].pow
         }
     }
 
+    /**
+     * Normalizes the term, which means removing the characters with power 0.
+     */
+    fun normalize(): MTerm<T> {
+        if (chs.all { it.pow != 0 }) {
+            return this
+        }
+        return MTerm(chs.filter { it.pow != 0 }.toTypedArray(), c)
+    }
 
-    companion object {
-        fun multiplyChars(chs1: Array<CharacterPow>, chs2: Array<CharacterPow>): Array<CharacterPow> {
-            return DataStructureUtil.mergeSorted2(chs1, chs2,
-                comparing = { x, y -> x.compareTo(y) },
-                merger2 = { x, y -> if (x.pow + y.pow == 0) null else CharacterPow(x.ch, x.pow + y.pow) })
+    override fun toString(): String {
+        return if (chs.isEmpty()) {
+            c.toString()
+        } else {
+            val sb = StringBuilder()
+            sb.append(c)
+            for (ch in chs) {
+                sb.append(ch)
+            }
+            sb.toString()
         }
     }
 
-//    operator fun times(y: MTerm<T>): MTerm<T> {
-//
-////        val newChs = ArraySup.merge(chs, y.chs)
-////        return MTerm(newChs, c * y.c)
-//    }
+    companion object {
+        fun multiplyChars(chs1: TermChs, chs2: TermChs): TermChs {
+            return DataStructureUtil.mergeSorted2(chs1, chs2,
+                comparing = { x, y -> x.compareTo(y) },
+                merger2 = { x, y -> if (x.pow + y.pow == 0) null else ChPow(x.ch, x.pow + y.pow) })
+        }
+
+        private val CHAR_PATTERN =
+            Pattern.compile("((?<ch1>[a-zA-Z]_?\\d*)|(\\{(?<ch2>[^}]+)}))(\\^(?<pow>[+-]?\\d+))?")
+
+
+        /**
+         * Parses the character part and combines it with the coefficient to build a term. The format of
+         * character is:
+         *
+         *     character  ::= ch1 | ("{" ch2 "}")
+         *     ch1        ::= [a-zA-Z]\w*
+         *     ch2        ::= [^{]+
+         *     power      ::= (+|-)? \d+
+         *
+         * `ch1` or `ch2` will be the characters stored in the resulting term.
+         *
+         */
+        fun parseChar(chs: String): TermChs {
+            val map = TreeMap<String, Int>()
+            val matcher = CHAR_PATTERN.matcher(chs)
+            while (matcher.lookingAt()) {
+                val ch = matcher.group("ch1") ?: matcher.group("ch2")
+                val pow = matcher.group("pow")?.toInt() ?: 1
+                map.merge(ch, pow, Int::plus)
+                matcher.region(matcher.end(), chs.length)
+            }
+            if (!matcher.hitEnd()) {
+                throw IllegalArgumentException("Illegal format: $chs")
+            }
+            return map.map { (k, v) -> ChPow(k, v) }.toTypedArray()
+        }
+
+        fun <T> parse(c: T, chs: String): MTerm<T> {
+            return MTerm(parseChar(chs), c)
+        }
+    }
 }
 
 
@@ -83,7 +147,25 @@ class Multinomial<T : Any>
 internal constructor(
     val model: Ring<T>,
     val terms: List<MTerm<T>>
-) : RingModel<Multinomial<T>> {
+) : AlgebraModel<T, Multinomial<T>> {
+
+
+    /*
+    Math object
+     */
+    override fun toString(): String {
+        return terms.joinToString(" + ") { it.toString() }
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is Multinomial<*>) return false
+
+        if (model != other.model) return false
+        if (terms != other.terms) return false
+
+        return true
+    }
 
     /*
     Basic operations
@@ -103,6 +185,17 @@ internal constructor(
         return mapTermsNonZeroT { MTerm(it.chs, transform(it.c)) }
     }
 
+    /*
+    Term-wise operations
+     */
+    override fun times(k: T): Multinomial<T> {
+        return mapTermsPossiblyZero(terms, model) { model.multiply(k, it) }
+    }
+
+    override fun div(k: T): Multinomial<T> {
+        require(model is UnitRing)
+        return mapTermsNonZero { model.exactDivide(it, k) }
+    }
 
     /*
     Multinomial as a ring
@@ -212,5 +305,69 @@ internal constructor(
             return Multinomial(model, resTerms)
         }
 
+
+        fun <T : Any> zero(model: Ring<T>): Multinomial<T> {
+            return Multinomial(model, emptyList())
+        }
+
+        fun <T : Any> fromTerms(model: Ring<T>, terms: List<MTerm<T>>): Multinomial<T> {
+            val filteredTerms = terms.map { it.normalize() }.filter { !model.isZero(it.c) }
+            return Multinomial(model, mergeTerms(model, filteredTerms))
+        }
+
+
+        fun <T : Any> of(mc: Ring<T>, vararg terms: Pair<T, String>): Multinomial<T> {
+            return fromTerms(mc, terms.map { MTerm.parse(it.first, it.second) })
+        }
+
+        fun <T:Any> constant(model: Ring<T>, c: T): Multinomial<T>{
+            return if(model.isZero(c)){
+                zero(model)
+            }else{
+                Multinomial(model, listOf(MTerm(emptyArray(), c)))
+            }
+        }
+
+        fun <T : Any> monomial(model: Ring<T>, t: MTerm<T>): Multinomial<T> {
+            if (model.isZero(t.c)) {
+                return zero(model)
+            }
+            return Multinomial(model, listOf(t.normalize()))
+        }
+
+        fun <T : Any> monomial(model: Ring<T>, c: T, ch: String, pow: Int = 1): Multinomial<T> {
+            if(model.isZero(c)){
+                return zero(model)
+            }
+            if(pow == 0){
+                return constant(model, c)
+            }
+            return monomial(model, MTerm(arrayOf(ChPow(ch, pow)), c))
+        }
+
+
+        fun <T : Any> of(mc: UnitRing<T>, builderAction: MultinomialBuilderScope<T>.() -> Multinomial<T>): Multinomial<T> {
+            return MultinomialBuilderScope(mc).builderAction()
+        }
     }
+}
+
+class MultinomialBuilderScope<T : Any>(val model: UnitRing<T>) {
+
+    val x = Multinomial.monomial(model, model.one, "x")
+    val y = Multinomial.monomial(model, model.one, "y")
+    val z = Multinomial.monomial(model, model.one, "z")
+    val one = Multinomial.constant(model, model.one)
+    val zero = Multinomial.zero(model)
+
+
+    operator fun T.times(chs: String): Multinomial<T> {
+        val term = MTerm.parse(this, chs)
+        return Multinomial(model, listOf(term))
+    }
+
+    operator fun T.times(m: Multinomial<T>): Multinomial<T> {
+        return m.times(this)
+    }
+
 }

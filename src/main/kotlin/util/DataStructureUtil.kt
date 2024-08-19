@@ -24,7 +24,7 @@ object DataStructureUtil {
         crossinline mergerMulti: (List<T>) -> T?,
         estimatedSize: Int = sortedList.size
     ): List<T> {
-        println("$estimatedSize, $sortedList")
+//        println("$estimatedSize, $sortedList")
         // merge terms with the same index
         val result = ArrayList<T>(estimatedSize)
         var i = 0
