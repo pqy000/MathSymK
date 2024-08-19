@@ -1025,4 +1025,18 @@ object ArraySup {
         return arr1.size.compareTo(arr2.size)
     }
 
+    /**
+     * Compare two arrays lexicographically.
+     */
+    fun <T:Comparable<T>> compareLexi(arr1: Array<T>, arr2: Array<T>): Int {
+        val len = min(arr1.size, arr2.size)
+        for (i in 0 until len) {
+            val c = arr1[i].compareTo(arr2[i])
+            if (c != 0) {
+                return c
+            }
+        }
+        return arr1.size.compareTo(arr2.size)
+    }
+
 }

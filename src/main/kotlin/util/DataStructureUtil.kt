@@ -13,7 +13,7 @@ object DataStructureUtil {
         estimatedSize: Int = rawList.size
     ): List<T> {
         val sortedTerms = rawList.sortedWith { a, b -> comparing(a, b) }
-        return mergeSorted1(sortedTerms, comparing, merger2, mergerMulti,estimatedSize)
+        return mergeSorted1(sortedTerms, comparing, merger2, mergerMulti, estimatedSize)
     }
 
 
@@ -90,6 +90,44 @@ object DataStructureUtil {
             j++
         }
         return result
+    }
+
+    inline fun <reified T> mergeSorted2(
+        list1: Array<T>,
+        list2: Array<T>,
+        crossinline comparing: (T, T) -> Int,
+        crossinline merger2: (T, T) -> T?
+    ): Array<T> {
+        val result = arrayOfNulls<T>(maxOf(list1.size, list2.size))
+        var pos = 0
+        var i = 0
+        var j = 0
+        while (i < list1.size && j < list2.size) {
+            val ai = list1[i]
+            val bj = list2[j]
+            val c = comparing(ai, bj)
+            if (c == 0) {
+                merger2(ai, bj)?.let { result[pos++] = it }
+                i++
+                j++
+            } else if (c < 0) {
+                result[pos++] = ai
+                i++
+            } else {
+                result[pos++] = bj
+                j++
+            }
+        }
+        val finalSize = pos + list1.size - i + list2.size - j
+        val result2 = arrayOfNulls<T>(finalSize)
+        System.arraycopy(result, 0, result2, 0, pos)
+        if (i < list1.size) {
+            System.arraycopy(list1, i, result2, pos, list1.size - i)
+        } else if (j < list2.size) {
+            System.arraycopy(list2, j, result2, pos, list2.size - j)
+        }
+        @Suppress("UNCHECKED_CAST")
+        return result2 as Array<T>
     }
 
     data class MergeEntry<T : Comparable<T>>(val v: T, val arrayIndex: Int, val elementIndex: Int) :

@@ -250,6 +250,10 @@ class Polynomial<T : Any> internal constructor(
         return addTerms2(model, terms, y.terms)
     }
 
+//    override operator fun minus(y: Polynomial<T>): Polynomial<T> {
+//        return addTerms2(model, terms, y.terms.map { PTerm(it.pow, model.negate(it.value)) })
+//    }
+
     override operator fun times(y: Polynomial<T>): Polynomial<T> {
         return multiplyTerms(model, terms, y.terms)
     }
@@ -380,7 +384,7 @@ class Polynomial<T : Any> internal constructor(
      *
      * @return the greatest common divisor of all coefficients of this polynomial.
      */
-    fun cont() : T{
+    fun cont(): T {
         require(model is EuclideanDomain) { "The model is not a Euclidean domain." }
         if (isZero()) {
             return model.zero
@@ -398,7 +402,7 @@ class Polynomial<T : Any> internal constructor(
      * @return the primitive part of this polynomial.
      * @see cont
      */
-    fun toPrimitive():Polynomial<T>{
+    fun toPrimitive(): Polynomial<T> {
         if (isZero()) {
             return this
         }
@@ -486,14 +490,6 @@ class Polynomial<T : Any> internal constructor(
 
 
     companion object {
-        private fun <T : Any> trimZero(model: Ring<T>, coef: MutableList<T>): MutableList<T> {
-            while (coef.isNotEmpty() && model.isZero(coef.last())) {
-                coef.removeLast()
-            }
-            return coef
-        }
-
-
         private inline fun <T : Any, R : Any> mapTermsPossiblyZeroT(
             terms: List<PTerm<T>>,
             model: Ring<R>,
@@ -519,11 +515,16 @@ class Polynomial<T : Any> internal constructor(
         }
 
 
+        /**
+         * Adds two terms with the same power.
+         */
         private fun <T : Any> add2Term(model: Ring<T>, a: PTerm<T>, b: PTerm<T>): PTerm<T>? {
             val r = model.add(a.value, b.value)
             return if (model.isZero(r)) null else PTerm(a.pow, r)
         }
-
+        /**
+         * Adds multiple terms with the same power.
+         */
         private fun <T : Any> addMultiTerm(model: Ring<T>, list: List<PTerm<T>>, tempList: ArrayList<T>): PTerm<T>? {
             tempList.clear()
             list.mapTo(tempList) { it.value }
@@ -586,46 +587,6 @@ class Polynomial<T : Any> internal constructor(
             return Polynomial(model, resTerms)
         }
 
-        private fun <T : Any> addList(model: Ring<T>, a: List<T>, b: List<T>): List<T> {
-            val size = maxOf(a.size, b.size)
-            val result = ArrayList<T>(size)
-            for (i in 0 until minOf(a.size, b.size)) {
-                result.add(model.add(a[i], b[i]))
-            }
-            if (a.size > size) {
-                result.addAll(a.subList(size, a.size))
-            } else if (b.size > size) {
-                result.addAll(b.subList(size, b.size))
-            }
-            return trimZero(model, result)
-        }
-
-        private fun <T : Any> multiplyList(model: Ring<T>, a: List<T>, b: List<T>): List<T> {
-            if (a.isEmpty() || b.isEmpty()) {
-                return emptyList()
-            }
-            val result = MutableList(a.size + b.size - 1) { model.zero }
-            for (i in a.indices) {
-                for (j in b.indices) {
-                    result[i + j] = model.add(result[i + j], model.multiply(a[i], b[j]))
-                }
-            }
-            return trimZero(model, result)
-        }
-
-        private fun <T : Any> sumList(model: Ring<T>, values: List<List<T>>): List<T> {
-            if (values.isEmpty()) {
-                return emptyList()
-            }
-            val size = values.maxOf { it.size }
-            val result = MutableList(size) { model.zero }
-            for (list in values) {
-                for (i in list.indices) {
-                    result[i] = model.add(result[i], list[i])
-                }
-            }
-            return trimZero(model, result)
-        }
 
         fun <T : Any> zero(model: Ring<T>): Polynomial<T> {
             return Polynomial(model, emptyList())
@@ -670,25 +631,31 @@ class Polynomial<T : Any> internal constructor(
         }
 
 
-        fun <T : Any> sum(model: Ring<T>, vararg polys: Polynomial<T>): Polynomial<T> {
-            if (polys.isEmpty()) {
+        fun <T : Any> sum(model: Ring<T>, list: List<Polynomial<T>>): Polynomial<T> {
+            if (list.isEmpty()) {
                 return zero(model)
             }
-            if (polys.size == 1) {
-                return polys[0]
+            if (list.size == 1) {
+                return list[0]
             }
-            if (polys.size == 2) {
-                return addTerms2(model, polys[0].terms, polys[1].terms)
+            if (list.size == 2) {
+                return addTerms2(model, list[0].terms, list[1].terms)
             }
+            return addTermsAll(model, list.map { it.terms })
+        }
 
-            return addTermsAll(model, polys.map { it.terms })
+        fun <T : Any> sum(model: Ring<T>, vararg polys: Polynomial<T>): Polynomial<T> {
+            return sum(model, polys.toList())
         }
     }
 }
 
-class PolynomialAsRing<T : Any>(val model: Ring<T>) : Ring<Polynomial<T>> {
-    override val zero: Polynomial<T>
-        get() = Polynomial.zero(model)
+open class PolynomialOnRing<T : Any>(model: Ring<T>) : Ring<Polynomial<T>> {
+
+    @Suppress("CanBePrimaryConstructorProperty")
+    open val model: Ring<T> = model
+
+    final override val zero: Polynomial<T> = Polynomial.zero(model)
 
     override fun add(x: Polynomial<T>, y: Polynomial<T>): Polynomial<T> {
         return x + y
@@ -709,8 +676,99 @@ class PolynomialAsRing<T : Any>(val model: Ring<T>) : Ring<Polynomial<T>> {
         return x.valueEquals(y)
     }
 
-
     override fun contains(x: Polynomial<T>): Boolean {
-        TODO("Not yet implemented")
+        return x.terms.all { model.contains(it.value) }
+    }
+
+    override fun subtract(x: Polynomial<T>, y: Polynomial<T>): Polynomial<T> {
+        return x - y
+    }
+
+    override fun multiplyLong(x: Polynomial<T>, n: Long): Polynomial<T> {
+        return x.times(n)
+    }
+
+    override fun isZero(x: Polynomial<T>): Boolean {
+        return x.isZero()
+    }
+
+    override fun sum(elements: List<Polynomial<T>>): Polynomial<T> {
+        return Polynomial.sum(model, *elements.toTypedArray())
     }
 }
+
+open class PolynomialOnField<T : Any>(override val model: Field<T>) : PolynomialOnRing<T>(model),
+    EuclideanDomain<Polynomial<T>> {
+    override val numberClass: Class<*>
+        get() = Polynomial::class.java
+
+    override fun divideAndRemainder(a: Polynomial<T>, b: Polynomial<T>): Pair<Polynomial<T>, Polynomial<T>> {
+        return a.divideAndRemainder(b)
+    }
+
+    override fun isUnit(x: Polynomial<T>): Boolean {
+        return x.isUnit()
+    }
+
+    override val one: Polynomial<T>
+        get() = Polynomial.one(model)
+
+    override fun gcdUV(a: Polynomial<T>, b: Polynomial<T>): Triple<Polynomial<T>, Polynomial<T>, Polynomial<T>> {
+        return a.gcdUV(b)
+    }
+
+    override fun gcd(a: Polynomial<T>, b: Polynomial<T>): Polynomial<T> {
+        return a.gcd(b)
+    }
+}
+
+
+/*
+Legacy methods
+ */
+//        private fun <T : Any> trimZero(model: Ring<T>, coef: MutableList<T>): MutableList<T> {
+//            while (coef.isNotEmpty() && model.isZero(coef.last())) {
+//                coef.removeLast()
+//            }
+//            return coef
+//        }
+//        private fun <T : Any> addList(model: Ring<T>, a: List<T>, b: List<T>): List<T> {
+//            val size = maxOf(a.size, b.size)
+//            val result = ArrayList<T>(size)
+//            for (i in 0 until minOf(a.size, b.size)) {
+//                result.add(model.add(a[i], b[i]))
+//            }
+//            if (a.size > size) {
+//                result.addAll(a.subList(size, a.size))
+//            } else if (b.size > size) {
+//                result.addAll(b.subList(size, b.size))
+//            }
+//            return trimZero(model, result)
+//        }
+//
+//        private fun <T : Any> multiplyList(model: Ring<T>, a: List<T>, b: List<T>): List<T> {
+//            if (a.isEmpty() || b.isEmpty()) {
+//                return emptyList()
+//            }
+//            val result = MutableList(a.size + b.size - 1) { model.zero }
+//            for (i in a.indices) {
+//                for (j in b.indices) {
+//                    result[i + j] = model.add(result[i + j], model.multiply(a[i], b[j]))
+//                }
+//            }
+//            return trimZero(model, result)
+//        }
+//
+//        private fun <T : Any> sumList(model: Ring<T>, values: List<List<T>>): List<T> {
+//            if (values.isEmpty()) {
+//                return emptyList()
+//            }
+//            val size = values.maxOf { it.size }
+//            val result = MutableList(size) { model.zero }
+//            for (list in values) {
+//                for (i in list.indices) {
+//                    result[i] = model.add(result[i], list[i])
+//                }
+//            }
+//            return trimZero(model, result)
+//        }
