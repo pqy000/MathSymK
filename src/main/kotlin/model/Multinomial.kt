@@ -1,12 +1,16 @@
 package model
 
+import cn.mathsymk.AbstractMathObject
+import cn.mathsymk.IMathObject
 import cn.mathsymk.model.struct.AlgebraModel
-import cn.mathsymk.model.struct.RingModel
+import cn.mathsymk.structure.EqualPredicate
+import cn.mathsymk.structure.Field
 import cn.mathsymk.structure.Ring
 import cn.mathsymk.structure.UnitRing
 import util.ArraySup
 import util.DataStructureUtil
 import java.util.*
+import java.util.function.Function
 import java.util.regex.Pattern
 import kotlin.collections.ArrayList
 
@@ -73,6 +77,10 @@ data class MTerm<T>(
         return chs.binarySearch(ChPow(ch, 0)).let {
             if (it < 0) 0 else chs[it].pow
         }
+    }
+
+    fun chsEquals(other: MTerm<T>): Boolean {
+        return chs.contentEquals(other.chs)
     }
 
     /**
@@ -145,10 +153,29 @@ data class MTerm<T>(
 
 class Multinomial<T : Any>
 internal constructor(
-    val model: Ring<T>,
+    model: Ring<T>,
     val terms: List<MTerm<T>>
-) : AlgebraModel<T, Multinomial<T>> {
+) : AbstractMathObject<T, Ring<T>>(model),
+    AlgebraModel<T, Multinomial<T>> {
 
+
+    /*
+    Basic operations
+     */
+
+    override fun isZero(): Boolean {
+        return terms.isEmpty()
+    }
+
+
+    private inline fun mapTermsNonZeroT(transform: (MTerm<T>) -> MTerm<T>): Multinomial<T> {
+        val newTerms = terms.map(transform)
+        return Multinomial(model, newTerms)
+    }
+
+    private inline fun mapTermsNonZero(transform: (T) -> T): Multinomial<T> {
+        return mapTermsNonZeroT { MTerm(it.chs, transform(it.c)) }
+    }
 
     /*
     Math object
@@ -167,22 +194,30 @@ internal constructor(
         return true
     }
 
-    /*
-    Basic operations
-     */
-
-    override fun isZero(): Boolean {
-        return terms.isEmpty()
+    override fun hashCode(): Int {
+        var result = model.hashCode()
+        result = 31 * result + terms.hashCode()
+        return result
     }
 
-
-    private inline fun mapTermsNonZeroT(transform: (MTerm<T>) -> MTerm<T>): Multinomial<T> {
-        val newTerms = terms.map(transform)
-        return Multinomial(model, newTerms)
+    override fun valueEquals(obj: IMathObject<T>): Boolean {
+        if (obj !is Multinomial<T>) {
+            return false
+        }
+        if (model != obj.model) {
+            return false
+        }
+        for ((a, b) in terms.zip(obj.terms)) {
+            if (!a.chsEquals(b) || !model.isEqual(a.c, b.c)) {
+                return false
+            }
+        }
+        return true
     }
 
-    private inline fun mapTermsNonZero(transform: (T) -> T): Multinomial<T> {
-        return mapTermsNonZeroT { MTerm(it.chs, transform(it.c)) }
+    override fun <N : Any> mapTo(newCalculator: EqualPredicate<N>, mapper: Function<T, N>): Multinomial<N> {
+        require(newCalculator is Ring)
+        return mapTermsPossiblyZero(terms, newCalculator) { mapper.apply(it) }
     }
 
     /*
@@ -212,6 +247,10 @@ internal constructor(
     override fun times(y: Multinomial<T>): Multinomial<T> {
         return multiplyTerms(model, terms, y.terms)
     }
+
+    /*
+
+     */
 
 
     companion object {
@@ -306,28 +345,42 @@ internal constructor(
         }
 
 
+        /**
+         * Returns a zero multinomial.
+         */
         fun <T : Any> zero(model: Ring<T>): Multinomial<T> {
             return Multinomial(model, emptyList())
         }
 
+        /**
+         * Creates a multinomial from a list of terms.
+         */
         fun <T : Any> fromTerms(model: Ring<T>, terms: List<MTerm<T>>): Multinomial<T> {
             val filteredTerms = terms.map { it.normalize() }.filter { !model.isZero(it.c) }
             return Multinomial(model, mergeTerms(model, filteredTerms))
         }
 
-
+        /**
+         * Creates a multinomial from a list of terms.
+         */
         fun <T : Any> of(mc: Ring<T>, vararg terms: Pair<T, String>): Multinomial<T> {
             return fromTerms(mc, terms.map { MTerm.parse(it.first, it.second) })
         }
 
-        fun <T:Any> constant(model: Ring<T>, c: T): Multinomial<T>{
-            return if(model.isZero(c)){
+        /**
+         * Creates a constant multinomial.
+         */
+        fun <T : Any> constant(model: Ring<T>, c: T): Multinomial<T> {
+            return if (model.isZero(c)) {
                 zero(model)
-            }else{
+            } else {
                 Multinomial(model, listOf(MTerm(emptyArray(), c)))
             }
         }
 
+        /**
+         * Creates a monomial from a term.
+         */
         fun <T : Any> monomial(model: Ring<T>, t: MTerm<T>): Multinomial<T> {
             if (model.isZero(t.c)) {
                 return zero(model)
@@ -335,28 +388,128 @@ internal constructor(
             return Multinomial(model, listOf(t.normalize()))
         }
 
+        /**
+         * Creates a monomial from a coefficient and a character.
+         */
         fun <T : Any> monomial(model: Ring<T>, c: T, ch: String, pow: Int = 1): Multinomial<T> {
-            if(model.isZero(c)){
+            if (model.isZero(c)) {
                 return zero(model)
             }
-            if(pow == 0){
+            if (pow == 0) {
                 return constant(model, c)
             }
             return monomial(model, MTerm(arrayOf(ChPow(ch, pow)), c))
         }
 
+        /**
+         * Builds a multinomial using the given builder action.
+         *
+         * In the builder action, some variables are predefined, including `x`, `y`, `z`, `w`, `a`, `b`.
+         * For example, one can build a multinomial like this:
+         * ```
+         * val model = NumberModels.IntAsIntegers
+         * val m = Multinomial.of(model) {
+         *    3 * x + 2 * y + 1
+         * }
+         * ```
+         *
+         *
+         */
+        fun <T : Any> of(
+            model: UnitRing<T>,
+            builderAction: MultinomialBuilderScope<T>.() -> Multinomial<T>
+        ): Multinomial<T> {
+            return MultinomialBuilderScope(model).builderAction()
+        }
 
-        fun <T : Any> of(mc: UnitRing<T>, builderAction: MultinomialBuilderScope<T>.() -> Multinomial<T>): Multinomial<T> {
-            return MultinomialBuilderScope(mc).builderAction()
+        /**
+         * Sums a list of multinomials.
+         */
+        fun <T : Any> sum(model: Ring<T>, vararg terms: Multinomial<T>): Multinomial<T> {
+            return sum(model, terms.asList())
+        }
+
+        /**
+         * Sums a list of multinomials.
+         */
+        fun <T : Any> sum(model: Ring<T>, terms: List<Multinomial<T>>): Multinomial<T> {
+            when (terms.size) {
+                0 -> return zero(model)
+                1 -> return terms[0]
+                2 -> return addTerms2(model, terms[0].terms, terms[1].terms)
+            }
+            return addTermsAll(model, terms.map { it.terms })
         }
     }
 }
+
+open class MultinomialOnRing<T : Any>(model: Ring<T>) : Ring<Multinomial<T>> {
+
+    @Suppress("CanBePrimaryConstructorProperty")
+    open val model: Ring<T> = model
+
+    final override val zero: Multinomial<T> = Multinomial.zero(model)
+
+    override fun add(x: Multinomial<T>, y: Multinomial<T>): Multinomial<T> {
+        return x + y
+    }
+
+    override fun negate(x: Multinomial<T>): Multinomial<T> {
+        return -x
+    }
+
+    override fun multiply(x: Multinomial<T>, y: Multinomial<T>): Multinomial<T> {
+        return x * y
+    }
+
+    override val numberClass: Class<*>
+        get() = Multinomial::class.java
+
+    override fun isEqual(x: Multinomial<T>, y: Multinomial<T>): Boolean {
+        return x.valueEquals(y)
+    }
+
+    override fun contains(x: Multinomial<T>): Boolean {
+        return x.terms.all { model.contains(it.c) }
+    }
+
+    override fun subtract(x: Multinomial<T>, y: Multinomial<T>): Multinomial<T> {
+        return x - y
+    }
+
+    override fun multiplyLong(x: Multinomial<T>, n: Long): Multinomial<T> {
+        return x.times(n)
+    }
+
+    override fun isZero(x: Multinomial<T>): Boolean {
+        return x.isZero()
+    }
+
+    override fun sum(elements: List<Multinomial<T>>): Multinomial<T> {
+        return Multinomial.sum(model, *elements.toTypedArray())
+    }
+}
+
+open class MultinomialOnUnitRing<T:Any>(model : UnitRing<T>) : MultinomialOnRing<T>(model), UnitRing<Multinomial<T>> {
+    override val one: Multinomial<T> = Multinomial.constant(model, model.one)
+    override val numberClass: Class<*>
+        get() = Multinomial::class.java
+}
+
+open class MultinomialOnField<T:Any>(model : Field<T>) : MultinomialOnUnitRing<T>(model)  {
+
+}
+
 
 class MultinomialBuilderScope<T : Any>(val model: UnitRing<T>) {
 
     val x = Multinomial.monomial(model, model.one, "x")
     val y = Multinomial.monomial(model, model.one, "y")
     val z = Multinomial.monomial(model, model.one, "z")
+    val w = Multinomial.monomial(model, model.one, "w")
+    val a = Multinomial.monomial(model, model.one, "a")
+    val b = Multinomial.monomial(model, model.one, "b")
+
     val one = Multinomial.constant(model, model.one)
     val zero = Multinomial.zero(model)
 
