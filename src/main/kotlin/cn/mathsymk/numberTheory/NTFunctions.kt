@@ -314,14 +314,14 @@ object NTFunctions {
      */
     @JvmStatic
     fun deg(a: Long, b: Long): Int {
-        var a = abs(a)
-        var b = abs(b)
+        val a1 = abs(a)
+        var b1 = abs(b)
 
-        require(!(a == 0L || a == 1L))
+        require(!(a1 == 0L || a1 == 1L))
         var k = 0
-        while (b % a == 0L) {
+        while (b1 % a1 == 0L) {
             k++
-            b /= a
+            b1 /= a1
         }
         return k
     }
@@ -334,6 +334,7 @@ object NTFunctions {
      * @param b another number
      * @return deg(a, b)
      */
+    @Suppress("NAME_SHADOWING")
     @JvmStatic
     fun deg(a: Int, b: Int): Int {
         var a = a
@@ -356,9 +357,10 @@ object NTFunctions {
      * @param n another number
      * @return the result
      */
+    @Suppress("NAME_SHADOWING")
     @JvmStatic
     fun degFactorial(p: Long, n: Long): Long {
-        var p = abs(p)
+        val p = abs(p)
         var n = abs(n)
         require(!(p == 0L || p == 1L))
         var re: Long = 0
@@ -416,6 +418,7 @@ object NTFunctions {
      * @return `(a^n) % mod`
      */
     @JvmStatic
+    @Suppress("NAME_SHADOWING")
     fun powMod(a: Long, n: Long, mod: Long): Long {
         var a = a
         var n = n
@@ -450,6 +453,7 @@ object NTFunctions {
      * @return `(a^n) % mod`
      */
     @JvmStatic
+    @Suppress("NAME_SHADOWING")
     fun powMod(a: Int, n: Int, mod: Int): Int {
         var a = a
         var n = n

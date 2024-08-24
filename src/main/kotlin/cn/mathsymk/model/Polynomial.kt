@@ -472,21 +472,21 @@ class Polynomial<T : Any> internal constructor(
      */
     fun resultant(y: Polynomial<T>): T {
         // 结式
+        require(model is Field<T>) { "The model is not a field." }
+
+        // If either polynomial is zero, the resultant is zero
+        if (this.isZero || y.isZero) {
+            return model.zero
+        }
+//
+        // Compute the GCD of the two polynomials
+        val gcd = gcd(y)
+
+        // If the GCD is not a constant polynomial, the resultant is zero
+        if (gcd.degree > 0) {
+            return model.zero
+        }
         TODO()
-//        require(model is Field<T>) { "The model is not a field." }
-//
-//        // If either polynomial is zero, the resultant is zero
-//        if (this.isZero || y.isZero) {
-//            return model.zero
-//        }
-//
-//        // Compute the GCD of the two polynomials
-//        val gcd = gcd(y)
-//
-//        // If the GCD is not a constant polynomial, the resultant is zero
-//        if (gcd.degree > 0) {
-//            return model.zero
-//        }
 //
 //        // Otherwise, compute the resultant using the properties of polynomials
 //        // (this is simplified for a field)

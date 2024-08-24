@@ -1,7 +1,6 @@
 package model
 
 import cn.mathsymk.model.NumberModels
-import cn.mathsymk.structure.eval
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
