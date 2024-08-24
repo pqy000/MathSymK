@@ -5,6 +5,7 @@ import cn.mathsymk.IMathObject
 import cn.mathsymk.function.MathOperator
 import cn.mathsymk.model.struct.AlgebraModel
 import cn.mathsymk.model.struct.EuclidRingNumberModel
+import cn.mathsymk.model.struct.times
 import cn.mathsymk.structure.*
 import cn.mathsymk.util.DataStructureUtil
 import java.util.function.Function
@@ -104,10 +105,9 @@ class Polynomial<T : Any> internal constructor(
         get() = terms.firstOrNull()?.value ?: model.zero
 
 
+    override val isZero: Boolean
+        get() = terms.isEmpty()
 
-    override fun isZero(): Boolean {
-        return terms.isEmpty()
-    }
 
     /**
      * Determines whether this polynomial is a constant polynomial, including the zero polynomial.
@@ -122,7 +122,7 @@ class Polynomial<T : Any> internal constructor(
      */
 
     override fun toString(): String {
-        if (isZero()) {
+        if (isZero) {
             return "0"
         }
         return terms.reversed().joinToString(" + ") { (index, value) ->
@@ -135,7 +135,6 @@ class Polynomial<T : Any> internal constructor(
             }
         }
     }
-
 
 
     override fun equals(other: Any?): Boolean {
@@ -175,7 +174,6 @@ class Polynomial<T : Any> internal constructor(
         val newModel = newCalculator as Ring<N>
         return mapTermsPossiblyZero(terms, newModel) { mapper.apply(it) }
     }
-
 
 
     /*
@@ -232,7 +230,7 @@ class Polynomial<T : Any> internal constructor(
     }
 
     fun shiftRight(shift: Int): Polynomial<T> {
-        if (isZero()) {
+        if (isZero) {
             return this
         }
         if (shift == 0) {
@@ -302,12 +300,12 @@ class Polynomial<T : Any> internal constructor(
      * Divides this polynomial by a number to get a new polynomial whose leading coefficient is one.
      */
     fun toMonic(): Polynomial<T> {
-        if (isZero()) {
+        if (isZero) {
             return this
         }
         val c = terms.last().value
         val mc = model as UnitRing
-        if (isZero() || mc.isOne(c)) {
+        if (isZero || mc.isOne(c)) {
             return this
         }
         return div(c)
@@ -332,18 +330,18 @@ class Polynomial<T : Any> internal constructor(
      * It is required the [model] is a field.
      */
     override fun divideAndRemainder(y: Polynomial<T>): Pair<Polynomial<T>, Polynomial<T>> {
-        if (y.isZero()) {
+        if (y.isZero) {
             throw ArithmeticException("Division by zero")
         }
         require(model is Field<T>) { "The model is not a field." }
-        if (isZero()) {
+        if (isZero) {
             return this to this
         }
         var remainder = this
         val quotientTerms = mutableListOf<PTerm<T>>()
 
         val leadTermY = y.leadTerm
-        while (!remainder.isZero() && remainder.degree >= y.degree) {
+        while (!remainder.isZero && remainder.degree >= y.degree) {
             val leadTermR = remainder.leadTerm
             val q = model.divide(leadTermR.value, leadTermY.value)
             val leadPowQuotient = leadTermR.pow - leadTermY.pow
@@ -382,7 +380,7 @@ class Polynomial<T : Any> internal constructor(
      * Returns the formal indefinite integral of this polynomial, with the constant of integration being zero.
      */
     fun integral(): Polynomial<T> {
-        if (isZero()) {
+        if (isZero) {
             return zero(model)
         }
         require(model is Field<T>) { "The model is not a field." }
@@ -404,7 +402,7 @@ class Polynomial<T : Any> internal constructor(
      */
     fun cont(): T {
         require(model is EuclideanDomain) { "The model is not a Euclidean domain." }
-        if (isZero()) {
+        if (isZero) {
             return model.zero
         }
         return terms.fold(model.zero) { acc, term ->
@@ -421,7 +419,7 @@ class Polynomial<T : Any> internal constructor(
      * @see cont
      */
     fun toPrimitive(): Polynomial<T> {
-        if (isZero()) {
+        if (isZero) {
             return this
         }
         return div(cont())
@@ -478,7 +476,7 @@ class Polynomial<T : Any> internal constructor(
 //        require(model is Field<T>) { "The model is not a field." }
 //
 //        // If either polynomial is zero, the resultant is zero
-//        if (this.isZero() || y.isZero()) {
+//        if (this.isZero || y.isZero) {
 //            return model.zero
 //        }
 //
@@ -540,6 +538,7 @@ class Polynomial<T : Any> internal constructor(
             val r = model.add(a.value, b.value)
             return if (model.isZero(r)) null else PTerm(a.pow, r)
         }
+
         /**
          * Adds multiple terms with the same power.
          */
@@ -648,7 +647,7 @@ class Polynomial<T : Any> internal constructor(
          * Returns a polynomial `ax + b`.
          */
         @JvmStatic
-        fun <T:Any> linear(model: Ring<T>, a: T, b: T): Polynomial<T> {
+        fun <T : Any> linear(model: Ring<T>, a: T, b: T): Polynomial<T> {
             return Polynomial(model, listOf(PTerm(1, a), PTerm(0, b)))
         }
 
@@ -690,7 +689,7 @@ class Polynomial<T : Any> internal constructor(
         /**
          * Creates a polynomial `a * x^p`.
          */
-        fun <T : Any> fromPower(model: Ring<T>, p: Int, a: T): Polynomial<T> {
+        fun <T : Any> power(model: Ring<T>, p: Int, a: T): Polynomial<T> {
             require(p >= 0) { "The power must be non-negative." }
             if (model.isZero(a)) {
                 return zero(model)
@@ -702,7 +701,7 @@ class Polynomial<T : Any> internal constructor(
          * Returns the sum of a list of polynomials.
          */
         fun <T : Any> sum(model: Ring<T>, list: List<Polynomial<T>>): Polynomial<T> {
-            when(list.size) {
+            when (list.size) {
                 0 -> return zero(model)
                 1 -> return list[0]
                 2 -> return addTerms2(model, list[0].terms, list[1].terms)
@@ -718,10 +717,6 @@ class Polynomial<T : Any> internal constructor(
         }
 
 
-
-
-
-
         /*
         Methods for number theory
          */
@@ -733,6 +728,7 @@ class Polynomial<T : Any> internal constructor(
          *
          * @param T the calculator for [T] should at least be a ring calculator.
          */
+        @Suppress("LocalVariableName")
         fun <T : Any> pseudoDivision(A: Polynomial<T>, B: Polynomial<T>): Pair<Polynomial<T>, Polynomial<T>> {
             /*
             See Algorithm 3.1.2, page 112 of
@@ -741,24 +737,23 @@ class Polynomial<T : Any> internal constructor(
              */
             val m = A.degree
             val n = B.degree
-            require(!B.isZero())
+            require(!B.isZero)
             require(m >= n)
-            val mc = A.model
-            TODO()
-//            val d = B.first()
-//            var R = A
-//            var Q = zero(mc)
-//            var e = m - n + 1
-//            while (!R.isZero() && R.degree >= B.degree) {
-//                val S = powerX(R.degree - B.degree, R.first(), mc)
-//                Q = d * Q + S
-//                R = d * R - S * B
-//                e -= 1
-//            }
-//            val q = mc.pow(d, e.toLong())
-//            Q = Q.multiply(q)
-//            R = R.multiply(q)
-//            return Pair(Q, R)
+            val model = A.model
+            val d = B.leadCoef
+            var R = A
+            var Q = zero(model)
+            var e = m - n + 1
+            while (!R.isZero && R.degree >= B.degree) {
+                val S = power(model, R.degree - B.degree, R.leadCoef)
+                Q = d * Q + S
+                R = d * R - S * B
+                e -= 1
+            }
+            val q = model.power(d, e.toLong())
+            Q *= q
+            R *= q
+            return Pair(Q, R)
         }
     }
 }
@@ -802,7 +797,7 @@ open class PolynomialOnRing<T : Any>(model: Ring<T>) : Ring<Polynomial<T>> {
     }
 
     override fun isZero(x: Polynomial<T>): Boolean {
-        return x.isZero()
+        return x.isZero
     }
 
     override fun sum(elements: List<Polynomial<T>>): Polynomial<T> {

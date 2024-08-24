@@ -94,6 +94,8 @@ interface Tensor<T : Any> : MathObject<T, EqualPredicate<T>>, AlgebraModel<T, Te
      */
     override operator fun get(idx: Index): T
 
+
+
     /*
     Math operations:
      */
@@ -419,9 +421,12 @@ interface Tensor<T : Any> : MathObject<T, EqualPredicate<T>>, AlgebraModel<T, Te
      */
     fun transpose(axis1: Int = -1, axis2: Int = -2): Tensor<T> {
         return permute(
-            Permutation.swap(dim,
+            Permutation.swap(
+                dim,
                 TensorImpl.addIfNegative(axis1, dim),
-                TensorImpl.addIfNegative(axis2, dim)))
+                TensorImpl.addIfNegative(axis2, dim)
+            )
+        )
     }
 
 
@@ -494,7 +499,7 @@ interface Tensor<T : Any> : MathObject<T, EqualPredicate<T>>, AlgebraModel<T, Te
             require(shape.all { s -> s > 0 })
         }
 
-        fun <T:Any> checkShape(x: Tensor<T>, y: Tensor<T>) {
+        fun <T : Any> checkShape(x: Tensor<T>, y: Tensor<T>) {
             if (!x.isSameShape(y)) {
                 throw IllegalArgumentException("Shape mismatch: ${x.shape.contentToString()} and ${y.shape.contentToString()}.")
             }
@@ -505,7 +510,7 @@ interface Tensor<T : Any> : MathObject<T, EqualPredicate<T>>, AlgebraModel<T, Te
          *
          * @param shape a non-empty array of positive integers
          */
-        fun <T:Any> zeros(mc: Ring<T>, vararg shape: Int): MutableTensor<T> {
+        fun <T : Any> zeros(mc: Ring<T>, vararg shape: Int): MutableTensor<T> {
             return constants(mc.zero, mc, *shape)
         }
 
@@ -514,7 +519,7 @@ interface Tensor<T : Any> : MathObject<T, EqualPredicate<T>>, AlgebraModel<T, Te
          *
          * @param shape a non-empty array of positive integers
          */
-        fun <T:Any> ones(mc: UnitRing<T>, vararg shape: Int): MutableTensor<T> {
+        fun <T : Any> ones(mc: UnitRing<T>, vararg shape: Int): MutableTensor<T> {
             return constants(mc.one, mc, *shape)
         }
 
@@ -523,7 +528,7 @@ interface Tensor<T : Any> : MathObject<T, EqualPredicate<T>>, AlgebraModel<T, Te
          *
          * @param shape a non-empty array of positive integers
          */
-        fun <T:Any> constants(c: T, mc: EqualPredicate<T>, vararg shape: Int): MutableTensor<T> {
+        fun <T : Any> constants(c: T, mc: EqualPredicate<T>, vararg shape: Int): MutableTensor<T> {
             checkValidShape(shape)
             return ATensor.constant(c, shape.clone(), mc)
         }
@@ -533,7 +538,7 @@ interface Tensor<T : Any> : MathObject<T, EqualPredicate<T>>, AlgebraModel<T, Te
          *
          * @param shape a non-empty array of positive integers
          */
-        fun <T:Any> of(shape: IntArray, mc: EqualPredicate<T>, supplier: (Index) -> T): MutableTensor<T> {
+        fun <T : Any> of(shape: IntArray, mc: EqualPredicate<T>, supplier: (Index) -> T): MutableTensor<T> {
             checkValidShape(shape)
             return ATensor.buildFromSequence(mc, shape.clone(), IterUtils.prodIdxN(shape).map(supplier))
         }
@@ -543,7 +548,11 @@ interface Tensor<T : Any> : MathObject<T, EqualPredicate<T>>, AlgebraModel<T, Te
          *
          * @see of
          */
-        operator fun <T:Any> invoke(shape: IntArray, mc: EqualPredicate<T>, supplier: (Index) -> T): MutableTensor<T> {
+        operator fun <T : Any> invoke(
+            shape: IntArray,
+            mc: EqualPredicate<T>,
+            supplier: (Index) -> T
+        ): MutableTensor<T> {
             return of(shape, mc, supplier)
         }
 
@@ -554,7 +563,7 @@ interface Tensor<T : Any> : MathObject<T, EqualPredicate<T>>, AlgebraModel<T, Te
          *
          *
          */
-        fun <T:Any> of(elements: List<Any>, mc: EqualPredicate<T>): MutableTensor<T> {
+        fun <T : Any> of(elements: List<Any>, mc: EqualPredicate<T>): MutableTensor<T> {
             @Suppress("UNCHECKED_CAST")
             return ATensor.fromNestingList(elements, mc, mc.numberClass as Class<T>)
         }
@@ -563,7 +572,7 @@ interface Tensor<T : Any> : MathObject<T, EqualPredicate<T>>, AlgebraModel<T, Te
          * Creates a tensor of the given [shape] with its [elements], it is required that the length of
          * [elements] is equal to the product of [shape].
          */
-        fun <T:Any> of(shape: IntArray, mc: EqualPredicate<T>, vararg elements: T): MutableTensor<T> {
+        fun <T : Any> of(shape: IntArray, mc: EqualPredicate<T>, vararg elements: T): MutableTensor<T> {
             checkValidShape(shape)
             val size = MathUtils.product(shape)
             require(elements.size == size) {
@@ -578,7 +587,7 @@ interface Tensor<T : Any> : MathObject<T, EqualPredicate<T>>, AlgebraModel<T, Te
          * Creates a tensor of the given [shape] with a sequence of elements, it is required that the size of
          * [elements] not smaller than the product of [shape].
          */
-        fun <T:Any> of(shape: IntArray, mc: EqualPredicate<T>, elements: Sequence<T>): MutableTensor<T> {
+        fun <T : Any> of(shape: IntArray, mc: EqualPredicate<T>, elements: Sequence<T>): MutableTensor<T> {
             checkValidShape(shape)
             return ATensor.buildFromSequence(mc, shape, elements)
         }
@@ -587,7 +596,7 @@ interface Tensor<T : Any> : MathObject<T, EqualPredicate<T>>, AlgebraModel<T, Te
          * Creates a tensor of the given [shape] with a iterable of elements, it is required that the size of
          * [elements] not smaller than the product of [shape].
          */
-        fun <T:Any> of(shape: IntArray, mc: EqualPredicate<T>, elements: Iterable<T>): MutableTensor<T> {
+        fun <T : Any> of(shape: IntArray, mc: EqualPredicate<T>, elements: Iterable<T>): MutableTensor<T> {
             return of(shape, mc, elements.asSequence())
         }
 
@@ -602,7 +611,7 @@ interface Tensor<T : Any> : MathObject<T, EqualPredicate<T>>, AlgebraModel<T, Te
         /**
          * Returns a copy of the given tensor as a mutable tensor.
          */
-        fun <T:Any> copyOf(t: Tensor<T>): MutableTensor<T> {
+        fun <T : Any> copyOf(t: Tensor<T>): MutableTensor<T> {
             return ATensor.copyOf(t)
         }
 
@@ -629,7 +638,7 @@ interface Tensor<T : Any> : MathObject<T, EqualPredicate<T>>, AlgebraModel<T, Te
          * @see inner
          * @see matmul
          */
-        fun <T:Any> einsum(expr: String, vararg tensors: Tensor<T>): MutableTensor<T> {
+        fun <T : Any> einsum(expr: String, vararg tensors: Tensor<T>): MutableTensor<T> {
             return TensorImpl.einsum(tensors.asList(), expr)
         }
 
@@ -637,7 +646,7 @@ interface Tensor<T : Any> : MathObject<T, EqualPredicate<T>>, AlgebraModel<T, Te
         /**
          * Returns a tensor of shape `(1)` that represents the given scalar.
          */
-        fun <T:Any> scalar(x: T, mc: EqualPredicate<T>): MutableTensor<T> {
+        fun <T : Any> scalar(x: T, mc: EqualPredicate<T>): MutableTensor<T> {
             return constants(x, mc, 1)
         }
 
@@ -649,7 +658,7 @@ interface Tensor<T : Any> : MathObject<T, EqualPredicate<T>>, AlgebraModel<T, Te
          * For example, concatenating two tensors of shape `(a,b), (a,c)` at axis 1 will result in a
          * tensor of shape `(a,b+c)`.
          */
-        fun <T:Any> concat(ts: List<Tensor<T>>, axis: Int = 0): Tensor<T> {
+        fun <T : Any> concat(ts: List<Tensor<T>>, axis: Int = 0): Tensor<T> {
             val (ax, shape) = TensorImpl.prepareConcat(ts, axis)
             return ConcatView(ax, ts, shape)
         }
@@ -659,7 +668,7 @@ interface Tensor<T : Any> : MathObject<T, EqualPredicate<T>>, AlgebraModel<T, Te
          *
          * @see concat
          */
-        fun <T:Any> concat(vararg ts: Tensor<T>, axis: Int = 0): Tensor<T> {
+        fun <T : Any> concat(vararg ts: Tensor<T>, axis: Int = 0): Tensor<T> {
             return concat(ts.asList(), axis)
         }
 
@@ -673,7 +682,7 @@ interface Tensor<T : Any> : MathObject<T, EqualPredicate<T>>, AlgebraModel<T, Te
          * For example, concatenating two tensors of shape `(a,b), (a,c)` at axis 1 will result in a
          * tensor of shape `(a,b+c)`.
          */
-        fun <T:Any> concatM(ts: List<MutableTensor<T>>, axis: Int = 0): MutableTensor<T> {
+        fun <T : Any> concatM(ts: List<MutableTensor<T>>, axis: Int = 0): MutableTensor<T> {
             val (ax, shape) = TensorImpl.prepareConcat(ts, axis)
             return MutableConcatView(ax, ts, shape)
         }
@@ -684,7 +693,7 @@ interface Tensor<T : Any> : MathObject<T, EqualPredicate<T>>, AlgebraModel<T, Te
          *
          * @see concatM
          */
-        fun <T:Any> concatM(vararg ts: MutableTensor<T>, axis: Int = 0): MutableTensor<T> {
+        fun <T : Any> concatM(vararg ts: MutableTensor<T>, axis: Int = 0): MutableTensor<T> {
             return concatM(ts.asList(), axis)
         }
 
@@ -695,7 +704,7 @@ interface Tensor<T : Any> : MathObject<T, EqualPredicate<T>>, AlgebraModel<T, Te
          * For example, stacking two tensors of shape `(a,b)` at axis 0 will result in a tensor
          * of shape `(2,a,b)`.
          */
-        fun <T:Any> stack(ts: List<Tensor<T>>, axis: Int = 0): Tensor<T> {
+        fun <T : Any> stack(ts: List<Tensor<T>>, axis: Int = 0): Tensor<T> {
             val (ax, shape) = TensorImpl.prepareStack(ts, axis)
             return StackView(ax, ts, shape)
         }
@@ -706,7 +715,7 @@ interface Tensor<T : Any> : MathObject<T, EqualPredicate<T>>, AlgebraModel<T, Te
          *
          * @see stack
          */
-        fun <T:Any> stack(vararg ts: Tensor<T>, axis: Int = 0): Tensor<T> {
+        fun <T : Any> stack(vararg ts: Tensor<T>, axis: Int = 0): Tensor<T> {
             return stack(ts.asList(), axis)
         }
 
@@ -717,7 +726,7 @@ interface Tensor<T : Any> : MathObject<T, EqualPredicate<T>>, AlgebraModel<T, Te
          * For example, stacking two tensors of shape `(a,b)` at axis 0 will result in a tensor
          * of shape `(2,a,b)`.
          */
-        fun <T:Any> stackM(ts: List<MutableTensor<T>>, axis: Int = 0): MutableTensor<T> {
+        fun <T : Any> stackM(ts: List<MutableTensor<T>>, axis: Int = 0): MutableTensor<T> {
             val (ax, shape) = TensorImpl.prepareStack(ts, axis)
             return MutableStackView(ax, ts, shape)
         }
@@ -729,7 +738,7 @@ interface Tensor<T : Any> : MathObject<T, EqualPredicate<T>>, AlgebraModel<T, Te
          *
          * @see stackM
          */
-        fun <T:Any> stackM(vararg ts: MutableTensor<T>, axis: Int = 0): MutableTensor<T> {
+        fun <T : Any> stackM(vararg ts: MutableTensor<T>, axis: Int = 0): MutableTensor<T> {
             return stackM(ts.asList(), axis)
         }
 
@@ -740,7 +749,7 @@ interface Tensor<T : Any> : MathObject<T, EqualPredicate<T>>, AlgebraModel<T, Te
 /**
  * A vararg version of get. This method supports negative indices.
  */
-operator fun <T:Any> Tensor<T>.get(vararg idx: Int): T {
+operator fun <T : Any> Tensor<T>.get(vararg idx: Int): T {
     for (i in idx.indices) {
         if (idx[i] < 0) {
             idx[i] += lengthAt(i)
@@ -749,8 +758,8 @@ operator fun <T:Any> Tensor<T>.get(vararg idx: Int): T {
     return this[idx]
 }
 
-infix fun <T:Any> Tensor<T>.matmul(y: Tensor<T>): Tensor<T> = this.matmul(y, r = 1)
-infix fun <T:Any> MutableTensor<T>.matmul(y: Tensor<T>): MutableTensor<T> = this.matmul(y, r = 1)
+infix fun <T : Any> Tensor<T>.matmul(y: Tensor<T>): Tensor<T> = this.matmul(y, r = 1)
+infix fun <T : Any> MutableTensor<T>.matmul(y: Tensor<T>): MutableTensor<T> = this.matmul(y, r = 1)
 
 ///**
 // * Converts this tensor to a matrix. It is required that `dim == 2`.
@@ -761,7 +770,7 @@ infix fun <T:Any> MutableTensor<T>.matmul(y: Tensor<T>): MutableTensor<T> = this
 //    return Matrix.of(row, column, calculator as RealCalculator<T>, flattenToList())
 //}
 
-interface MutableTensor<T:Any> : Tensor<T> {
+interface MutableTensor<T : Any> : Tensor<T> {
     /**
      * Sets an element in this tensor.
      */
@@ -930,9 +939,12 @@ interface MutableTensor<T:Any> : Tensor<T> {
 
     override fun transpose(axis1: Int, axis2: Int): MutableTensor<T> {
         return permute(
-            Permutation.swap(dim,
+            Permutation.swap(
+                dim,
                 TensorImpl.addIfNegative(axis1, dim),
-                TensorImpl.addIfNegative(axis2, dim)))
+                TensorImpl.addIfNegative(axis2, dim)
+            )
+        )
     }
 
 
@@ -950,7 +962,7 @@ interface MutableTensor<T:Any> : Tensor<T> {
         return ATensor.copyOf(this)
     }
 
-    override fun <N:Any> mapTo(newCalculator: EqualPredicate<N>, mapper: Function<T, N>): MutableTensor<N> {
+    override fun <N : Any> mapTo(newCalculator: EqualPredicate<N>, mapper: Function<T, N>): MutableTensor<N> {
         return ATensor.buildFromSequence(newCalculator, shape, elementSequence().map { mapper.apply(it) })
     }
 
@@ -958,11 +970,13 @@ interface MutableTensor<T:Any> : Tensor<T> {
 }
 
 
-fun <T:Any, A : Appendable> Tensor<T>.joinToL(buffer: A, separators: List<CharSequence>,
-                                          prefixes: List<CharSequence>,
-                                          postfixes: List<CharSequence>,
-                                          limits: IntArray, truncated: List<CharSequence>,
-                                          transform: (T) -> CharSequence): A {
+fun <T : Any, A : Appendable> Tensor<T>.joinToL(
+    buffer: A, separators: List<CharSequence>,
+    prefixes: List<CharSequence>,
+    postfixes: List<CharSequence>,
+    limits: IntArray, truncated: List<CharSequence>,
+    transform: (T) -> CharSequence
+): A {
     val dim = this.dim
     val shape = this.shape
     val idx = IntArray(shape.size)
@@ -1006,11 +1020,13 @@ fun <T:Any, A : Appendable> Tensor<T>.joinToL(buffer: A, separators: List<CharSe
 }
 
 
-fun <T:Any, A : Appendable> Tensor<T>.joinTo(buffer: A, separator: CharSequence = ", ",
-                                         prefix: CharSequence = "[",
-                                         postfix: CharSequence = "]",
-                                         limit: Int = -1, truncated: CharSequence = "...",
-                                         transform: ((T) -> CharSequence)? = null): A {
+fun <T : Any, A : Appendable> Tensor<T>.joinTo(
+    buffer: A, separator: CharSequence = ", ",
+    prefix: CharSequence = "[",
+    postfix: CharSequence = "]",
+    limit: Int = -1, truncated: CharSequence = "...",
+    transform: ((T) -> CharSequence)? = null
+): A {
     val dim = this.dim
     val seps = run {
         val t = ArrayList<CharSequence>(dim)
@@ -1044,20 +1060,23 @@ fun <T:Any, A : Appendable> Tensor<T>.joinTo(buffer: A, separator: CharSequence 
     return this.joinToL(buffer, seps, pres, posts, limits, truns, trans)
 }
 
-fun <T:Any> Tensor<T>.joinToString(separator: CharSequence = " ",
-                               prefix: CharSequence = "[",
-                               postfix: CharSequence = "]",
-                               limit: Int = -1, truncated: CharSequence = "...",
-                               transform: ((T) -> CharSequence)? = null): String {
+fun <T : Any> Tensor<T>.joinToString(
+    separator: CharSequence = " ",
+    prefix: CharSequence = "[",
+    postfix: CharSequence = "]",
+    limit: Int = -1, truncated: CharSequence = "...",
+    transform: ((T) -> CharSequence)? = null
+): String {
     return this.joinTo(StringBuilder(), separator, prefix, postfix, limit, truncated, transform).toString()
 }
 
-abstract class AbstractTensor<T:Any>(
-        mc: EqualPredicate<T>,
-        /**
-         * The shape of the tensor, it should not be modified
-         */
-        protected val sh: IntArray) : AbstractMathObject<T, EqualPredicate<T>>(mc), Tensor<T> {
+abstract class AbstractTensor<T : Any>(
+    mc: EqualPredicate<T>,
+    /**
+     * The shape of the tensor, it should not be modified
+     */
+    protected val sh: IntArray
+) : AbstractMathObject<T, EqualPredicate<T>>(mc), Tensor<T> {
 
     //Created by lyc at 2021-03-31 20:39
 
@@ -1097,8 +1116,10 @@ abstract class AbstractTensor<T:Any>(
         }
         for (i in 0 until dim) {
             if (!(0 <= idx[i] && idx[i] < sh[i])) {
-                throw IndexOutOfBoundsException("Tensor index out of bound at axis $i: " +
-                        "Shape=${sh.contentToString()}, Index=${idx.contentToString()}")
+                throw IndexOutOfBoundsException(
+                    "Tensor index out of bound at axis $i: " +
+                            "Shape=${sh.contentToString()}, Index=${idx.contentToString()}"
+                )
             }
         }
     }
@@ -1127,13 +1148,13 @@ abstract class AbstractTensor<T:Any>(
     /**
      * Determines whether this tensor is all-zero.
      */
-    override fun isZero(): Boolean {
-        val mc = model as Ring<T>
-        return elementSequence().all { mc.isZero(it) }
-    }
+    override val isZero: Boolean
+        get() {
+            val mc = model as Ring<T>
+            return elementSequence().all { mc.isZero(it) }
+        }
 
-
-//    override fun permute(p: Permutation): Tensor<T> {
+    //    override fun permute(p: Permutation): Tensor<T> {
 //        require(p.size() == dim)
 //        val sh = this.shape
 //        val ranges = shape.map { 0 until it }
@@ -1150,8 +1171,8 @@ abstract class AbstractTensor<T:Any>(
 //    }
 }
 
-abstract class AbstractMutableTensor<T:Any>(mc: EqualPredicate<T>, shape: IntArray)
-    : AbstractTensor<T>(mc, shape), MutableTensor<T> {
+abstract class AbstractMutableTensor<T : Any>(mc: EqualPredicate<T>, shape: IntArray) : AbstractTensor<T>(mc, shape),
+    MutableTensor<T> {
     override fun applyAll(f: (T) -> T): MutableTensor<T> {
         return mapTo(model, f)
     }
@@ -1190,8 +1211,7 @@ abstract class AbstractMutableTensor<T:Any>(mc: EqualPredicate<T>, shape: IntArr
  * An array-implementation of tensor.
  */
 class ATensor<T : Any>
-internal constructor(mc: EqualPredicate<T>, shape: IntArray, val data: Array<T>)
-    : AbstractMutableTensor<T>(mc, shape) {
+internal constructor(mc: EqualPredicate<T>, shape: IntArray, val data: Array<T>) : AbstractMutableTensor<T>(mc, shape) {
     private val shifts: IntArray = IntArray(dim)
 
     init {
@@ -1262,10 +1282,11 @@ internal constructor(mc: EqualPredicate<T>, shape: IntArray, val data: Array<T>)
         }
     }
 
-    override fun isZero(): Boolean {
-        val mc = model as Ring
-        return data.all { mc.isZero(it) }
-    }
+    override val isZero: Boolean
+        get() {
+            val mc = model as Ring
+            return data.all { mc.isZero(it) }
+        }
 
 
     override fun plus(y: Tensor<T>): MutableTensor<T> {
@@ -1362,7 +1383,7 @@ internal constructor(mc: EqualPredicate<T>, shape: IntArray, val data: Array<T>)
     }
 
     @Suppress("UNCHECKED_CAST")
-    override fun <N:Any> mapTo(newCalculator: EqualPredicate<N>, mapper: Function<T, N>): ATensor<N> {
+    override fun <N : Any> mapTo(newCalculator: EqualPredicate<N>, mapper: Function<T, N>): ATensor<N> {
         val ndata = arrayOfNulls<Any>(size)
         for (i in 0 until size) {
             ndata[i] = mapper.apply(data[i])
@@ -1373,7 +1394,7 @@ internal constructor(mc: EqualPredicate<T>, shape: IntArray, val data: Array<T>)
 
     companion object {
         @Suppress("UNCHECKED_CAST")
-        fun <T:Any> buildFromSequence(mc: EqualPredicate<T>, shape: IntArray, sequence: Sequence<T>): ATensor<T> {
+        fun <T : Any> buildFromSequence(mc: EqualPredicate<T>, shape: IntArray, sequence: Sequence<T>): ATensor<T> {
             val size = MathUtils.product(shape)
             val data = arrayOfNulls<Any>(size)
             var pos = 0
@@ -1385,7 +1406,7 @@ internal constructor(mc: EqualPredicate<T>, shape: IntArray, val data: Array<T>)
         }
 
         @Suppress("UNCHECKED_CAST")
-        private inline fun <T:Any> apply2(x: ATensor<T>, y: ATensor<T>, f: (T, T) -> T): ATensor<T> {
+        private inline fun <T : Any> apply2(x: ATensor<T>, y: ATensor<T>, f: (T, T) -> T): ATensor<T> {
             checkShape(x, y)
             val d1 = x.data
             val d2 = y.data
@@ -1397,7 +1418,7 @@ internal constructor(mc: EqualPredicate<T>, shape: IntArray, val data: Array<T>)
         }
 
         @Suppress("UNCHECKED_CAST")
-        fun <T:Any> copyOf(tensor: Tensor<T>): ATensor<T> {
+        fun <T : Any> copyOf(tensor: Tensor<T>): ATensor<T> {
             val shape = tensor.shape
             if (tensor is ATensor) {
                 return tensor.copy()
@@ -1411,7 +1432,7 @@ internal constructor(mc: EqualPredicate<T>, shape: IntArray, val data: Array<T>)
             return ATensor(tensor.model, shape, data as Array<T>)
         }
 
-        fun <T:Any> constant(c: T, shape: IntArray, mc: EqualPredicate<T>): ATensor<T> {
+        fun <T : Any> constant(c: T, shape: IntArray, mc: EqualPredicate<T>): ATensor<T> {
             val size = MathUtils.product(shape)
             val data = arrayOfNulls<Any>(size)
             Arrays.fill(data, c)
@@ -1419,7 +1440,7 @@ internal constructor(mc: EqualPredicate<T>, shape: IntArray, val data: Array<T>)
             return ATensor(mc, shape, data as Array<T>)
         }
 
-        fun <T:Any> zeros(shape: IntArray, mc: Ring<T>): ATensor<T> {
+        fun <T : Any> zeros(shape: IntArray, mc: Ring<T>): ATensor<T> {
             return constant(mc.zero, shape, mc)
         }
 
@@ -1438,7 +1459,7 @@ internal constructor(mc: EqualPredicate<T>, shape: IntArray, val data: Array<T>)
 //        }
 
         @Suppress("UNCHECKED_CAST")
-        fun <T:Any> wedge(x: ATensor<T>, y: ATensor<T>): ATensor<T> {
+        fun <T : Any> wedge(x: ATensor<T>, y: ATensor<T>): ATensor<T> {
             val mc = x.model as Ring<T>
             val shape = x.shape + y.shape
             val size = x.size * y.size
@@ -1455,8 +1476,10 @@ internal constructor(mc: EqualPredicate<T>, shape: IntArray, val data: Array<T>)
         }
 
 
-        private fun <T:Any> recurAdd(list: List<Any>, shape: IntArray, level: Int, pos: Int,
-                                 dest: Array<T>, clz: Class<T>): Int {
+        private fun <T : Any> recurAdd(
+            list: List<Any>, shape: IntArray, level: Int, pos: Int,
+            dest: Array<T>, clz: Class<T>
+        ): Int {
             val size = shape[level]
             require(list.size == size) {
                 "Required length at axis $level is $size, but ${list.size} is given!"
@@ -1478,7 +1501,7 @@ internal constructor(mc: EqualPredicate<T>, shape: IntArray, val data: Array<T>)
             return p
         }
 
-        fun <T:Any> fromNestingList(list: List<Any>, mc: EqualPredicate<T>, clz: Class<T>): ATensor<T> {
+        fun <T : Any> fromNestingList(list: List<Any>, mc: EqualPredicate<T>, clz: Class<T>): ATensor<T> {
             val sh = arrayListOf<Int>()
 //            val clz = mc.numberClass
             var l = list

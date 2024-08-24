@@ -876,7 +876,7 @@ object NTFunctions {
         require(n >= 0) { "n<0" }
         require(exp.isPositive()) { "exp < 0" }
         if (n == 0L) {
-            if (exp.isZero()) {
+            if (exp.isZero) {
                 ExceptionUtil.zeroExponent()
                 return null
             }

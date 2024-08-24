@@ -163,10 +163,8 @@ internal constructor(
     Basic operations
      */
 
-    override fun isZero(): Boolean {
-        return terms.isEmpty()
-    }
-
+    override val isZero: Boolean
+        get() = terms.isEmpty()
 
     private inline fun mapTermsNonZeroT(transform: (MTerm<T>) -> MTerm<T>): Multinomial<T> {
         val newTerms = terms.map(transform)
@@ -482,7 +480,7 @@ open class MultinomialOnRing<T : Any>(model: Ring<T>) : Ring<Multinomial<T>> {
     }
 
     override fun isZero(x: Multinomial<T>): Boolean {
-        return x.isZero()
+        return x.isZero
     }
 
     override fun sum(elements: List<Multinomial<T>>): Multinomial<T> {

@@ -82,12 +82,11 @@ internal constructor(val nume: T, val deno: T, model: Ring<T>) :
     Field model:
      */
 
-    override fun isZero(): Boolean {
-        return model.isZero(nume)
-    }
+    override val isZero: Boolean
+        get() = model.isZero(nume)
 
     override val isInvertible: Boolean
-        get() = !isZero()
+        get() = !isZero
 
     override fun plus(y: RingFraction<T>): RingFraction<T> {
         val x = this
@@ -152,7 +151,7 @@ internal constructor(val nume: T, val deno: T, model: Ring<T>) :
     }
 
     override fun div(y: RingFraction<T>): RingFraction<T> {
-        if (y.isZero()) {
+        if (y.isZero) {
             throw ArithmeticException("Cannot divide by zero: $this / $y")
         }
         @Suppress("DuplicatedCode") // not duplicated since the order is different

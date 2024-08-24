@@ -325,10 +325,10 @@ interface EuclideanDomain<T : Any> : UniqueFactorizationDomain<T> {
 
         fun <T : EuclidRingNumberModel<T>> gcdUV(a: T, b: T, zero: T, one: T): Triple<T, T, T> {
             //trivial cases
-            if (a.isZero()) {
+            if (a.isZero) {
                 return Triple(b, zero, one)
             }
-            if (b.isZero()) {
+            if (b.isZero) {
                 return Triple(a, one, zero)
             }
             // see EuclideanDomain.gcdUV for explanation
@@ -336,7 +336,7 @@ interface EuclideanDomain<T : Any> : UniqueFactorizationDomain<T> {
             var d1 = b
             var u0: T = one
             var u1: T = zero
-            while (!d1.isZero()) {
+            while (!d1.isZero) {
                 val (q, d2) = d0.divideAndRemainder(d1)
                 d0 = d1
                 d1 = d2

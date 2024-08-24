@@ -49,8 +49,12 @@ data class Fraction internal constructor(
     val isPositive: Boolean
         get() = nume > 0
 
+
+    override val isZero: Boolean
+        get() = (nume == 0L)
+    
     override val isInvertible: Boolean
-        get() = !isZero()
+        get() = !isZero
 
     /**
      * The sign number of this fraction, `1` if `this > 0`, `0` if `this = 0` and `-1` if `this < 0`.
@@ -64,9 +68,6 @@ data class Fraction internal constructor(
     val numeratorAbs: Long
         get() = nume.absoluteValue
 
-    override fun isZero(): Boolean {
-        return nume == 0L
-    }
 
     init {
         require(deno != 0L) { "Zero for denominator" }
@@ -154,7 +155,7 @@ data class Fraction internal constructor(
      * @return `-this `
      */
     override fun unaryMinus(): Fraction {
-        return if (this.isZero()) {
+        return if (this.isZero) {
             ZERO
         } else {
             Fraction(-nume, deno)
@@ -167,7 +168,7 @@ data class Fraction internal constructor(
      * @throws IllegalArgumentException if this == 0.
      */
     override fun inv(): Fraction {
-        if (this.isZero()) {
+        if (this.isZero) {
             throw ArithmeticException("Zero to reciprocal")
         }
         return adjustSign(deno, nume)
@@ -181,7 +182,7 @@ data class Fraction internal constructor(
      * @return `this * y`
      */
     override fun times(y: Fraction): Fraction {
-        if (isZero() || y.isZero()) {
+        if (isZero || y.isZero) {
             return ZERO
         }
 
@@ -200,10 +201,10 @@ data class Fraction internal constructor(
      * @throws IllegalArgumentException if y == 0.
      */
     override fun div(y: Fraction): Fraction {
-        if (y.isZero()) {
+        if (y.isZero) {
             ExceptionUtil.dividedByZero()
         }
-        if (this.isZero()) {
+        if (this.isZero) {
             return ZERO
         }
         //exchange y's numerator and denominator .
@@ -290,7 +291,7 @@ data class Fraction internal constructor(
      * @throws ArithmeticException if this == 0 and n <=0
      */
     fun pow(n: Int): Fraction {
-        if (isZero()) {
+        if (isZero) {
             return if (n == 0) {
                 ExceptionUtil.zeroExponent()
             } else {
@@ -323,14 +324,14 @@ data class Fraction internal constructor(
      */
     fun exp(exp: Fraction): Fraction {
 
-        if (exp.isZero()) {
-            if (this.isZero()) {
+        if (exp.isZero) {
+            if (this.isZero) {
                 ExceptionUtil.zeroExponent()
             }
             return ONE
 
         }
-        if (this.isZero()) {
+        if (this.isZero) {
             return ZERO
         }
         if (this.deno == 1L) {
@@ -383,7 +384,7 @@ data class Fraction internal constructor(
      * @return this^2
      */
     fun squareOf(): Fraction {
-        return if (isZero()) {
+        return if (isZero) {
             ZERO
         } else Fraction(
             nume * nume,
@@ -400,7 +401,7 @@ data class Fraction internal constructor(
      * @throws ArithmeticException if `divisor==0`
      */
     fun divideToIntegralValue(divisor: Fraction): Fraction {
-        if (isZero()) {
+        if (isZero) {
             return ZERO
         }
         val re = this / divisor
@@ -501,20 +502,20 @@ data class Fraction internal constructor(
 
 
     /**
-     * Compare two fractions , return -1 if this fraction is smaller than f,0 if equal,or 1
-     * if this fraction is bigger than f. The method is generally equal to return `sgn(this-frac)`
-     * @return -1,0 or 1 if this is smaller than,equal to or bigger than f.
+     * Compares this with `other` fraction and returns:
+     * - `-1` if `this < other`
+     * - `0` if `this == other`
+     * - `1` if `this > other`
+     *
      */
     override fun compareTo(other: Fraction): Int {
-        return (this - other).signum
+        val diff = nume * other.deno - other.nume * deno
+        return diff.sign
     }
 
 
     companion object {
-        /**
-         *
-         */
-        private const val serialVersionUID = -8236721042317778971L
+
 
         /**
          * A Fraction representing `0` with zero as numerator ,
@@ -571,7 +572,7 @@ data class Fraction internal constructor(
         }
 
         @JvmStatic
-        fun of(number:Int) : Fraction{
+        fun of(number: Int): Fraction {
             return of(number.toLong())
         }
 
@@ -852,7 +853,7 @@ data class Fraction internal constructor(
 
         @JvmStatic
         fun sum(fractions: List<Fraction>): Fraction {
-            when(fractions.size){
+            when (fractions.size) {
                 0 -> return ZERO
                 1 -> return fractions[0]
                 2 -> return fractions[0] + fractions[1]
@@ -862,7 +863,7 @@ data class Fraction internal constructor(
             val numes = LongArray(size)
             val denos = LongArray(size)
 
-            for((index, f) in fractions.withIndex()){
+            for ((index, f) in fractions.withIndex()) {
                 numes[index] = f.nume
                 denos[index] = f.deno
             }
@@ -879,14 +880,13 @@ data class Fraction internal constructor(
         @JvmStatic
         fun product(fractions: List<Fraction>): Fraction {
             val size = fractions.size
-            when(size){
+            when (size) {
                 0 -> return ONE
                 1 -> return fractions[0]
                 2 -> return fractions[0] * fractions[1]
             }
             return fractions.reduce { acc, fraction -> acc * fraction }
         }
-
 
 
         /**
@@ -896,7 +896,7 @@ data class Fraction internal constructor(
          * @return a fraction calculator
          */
         @JvmStatic
-        val calculator: FractionAsQuotient
+        val asQuotient: FractionAsQuotient
             get() = FractionAsQuotient
 //
 //        /**

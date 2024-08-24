@@ -8,7 +8,8 @@ import cn.mathsymk.util.exceptions.ExceptionUtil
  */
 interface RingModel<T : RingModel<T>> : AddGroupModel<T>, MulMonoidModel<T> {
 
-    fun isZero(): Boolean
+    
+    val isZero : Boolean
 }
 
 //inline operator fun <T : RingNumberModel<T>> RingNumberModel<T>.times(y: T): T = multiply(y)
@@ -44,7 +45,7 @@ interface EuclidRingNumberModel<T : EuclidRingNumberModel<T>> : RingModel<T> {
         var a: T = this as T
         var b = y
         var t: T
-        while (!b.isZero()) {
+        while (!b.isZero) {
             t = b
             b = a.rem(b)
             a = t
@@ -64,10 +65,10 @@ interface EuclidRingNumberModel<T : EuclidRingNumberModel<T>> : RingModel<T> {
      */
     fun lcm(y: T): T {
         @Suppress("UNCHECKED_CAST") val x = this as T
-        if (x.isZero()) {
+        if (x.isZero) {
             return x
         }
-        if (y.isZero()) {
+        if (y.isZero) {
             return y
         }
         val gcd = x.gcd(y)
@@ -83,7 +84,7 @@ interface EuclidRingNumberModel<T : EuclidRingNumberModel<T>> : RingModel<T> {
 
     fun exactDivide(y: T): T {
         val (q, r) = divideAndRemainder(y)
-        if (!r.isZero()) {
+        if (!r.isZero) {
             ExceptionUtil.notExactDivision(this, y)
         }
         return q
@@ -108,12 +109,12 @@ interface EuclidRingNumberModel<T : EuclidRingNumberModel<T>> : RingModel<T> {
      */
     fun deg(y: T): Int {
         @Suppress("UNCHECKED_CAST") var b = this as T
-        if (y.isZero()) {
+        if (y.isZero) {
             throw ArithmeticException("a==0")
         }
         var k = 0
         var dar = b.divideAndRemainder(y)
-        while (dar.second.isZero()) {
+        while (dar.second.isZero) {
             // b%a==0
             k++
             if (b == dar.first) {

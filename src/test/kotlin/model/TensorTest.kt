@@ -1,10 +1,9 @@
 package model
 
 import TestUtils.assertValueEquals
-import cn.ancono.math.numberModels.*
-import cn.mathsymk.model.NumberModels
+import cn.mathsymk.model.*
+import cn.mathsymk.model.TensorImpl
 import org.junit.jupiter.api.Assertions.assertArrayEquals
-import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -17,7 +16,7 @@ class TensorTest {
 //    val v = Tensor.zeros(mc, *shape)
 //    val w = Tensor.ones(mc, *shape)
         val u = Tensor.of(shape, mc) { it.sum() }
-        assertTrue((u - u).isZero())
+        assertTrue((u - u).isZero)
     }
 
     @Test

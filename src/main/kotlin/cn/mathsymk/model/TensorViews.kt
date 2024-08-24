@@ -213,9 +213,9 @@ abstract class CombinedView<T:Any>(tensors: List<Tensor<T>>, shape: IntArray)
         return ts.asSequence().map { it.sumAll() }.reduce(mc::add)
     }
 
-    override fun isZero(): Boolean {
-        return ts.all { it.isZero() }
-    }
+
+    override val isZero: Boolean
+        get() = ts.all { it.isZero }
 
     override fun all(predicate: (T) -> Boolean): Boolean {
         return ts.all { it.all(predicate) }
@@ -290,9 +290,9 @@ open class StackView<T:Any>(val axis: Int, tensors: List<Tensor<T>>, shape: IntA
         return ts.asSequence().map { it.sumAll() }.reduce(mc::add)
     }
 
-    override fun isZero(): Boolean {
-        return ts.all { it.isZero() }
-    }
+    override val isZero: Boolean
+        get() = ts.all { it.isZero }
+
 }
 
 class MutableStackView<T:Any>(axis: Int, tensors: List<MutableTensor<T>>, shape: IntArray)
@@ -612,7 +612,7 @@ internal object TensorImpl {
     fun <T:Any> isLinearDependent(x: Tensor<T>, y: Tensor<T>): Boolean {
         Tensor.checkShape(x, y)
 //        val idx = IntArray(x.dim)
-        if (x.isZero() || y.isZero()) {
+        if (x.isZero || y.isZero) {
             return true
         }
         val mc = x.model as Field

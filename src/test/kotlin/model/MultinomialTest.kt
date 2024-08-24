@@ -33,7 +33,7 @@ class MultinomialTest {
     @Test
     fun zeroMultinomial() {
         val m1 = of(model, 0 to "x", 0 to "y")
-        assertTrue(m1.isZero())
+        assertTrue(m1.isZero)
     }
 
     @Test
@@ -49,7 +49,7 @@ class MultinomialTest {
         val m1 = of(model, 1 to "x", 2 to "y")
         val zero = of(model)
         val result = m1 * zero
-        assertTrue(result.isZero())
+        assertTrue(result.isZero)
     }
 
     @Test

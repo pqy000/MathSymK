@@ -390,7 +390,7 @@ interface Reals<T : Any> : Quotients<T>, CompleteField<T> {
 //     * Returns a value that represents the given fraction.
 //     */
 //    override fun of(x: Fraction): T {
-//        if (x.isZero()) {
+//        if (x.isZero) {
 //            return zero
 //        }
 //        var re: T = of(x.numerator)
