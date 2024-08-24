@@ -9,7 +9,7 @@ class NumberModelsTest {
 
     @Test
     fun testDoubleAsReals(){
-        val real = NumberModels.DoubleAsReals
+        val real = NumberModels.DoubleAsReals()
         assert(real.contains(1.0))
         assertEquals(0.0, real.zero)
         assertEquals(2.0, real.add(1.0, 1.0))

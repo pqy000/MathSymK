@@ -44,15 +44,17 @@ data class Fraction internal constructor(
     val isInteger: Boolean
         get() = deno == 1L
 
+
     val isNegative: Boolean
         get() = nume < 0
+
     val isPositive: Boolean
         get() = nume > 0
 
 
     override val isZero: Boolean
         get() = (nume == 0L)
-    
+
     override val isInvertible: Boolean
         get() = !isZero
 
@@ -70,7 +72,7 @@ data class Fraction internal constructor(
 
 
     init {
-        require(deno != 0L) { "Zero for denominator" }
+        require(deno != 0L) { "The denominator is zero!" }
     }
 
     /**
@@ -94,10 +96,7 @@ data class Fraction internal constructor(
         }
         return nume
     }
-//
-//    fun toFloat(): Float {
-//        return nume.toFloat() / deno.toFloat()
-//    }
+
 
     fun toDouble(): Double {
         return nume.toDouble() / deno.toDouble()
@@ -115,15 +114,12 @@ data class Fraction internal constructor(
     }
 
     /**
-     * Return the value of `this * num`
-     * @param n multiplier
-     * @return `this * k`
+     * Returns `this * n`.
      */
     override fun times(n: Long): Fraction {
         if (n == 0L) {
             return ZERO
         }
-
 
         //to prevent potential overflow,simplify num and den
         val dAn = gcdReduce(n, deno)
@@ -133,26 +129,25 @@ data class Fraction internal constructor(
     }
 
     /**
-     * Return the value of `this / num`
-     * @param k divider,zero is not allowed.
-     * @return `this / num`
-     * @throws IllegalArgumentException if num == 0.
+     * Returns`this / n`
+     * @param n a non-zero number
+     * @return `this / n`
+     * @throws IllegalArgumentException if `n == 0`.
      */
-    operator fun div(k: Long): Fraction {
-        if (k == 0L) {
+    operator fun div(n: Long): Fraction {
+        if (n == 0L) {
             throw IllegalArgumentException("Divide by zero :  / 0")
         }
 
         //to prevent potential overflow, simplify num and den
-        val nAn = gcdReduce(nume, k)
+        val nAn = gcdReduce(nume, n)
         val nDen = nAn[1] * deno
         //new numerator
         return Fraction(nAn[0], nDen)
     }
 
     /**
-     * Return the value of `-this `
-     * @return `-this `
+     * Returns `-this`.
      */
     override fun unaryMinus(): Fraction {
         return if (this.isZero) {
@@ -163,9 +158,8 @@ data class Fraction internal constructor(
     }
 
     /**
-     * Return the value of `1/this`
-     * @return `1/this`
-     * @throws IllegalArgumentException if this == 0.
+     * Returns the multiplicative inverse of this fraction, namely `1/this`.
+     * @throws IllegalArgumentException if `this == 0`.
      */
     override fun inv(): Fraction {
         if (this.isZero) {
@@ -174,12 +168,15 @@ data class Fraction internal constructor(
         return adjustSign(deno, nume)
     }
 
+    /**
+     * Returns the reciprocal of this fraction, namely `1/this`.
+     * @see inv
+     */
     fun reciprocal(): Fraction = inv()
 
     /**
-     * Return the value of `this * y`
+     * Returns `this * y`.
      * @param y another fraction
-     * @return `this * y`
      */
     override fun times(y: Fraction): Fraction {
         if (isZero || y.isZero) {
@@ -195,10 +192,9 @@ data class Fraction internal constructor(
     }
 
     /**
-     * Return the value of `this / y`
-     * @param y divider
-     * @return `this / y`
-     * @throws IllegalArgumentException if y == 0.
+     * Returns `this / y`.
+     * @param y a non-zero fraction
+     * @throws ArithmeticException if `y == 0`.
      */
     override fun div(y: Fraction): Fraction {
         if (y.isZero) {
@@ -217,9 +213,7 @@ data class Fraction internal constructor(
     }
 
     /**
-     * Return the value of `this + num`
-     * @param num a number
-     * @return `this + num`
+     * Returns `this + num`.
      */
     operator fun plus(num: Long): Fraction {
         val nNum = nume + num * deno
@@ -231,9 +225,7 @@ data class Fraction internal constructor(
 
 
     /**
-     * Return the value of `this - num`
-     * @param num a number
-     * @return `this - num`
+     * Returns `this - num`.
      */
     operator fun minus(num: Long): Fraction {
         val nNum = nume - num * deno
@@ -244,9 +236,7 @@ data class Fraction internal constructor(
     }
 
     /**
-     * Return the value of `this + y`
-     * @param y a fraction
-     * @return `this + y`
+     * Returns`this + y`.
      */
     override fun plus(y: Fraction): Fraction {
         // a/b + c/d =
@@ -262,9 +252,8 @@ data class Fraction internal constructor(
 
 
     /**
-     * Return the value of `this - y`
-     * @param y a fraction
-     * @return `this - y`
+     * Returns `this - y`.
+
      */
     override fun minus(y: Fraction): Fraction {
         // a/b + c/d =
@@ -278,17 +267,23 @@ data class Fraction internal constructor(
         return of(num, lcm)
     }
 
+    /**
+     * Returns the remainder of this fraction divided by the specified `y` to integer value.
+     * This method is equivalent to [remainder].
+     *
+     * @see divideToIntegerValue
+     * @see remainder
+     */
     operator fun rem(y: Fraction) = remainder(y)
 
 
     /**
-     * Return the value of this^n while n is an integer.This method is generally faster
-     * than using [.multiply] because no GCD calculation will be done.
+     * Returns the `n`-th power of this.
      *
-     * **Attention:** this method does NOT check underflow or overflow , so please notice the range of `n`
-     * @param n the power
+     * **Attention:** this method does NOT check underflow or overflow.
+     *
      * @return `this^n`
-     * @throws ArithmeticException if this == 0 and n <=0
+     * @throws ArithmeticException if `this == 0` and `n <=0`
      */
     fun pow(n: Int): Fraction {
         if (isZero) {
@@ -311,117 +306,90 @@ data class Fraction internal constructor(
         }
     }
 
-    /**
-     * Returns `this^exp`.`exp` can have a denominator, which means
-     * the method will calculate the n-th root of `this`,but this method will
-     * only return the positive root if there are two roots.
-     *
-     *
-     * This method will throw ArithmeticException if such
-     * operation cannot be done in Fraction.
-     * @param exp an exponent
-     * @return the result of `this^exp`
-     */
-    fun exp(exp: Fraction): Fraction {
-
-        if (exp.isZero) {
-            if (this.isZero) {
-                ExceptionUtil.zeroExponent()
-            }
-            return ONE
-
-        }
-        if (this.isZero) {
-            return ZERO
-        }
-        if (this.deno == 1L) {
-            // +- 1
-            if (nume == 1L) {
-                return ONE
-            }
-            if (nume == -1L) {
-                if (exp.deno % 2 == 0L) {
-                    ExceptionUtil.sqrtForNegative()
-                }
-                return NEGATIVE_ONE
-            }
-        }
-        if (this.isNegative) {
-            if (exp.deno % 2 == 0L)
-                ExceptionUtil.sqrtForNegative()
-        }
-        //we first check whether the Fraction b has a denominator
-        if (exp.nume > Integer.MAX_VALUE || exp.deno > Integer.MAX_VALUE) {
-            throw ArithmeticException("Too big in exp")
-        }
-        val bn = exp.nume.toInt().absoluteValue
-        val bd = exp.deno.toInt()
-
-        //try it
-        var an = this.nume.absoluteValue
-        var ad = this.deno
-
-        an = MathUtils.rootN(an, bd)
-        ad = MathUtils.rootN(ad, bd)
-        if (an == -1L || ad == -1L) {
-            throw ArithmeticException("Cannot Find Root")
-        }
-        if (this.isNegative) {
-            an = -an
-        }
-        an = MathUtils.pow(an, bn)
-        ad = MathUtils.pow(ad, bn)
-        return if (exp.isNegative) {
-            adjustSign(ad, an)
-        } else {
-            adjustSign(an, ad)
-        }
-    }
-
-    /**
-     * Return `this^2`. The fastest and most convenient way to do this
-     * calculation.
-     * @return this^2
-     */
-    fun squareOf(): Fraction {
-        return if (isZero) {
-            ZERO
-        } else Fraction(
-            nume * nume,
-            deno * deno
-        )
-    }
+//    /**
+//     * Returns `this^exp`, where `p` can be a fraction.
+//     *
+//     * If
+//     * the method will calculate the n-th root of `this`,but this method will
+//     * only return the positive root if there are two roots.
+//     *
+//     *
+//     * This method will throw ArithmeticException if such
+//     * operation cannot be done in Fraction.
+//     * @param exp an exponent
+//     * @return the result of `this^exp`
+//     */
+//    fun exp(exp: Fraction): Fraction {
+//
+//        if (exp.isZero) {
+//            if (this.isZero) {
+//                ExceptionUtil.zeroExponent()
+//            }
+//            return ONE
+//
+//        }
+//        if (this.isZero) {
+//            return ZERO
+//        }
+//        if (this.deno == 1L) {
+//            // +- 1
+//            if (nume == 1L) {
+//                return ONE
+//            }
+//            if (nume == -1L) {
+//                if (exp.deno % 2 == 0L) {
+//                    ExceptionUtil.sqrtForNegative()
+//                }
+//                return NEGATIVE_ONE
+//            }
+//        }
+//        if (this.isNegative) {
+//            if (exp.deno % 2 == 0L)
+//                ExceptionUtil.sqrtForNegative()
+//        }
+//        //we first check whether the Fraction b has a denominator
+//        if (exp.nume > Integer.MAX_VALUE || exp.deno > Integer.MAX_VALUE) {
+//            throw ArithmeticException("Too big in exp")
+//        }
+//        val bn = exp.nume.toInt().absoluteValue
+//        val bd = exp.deno.toInt()
+//
+//        //try it
+//        var an = this.nume.absoluteValue
+//        var ad = this.deno
+//
+//        an = MathUtils.rootN(an, bd)
+//        ad = MathUtils.rootN(ad, bd)
+//        if (an == -1L || ad == -1L) {
+//            throw ArithmeticException("Cannot Find Root")
+//        }
+//        if (this.isNegative) {
+//            an = -an
+//        }
+//        an = MathUtils.pow(an, bn)
+//        ad = MathUtils.pow(ad, bn)
+//        return if (exp.isNegative) {
+//            adjustSign(ad, an)
+//        } else {
+//            adjustSign(an, ad)
+//        }
+//    }
 
     /**
-     * Returns a `Fraction` whose value is the integer part
-     * of the quotient `(this / divisor)` rounded down.
-     *
-     * @param  divisor value by which this `Fraction` is to be divided.
-     * @return The integer part of `this / divisor`.
-     * @throws ArithmeticException if `divisor==0`
+     * Returns the square of this fraction, which is equivalent to `this * this`.
+     * @return `this^2`
      */
-    fun divideToIntegralValue(divisor: Fraction): Fraction {
-        if (isZero) {
-            return ZERO
-        }
-        val re = this / divisor
-        return of(re.toLong())
+    fun squared(): Fraction {
+        return if (isZero) ZERO else Fraction(nume * nume, deno * deno)
     }
+
 
     /**
      * Returns the largest (closest to positive infinity) integer value that is
-     * less than or equal to the this fraction.
+     * less than or equal to this fraction.
      */
     fun floor(): Long {
         return Math.floorDiv(nume, deno)
-//        if (isInteger) {
-//            return numerator
-//        }
-//        val value = numerator.absoluteValue / denominator
-//        return if (isPositive)
-//            value
-//        else
-//            -value - 1
     }
 
     /**
@@ -433,40 +401,53 @@ data class Fraction internal constructor(
         if (isInteger) {
             return nume
         }
-        val value = nume / deno
-        return if (isPositive)
-            value + 1
-        else
-            -value
-    }
-
-
-    fun divideAndRemainder(divisor: Fraction): Pair<Fraction, Fraction> {
-        val result0 = this.divideToIntegralValue(divisor)
-        val result1 = this.minus(result0 * divisor)
-        return result0 to result1
+        return Math.ceilDiv(nume, deno)
     }
 
     /**
-     * Returns a `Fraction` whose value is `(this % divisor)`.
+     * Returns a `Long` whose value is the integer part of the quotient `(this / divisor)` rounded down.
      *
+     * For example, `(7/2).divideToIntegerValue(3/2) = 2`.
      *
-     * The remainder is given by
-     * `this.subtract(this.divideToIntegralValue(divisor).multiply(divisor))`.
-     * Note that this is *not* the modulo operation (the result can be
-     * negative).
-     *
-     * @param  divisor value by which this `Fraction` is to be divided.
-     * @return `this % divisor`.
+     * @return The integer part of `this / divisor`.
      * @throws ArithmeticException if `divisor==0`
      */
-    fun remainder(divisor: Fraction): Fraction {
-        val divrem = this.divideAndRemainder(divisor)
-        return divrem.second
+    fun divideToIntegerValue(divisor: Fraction): Long {
+        if (isZero) {
+            return 0
+        }
+        val re = this / divisor
+        return re.floor()
     }
 
     /**
-     * Return the String expression of this fraction.
+     * Divides this by the specified `divisor` to integer value and returns the remainder.
+     *
+     * For example, `(7/2).divideAndRemainder(3/2) = (2, 1/2)`.
+     *
+     * @return A pair of `Long` and `Fraction` where the first element is the integer part of `this / divisor`
+     * @throws ArithmeticException if `divisor==0`
+     */
+    fun divideAndRemainder(divisor: Fraction): Pair<Long, Fraction> {
+        val q = this.divideToIntegerValue(divisor)
+        val r = this - q * divisor
+        return q to r
+    }
+
+    /**
+     * Returns the remainder of this fraction divided by the specified `divisor` to integer value.
+     *
+     * @throws ArithmeticException if `divisor==0`
+     * @see divideToIntegerValue
+     * @see divideAndRemainder
+     */
+    fun remainder(divisor: Fraction): Fraction {
+        return divideAndRemainder(divisor).second
+    }
+
+
+    /**
+     * Returns the String representation of this fraction.
      */
     override fun toString(): String {
         if (deno == 1L) {
@@ -476,10 +457,11 @@ data class Fraction internal constructor(
     }
 
     /**
-     * Returns a String representation of this fraction, adds brackets if this
-     * fraction is not an integer. This method can be used to eliminate confusion
-     * when this fraction is a part of an expression.
-     * @return a string
+     * Returns a String representation of this fraction, adding brackets surrounding the fraction if necessary,
+     * such as `(1/2)` or `(-2/3)`.
+     *
+     *
+     * This method can be used to eliminate confusion when this fraction is a part of an expression.
      */
     fun toStringWithBracket(): String {
         if (deno == 1L) {
@@ -488,6 +470,9 @@ data class Fraction internal constructor(
         return "($nume/$deno)"
     }
 
+    /**
+     * Generates the latex string of this fraction, which is like `\frac{1}{2}` or `-\frac{3}{8}`.
+     */
     fun toLatexString(): String {
         if (deno == 1L) {
             return nume.toString()
@@ -968,6 +953,8 @@ data class Fraction internal constructor(
 fun Long.toFrac(): Fraction = Fraction.of(this)
 
 fun Int.toFrac(): Fraction = Fraction.of(this.toLong())
+
+operator fun Long.times(f: Fraction): Fraction = f * this
 
 
 //    internal class FractionSimplifier internal constructor() : Simplifier<Fraction> {

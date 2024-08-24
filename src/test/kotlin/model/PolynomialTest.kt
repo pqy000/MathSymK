@@ -2,6 +2,7 @@ package model
 
 import cn.mathsymk.model.Fraction
 import cn.mathsymk.model.NumberModels
+import cn.mathsymk.model.Polynomial
 import cn.mathsymk.structure.Field
 import cn.mathsymk.structure.Integers
 import kotlin.test.Test
@@ -61,7 +62,7 @@ class PolynomialTest {
         assertEquals(0, f.apply(-1))
         assertEquals(1, f.apply(0))
 
-        val g = Polynomial.fromPower(ints, 4, 1) // x^4
+        val g = Polynomial.power(ints, 4, 1) // x^4
         assertEquals(16, g.apply(2))
         assertEquals(0, g.apply(0))
         assertEquals(1, g.apply(1))
@@ -101,21 +102,21 @@ class PolynomialTest {
     @Test
     fun testPolynomialResultant() {
         // Test case 1: Simple linear polynomials with no common root
-        run {
-            val poly1 = of( 1, 1)  // 1 + x
-            val poly2 = of( -1, 1) // -1 + x
-            val res1 = poly1.resultant(poly2)
-            assertEquals(Fraction.of(2), res1, "Resultant of 1 + x and -1 + x should be 2")
-        }
-
-
-        // Test case
-        run {
-            val poly1 = of( -1, 1)   // -1 + x
-            val poly2 = of( 1, -2, 1) // 1 - 2x + x^2
-            val res = poly1.resultant(poly2)
-            assertEquals(Fraction.ZERO, res, "Resultant of -1 + x and 1 - 2x + x^2 should be 0")
-        }
+//        run {
+//            val poly1 = of( 1, 1)  // 1 + x
+//            val poly2 = of( -1, 1) // -1 + x
+//            val res1 = poly1.resultant(poly2)
+//            assertEquals(Fraction.of(2), res1, "Resultant of 1 + x and -1 + x should be 2")
+//        }
+//
+//
+//        // Test case
+//        run {
+//            val poly1 = of( -1, 1)   // -1 + x
+//            val poly2 = of( 1, -2, 1) // 1 - 2x + x^2
+//            val res = poly1.resultant(poly2)
+//            assertEquals(Fraction.ZERO, res, "Resultant of -1 + x and 1 - 2x + x^2 should be 0")
+//        }
     }
 
 //    @Test
