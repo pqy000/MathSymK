@@ -118,6 +118,10 @@ object NumberModels {
             return a / b
         }
 
+        override fun remainder(a: Int, b: Int): Int {
+            return a % b
+        }
+
         override fun isEqual(x: Int, y: Int): Boolean {
             return x == y
         }
@@ -196,6 +200,10 @@ object NumberModels {
 
         override fun divideToInteger(a: Long, b: Long): Long {
             return a / b
+        }
+
+        override fun remainder(a: Long, b: Long): Long {
+            return a % b
         }
 
         override fun isEqual(x: Long, y: Long): Boolean {

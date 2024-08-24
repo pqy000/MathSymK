@@ -718,12 +718,49 @@ class Polynomial<T : Any> internal constructor(
 
 
         /*
+        Number models
+         */
+
+        /**
+         * Returns a `Ring<Polynomial<T>>` on a `Ring<T>`.
+         *
+         * @see [Ring]
+         */
+        fun <T : Any> asRing(model: Ring<T>): PolyOnRing<T> {
+            return PolyOnRing(model)
+        }
+
+        /**
+         * Returns a `UnitRing<Polynomial<T>>` on a `Ring<T>`.
+         *
+         * @see [UnitRing]
+         */
+        fun <T : Any> asRing(model: UnitRing<T>): PolyOnUnitRing<T> {
+            return PolyOnUnitRing(model)
+        }
+
+        /**
+         * Returns a `EuclideanDomain<Polynomial<T>>` on a `Field<T>`.
+         *
+         * @see EuclideanDomain
+         * @see Field
+         */
+        fun <T : Any> asRing(model: Field<T>): PolyOnField<T> {
+            return PolyOnField(model)
+        }
+
+
+        /*
         Methods for number theory
          */
 
         /**
-         * Performs the pseudo division of two polynomials on a ring. This algorithm finds `Q` and `R` such that
-         * `d^(A.degree - B.degree + 1) A = BQ + R` and `R.degree < B.degree`. It is required that `B` is not zero and
+         * Performs the pseudo division of two polynomials only on a ring.
+         * This algorithm finds `Q` and `R` such that
+         * ```
+         *     d^(A.degree - B.degree + 1) A = BQ + R     and     R.degree < B.degree.
+         * ```
+         * It is required that `B` is not zero and
          * `A.degree >= B.degree`.
          *
          * @param T the calculator for [T] should at least be a ring calculator.
@@ -758,12 +795,25 @@ class Polynomial<T : Any> internal constructor(
     }
 }
 
-open class PolynomialOnRing<T : Any>(model: Ring<T>) : Ring<Polynomial<T>> {
+open class PolyOnRing<T : Any>(model: Ring<T>) : Ring<Polynomial<T>> {
 
     @Suppress("CanBePrimaryConstructorProperty")
     open val model: Ring<T> = model
 
     final override val zero: Polynomial<T> = Polynomial.zero(model)
+
+    fun of(vararg coef: T): Polynomial<T> {
+        return Polynomial.of(model, *coef)
+    }
+
+    fun constant(c: T): Polynomial<T> {
+        return Polynomial.constant(model, c)
+    }
+
+    fun power(p: Int, a: T): Polynomial<T> {
+        return Polynomial.power(model, p, a)
+    }
+
 
     override fun add(x: Polynomial<T>, y: Polynomial<T>): Polynomial<T> {
         return x + y
@@ -801,11 +851,21 @@ open class PolynomialOnRing<T : Any>(model: Ring<T>) : Ring<Polynomial<T>> {
     }
 
     override fun sum(elements: List<Polynomial<T>>): Polynomial<T> {
-        return Polynomial.sum(model, *elements.toTypedArray())
+        return Polynomial.sum(model, elements)
     }
 }
 
-open class PolynomialOnField<T : Any>(override val model: Field<T>) : PolynomialOnRing<T>(model),
+open class PolyOnUnitRing<T : Any>(model: UnitRing<T>) : PolyOnRing<T>(model), UnitRing<Polynomial<T>> {
+
+    override val numberClass: Class<*>
+        get() = Polynomial::class.java
+    override val one: Polynomial<T> = Polynomial.one(model)
+
+    val x: Polynomial<T>
+        get() = Polynomial.x(model as UnitRing<T>)
+}
+
+open class PolyOnField<T : Any>(override val model: Field<T>) : PolyOnUnitRing<T>(model),
     EuclideanDomain<Polynomial<T>> {
     override val numberClass: Class<*>
         get() = Polynomial::class.java
@@ -817,9 +877,6 @@ open class PolynomialOnField<T : Any>(override val model: Field<T>) : Polynomial
     override fun isUnit(x: Polynomial<T>): Boolean {
         return x.isUnit()
     }
-
-    override val one: Polynomial<T>
-        get() = Polynomial.one(model)
 
     override fun gcdUV(a: Polynomial<T>, b: Polynomial<T>): Triple<Polynomial<T>, Polynomial<T>, Polynomial<T>> {
         return a.gcdUV(b)

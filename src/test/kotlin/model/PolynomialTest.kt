@@ -1,5 +1,6 @@
 package model
 
+import TestUtils.assertValueEquals
 import cn.mathsymk.model.Fraction
 import cn.mathsymk.model.NumberModels
 import cn.mathsymk.model.Polynomial
@@ -10,8 +11,8 @@ import kotlin.test.assertEquals
 
 
 class PolynomialTest {
-    private val fractions: Field<Fraction> = Fraction.FractionAsQuotient
-    private val ints: Integers<Int> = NumberModels.IntAsIntegers
+    private val fractions = Fraction.FractionAsQuotient
+    private val ints = NumberModels.IntAsIntegers
 
 
     fun of(vararg coefficients: Int): Polynomial<Fraction> {
@@ -84,16 +85,16 @@ class PolynomialTest {
     fun testCommonRoots() {
         // Test case 1: Simple linear polynomials with no common root
         run {
-            val poly1 = of( 1, 1)  // 1 + x
-            val poly2 = of( -1, 1) // -1 + x
+            val poly1 = of(1, 1)  // 1 + x
+            val poly2 = of(-1, 1) // -1 + x
             val roots1 = poly1.hasCommonRoot(poly2)
             assertEquals(false, roots1, "1 + x and -1 + x should not have a common root")
         }
 
         // Test case 2: Polynomials with a common root
         run {
-            val poly1 = of( -1, 1)   // -1 + x
-            val poly2 = of( 1, -2, 1) // 1 - 2x + x^2
+            val poly1 = of(-1, 1)   // -1 + x
+            val poly2 = of(1, -2, 1) // 1 - 2x + x^2
             val roots2 = poly1.hasCommonRoot(poly2)
             assertEquals(true, roots2, "-1 + x and 1 - 2x + x^2 should have a common root")
         }
@@ -119,7 +120,7 @@ class PolynomialTest {
 //        }
     }
 
-//    @Test
+    //    @Test
 //    fun difference() {
 //        val p = Polynomial.of(ints, 1, 2, -3, 4, 5)
 ////        assertEquals(
@@ -136,15 +137,21 @@ class PolynomialTest {
 //        assertEquals("p.difference().sumOfN() = p + C", 0, p.difference().sumOfN().subtract(p).getLeadingPower())
 //    }
 //
-//    @Test
-//    fun testGcd() {
-//        val calInt: Unit = Calculators.integer()
-//        val cal: Unit = Fraction.getCalculator()
-//        val f: Unit = Polynomial.of(calInt, 1, 2, 1).mapTo(cal, Fraction::of) // 1 + 2x + x^2
-//        val g: Unit = Polynomial.of(calInt, -2, -1, 1).mapTo(cal, Fraction::of) // -2 - x + x^2
-//        val h: Unit = Polynomial.of(calInt, 1, 1).mapTo(cal, Fraction::of)
-//        assertTrue("", h.valueEquals(f.gcd(g)))
-//    }
+    @Test
+    fun testGcd() {
+        run {
+            val f = Polynomial.of(ints, 1, 2, 1).mapTo(fractions, Fraction::of) // 1 + 2x + x^2
+            val g = Polynomial.of(ints, -2, -1, 1).mapTo(fractions, Fraction::of) // -2 - x + x^2
+            val h = Polynomial.of(ints, 1, 1).mapTo(fractions, Fraction::of)
+            assertValueEquals(h, f.gcd(g).toMonic())
+        }
+        run {
+            val f = Polynomial.of(ints, 1, 2).mapTo(fractions, Fraction::of) // 1 + 2x
+            val g = Polynomial.of(ints, -1, -2).mapTo(fractions, Fraction::of) // -1 - 2x
+            assertValueEquals(f.toMonic(), f.gcd(g).toMonic())
+        }
+
+    }
 //
 //    @Test
 //    fun reverse() {

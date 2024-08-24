@@ -1,6 +1,5 @@
 package cn.mathsymk.function
 
-import cn.mathsymk.model.struct.Composable
 
 
 interface MathFunction<in P, out R> {

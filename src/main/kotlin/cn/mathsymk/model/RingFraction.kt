@@ -49,7 +49,6 @@ internal constructor(val nume: T, val deno: T, model: Ring<T>) :
         }
     }
 
-
     override fun <N : Any> mapTo(newCalculator: EqualPredicate<N>, mapper: Function<T, N>): MathObject<N, *> {
         return RingFraction(mapper.apply(nume), mapper.apply(deno), newCalculator as Ring<N>)
     }
@@ -184,6 +183,7 @@ internal constructor(val nume: T, val deno: T, model: Ring<T>) :
 
             return simplifyFrac(nume, deno, model)
         }
+
 
         fun <T : Any> of(nume: T, model: UnitRing<T>): RingFraction<T> {
             return RingFraction(nume, model.one, model)

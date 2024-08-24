@@ -6,10 +6,8 @@ import java.math.BigInteger
 
 
 /**
- * A calculator for unique factorization domain (UFD).
+ * Describes a unique factorization domain (UFD).
  * It supports computing the greatest common divisor of two elements.
- *
- * **Implementation Notes:** Subclasses should always implement the method [UnitRing.isUnit].
  *
  *
  */
@@ -25,30 +23,8 @@ interface UniqueFactorizationDomain<T : Any> : UnitRing<T> {
      */
     fun gcd(a: T, b: T): T
 
-    //    /**
-    //     * Returns the greatest common divisor of two numbers and a pair of number (u,v) such that
-    //     * <pre>ua+vb=gcd(a,b)</pre>
-    //     * The returned greatest common divisor is the same as {@link NTCalculator#gcd(Object, Object)}.
-    //     * Note that the pair of <code>u</code> and <code>v</code> returned is not unique and different implementation
-    //     * may return differently when a,b is the same.<P></P>
-    //     * The default implementation is based on the Euclid's algorithm.
-    //     *
-    //     * @return a tuple of <code>{gcd(a,b), u, v}</code>.
-    //     */
-    //    @NotNull
-    //    default Triple<T, T, T> gcdUV(@NotNull T a, T b) {
-    //        if (isZero(a)) {
-    //            return new Triple<>(b, getZero(), getOne());
-    //        }
-    //        if (isZero(b)) {
-    //            return new Triple<>(a, getOne(), getZero());
-    //        }
-    //        return gcdUV0(a, b);
-    //    }
-
     /**
-     * Determines whether the two numbers `a` and `b`
-     * are co-prime.
+     * Determines whether the two numbers `a` and `b` are co-prime, namely whether their greatest common divisor is a unit.
      */
     fun isCoprime(a: T, b: T): Boolean {
         return isUnit(gcd(a, b))
@@ -56,6 +32,8 @@ interface UniqueFactorizationDomain<T : Any> : UnitRing<T> {
 
     /**
      * Returns the result of exact division `a/b`, throws an `ArithmeticException` if it is not exact division.
+     *
+     * @throws ArithmeticException if `a` is not exactly divisible by `b`, or `b` is zero.
      */
     override fun exactDivide(a: T, b: T): T
 
@@ -65,12 +43,10 @@ interface UniqueFactorizationDomain<T : Any> : UnitRing<T> {
     fun isExactDivide(a: T, b: T): Boolean
 }
 
-/*
- * Created by liyicheng at 2020-03-09 19:32
- */
+
 /**
- * Describes a calculator for a Euclidean domain. The fundamental operation of this type of calculator is
- * [divideAndRemainder].
+ * Describes a Euclidean domain.
+ * The fundamental operation is [divideAndRemainder].
  *
  *
  * For example, integers and polynomials on a field are both `EuclideanDomain`,
@@ -79,12 +55,17 @@ interface UniqueFactorizationDomain<T : Any> : UnitRing<T> {
  */
 interface EuclideanDomain<T : Any> : UniqueFactorizationDomain<T> {
 
+    /*
+    * Created by liyicheng at 2020-03-09 19:32
+    */
+
     /**
      * Returns a pair of `(q, r)` such that
      *
      *     a = qb + r
      *
-     * where `q` is the quotient and `r` the remainder.
+     * where `q` is the quotient, `r` is the remainder.
+     *
      */
     fun divideAndRemainder(a: T, b: T): Pair<T, T>
 
@@ -349,7 +330,6 @@ interface EuclideanDomain<T : Any> : UniqueFactorizationDomain<T> {
         }
 
 
-
         /**
          * Creates a quotient field calculator with a prime element [prime].
          */
@@ -512,48 +492,50 @@ interface Integers<T : Any> : EuclideanDomain<T>, OrderedRing<T> {
     //     */
     //    boolean isQuotient(T x);
     /**
-     * Returns `a mod b`, a *non-negative* number as the result. It
-     * is required that `b` is positive, otherwise an ArithmeticException
-     * will be thrown.
+     * Returns `a mod b`, a *non-negative* number as the result.
      *
      *
      * For example, `mod(2,1)=0`, `mod(7,3)=1` and
      * `mod(-7,3) = 2`.
      *
      * @param a a number
-     * @param b the modulus
+     * @param b the modulus, a non-zero number
      * @return `a mod b`
+     * @throws [ArithmeticException] if `b == 0`.
+     *
+     * @see remainder
      */
     override fun mod(a: T, b: T): T
 
     /**
-     * Returns the remainder:`a % b`. If `a>0`, then the result will
-     * be positive, and if `a<0`, then the result should be negative. It
-     * is required that `b` is positive, otherwise an ArithmeticException
-     * will be thrown.
+     * Returns the remainder: `a % b`.
+     * The result will be either zero or have the same sign as `a`.
      *
      *
      * For example, `remainder(1,2)=0`, `remainder(7,3)=1` and
      * `remainder(-7,3) = -1`.
      *
      * @param a the dividend
-     * @param b the divisor
+     * @param b the divisor, a non-zero number
      * @return `a % b`
+     * @throws [ArithmeticException] if `b == 0`.
+     *
+     * @see mod
      */
     override fun remainder(a: T, b: T): T {
         if (isZero(b)) {
-            throw java.lang.ArithmeticException()
+            throw ArithmeticException("Divide by zero: $a % $b")
         }
-        val signum: Int = compare(a, zero)
-        if (signum == 0) {
-            return zero
+        val m = mod(abs(a), abs(b))
+        if (isZero(m)) {
+            return m
         }
-        return if (signum < 0) {
-            // return a negative number
-            subtract(mod(negate(a), abs(b)), b)
+        return if (isNegative(a)) {
+            m - b
         } else {
-            mod(a, abs(b))
+            m
         }
+
     }
 
     /**
@@ -587,85 +569,49 @@ interface Integers<T : Any> : EuclideanDomain<T>, OrderedRing<T> {
     }
 
     /**
-     * Determines whether `mod(a,b)==0`.
+     * Determines whether `a` can be divided by `b` exactly,
+     * namely `mod(a,b)==0`.
      *
      *
-     * This method is added for convenience. The default implement is
+     * The default implement of this method is `isZero(mod(a,b))`.
      *
-     * <pre>
-     * return isEqual(mod(a, b), getZero());
-    </pre> *
      *
-     * @param a a number
-     * @param b another number
+     * @param a dividend
+     * @param b divisor, a non-zero number
      * @return `mod(a,b)==0`
+     * @throws [ArithmeticException] if `b == 0`.
      */
     override fun isExactDivide(a: T, b: T): Boolean {
-        return isEqual(mod(a, b), zero)
+        return isZero(mod(a, b))
     }
 
     /**
-     * Determines whether the number is an odd number. A number is an odd number
-     * if it is an integer and `mod(x,2)==1`.
-     *
-     *
-     * This method is added for convenience. The default implement is
-     *
-     * <pre>
-     * if (!isInteger(x)) {
-     * return false;
-     * }
-     * T two = increase(getOne());
-     * return isEqual(getOne(), mod(x, two));
-    </pre> *
-     *
-     * @param x a number
-     * @return `true` if it is an odd number, otherwise `false`.
+     * Determines whether the number is an odd number, namely `mod(x,2)!=0`.
      */
     fun isOdd(x: T): Boolean {
-//        if (!isInteger(x)) {
-//            return false;
-//        }
         return !isEven(x)
     }
 
     /**
-     * Determines whether the number is an even number. A number is an even
-     * number if it is an integer and `mod(x,2)==0`.
-     *
-     *
-     * This method is added for convenience. The default implement is
-     *
-     * <pre>
-     * if (!isInteger(x)) {
-     * return false;
-     * }
-     * T two = increase(getOne());
-     * return isEqual(getZero(), mod(x, two));
-    </pre> *
+     * Determines whether the number is an even number, namely `mod(x,2)==0`.
      *
      * @param x a number
      * @return `true` if it is an even number, otherwise `false`.
      */
     fun isEven(x: T): Boolean {
-//        if (!isInteger(x)) {
-//            return false;
-//        }
         val two = increase(one)
         return isZero(mod(x, two))
     }
 
     /**
-     * Returns gcd(|a|,|b|), the maximal positive common factor of the two
-     * numbers. Returns `0` if `a==0&&b==0`, and returns another
+     * Returns `gcd(|a|,|b|)`, the positive maximal common factor of the two numbers.
+     * Returns `0` if `a==0 && b==0`, and returns another
      * non-zero number if either of them is `0`. Whether the two number is
-     * negative is ignored. This method is implemented with Euclid's algorithm by default.
+     * negative is ignored. This method is implemented with Euclidean algorithm by default.
      *
      *
      * For example, `gcd(3,5)=1`, `gcd(12,30)=6`.
      *
-     * @param a a number
-     * @param b another number
      * @return `gcd(|a|,|b|)`
      */
     override fun gcd(a: T, b: T): T {
@@ -684,15 +630,13 @@ interface Integers<T : Any> : EuclideanDomain<T>, OrderedRing<T> {
 
 
     /**
-     * Returns lcm(|a|,|b|), the two numbers' positive least common multiple.
+     * Returns `lcm(|a|,|b|)`, the positive least common multiple.
      * If either of the two numbers is 0, then 0 will be return.
      *
      *
      * For example, `lcm(3,5)=15`, `lcm(12,30)=60`.
      *
-     * @param a a number
-     * @param b another number
-     * @return lcm(|a|,|b|).
+     * @return `lcm(|a|,|b|)`.
      */
     fun lcm(a: T, b: T): T {
         var x = a
@@ -712,7 +656,7 @@ interface Integers<T : Any> : EuclideanDomain<T>, OrderedRing<T> {
      *
      * @param a a number except `0,1,-1`.
      * @param b another number
-     * @return deg(a, b)
+     * @return `deg(a, b)`
      */
     fun deg(a: T, b: T): T {
         var x = a

@@ -26,7 +26,12 @@ interface UnitRing<T : Any> : Ring<T>, MulMonoid<T> {
     }
 
     /**
+     * Returns the result of exact division `a/b`.
      *
+     * This method is optional for a unit ring.
+     *
+     * @throws ArithmeticException if `a` is not exactly divisible by `b`, or `b==0`.
+     * @throws UnsupportedOperationException if this method is not supported.
      */
     fun exactDivide(a: T, b: T): T {
         throw UnsupportedOperationException()
