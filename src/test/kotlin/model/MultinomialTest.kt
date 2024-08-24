@@ -1,7 +1,9 @@
 package model
 
+import cn.mathsymk.model.ChPow
+import cn.mathsymk.model.MTerm
+import cn.mathsymk.model.Multinomial.Companion.of
 import cn.mathsymk.model.NumberModels
-import model.Multinomial.Companion.of
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue

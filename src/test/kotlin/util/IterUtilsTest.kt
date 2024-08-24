@@ -1,7 +1,7 @@
 package util
 
 import cn.mathsymk.util.IterUtils
-import discrete.CombUtils
+import cn.mathsymk.discrete.CombUtils
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
