@@ -339,7 +339,7 @@ interface MulSemigroup<T> : EqualPredicate<T> {
     operator fun T.times(y: T): T = multiply(this, y)
 
 
-    fun T.pow(n: Long): T = power(this, n)
+    infix fun T.pow(n: Long): T = power(this, n)
 
 }
 

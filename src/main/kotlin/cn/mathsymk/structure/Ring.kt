@@ -41,18 +41,23 @@ interface UnitRing<T : Any> : Ring<T>, MulMonoid<T> {
     }
 }
 
+interface CommutativeRing<T : Any> : Ring<T>{
+    override val isCommutative: Boolean
+        get() = true
+}
+
 /**
  * A domain is a ring in which the product of two non-zero elements is non-zero.
  *
  * @author liyicheng
  * 2018-02-28 18:38
  */
-interface Domain<T:Any> : Ring<T>
+interface Domain<T : Any> : Ring<T>
 
 /**
  * An integral domain is a commutative ring in which the product of two non-zero elements is non-zero.
  */
-interface IntegralDomain<T : Any> : Domain<T>, UnitRing<T> {
+interface IntegralDomain<T : Any> : Domain<T>, UnitRing<T>, CommutativeRing<T> {
 }
 
 

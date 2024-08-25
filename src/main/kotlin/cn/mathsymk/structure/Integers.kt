@@ -41,6 +41,12 @@ interface UniqueFactorizationDomain<T : Any> : IntegralDomain<T> {
      * Determines whether `x` exactly divides `y`.
      */
     fun isExactDivide(a: T, b: T): Boolean
+
+
+    /**
+     * Exact division of two numbers.
+     */
+    operator fun T.div(y: T): T = exactDivide(this, y)
 }
 
 
@@ -300,6 +306,8 @@ interface EuclideanDomain<T : Any> : UniqueFactorizationDomain<T> {
         }
         return x
     }
+
+
 
     companion object {
 
