@@ -1,5 +1,8 @@
 package cn.mathsymk.structure
 
+/**
+ *
+ */
 interface Ring<T : Any> : AddGroup<T>, MulSemigroup<T> {
 
 
@@ -37,6 +40,21 @@ interface UnitRing<T : Any> : Ring<T>, MulMonoid<T> {
         throw UnsupportedOperationException()
     }
 }
+
+/**
+ * A domain is a ring in which the product of two non-zero elements is non-zero.
+ *
+ * @author liyicheng
+ * 2018-02-28 18:38
+ */
+interface Domain<T:Any> : Ring<T>
+
+/**
+ * An integral domain is a commutative ring in which the product of two non-zero elements is non-zero.
+ */
+interface IntegralDomain<T : Any> : Domain<T>, UnitRing<T> {
+}
+
 
 /**
  * A division ring is a ring in which every non-zero element has a multiplicative inverse, but the multiplication is not necessarily commutative.

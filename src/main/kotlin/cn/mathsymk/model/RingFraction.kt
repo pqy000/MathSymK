@@ -220,11 +220,14 @@ internal constructor(val nume: T, val deno: T, model: Ring<T>) :
             return RingFraction(model.one, model.one, model)
         }
 
-        fun <T : Any> asField(model: Ring<T>, d: T): Field<RingFraction<T>> {
-            return NumberModels.asField(zero(model, d), one(model, d), null)
-        }
+//        fun <T : Any> asField(model: Ring<T>, d: T): Field<RingFraction<T>> {
+//            return NumberModels.asField(zero(model, d), one(model, d), null)
+//        }
 
-        fun <T : Any> asField(model: UnitRing<T>): Field<RingFraction<T>> {
+        /**
+         * Returns
+         */
+        fun <T : Any> asField(model: IntegralDomain<T>): Field<RingFraction<T>> {
             return NumberModels.asField(zero(model), one(model), null)
         }
 

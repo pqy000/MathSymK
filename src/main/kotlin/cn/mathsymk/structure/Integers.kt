@@ -11,7 +11,7 @@ import java.math.BigInteger
  *
  *
  */
-interface UniqueFactorizationDomain<T : Any> : UnitRing<T> {
+interface UniqueFactorizationDomain<T : Any> : IntegralDomain<T> {
 
     /**
      * Determines whether the given element is a unit, namely invertible with respect to multiplication.
