@@ -376,7 +376,7 @@ object NumberModels {
         /**
          * The deviation allowed for testing equality of two double numbers.
          */
-        val dev : Double = Double.MIN_VALUE
+        val dev: Double = Double.MIN_VALUE
     ) : Reals<Double> {
         override fun contains(x: Double): Boolean {
             return true
@@ -498,8 +498,6 @@ object NumberModels {
 
     }
 
-
-
     class BigDecimalAsReals(val mc: MathContext = MathContext.DECIMAL128) : Reals<BigDecimal> {
 
         override fun contains(x: BigDecimal): Boolean {
@@ -599,5 +597,38 @@ object NumberModels {
             }
         }
     }
+
+
+    fun intAsIntegers(): Integers<Int> = IntAsIntegers
+
+    fun longAsIntegers(): Integers<Long> = LongAsIntegers
+
+    fun bigIntegerAsIntegers(): Integers<BigInteger> = BigIntegerAsIntegers
+
+    fun doubleAsReals(): Reals<Double> = DoubleAsReals()
+
+    fun bigDecimalAsReals(mc: MathContext = MathContext.DECIMAL128): Reals<BigDecimal> = BigDecimalAsReals(mc)
+
+    /**
+     * Returns the ring of integers mod n, `Z/nZ`.
+     *
+     * @param n an integer, `n >= 2`.
+     */
+    fun intModN(n: Int): IntModN = IntModN(n)
+
+    /**
+     * Returns the field of integers modulo p, `Z/pZ`.
+     *
+     * @param p a prime number
+     * @param cached whether to store the inverse of each element to speed up calculation.
+     */
+    fun intModP(p: Int, cached: Boolean = (p <= 1024)): IntModP {
+        return if (cached) {
+            IntModPCached(p)
+        } else {
+            IntModP(p)
+        }
+    }
+
 
 }
