@@ -269,7 +269,7 @@ interface AddGroup<T : Any> : AddMonoid<T> {
         if (n == 0L) {
             return zero
         }
-        val t = ModelPatterns.binaryProduce(abs(n), x, this::add)
+        val t = ModelPatterns.binaryProduce(abs(n), x) { a, b -> add(a, b) }
         return if (n > 0) {
             t
         } else {
@@ -324,7 +324,7 @@ interface MulSemigroup<T> : EqualPredicate<T> {
         get() = false
 
     fun power(x: T, n: Long): T {
-        return ModelPatterns.binaryProduce(n, x, this::multiply)
+        return ModelPatterns.binaryProduce(n, x) { a, b -> multiply(a, b) }
     }
 
     fun product(ps: List<T>): T {
@@ -470,7 +470,7 @@ interface MulGroup<T : Any> : MulMonoid<T> {
         if (n == 0L) {
             return one
         }
-        val t = ModelPatterns.binaryProduce(abs(n), x, this::multiply)
+        val t = ModelPatterns.binaryProduce(abs(n), x) { a, b -> multiply(a, b) }
         return if (n > 0) {
             t
         } else {

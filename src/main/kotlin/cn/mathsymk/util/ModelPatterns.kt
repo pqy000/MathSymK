@@ -160,32 +160,32 @@ object ModelPatterns {
         return mid
     }
 
-    /**
-     * Performs an operation like computing `exp(x,p)`.
-     *
-     * @param p        a non-negative number
-     * @param unit     the unit value, such as 1.
-     * @param x        the base of the operation
-     * @param square   computes the 'square of x' formally
-     * @param multiply computes the 'multiplication' formally
-     */
-    fun <T> binaryProduce(p: Long, unit: T, x: T, square: Function<T, T>, multiply: BinaryOperator<T>): T {
-        var p = p
-        var x = x
-        require(p >= 0) { "p<0" }
-        if (p == 0L) {
-            return unit
-        }
-        var re = unit
-        while (p > 0) {
-            if ((p and 1L) != 0L) {
-                re = multiply.apply(x, re)
-            }
-            x = square.apply(x)
-            p = p shr 1
-        }
-        return re
-    }
+//    /**
+//     * Performs an operation like computing `exp(x,p)`.
+//     *
+//     * @param p        a non-negative number
+//     * @param unit     the unit value, such as 1.
+//     * @param x        the base of the operation
+//     * @param square   computes the 'square of x' formally
+//     * @param multiply computes the 'multiplication' formally
+//     */
+//    fun <T> binaryProduce(p: Long, unit: T, x: T, square: Function<T, T>, multiply: BinaryOperator<T>): T {
+//        var p = p
+//        var x = x
+//        require(p >= 0) { "p<0" }
+//        if (p == 0L) {
+//            return unit
+//        }
+//        var re = unit
+//        while (p > 0) {
+//            if ((p and 1L) != 0L) {
+//                re = multiply.apply(x, re)
+//            }
+//            x = square.apply(x)
+//            p = p shr 1
+//        }
+//        return re
+//    }
 
     /**
      * Performs an operation like computing `exp(x,p)`.
@@ -196,8 +196,8 @@ object ModelPatterns {
      * @param multiply computes the 'multiplication' formally
      */
     @JvmStatic
-    fun <T> binaryProduce(pow: Long, start: T, x: T, multiply: BinaryOperator<T>): T {
-        require(pow >= 0) { "pow>=0 is required" }
+    inline fun <T> binaryProduce(pow: Long, start: T, x: T, multiply: (T,T)->T): T {
+        require(pow >= 0) { "p>0 is required, given $pow" }
         if (pow == 0L) {
             return start
         }
@@ -206,9 +206,9 @@ object ModelPatterns {
         var r = start
         while (p > 0) {
             if ((p and 1L) != 0L) {
-                r = multiply.apply(cumulated, r)
+                r = multiply(cumulated, r)
             }
-            cumulated = multiply.apply(cumulated, cumulated)
+            cumulated = multiply(cumulated, cumulated)
             p = p shr 1
         }
         return r
@@ -222,10 +222,35 @@ object ModelPatterns {
      * @param multiply computes the 'multiplication' formally
      */
     @JvmStatic
-    fun <T> binaryProduce(p: Long, x: T, multiply: BinaryOperator<T>): T {
-        require(p > 0) { "p<=0" }
+    inline fun <T> binaryProduce(p: Long, x: T, multiply: (T, T) -> T): T {
+        require(p > 0) { "p>0 is required, given $p" }
         return binaryProduce(p - 1, x, x, multiply)
     }
+
+//    /**
+//     * Performs an operation like computing `exp(x,p)`.
+//     *
+//     * @param pow        a non-negative number
+//     * @param start     the unit value, such as 1.
+//     * @param x        the base of the operation
+//     * @param multiply computes the 'multiplication' formally
+//     */
+//    @JvmStatic
+//    fun <T> binaryProduce(pow: Long, start: T, x: T, multiply: BinaryOperator<T>): T {
+//        return binaryProduce(pow, start, x) { a, b -> multiply.apply(a, b) }
+//    }
+//
+//    /**
+//     * Performs an operation like computing `exp(x,p)`.
+//     *
+//     * @param p        a positive number
+//     * @param x        the base of the operation
+//     * @param multiply computes the 'multiplication' formally
+//     */
+//    @JvmStatic
+//    fun <T> binaryProduce(p: Long, x: T, multiply: BinaryOperator<T>): T {
+//        return binaryProduce(p, x) { a, b -> multiply.apply(a, b) }
+//    }
 
     private fun checkStartSmallerThanEnd(startInclusive: Int, endExclusive: Int) {
         require(startInclusive < endExclusive) { "startInclusive>=endExclusive" }
@@ -281,7 +306,8 @@ object ModelPatterns {
         identity: Supplier<T>?
     ): T {
         if (startInclusive == endExclusive) {
-            return identity?.get() ?: throw IllegalArgumentException("An identity is not provided when startInclusive==endExclusive")
+            return identity?.get()
+                ?: throw IllegalArgumentException("An identity is not provided when startInclusive==endExclusive")
         }
         if (startInclusive == endExclusive - 1) {
             return get.apply(startInclusive)
