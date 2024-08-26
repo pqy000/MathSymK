@@ -619,7 +619,7 @@ object NumberModels {
     /**
      * Returns the field of integers modulo p, `Z/pZ`.
      *
-     * @param p a prime number
+     * @param p a prime number. This method do not guarantee the correctness of the result if `p` is not a prime number.
      * @param cached whether to store the inverse of each element to speed up calculation.
      */
     fun intModP(p: Int, cached: Boolean = (p <= 1024)): IntModP {

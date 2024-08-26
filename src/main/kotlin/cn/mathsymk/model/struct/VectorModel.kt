@@ -18,11 +18,6 @@ interface ModuleModel<R, V : ModuleModel<R, V>> : AddGroupModel<V> {
 interface VectorModel<K, V : VectorModel<K, V>> : ModuleModel<K, V> {
 
     /**
-     * Performs the scalar multiplication.
-     */
-    override fun times(k: K): V
-
-    /**
      * Performs the scalar division.
      */
     operator fun div(k: K): V
@@ -41,5 +36,10 @@ interface VectorModel<K, V : VectorModel<K, V>> : ModuleModel<K, V> {
 operator fun <K, V : ModuleModel<K, V>> K.times(v: ModuleModel<K, V>) = v.times(this)
 
 
+/**
+ * A model class for an algebra.
+ *
+ * @see [cn.mathsymk.structure.Algebra]
+ */
 interface AlgebraModel<K, V : AlgebraModel<K, V>> : VectorModel<K, V>, RingModel<V> {
 }

@@ -7,6 +7,18 @@ import cn.mathsymk.model.struct.FieldModel
 import cn.mathsymk.structure.*
 import java.util.function.Function
 
+/**
+ * A RingFraction is a fraction of two elements in a ring.
+ *
+ * ## Fraction on a ring
+ *
+ * ## Fraction field
+ *
+ * If the ring is an [IntegralDomain], then the fraction is a field.
+ *
+ *
+ *
+ */
 open class RingFraction<T : Any>
 internal constructor(val nume: T, val deno: T, model: Ring<T>) :
     AbstractMathObject<T, Ring<T>>(model),
@@ -66,7 +78,6 @@ internal constructor(val nume: T, val deno: T, model: Ring<T>) :
             return exactDivide(n, g) to exactDivide(d, g)
         }
     }
-
 
     private fun simplifyGetOne(): RingFraction<T> {
         val model = model

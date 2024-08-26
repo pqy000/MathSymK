@@ -8,6 +8,7 @@ import cn.mathsymk.model.struct.EuclidRingNumberModel
 import cn.mathsymk.model.struct.times
 import cn.mathsymk.structure.*
 import cn.mathsymk.util.DataStructureUtil
+import cn.mathsymk.util.ModelPatterns
 import java.util.function.Function
 
 /**
@@ -68,6 +69,8 @@ class Polynomial<T : Any> internal constructor(
     /**
      * Returns a list of coefficients of this polynomial.
      * The coefficient of the term with index `i` is at the position `i` in the list.
+     * The size of the list is `degree + 1`.
+     * If the polynomial is zero, then the list is empty.
      */
     fun coefficientList(): List<T> {
         val result = MutableList(degree + 1) { model.zero }
@@ -98,8 +101,8 @@ class Polynomial<T : Any> internal constructor(
         get() = leadTerm.value
 
 
-    val constantTerm: PTerm<T>
-        get() = terms.firstOrNull() ?: PTerm(0, model.zero)
+//    val constantTerm: PTerm<T>
+//        get() = terms.firstOrNull() ?: PTerm(0, model.zero)
 
     val constantCoef: T
         get() = terms.firstOrNull()?.value ?: model.zero
@@ -112,9 +115,8 @@ class Polynomial<T : Any> internal constructor(
     /**
      * Determines whether this polynomial is a constant polynomial, including the zero polynomial.
      */
-    fun isConstant(): Boolean {
-        return degree <= 0
-    }
+    val isConstant: Boolean
+        get() = degree <= 0
 
 
     /*
@@ -180,6 +182,9 @@ class Polynomial<T : Any> internal constructor(
     Polynomial methods
      */
 
+    /**
+     * Apply this polynomial to a value `x` and returns the result.
+     */
     override fun apply(x: T): T {
         if (terms.isEmpty()) {
             return model.zero
@@ -204,6 +209,8 @@ class Polynomial<T : Any> internal constructor(
         }
         return result
     }
+
+//    fun apply(x : Module<T>)
 
 
     /*
@@ -274,6 +281,14 @@ class Polynomial<T : Any> internal constructor(
         return multiplyTerms(model, terms, y.terms)
     }
 
+    override fun times(n: Long): Polynomial<T> {
+        return if (n == 0L) {
+            zero(model)
+        } else {
+            mapTermsPossiblyZero(terms, model) { model.multiplyLong(it, n) }
+        }
+    }
+
 
     /*
     Polynomial on UnitRing
@@ -285,6 +300,14 @@ class Polynomial<T : Any> internal constructor(
         return degree == 0 && model.isUnit(terms[0].value)
     }
 
+    override fun pow(n: Long): Polynomial<T> {
+        require(n >= 0) { "The power must be non-negative." }
+        if (n == 0L) {
+            require(model is UnitRing<T>) { "The model is not a unit ring." }
+            return one(model)
+        }
+        return ModelPatterns.binaryProduce(n, this) { a, b -> a * b }
+    }
 
     override fun div(k: T): Polynomial<T> {
         if (model.isZero(k)) {
@@ -316,9 +339,23 @@ class Polynomial<T : Any> internal constructor(
     Polynomials on Field
      */
 
+    /**
+     * Returns the greatest common divisor of this polynomial and another polynomial.
+     *
+     * It is required that the [model] is either a [Field] or a [UniqueFactorizationDomain].
+     */
+    override fun gcd(y: Polynomial<T>): Polynomial<T> {
+        if (model is Field) {
+            return super.gcd(y) // Euclidean Method
+        }
+        if (model is UniqueFactorizationDomain) {
+            return subResultantGCD(this, y)
+        }
+        throw UnsupportedOperationException("The model is not a field or a UFD.")
+    }
 
     override fun gcdUV(y: Polynomial<T>): Triple<Polynomial<T>, Polynomial<T>, Polynomial<T>> {
-        require(model is UnitRing<T>) { "The model is not a unit ring." }
+        require(model is Field<T>) { "The model is not a field." }
         return EuclideanDomain.gcdUV(this, y, zero(model), one(model))
     }
 
@@ -327,13 +364,15 @@ class Polynomial<T : Any> internal constructor(
      * Returns the result `(q, r)` of dividing `this` by `y` and the remainder.
      * It is guaranteed that `this = q * y + r` and `r.degree < y.degree`.
      *
-     * It is required the [model] is a field.
+     * It is required that either of the following conditions is satisfied:
+     * - The [model] is a [Field].
+     * - The [model] is a [UniqueFactorizationDomain] and every division is exact.
      */
     override fun divideAndRemainder(y: Polynomial<T>): Pair<Polynomial<T>, Polynomial<T>> {
         if (y.isZero) {
             throw ArithmeticException("Division by zero")
         }
-        require(model is Field<T>) { "The model is not a field." }
+        require(model is UnitRing<T>) { "The model must support `exactDivide`" }
         if (isZero) {
             return this to this
         }
@@ -343,7 +382,7 @@ class Polynomial<T : Any> internal constructor(
         val leadTermY = y.leadTerm
         while (!remainder.isZero && remainder.degree >= y.degree) {
             val leadTermR = remainder.leadTerm
-            val q = model.divide(leadTermR.value, leadTermY.value)
+            val q = model.exactDivide(leadTermR.value, leadTermY.value)
             val leadPowQuotient = leadTermR.pow - leadTermY.pow
             val quotientTerm = PTerm(leadPowQuotient, q)
             quotientTerms.add(quotientTerm)
@@ -353,7 +392,7 @@ class Polynomial<T : Any> internal constructor(
             remainder -= subtrahend
         }
 
-        val quotient = Polynomial(model, quotientTerms)
+        val quotient = Polynomial(model, quotientTerms.reversed())
         return quotient to remainder
     }
 
@@ -365,9 +404,19 @@ class Polynomial<T : Any> internal constructor(
 
     /**
      * Returns the formal derivative of this polynomial.
+     *
+     * The formal derivative of a polynomial
+     *
+     *      a_n x^n + a_{n-1} x^{n-1} + ... + a_1 x + a_0
+     *
+     * is
+     *
+     *     n a_n x^{n-1} + (n-1) a_{n-1} x^{n-2} + ... + a_1.
+     *
+     *
      */
     fun derivative(): Polynomial<T> {
-        if (isConstant()) {
+        if (isConstant) {
             return zero(model)
         }
         val nonConstantTerms = if (terms[0].pow == 0) terms.subList(1, terms.size) else terms
@@ -378,6 +427,17 @@ class Polynomial<T : Any> internal constructor(
 
     /**
      * Returns the formal indefinite integral of this polynomial, with the constant of integration being zero.
+     *
+     * The indefinite integral of a polynomial
+     *
+     *     a_n x^n + a_{n-1} x^{n-1} + ... + a_1 x + a_0
+     *
+     * is
+     *
+     *     a_n/(n+1) x^{n+1} + a_{n-1}/n x^{n} + ... + a_1/2 x^2 + a_0 x.
+     *
+     *
+     * It is required that the [model] is a [Field].
      */
     fun integral(): Polynomial<T> {
         if (isZero) {
@@ -455,7 +515,7 @@ class Polynomial<T : Any> internal constructor(
      */
     fun hasCommonRoot(y: Polynomial<T>): Boolean {
         val gcd = gcd(y)
-        return !gcd.isConstant()
+        return !gcd.isConstant
     }
 
 
@@ -767,6 +827,7 @@ class Polynomial<T : Any> internal constructor(
          */
         @Suppress("LocalVariableName")
         fun <T : Any> pseudoDivision(A: Polynomial<T>, B: Polynomial<T>): Pair<Polynomial<T>, Polynomial<T>> {
+            require(!B.isZero)
             /*
             See Algorithm 3.1.2, page 112 of
             'A Course in Computational Algebraic Number Theory', Henri Cohen
@@ -774,7 +835,6 @@ class Polynomial<T : Any> internal constructor(
              */
             val m = A.degree
             val n = B.degree
-            require(!B.isZero)
             require(m >= n)
             val model = A.model
             val d = B.leadCoef
@@ -792,15 +852,142 @@ class Polynomial<T : Any> internal constructor(
             R *= q
             return Pair(Q, R)
         }
+
+
+        /**
+         * Performs the pseudo division of two polynomials only on a ring.
+         * This algorithm finds `Q` and `R` such that
+         * ```
+         *     d^(A.degree - B.degree + 1) A = BQ + R     and     R.degree < B.degree,
+         * ```
+         * where `d` is the leading coefficient of `B`.
+         *
+         * It is required that `B` is not zero and
+         * `A.degree >= B.degree`.
+         *
+         * @param T the calculator for [T] should at least be a ring calculator.
+         */
+        @Suppress("LocalVariableName")
+        @JvmStatic
+        fun <T : Any> pseudoDivisionR(A: Polynomial<T>, B: Polynomial<T>): Polynomial<T> {
+            require(!B.isZero)
+            /*
+            See Algorithm 3.1.2, page 112 of
+            'A Course in Computational Algebraic Number Theory', Henri Cohen
+            Created by lyc at 2020-03-01 14:25
+             */
+            val m = A.degree
+            val n = B.degree
+            require(m >= n)
+            val model = A.model
+            val d = B.leadCoef
+            var R = A
+            var e = m - n + 1
+            while (!R.isZero && R.degree >= B.degree) {
+                val S = power(model, R.degree - B.degree, R.leadCoef)
+                R = d * R - S * B
+                e -= 1
+            }
+            val q = model.power(d, e.toLong())
+            R *= q
+            return R
+        }
+
+
+        /**
+         * Computes the GCD of two polynomials on a UFD.
+         *
+         * It is required that the underlying model is [UniqueFactorizationDomain].
+         *
+         * @see [subResultantGCD]
+         */
+        @JvmStatic
+        fun <T : Any> primitiveGCD(f: Polynomial<T>, g: Polynomial<T>): Polynomial<T> {
+            if (f.isZero) return g
+            if (g.isZero) return f
+            /*
+            See Algorithm 3.2.10, page 117 of
+            'A Course in Computational Algebraic Number Theory', Henri Cohen
+            Created by lyc at 2020-03-01 16:02
+             */
+            val mc = f.model
+
+            val rc = mc as UniqueFactorizationDomain<T>
+            val a = f.cont()
+            val b = g.cont()
+            val d = rc.gcd(a, b)
+            var A = f.div(a)
+            var B = g.div(b)
+            while (true) {
+                val R = pseudoDivisionR(A, B)
+                if (R.isZero) {
+                    break
+                }
+                if (R.isConstant) {
+                    B = one(mc)
+                    break
+                }
+                A = B
+                B = R.toPrimitive()
+            }
+            return d * B
+        }
+
+        /**
+         * Computes the GCD of two polynomials on a UFD using sub-resultant method.
+         *
+         * @see [primitiveGCD]
+         */
+        @Suppress("LocalVariableName")
+        @JvmStatic
+        fun <T : Any> subResultantGCD(f: Polynomial<T>, g: Polynomial<T>): Polynomial<T> {
+            /*
+            See Algorithm 3.3.1, page 118 of
+            'A Course in Computational Algebraic Number Theory', Henri Cohen
+            Created by lyc at 2020-03-01 16:02
+             */
+            var (A, B) = if (f.degree > g.degree) f to g else g to f // A.degree >= B.degree
+            if (B.isZero) return A
+
+            val mc = f.model
+
+            val rc = mc as UniqueFactorizationDomain<T>
+            val a = A.cont()
+            val b = B.cont()
+            val d = rc.gcd(a, b)
+            var g1 = mc.one
+            var h1 = mc.one
+            while (true) {
+                val t = (A.degree - B.degree).toLong()
+                val R = pseudoDivisionR(A, B)
+                if (R.isZero) break
+                if (R.isConstant) {
+                    B = one(mc)
+                    break
+                }
+                A = B
+                B = mc.eval { R.div(g1 * (h1 pow t)) }
+                g1 = A.leadCoef
+                h1 = mc.eval { h1 * ((g1 / h1) pow t) }
+            }
+            return d * B.toPrimitive()
+        }
     }
 }
 
-open class PolyOnRing<T : Any>(model: Ring<T>) : Ring<Polynomial<T>> {
+open class PolyOnRing<T : Any>(model: Ring<T>) : Ring<Polynomial<T>>, Module<T, Polynomial<T>> {
 
     @Suppress("CanBePrimaryConstructorProperty")
     open val model: Ring<T> = model
 
     final override val zero: Polynomial<T> = Polynomial.zero(model)
+
+    override val scalars: Ring<T>
+        get() = model
+
+    override fun scalarMul(k: T, v: Polynomial<T>): Polynomial<T> {
+        return v.times(k)
+    }
 
     fun of(vararg coef: T): Polynomial<T> {
         return Polynomial.of(model, *coef)
@@ -866,9 +1053,16 @@ open class PolyOnUnitRing<T : Any>(model: UnitRing<T>) : PolyOnRing<T>(model), U
 }
 
 open class PolyOnField<T : Any>(override val model: Field<T>) : PolyOnUnitRing<T>(model),
-    EuclideanDomain<Polynomial<T>> {
+    EuclideanDomain<Polynomial<T>>, Algebra<T, Polynomial<T>> {
     override val numberClass: Class<*>
         get() = Polynomial::class.java
+
+    override val scalars: Field<T>
+        get() = model
+
+    override fun scalarDiv(x: Polynomial<T>, k: T): Polynomial<T> {
+        return x.div(k)
+    }
 
     override fun divideAndRemainder(a: Polynomial<T>, b: Polynomial<T>): Pair<Polynomial<T>, Polynomial<T>> {
         return a.divideAndRemainder(b)
@@ -885,55 +1079,10 @@ open class PolyOnField<T : Any>(override val model: Field<T>) : PolyOnUnitRing<T
     override fun gcd(a: Polynomial<T>, b: Polynomial<T>): Polynomial<T> {
         return a.gcd(b)
     }
+
+//    override fun Polynomial<T>.div(k: T): Polynomial<T> {
+//        TODO("Not yet implemented")
+//    }
 }
 
 
-/*
-Legacy methods
- */
-//        private fun <T : Any> trimZero(model: Ring<T>, coef: MutableList<T>): MutableList<T> {
-//            while (coef.isNotEmpty() && model.isZero(coef.last())) {
-//                coef.removeLast()
-//            }
-//            return coef
-//        }
-//        private fun <T : Any> addList(model: Ring<T>, a: List<T>, b: List<T>): List<T> {
-//            val size = maxOf(a.size, b.size)
-//            val result = ArrayList<T>(size)
-//            for (i in 0 until minOf(a.size, b.size)) {
-//                result.add(model.add(a[i], b[i]))
-//            }
-//            if (a.size > size) {
-//                result.addAll(a.subList(size, a.size))
-//            } else if (b.size > size) {
-//                result.addAll(b.subList(size, b.size))
-//            }
-//            return trimZero(model, result)
-//        }
-//
-//        private fun <T : Any> multiplyList(model: Ring<T>, a: List<T>, b: List<T>): List<T> {
-//            if (a.isEmpty() || b.isEmpty()) {
-//                return emptyList()
-//            }
-//            val result = MutableList(a.size + b.size - 1) { model.zero }
-//            for (i in a.indices) {
-//                for (j in b.indices) {
-//                    result[i + j] = model.add(result[i + j], model.multiply(a[i], b[j]))
-//                }
-//            }
-//            return trimZero(model, result)
-//        }
-//
-//        private fun <T : Any> sumList(model: Ring<T>, values: List<List<T>>): List<T> {
-//            if (values.isEmpty()) {
-//                return emptyList()
-//            }
-//            val size = values.maxOf { it.size }
-//            val result = MutableList(size) { model.zero }
-//            for (list in values) {
-//                for (i in list.indices) {
-//                    result[i] = model.add(result[i], list[i])
-//                }
-//            }
-//            return trimZero(model, result)
-//        }

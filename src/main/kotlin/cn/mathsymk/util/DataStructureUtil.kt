@@ -6,6 +6,9 @@ import kotlin.collections.ArrayList
 object DataStructureUtil {
 
 
+    /**
+     * Given a list of unordered terms, sort the terms and merge the terms with the same index using the `comparing` function.
+     */
     inline fun <T> mergeRawList(
         rawList: List<T>, crossinline comparing: (T, T) -> Int,
         crossinline merger2: (T, T) -> T?,
@@ -16,7 +19,9 @@ object DataStructureUtil {
         return mergeSorted1(sortedTerms, comparing, merger2, mergerMulti, estimatedSize)
     }
 
-
+    /**
+     * Merge two sorted lists.
+     */
     inline fun <T> mergeSorted1(
         sortedList: List<T>,
         crossinline comparing: (T, T) -> Int,
@@ -137,6 +142,9 @@ object DataStructureUtil {
         }
     }
 
+    /**
+     * Merge multiple sorted lists.
+     */
     inline fun <T : Comparable<T>> mergeSortedK(
         lists: List<List<T>>,
         crossinline merger2: (T, T) -> T?,
