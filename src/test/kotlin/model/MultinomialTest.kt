@@ -127,4 +127,36 @@ class MultinomialTest {
         assertEquals("Division by zero", exception.message)
     }
 
+    @Test
+    fun divideAndRemainderComprehensive() {
+
+    }
+
+}
+
+fun main() {
+    val model = NumberModels.intModP(97, cached = true)
+    val ints = NumberModels.intAsIntegers()
+//    run {
+//        val m1 = of(model) { 3 * "x^2y" + 4 * "xy^3" + 3 * "x" } // 3x^2y + 4xy^3 + 3x
+//        val m2 = of(model) { 2 * "xy" + 1 * "y" } // 2xy + y
+//        val m3 = of(model) { 3 * "x" + 4 * "y" }
+//        val product = m1 * m2 //  3xy + 6x^2y + 3x^2y^2 + 4xy^4 + 6x^3y^2 + 8x^2y^4
+//        val m4 = product + m3 //
+//        val (q, r) = m4.divideAndRemainder(m2)
+//        assertEquals(m1, q)
+//        assertEquals(of(model) { 3 * "x" + 4 * "y" }, r)
+//    }
+    run {
+        val m1 = of(ints) { 1 * "x^2y" + 1 * "xy^2" + 1 * "y^2" } // x^2 + xy^2 + y^2
+        val m2 = of(ints) { 1 * "xy" - 1 * "" } // x + y
+        val m3 = of(ints) { 1 * "y^2" - 1 * "" } // y^2 - 1
+        println(m1)
+        println(m2)
+        println(m3)
+        println()
+        val (qs,r) = m1.divideAndRemainder(listOf(m2, m3))
+        println(qs)
+        println(r)
+    }
 }

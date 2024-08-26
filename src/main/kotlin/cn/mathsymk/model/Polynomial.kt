@@ -273,6 +273,11 @@ class Polynomial<T : Any> internal constructor(
         return addTerms2(model, terms, y.terms)
     }
 
+    operator fun plus(t: T): Polynomial<T> {
+        if (model.isZero(t)) return this
+        return addTerms2(model, terms, listOf(PTerm(0, t)))
+    }
+
 //    override operator fun minus(y: Polynomial<T>): Polynomial<T> {
 //        return addTerms2(model, terms, y.terms.map { PTerm(it.pow, model.negate(it.value)) })
 //    }

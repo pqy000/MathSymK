@@ -5,6 +5,7 @@ import cn.mathsymk.model.Fraction
 import cn.mathsymk.model.NumberModels
 import cn.mathsymk.model.PTerm
 import cn.mathsymk.model.Polynomial
+import cn.mathsymk.model.struct.times
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.assertThrows
 import kotlin.test.Test
@@ -23,6 +24,8 @@ class PolynomialTest {
     private fun ofI(vararg cs: Int): Polynomial<Int> {
         return Polynomial.fromList(ints, cs.asList())
     }
+
+    private val x = Polynomial.x(ints)
 
     @Test
     fun testSum() {
@@ -309,10 +312,19 @@ class PolynomialTest {
             assertValueEquals(f.toMonic(), f.gcd(g).toMonic())
         }
 
-        run{
+        run {
             val f = ofI(1, 2) // 1 + 2x
             val g = ofI(-1, -2) // -1 - 2x
             assertValueEquals(f.toPrimitive(), f.gcd(g).toPrimitive())
+        }
+
+        run {
+            val p1 = x + 1
+            val p2 = 2 * x + 1
+            val p3 = x + 2
+            val f1 = p1 * p2
+            val f2 = p1 * p3
+            assertValueEquals(p1, f1.gcd(f2))
         }
     }
 
@@ -434,7 +446,7 @@ class PolynomialTest {
         run {
             val p = ofI(3, 6, 9) // 3 + 6x + 9x^2
             val result = p.leadTerm
-            assertEquals(PTerm(2,9), result)
+            assertEquals(PTerm(2, 9), result)
         }
         run {
             val p = ofI(1, -3, 2) // 1 - 3x + 2x^2
@@ -443,17 +455,16 @@ class PolynomialTest {
         }
         run {
             val p = ofI(0) // 0
-            assertThrows(NoSuchElementException::class.java){
+            assertThrows(NoSuchElementException::class.java) {
                 p.leadTerm
             }
         }
         run {
             val p = ofI(1, 0, 0, 4) // 1 + 4x^3
             val result = p.leadTerm
-            assertEquals(PTerm(3,4), result)
+            assertEquals(PTerm(3, 4), result)
         }
     }
-
 
 
     @Test
@@ -588,4 +599,16 @@ class PolynomialTest {
 //        q = Polynomial.of(Calculators.integer(), c2)
 //        assertValueEquals(q, p.reversed())
 //    }
+}
+
+fun main() {
+    val ints = NumberModels.IntAsIntegers
+    val x = Polynomial.x(ints)
+    val p1 = x + 1
+    val p2 = 2 * x + 1
+    val p3 = x + 2
+    val f1 = p1 * p2
+    val f2 = p1 * p3
+    println(f1.gcd(f2)) // x + 1
+
 }

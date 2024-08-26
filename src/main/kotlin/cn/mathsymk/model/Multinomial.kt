@@ -26,11 +26,12 @@ import kotlin.collections.ArrayList
 
 
 @JvmRecord
-data class ChPow(val ch: String, val pow: Int) : Comparable<ChPow> {
-    override fun compareTo(other: ChPow): Int {
-        val c = ch.compareTo(other.ch)
-        return if (c != 0) c else pow - other.pow
-    }
+data class ChPow(val ch: String, val pow: Int) {
+//    override fun compareTo(other: ChPow): Int {
+//        return ch.compareTo(other.ch)
+////        val c = ch.compareTo(other.ch)
+////        return if (c != 0) -c else pow - other.pow
+//    }
 
     override fun toString(): String {
         if (pow == 1) {
@@ -45,18 +46,31 @@ typealias TermChs = Array<ChPow>
 @JvmRecord
 data class MTerm<T>(
     /**
-     * A sorted array of characters and their powers.
+     * A array of characters and their powers.
+     * The array is sorted by the character in lexicographical order.
      */
     val chs: TermChs,
     val c: T,
     val totalPow: Int = chs.sumOf { it.pow }
 ) : Comparable<MTerm<T>> {
 
+    /**
+     * Compares two terms by their characters in lexicographical order.
+     */
     override fun compareTo(other: MTerm<T>): Int {
-        val d = totalPow - other.totalPow
-        if (d != 0) return d
-
-        return ArraySup.compareLexi(chs, other.chs)
+        val n = chs.size
+        val m = other.chs.size
+        var i = 0
+        var j = 0
+        while (i < n && j < m) {
+            var c = chs[i].ch.compareTo(other.chs[j].ch)
+            if(c != 0) return -c //
+            c = chs[i].pow - other.chs[j].pow
+            if (c != 0) return c
+            i++
+            j++
+        }
+        return n - m
     }
 
     override fun equals(other: Any?): Boolean {
@@ -89,7 +103,7 @@ data class MTerm<T>(
     }
 
 
-    fun chsContains(other : MTerm<T>) : Boolean {
+    fun chsContains(other: MTerm<T>): Boolean {
         var j = 0
         for (i in other.chs.indices) {
             // find the corresponding character in other
@@ -118,7 +132,7 @@ data class MTerm<T>(
         for (i in other.chs.indices) {
             // find the corresponding character in other
             while (j < chs.size && chs[j].ch < other.chs[i].ch) {
-                newChs.add(other.chs[j]) // character not in this term
+                newChs.add(chs[j]) // this character is not in the other term
                 j++
             }
             if (j == chs.size || chs[j].ch != other.chs[i].ch || chs[j].pow < other.chs[i].pow) {
@@ -130,7 +144,7 @@ data class MTerm<T>(
             }
             j++
         }
-        while(j < chs.size) {
+        while (j < chs.size) {
             newChs.add(chs[j])
             j++
         }
@@ -156,6 +170,7 @@ data class MTerm<T>(
         } else {
             val sb = StringBuilder()
             sb.append(c)
+//            sb.append("*")
             for (ch in chs) {
                 sb.append(ch)
             }
@@ -166,7 +181,7 @@ data class MTerm<T>(
     companion object {
         fun multiplyChars(chs1: TermChs, chs2: TermChs): TermChs {
             return DataStructureUtil.mergeSorted2(chs1, chs2,
-                comparing = { x, y -> x.compareTo(y) },
+                comparing = { x, y -> x.ch.compareTo(y.ch) }, // compare by character
                 merger2 = { x, y -> if (x.pow + y.pow == 0) null else ChPow(x.ch, x.pow + y.pow) })
         }
 
@@ -230,9 +245,9 @@ internal constructor(
      * @throws NoSuchElementException if the multinomial is zero.
      */
     val leadTerm: MTerm<T>
-        get() = terms[0]
+        get() = terms.last()
 
-    val leadPow: TermChs
+    val multideg: TermChs
         get() = leadTerm.chs
 
 
@@ -250,7 +265,8 @@ internal constructor(
      */
     override fun toString(): String {
         if (terms.isEmpty()) return "0"
-        return terms.joinToString(" + ") { it.toString() }
+        // TODO better string representation
+        return terms.asReversed().joinToString(" + ") { it.toString() }
     }
 
     override fun equals(other: Any?): Boolean {
@@ -318,11 +334,6 @@ internal constructor(
         return MTerm(chs, c)
     }
 
-//    protected fun termExactDiv(t1 : MTerm<T>, t2 : MTerm<T>) : MTerm<T> {
-//        val c = model.exactDivide(t1.c, t2.c)
-//        val chs = MTerm.multiplyChars(t1.chs, t2.chs)
-//        return MTerm(chs, c)
-//    }
 
     /*
     Multinomial as a ring
@@ -354,37 +365,68 @@ internal constructor(
 
 
     override fun divideAndRemainder(y: Multinomial<T>): Pair<Multinomial<T>, Multinomial<T>> {
-        if (y.isZero) throw ArithmeticException("Division by zero")
         require(model is UnitRing<T>) { "The model must support `exactDivide`" }
+        require(!y.isZero) { "The divisor cannot be zero." }
         if (isZero) {
             return this to this
         }
-        var remainder = this
-        val quotientTerms = mutableListOf<MTerm<T>>()
-
-        val leadTermY = y.leadTerm
-        while (!remainder.isZero) {
-            val remTerms = remainder.terms
-            for (j in remTerms.lastIndex downTo 0) {
-                val term = remTerms[j]
-                if (term.totalPow < leadTermY.totalPow) {
-                    break
-                }
-                if (!term.chsContains(leadTermY)) {
-                    continue
-                }
-                val q = model.exactDivide(term.c, leadTermY.c)
-                val newChs = term.chsExactDivide(leadTermY) // term / leadTermY
-                val quotientTerm = MTerm(newChs, q)
-                quotientTerms.add(quotientTerm)
-
-                val subtrahend = y.times(quotientTerm)
-                remainder -= subtrahend
+        var p = this
+        val qTerms = mutableListOf<MTerm<T>>()
+        val rTerms = mutableListOf<MTerm<T>>()
+        while (!p.isZero) {
+            if (!p.leadTerm.chsContains(y.leadTerm)) {
+                rTerms.add(p.leadTerm)
+                p = Multinomial(model, p.terms.subList(0, p.terms.size - 1))
                 continue
             }
-            break // no term can be divided
+            val q = termExactDiv(model, p.leadTerm, y.leadTerm)
+            qTerms.add(q)
+            p -= y.times(q)
         }
-        return Multinomial(model, quotientTerms.sorted()) to remainder
+        qTerms.reverse()
+        rTerms.reverse()
+        val q = Multinomial(model, qTerms)
+        val r = Multinomial(model, rTerms)
+        return q to r
+    }
+
+    fun divideAndRemainder(fs: List<Multinomial<T>>): Pair<List<Multinomial<T>>, Multinomial<T>> {
+        require(fs.isNotEmpty())
+        require(model is UnitRing<T>) { "The model must support `exactDivide`" }
+        require(fs.all { !it.isZero }) { "The divisor cannot be zero." }
+        if (isZero) {
+            return Collections.nCopies(fs.size, this) to this
+        }
+        var p = this
+        val qTerms = List(fs.size) { mutableListOf<MTerm<T>>() }
+        val rTerms = mutableListOf<MTerm<T>>()
+        while (!p.isZero) {
+            var found = false
+            var i = 0
+            while(i < fs.size) {
+                val f = fs[i]
+                val leadTermF = f.leadTerm
+                if (!p.leadTerm.chsContains(leadTermF)) {
+                    i++
+                    continue
+                }
+                val q = termExactDiv(model, p.leadTerm, leadTermF)
+                qTerms[i].add(q)
+                p -= f.times(q)
+                found = true
+            }
+            if (!found) {
+                rTerms.add(p.leadTerm)
+                p = Multinomial(model, p.terms.subList(0, p.terms.size - 1))
+            }
+        }
+        val qList = qTerms.map {
+            it.reverse()
+            Multinomial(model, it)
+        }
+        rTerms.reverse()
+        val r = Multinomial(model, rTerms)
+        return qList to r
     }
 
     override fun gcdUV(y: Multinomial<T>): Triple<Multinomial<T>, Multinomial<T>, Multinomial<T>> {
@@ -475,16 +517,20 @@ internal constructor(
             for (ai in a) {
                 for (bj in b) {
                     val v = model.multiply(ai.c, bj.c)
-                    if (!model.isZero(v)) {
-                        val newChs = MTerm.multiplyChars(ai.chs, bj.chs)
-                        result.add(MTerm(newChs, v))
-                    }
+                    if (model.isZero(v)) continue
+                    val newChs = MTerm.multiplyChars(ai.chs, bj.chs)
+                    result.add(MTerm(newChs, v))
                 }
             }
             val resTerms = mergeTerms(model, result, estimatedSize = a.size + b.size)
             return Multinomial(model, resTerms)
         }
 
+        private fun <T : Any>  termExactDiv(model : UnitRing<T>, t1 : MTerm<T>, t2 : MTerm<T>) : MTerm<T> {
+            val c = model.exactDivide(t1.c, t2.c)
+            val chs = t1.chsExactDivide(t2)
+            return MTerm(chs, c)
+        }
 
         /**
          * Returns a zero multinomial.
@@ -588,6 +634,7 @@ internal constructor(
             }
             return addTermsAll(model, terms.map { it.terms })
         }
+
     }
 }
 
