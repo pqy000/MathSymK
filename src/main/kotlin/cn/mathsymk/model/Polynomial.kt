@@ -4,7 +4,7 @@ import cn.mathsymk.AbstractMathObject
 import cn.mathsymk.IMathObject
 import cn.mathsymk.function.MathOperator
 import cn.mathsymk.model.struct.AlgebraModel
-import cn.mathsymk.model.struct.EuclidRingNumberModel
+import cn.mathsymk.model.struct.EuclidDomainModel
 import cn.mathsymk.model.struct.times
 import cn.mathsymk.structure.*
 import cn.mathsymk.util.DataStructureUtil
@@ -34,7 +34,7 @@ class Polynomial<T : Any> internal constructor(
      */
     val terms: List<PTerm<T>>
 ) : AbstractMathObject<T, Ring<T>>(model),
-    AlgebraModel<T, Polynomial<T>>, EuclidRingNumberModel<Polynomial<T>>, MathOperator<T> {
+    AlgebraModel<T, Polynomial<T>>, EuclidDomainModel<Polynomial<T>>, MathOperator<T> {
 
     /**
      * The degree of this polynomial, which is the highest power of `x` in this polynomial.
@@ -356,7 +356,7 @@ class Polynomial<T : Any> internal constructor(
 
     override fun gcdUV(y: Polynomial<T>): Triple<Polynomial<T>, Polynomial<T>, Polynomial<T>> {
         require(model is Field<T>) { "The model is not a field." }
-        return EuclideanDomain.gcdUV(this, y, zero(model), one(model))
+        return EuclidDomainModel.gcdUVForModel(this, y, zero(model), one(model))
     }
 
 

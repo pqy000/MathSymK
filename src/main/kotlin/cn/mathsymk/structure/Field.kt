@@ -33,7 +33,7 @@ interface Field<T : Any> : DivisionRing<T>, CommutativeRing<T> {
     /**
      * Returns the characteristic of this field.
      *
-     * This method is optional.
+     * This method is optional and may return `null` if the characteristic is not determined.
      */
     val characteristic: Long?
 

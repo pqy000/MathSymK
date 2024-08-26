@@ -67,7 +67,7 @@ object DataStructureUtil {
         crossinline comparing: (T, T) -> Int,
         crossinline merger2: (T, T) -> T?
     ): List<T> {
-        val result = ArrayList<T>(maxOf(list1.size, list2.size))
+        val result = ArrayList<T>(list1.size + list2.size)
         var i = 0
         var j = 0
         while (i < list1.size && j < list2.size) {
@@ -103,7 +103,7 @@ object DataStructureUtil {
         crossinline comparing: (T, T) -> Int,
         crossinline merger2: (T, T) -> T?
     ): Array<T> {
-        val result = arrayOfNulls<T>(maxOf(list1.size, list2.size))
+        val result = arrayOfNulls<T>(list1.size + list2.size)
         var pos = 0
         var i = 0
         var j = 0

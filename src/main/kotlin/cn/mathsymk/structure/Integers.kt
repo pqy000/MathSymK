@@ -1,7 +1,7 @@
 package cn.mathsymk.structure
 
+import cn.mathsymk.model.QuotientField
 import cn.mathsymk.util.exceptions.ExceptionUtil
-import cn.mathsymk.model.struct.EuclidRingNumberModel
 import java.math.BigInteger
 
 
@@ -121,15 +121,7 @@ interface EuclideanDomain<T : Any> : UniqueFactorizationDomain<T> {
      * The default implementation uses Euclidean algorithm.
      */
     override fun gcd(a: T, b: T): T {
-        var x = a
-        var y = b
-        var t: T
-        while (!isZero(y)) {
-            t = y
-            y = remainder(x, y)
-            x = t
-        }
-        return a
+        return gcdEuclid(a, b, this::isZero, this::remainder)
     }
 
     /**
@@ -146,52 +138,17 @@ interface EuclideanDomain<T : Any> : UniqueFactorizationDomain<T> {
      * @return a tuple of `(gcd(a,b), u, v)`.
      */
     fun gcdUV(a: T, b: T): Triple<T, T, T> {
-        //trivial cases
-        if (isZero(a)) {
-            return Triple(b, zero, one)
-        }
-        if (isZero(b)) {
-            return Triple(a, one, zero)
-        }
-        /*
-        Euclid's Extended Algorithms:
-        Refer to Henri Cohen 'A course in computational algebraic number theory' Algorithm 1.3.6
-
-        Explanation of the algorithm:
-        we want to maintain the following equation while computing the gcd using the Euclid's algorithm
-        let d0=a, d1=b, d2, d3 ... be the sequence of remainders in Euclid's algorithm,
-        then we have
-            a*1 + b*0 = d0
-            a*0 + b*1 = d1
-        let
-            u0 = 1, v0 = 0
-            u1 = 0, v1 = 1
-        then we want to build a sequence of u_i, v_i such that
-            a*u_i + b*v_i = d_i,
-        when we find the d_n = gcd(a,b), the corresponding u_n and v_n is what we want.
-        We have:
-            d_i = q_i * d_{i+1} + d_{i+2}        (by Euclid's algorithm
-        so
-            a*u_i + b*v_i = q_i * (a*u_{i+1} + b*v_{i+1}) + (a*u_{i+2} + b*v_{i+2})
-            u_i - q_i * u_{i+1} = u_{i+2}
-            v_i - q_i * v_{i+1} = v_{i+2}
-        but it is only necessary for us to record u_i, since v_i can be calculated from the equation
-            a*u_i + b*v_i = d_i
-         */
-        var d0 = a
-        var d1 = b
-        var u0: T = one
-        var u1: T = zero
-        while (!isZero(d1)) {
-            val (q, d2) = divideAndRemainder(d0, d1)
-            d0 = d1
-            d1 = d2
-            val u2 = subtract(u0, multiply(q, u1))
-            u0 = u1
-            u1 = u2
-        }
-        val v: T = divideToInteger(d0 - a * u0, b) // discard the possible remainder caused by numeric imprecision
-        return Triple(d0, u0, v)
+        return gcdUVExtendedEuclid(
+            a,
+            b,
+            zero,
+            one,
+            this::isZero,
+            this::subtract,
+            this::multiply,
+            this::divideAndRemainder,
+            this::divideToInteger
+        )
     }
 
     /**
@@ -204,7 +161,7 @@ interface EuclideanDomain<T : Any> : UniqueFactorizationDomain<T> {
      * The default implementation is based on the extended Euclid's algorithm.
      *
      * @return a tuple of `(gcd(a,b), u, v)`.
-     * @see gcdUV
+     * @see gcdUVExtendedEuclid
      */
     fun gcdUVMin(a: T, b: T): Triple<T, T, T> {
         val result = gcdUV(a, b)
@@ -225,7 +182,7 @@ interface EuclideanDomain<T : Any> : UniqueFactorizationDomain<T> {
      * Returns the modular inverse of `a` with respect to `p`, that is, find the element `b` such
      * that `ab = 1 (mod p)`.
      *
-     * The default implementation is based on [gcdUV].
+     * The default implementation is based on [gcdUVExtendedEuclid].
      *
      * @return the modular inverse of `a`
      *
@@ -280,7 +237,7 @@ interface EuclideanDomain<T : Any> : UniqueFactorizationDomain<T> {
      *
      *     x = remainders[i] (mod mods[i])
      *
-     * @param mods a list of the modular, they must be co-prime
+     * @param mods a non-empty list of the modular, they must be co-prime
      *
      */
     fun chineseRemainder(mods: List<T>, remainders: List<T>): T {
@@ -308,104 +265,102 @@ interface EuclideanDomain<T : Any> : UniqueFactorizationDomain<T> {
     }
 
 
-
     companion object {
 
-
-        fun <T : EuclidRingNumberModel<T>> gcdUV(a: T, b: T, zero: T, one: T): Triple<T, T, T> {
+        /**
+         * A default implementation of `gcdUV` using the extended Euclid's algorithm.
+         *
+         * @return a tuple of `(gcd(a,b), u, v)`.
+         * @see [EuclideanDomain.gcdUV]
+         */
+        inline fun <T> gcdUVExtendedEuclid(
+            a: T, b: T, zero: T, one: T, isZero: (T) -> Boolean,
+            subtract: (T, T) -> T, multiply: (T, T) -> T,
+            divideAndRemainder: (T, T) -> Pair<T, T>,
+            divideToInteger: (T, T) -> T
+        ): Triple<T, T, T> {
             //trivial cases
-            if (a.isZero) {
-                return Triple(b, zero, one)
-            }
-            if (b.isZero) {
-                return Triple(a, one, zero)
-            }
-            // see EuclideanDomain.gcdUV for explanation
+            if (isZero(a)) return Triple(b, zero, one)
+
+            if (isZero(b)) return Triple(a, one, zero)
+            /*
+            Euclid's Extended Algorithms:
+            Refer to Henri Cohen 'A course in computational algebraic number theory' Algorithm 1.3.6
+
+            Explanation of the algorithm:
+            we want to maintain the following equation while computing the gcd using the Euclid's algorithm
+            let d0=a, d1=b, d2, d3 ... be the sequence of remainders in Euclid's algorithm,
+            then we have
+                a*1 + b*0 = d0
+                a*0 + b*1 = d1
+            let
+                u0 = 1, v0 = 0
+                u1 = 0, v1 = 1
+            then we want to build a sequence of u_i, v_i such that
+                a*u_i + b*v_i = d_i,
+            when we find the d_n = gcd(a,b), the corresponding u_n and v_n is what we want.
+            We have:
+                d_i = q_i * d_{i+1} + d_{i+2}        (by Euclid's algorithm
+            so
+                a*u_i + b*v_i = q_i * (a*u_{i+1} + b*v_{i+1}) + (a*u_{i+2} + b*v_{i+2})
+                u_i - q_i * u_{i+1} = u_{i+2}
+                v_i - q_i * v_{i+1} = v_{i+2}
+            but it is only necessary for us to record u_i, since v_i can be calculated from the equation
+                a*u_i + b*v_i = d_i
+             */
             var d0 = a
             var d1 = b
             var u0: T = one
             var u1: T = zero
-            while (!d1.isZero) {
-                val (q, d2) = d0.divideAndRemainder(d1)
+            while (!isZero(d1)) {
+                val (q, d2) = divideAndRemainder(d0, d1)
                 d0 = d1
                 d1 = d2
-                val u2 = u0 - q * u1
+                val u2 = subtract(u0, multiply(q, u1))
                 u0 = u1
                 u1 = u2
             }
-            val v: T = (d0 - a * u0).divideToInteger(b) // discard the possible remainder caused by numeric imprecision
+            val v: T = divideToInteger(
+                subtract(d0, multiply(a, u0)),
+                b
+            ) // discard the possible remainder caused by numeric imprecision
             return Triple(d0, u0, v)
         }
 
 
         /**
-         * Creates a quotient field calculator with a prime element [prime].
+         * A default implementation of `gcd` using the Euclidean algorithm:
+         * ```
+         * while (b != 0){
+         *    t = b
+         *    b = a % b
+         *    a = t
+         * }
+         * return a
+         * ```
+         *
+         *
          */
-        fun <T : Any> quotientFieldCalculator(cal: EuclideanDomain<T>, prime: T): Field<T> {
-            return QuotientFieldCal(cal, prime)
+        inline fun <T> gcdEuclid(x: T, y: T, isZero: (T) -> Boolean, remainder: (T, T) -> T): T {
+            var a = x
+            var b = y
+            while (!isZero(b)) {
+                val t = b
+                b = remainder(a, b)
+                a = t
+            }
+            return a
         }
 
 
-        class QuotientFieldCal<T : Any>(val cal: EuclideanDomain<T>, val p: T) : Field<T> {
-
-            override fun contains(x: T): Boolean {
-                TODO()
-            }
-
-            override fun reciprocal(x: T): T {
-                return cal.modInverse(x, p)
-            }
-
-            override fun isEqual(x: T, y: T): Boolean {
-                return cal.eval {
-                    isZero(mod(x - y, p))
-                }
-            }
-
-            override fun multiply(x: T, y: T): T {
-                return cal.eval {
-                    mod(multiply(x, y), p)
-                }
-            }
-
-            override val characteristic: Long
-                get() = throw UnsupportedOperationException()
-            override val zero: T
-                get() = cal.zero
-
-            override fun add(x: T, y: T): T {
-                return cal.eval {
-                    mod(add(x, y), p)
-                }
-            }
-
-            override fun negate(x: T): T {
-                return cal.negate(x)
-            }
-
-            override val one: T
-                get() = cal.one
-
-            override fun multiplyLong(x: T, n: Long): T {
-                return cal.eval { mod(multiplyLong(x, n), p) }
-            }
-
-
-            override fun of(n: Long): T {
-                return cal.eval { mod(of(n), p) }
-            }
-
-            override fun subtract(x: T, y: T): T {
-                return cal.eval { mod(subtract(x, y), p) }
-            }
-
-            override val isCommutative: Boolean
-                get() = cal.isCommutative
+        /**
+         * Creates a quotient field with a prime element [prime].
+         */
+        fun <T : Any> quotientFieldCalculator(domain: EuclideanDomain<T>, prime: T): Field<T> {
+            return QuotientField(domain, prime)
         }
-
     }
 }
-
 
 /**
  * IntCalculator represents a common supertype for all calculator that deal with integers(int, long, BigInteger...),

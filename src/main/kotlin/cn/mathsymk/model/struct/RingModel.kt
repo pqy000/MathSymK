@@ -1,5 +1,6 @@
 package cn.mathsymk.model.struct
 
+import cn.mathsymk.structure.EuclideanDomain
 import cn.mathsymk.util.exceptions.ExceptionUtil
 
 
@@ -8,8 +9,8 @@ import cn.mathsymk.util.exceptions.ExceptionUtil
  */
 interface RingModel<T : RingModel<T>> : AddGroupModel<T>, MulMonoidModel<T> {
 
-    
-    val isZero : Boolean
+
+    val isZero: Boolean
 }
 
 //inline operator fun <T : RingNumberModel<T>> RingNumberModel<T>.times(y: T): T = multiply(y)
@@ -30,7 +31,7 @@ interface DivisionRingModel<T : DivisionRingModel<T>> : RingModel<T>, MulGroupMo
  * Created at 2018/12/8 17:15
  * @author  liyicheng
  */
-interface EuclidRingNumberModel<T : EuclidRingNumberModel<T>> : RingModel<T> {
+interface EuclidDomainModel<T : EuclidDomainModel<T>> : RingModel<T> {
 
     /**
      * Determines whether this number is a unit in the ring, which mean it is invertible with respect to multiplication.
@@ -42,15 +43,8 @@ interface EuclidRingNumberModel<T : EuclidRingNumberModel<T>> : RingModel<T> {
      */
     fun gcd(y: T): T {
         @Suppress("UNCHECKED_CAST")
-        var a: T = this as T
-        var b = y
-        var t: T
-        while (!b.isZero) {
-            t = b
-            b = a.rem(b)
-            a = t
-        }
-        return a
+        val x = this as T
+        return EuclideanDomain.gcdEuclid(x, y, EuclidDomainModel<T>::isZero, EuclidDomainModel<T>::rem)
     }
 
     /**
@@ -97,7 +91,7 @@ interface EuclidRingNumberModel<T : EuclidRingNumberModel<T>> : RingModel<T> {
     /**
      * Determines whether `this` and `y` are coprime, that is, their greatest common divisor is a unit.
      */
-    fun isCoprime(y: T): Boolean{
+    fun isCoprime(y: T): Boolean {
         return gcd(y).isUnit()
     }
 
@@ -128,4 +122,13 @@ interface EuclidRingNumberModel<T : EuclidRingNumberModel<T>> : RingModel<T> {
         return k
     }
 
+
+    companion object {
+        fun <T : EuclidDomainModel<T>> gcdUVForModel(a: T, b: T, zero: T, one: T): Triple<T, T, T> {
+            return EuclideanDomain.gcdUVExtendedEuclid(a, b, zero, one,
+                isZero = EuclidDomainModel<T>::isZero, subtract = { x, y -> x - y }, multiply = { x, y -> x * y },
+                EuclidDomainModel<T>::divideAndRemainder, EuclidDomainModel<T>::divideToInteger
+            )
+        }
+    }
 }

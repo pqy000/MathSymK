@@ -3,6 +3,7 @@ package cn.mathsymk.model
 import cn.mathsymk.AbstractMathObject
 import cn.mathsymk.IMathObject
 import cn.mathsymk.model.struct.AlgebraModel
+import cn.mathsymk.model.struct.EuclidDomainModel
 import cn.mathsymk.structure.EqualPredicate
 import cn.mathsymk.structure.Field
 import cn.mathsymk.structure.Ring
@@ -47,10 +48,14 @@ data class MTerm<T>(
      * A sorted array of characters and their powers.
      */
     val chs: TermChs,
-    val c: T
+    val c: T,
+    val totalPow: Int = chs.sumOf { it.pow }
 ) : Comparable<MTerm<T>> {
 
     override fun compareTo(other: MTerm<T>): Int {
+        val d = totalPow - other.totalPow
+        if (d != 0) return d
+
         return ArraySup.compareLexi(chs, other.chs)
     }
 
@@ -83,6 +88,55 @@ data class MTerm<T>(
         return chs.contentEquals(other.chs)
     }
 
+
+    fun chsContains(other : MTerm<T>) : Boolean {
+        var j = 0
+        for (i in other.chs.indices) {
+            // find the corresponding character in other
+            while (j < chs.size && chs[j].ch < other.chs[i].ch) {
+                j++
+            }
+            if (j == chs.size || chs[j].ch != other.chs[i].ch) {
+                return false
+            }
+            if (chs[j].pow < other.chs[i].pow) {
+                return false
+            }
+            j++
+        }
+        return true
+    }
+
+    fun chsMultiply(other: MTerm<T>): TermChs {
+        return multiplyChars(chs, other.chs)
+    }
+
+    fun chsExactDivide(other: MTerm<T>): TermChs {
+        // this / other
+        val newChs = ArrayList<ChPow>(other.chs.size)
+        var j = 0
+        for (i in other.chs.indices) {
+            // find the corresponding character in other
+            while (j < chs.size && chs[j].ch < other.chs[i].ch) {
+                newChs.add(other.chs[j]) // character not in this term
+                j++
+            }
+            if (j == chs.size || chs[j].ch != other.chs[i].ch || chs[j].pow < other.chs[i].pow) {
+                throw IllegalArgumentException("${chs[i]} in $this is not in the other term ${other}.")
+            }
+            val r = chs[j].pow - other.chs[i].pow
+            if (r != 0) {
+                newChs.add(ChPow(chs[j].ch, r))
+            }
+            j++
+        }
+        while(j < chs.size) {
+            newChs.add(chs[j])
+            j++
+        }
+        return newChs.toTypedArray()
+    }
+
     /**
      * Normalizes the term, which means removing the characters with power 0.
      */
@@ -92,6 +146,9 @@ data class MTerm<T>(
         }
         return MTerm(chs.filter { it.pow != 0 }.toTypedArray(), c)
     }
+
+    val isConstant: Boolean
+        get() = chs.isEmpty()
 
     override fun toString(): String {
         return if (chs.isEmpty()) {
@@ -156,6 +213,7 @@ internal constructor(
     model: Ring<T>,
     val terms: List<MTerm<T>>
 ) : AbstractMathObject<T, Ring<T>>(model),
+    EuclidDomainModel<Multinomial<T>>,
     AlgebraModel<T, Multinomial<T>> {
 
 
@@ -165,6 +223,18 @@ internal constructor(
 
     override val isZero: Boolean
         get() = terms.isEmpty()
+
+    /**
+     * Returns the leading term of the multinomial.
+     *
+     * @throws NoSuchElementException if the multinomial is zero.
+     */
+    val leadTerm: MTerm<T>
+        get() = terms[0]
+
+    val leadPow: TermChs
+        get() = leadTerm.chs
+
 
     private inline fun mapTermsNonZeroT(transform: (MTerm<T>) -> MTerm<T>): Multinomial<T> {
         val newTerms = terms.map(transform)
@@ -179,6 +249,7 @@ internal constructor(
     Math object
      */
     override fun toString(): String {
+        if (terms.isEmpty()) return "0"
         return terms.joinToString(" + ") { it.toString() }
     }
 
@@ -225,10 +296,33 @@ internal constructor(
         return mapTermsPossiblyZero(terms, model) { model.multiply(k, it) }
     }
 
+    fun times(t: MTerm<T>): Multinomial<T> {
+        return mapTermsPossiblyZeroT(terms, model) {
+            termMultiply(it, t)
+        }
+    }
+
     override fun div(k: T): Multinomial<T> {
         require(model is UnitRing)
         return mapTermsNonZero { model.exactDivide(it, k) }
     }
+
+//    fun exactDivide(t: MTerm<T>): Multinomial<T> {
+//        require(model is UnitRing)
+//        return mapTermsNonZeroT { termDivide(it, t) }
+//    }
+
+    protected fun termMultiply(t1: MTerm<T>, t2: MTerm<T>): MTerm<T> {
+        val c = model.multiply(t1.c, t2.c)
+        val chs = MTerm.multiplyChars(t1.chs, t2.chs)
+        return MTerm(chs, c)
+    }
+
+//    protected fun termExactDiv(t1 : MTerm<T>, t2 : MTerm<T>) : MTerm<T> {
+//        val c = model.exactDivide(t1.c, t2.c)
+//        val chs = MTerm.multiplyChars(t1.chs, t2.chs)
+//        return MTerm(chs, c)
+//    }
 
     /*
     Multinomial as a ring
@@ -246,12 +340,61 @@ internal constructor(
         return multiplyTerms(model, terms, y.terms)
     }
 
-    /*
 
+    override fun isUnit(): Boolean {
+        require(model is UnitRing<T>) { "The model is not a unit ring." }
+        if (terms.size != 1) return false
+        val t = terms[0]
+        return t.isConstant && model.isUnit(t.c)
+    }
+
+    /*
+    GCD
      */
 
 
+    override fun divideAndRemainder(y: Multinomial<T>): Pair<Multinomial<T>, Multinomial<T>> {
+        if (y.isZero) throw ArithmeticException("Division by zero")
+        require(model is UnitRing<T>) { "The model must support `exactDivide`" }
+        if (isZero) {
+            return this to this
+        }
+        var remainder = this
+        val quotientTerms = mutableListOf<MTerm<T>>()
+
+        val leadTermY = y.leadTerm
+        while (!remainder.isZero) {
+            val remTerms = remainder.terms
+            for (j in remTerms.lastIndex downTo 0) {
+                val term = remTerms[j]
+                if (term.totalPow < leadTermY.totalPow) {
+                    break
+                }
+                if (!term.chsContains(leadTermY)) {
+                    continue
+                }
+                val q = model.exactDivide(term.c, leadTermY.c)
+                val newChs = term.chsExactDivide(leadTermY) // term / leadTermY
+                val quotientTerm = MTerm(newChs, q)
+                quotientTerms.add(quotientTerm)
+
+                val subtrahend = y.times(quotientTerm)
+                remainder -= subtrahend
+                continue
+            }
+            break // no term can be divided
+        }
+        return Multinomial(model, quotientTerms.sorted()) to remainder
+    }
+
+    override fun gcdUV(y: Multinomial<T>): Triple<Multinomial<T>, Multinomial<T>, Multinomial<T>> {
+        require(model is Field<T>) { "The model is not a field." }
+        return EuclidDomainModel.gcdUVForModel(this, y, zero(model), one(model))
+    }
+
+
     companion object {
+        private val EMPTY_ARRAY = emptyArray<ChPow>()
 
         private inline fun <T : Any, R : Any> mapTermsPossiblyZeroT(
             terms: List<MTerm<T>>,
@@ -372,8 +515,15 @@ internal constructor(
             return if (model.isZero(c)) {
                 zero(model)
             } else {
-                Multinomial(model, listOf(MTerm(emptyArray(), c)))
+                Multinomial(model, listOf(MTerm(EMPTY_ARRAY, c))) // use a singleton array
             }
+        }
+
+        /**
+         * Creates a multinomial `1`.
+         */
+        fun <T : Any> one(model: UnitRing<T>): Multinomial<T> {
+            return constant(model, model.one)
         }
 
         /**
@@ -488,13 +638,13 @@ open class MultinomialOnRing<T : Any>(model: Ring<T>) : Ring<Multinomial<T>> {
     }
 }
 
-open class MultinomialOnUnitRing<T:Any>(model : UnitRing<T>) : MultinomialOnRing<T>(model), UnitRing<Multinomial<T>> {
+open class MultinomialOnUnitRing<T : Any>(model: UnitRing<T>) : MultinomialOnRing<T>(model), UnitRing<Multinomial<T>> {
     override val one: Multinomial<T> = Multinomial.constant(model, model.one)
     override val numberClass: Class<*>
         get() = Multinomial::class.java
 }
 
-open class MultinomialOnField<T:Any>(model : Field<T>) : MultinomialOnUnitRing<T>(model)  {
+open class MultinomialOnField<T : Any>(model: Field<T>) : MultinomialOnUnitRing<T>(model) {
 
 }
 

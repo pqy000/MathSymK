@@ -5,12 +5,12 @@ import cn.mathsymk.structure.*
 
 
 /**
- * Describes the ring of integers modulo n.
+ * Describes the ring of integers modulo `n`.
  */
 open class IntModN(val n: Int) : OrderedRing<Int>, CommutativeRing<Int>, UnitRing<Int> {
 
-    init{
-        require(n >=2){ "n must be at least 2, given $n" }
+    init {
+        require(n >= 2) { "n must be at least 2, given $n" }
     }
 
     override val numberClass: Class<*>
@@ -108,13 +108,84 @@ internal class IntModPCached(p: Int) : IntModP(p) {
         for (x in 2 until p) {
             val q = p / x
             val r = p % x
-            if(r == 0) throw ArithmeticException("p=$p is not a prime number")
-            invTable[x] = NTFunctions.mod(p - invTable[r] * q,p)
+            if (r == 0) throw ArithmeticException("p=$p is not a prime number")
+            invTable[x] = NTFunctions.mod(p - invTable[r] * q, p)
         }
     }
 
     override fun reciprocal(x: Int): Int {
         return invTable[mod(x)]
     }
+}
+
+
+open class QuotientRing<T : Any>(open val ring: Ring<T>) {
+
+}
+
+/**
+ * Describes the field of rational numbers modulo `p`.
+ */
+class QuotientField<T : Any>(val domain: EuclideanDomain<T>, val p: T) : Field<T> {
+
+    override val characteristic: Long?
+        get() = null
+
+    override val zero: T
+        get() = domain.zero
+
+    override val one: T
+        get() = domain.one
+
+    override fun contains(x: T): Boolean {
+        return domain.contains(x)
+    }
+
+    override fun isEqual(x: T, y: T): Boolean {
+        return domain.eval {
+            isZero(mod(x - y, p))
+        }
+    }
+
+    override fun add(x: T, y: T): T {
+        return domain.eval {
+            mod(x + y, p)
+        }
+    }
+
+    override fun negate(x: T): T {
+        return domain.negate(x)
+    }
+
+    override fun subtract(x: T, y: T): T {
+        return domain.eval { mod(x - y, p) }
+    }
+
+    override fun multiply(x: T, y: T): T {
+        return domain.eval {
+            mod(x * y, p)
+        }
+    }
+
+
+    override fun reciprocal(x: T): T {
+        return domain.modInverse(x, p)
+    }
+
+
+    override fun multiplyLong(x: T, n: Long): T {
+        return domain.eval { mod(multiplyLong(x, n), p) }
+    }
+
+
+    override fun of(n: Long): T {
+        return domain.eval { mod(of(n), p) }
+    }
+
+
+    override val isCommutative: Boolean
+        get() = domain.isCommutative
+
+
 }
 
