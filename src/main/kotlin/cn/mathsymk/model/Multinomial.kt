@@ -8,11 +8,11 @@ import cn.mathsymk.structure.EqualPredicate
 import cn.mathsymk.structure.Field
 import cn.mathsymk.structure.Ring
 import cn.mathsymk.structure.UnitRing
-import cn.mathsymk.util.ArraySup
 import cn.mathsymk.util.DataStructureUtil
 import java.util.*
 import java.util.function.Function
 import java.util.regex.Pattern
+import kotlin.Comparator
 import kotlin.collections.ArrayList
 
 
@@ -27,12 +27,6 @@ import kotlin.collections.ArrayList
 
 @JvmRecord
 data class ChPow(val ch: String, val pow: Int) {
-//    override fun compareTo(other: ChPow): Int {
-//        return ch.compareTo(other.ch)
-////        val c = ch.compareTo(other.ch)
-////        return if (c != 0) -c else pow - other.pow
-//    }
-
     override fun toString(): String {
         if (pow == 1) {
             return ch
@@ -43,35 +37,26 @@ data class ChPow(val ch: String, val pow: Int) {
 
 typealias TermChs = Array<ChPow>
 
+
+abstract class TermComparator(val chComparator: Comparator<String>) : Comparator<MTerm<*>>
+
 @JvmRecord
 data class MTerm<T>(
     /**
-     * A array of characters and their powers.
-     * The array is sorted by the character in lexicographical order.
+     * An array of characters and their powers.
+     * The array is sorted by the character in a specific order.
      */
     val chs: TermChs,
     val c: T,
     val totalPow: Int = chs.sumOf { it.pow }
-) : Comparable<MTerm<T>> {
-
-    /**
-     * Compares two terms by their characters in lexicographical order.
-     */
-    override fun compareTo(other: MTerm<T>): Int {
-        val n = chs.size
-        val m = other.chs.size
-        var i = 0
-        var j = 0
-        while (i < n && j < m) {
-            var c = chs[i].ch.compareTo(other.chs[j].ch)
-            if(c != 0) return -c //
-            c = chs[i].pow - other.chs[j].pow
-            if (c != 0) return c
-            i++
-            j++
-        }
-        return n - m
-    }
+) {
+// : Comparable<MTerm<T>>
+//    /**
+//     * Compares two terms by their characters in lexicographical order.
+//     */
+//    override fun compareTo(other: MTerm<T>): Int {
+//        return compareLex(chs, other.chs)
+//    }
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -121,10 +106,6 @@ data class MTerm<T>(
         return true
     }
 
-    fun chsMultiply(other: MTerm<T>): TermChs {
-        return multiplyChars(chs, other.chs)
-    }
-
     fun chsExactDivide(other: MTerm<T>): TermChs {
         // this / other
         val newChs = ArrayList<ChPow>(other.chs.size)
@@ -152,13 +133,13 @@ data class MTerm<T>(
     }
 
     /**
-     * Normalizes the term, which means removing the characters with power 0.
+     * Normalizes the term, removing the characters with power 0 and sorting the characters.
      */
-    fun normalize(): MTerm<T> {
-        if (chs.all { it.pow != 0 }) {
-            return this
-        }
-        return MTerm(chs.filter { it.pow != 0 }.toTypedArray(), c)
+    fun normalized(chComp: Comparator<String>): MTerm<T> {
+        val newChs = chs.filter { it.pow != 0 }.toTypedArray()
+        Arrays.sort(newChs) { o1, o2 -> chComp.compare(o1.ch, o2.ch) }
+        chs.sortedWith(compareBy({ it.ch }, { it.pow }))
+        return MTerm(newChs, c)
     }
 
     val isConstant: Boolean
@@ -179,9 +160,58 @@ data class MTerm<T>(
     }
 
     companion object {
-        fun multiplyChars(chs1: TermChs, chs2: TermChs): TermChs {
-            return DataStructureUtil.mergeSorted2(chs1, chs2,
-                comparing = { x, y -> x.ch.compareTo(y.ch) }, // compare by character
+
+
+        private fun compareLex(
+            chs1: TermChs, chs2: TermChs,
+            chComparator: Comparator<String> = Comparator.naturalOrder()
+        ): Int {
+            for (i in 0 until minOf(chs1.size, chs2.size)) {
+                val cp1 = chs1[i]
+                val cp2 = chs2[i]
+                var c = chComparator.compare(cp1.ch, cp2.ch)
+                if (c != 0) return -c
+                c = cp1.pow - cp2.pow
+                if (c != 0) return c
+            }
+            return chs1.size - chs2.size
+        }
+
+
+        fun compareGradedLex(
+            t1: MTerm<*>, t2: MTerm<*>,
+            chComparator: Comparator<String> = Comparator.naturalOrder()
+        ): Int {
+            if (t1.totalPow != t2.totalPow) {
+                return t1.totalPow - t2.totalPow
+            }
+            return compareLex(t1.chs, t2.chs, chComparator)
+        }
+
+        fun getLexComparator(chComp: Comparator<String> = Comparator.naturalOrder()): TermComparator {
+            return object : TermComparator(chComp) {
+                override fun compare(o1: MTerm<*>, o2: MTerm<*>): Int {
+                    return compareLex(o1.chs, o2.chs, chComp)
+                }
+            }
+        }
+
+        fun getGradedLexComparator(chComp: Comparator<String> = Comparator.naturalOrder()): TermComparator {
+            return object : TermComparator(chComp) {
+                override fun compare(o1: MTerm<*>, o2: MTerm<*>): Int {
+                    return compareGradedLex(o1, o2, chComp)
+                }
+            }
+        }
+
+        fun getGradedRevLexComparator(chComp: Comparator<String> = Comparator.naturalOrder()): TermComparator {
+            return getGradedLexComparator(chComp.reversed())
+        }
+
+
+        fun multiplyChars(chs1: TermChs, chs2: TermChs, chComp: Comparator<String>): TermChs {
+            return DataStructureUtil.mergeSorted2Arr(chs1, chs2,
+                compFunc = { x, y -> chComp.compare(x.ch, y.ch) }, // compare by character
                 merger2 = { x, y -> if (x.pow + y.pow == 0) null else ChPow(x.ch, x.pow + y.pow) })
         }
 
@@ -226,7 +256,14 @@ data class MTerm<T>(
 class Multinomial<T : Any>
 internal constructor(
     model: Ring<T>,
-    val terms: List<MTerm<T>>
+    /**
+     * The list of terms. The terms are ordered by the [termComparator].
+     */
+    val terms: List<MTerm<T>>,
+    /**
+     * The comparator used to order the terms
+     */
+    val termComparator: TermComparator
 ) : AbstractMathObject<T, Ring<T>>(model),
     EuclidDomainModel<Multinomial<T>>,
     AlgebraModel<T, Multinomial<T>> {
@@ -253,11 +290,41 @@ internal constructor(
 
     private inline fun mapTermsNonZeroT(transform: (MTerm<T>) -> MTerm<T>): Multinomial<T> {
         val newTerms = terms.map(transform)
-        return Multinomial(model, newTerms)
+        return Multinomial(model, newTerms, termComparator)
     }
 
     private inline fun mapTermsNonZero(transform: (T) -> T): Multinomial<T> {
         return mapTermsNonZeroT { MTerm(it.chs, transform(it.c)) }
+    }
+    /*
+    Term order
+     */
+
+    /**
+     * Returns a new multinomial by reordering the terms using the given comparator.
+     */
+    fun reorderedBy(comp: TermComparator): Multinomial<T> {
+        if (termComparator == comp) {
+            return this
+        }
+        val newTerms = terms.map { it.normalized(comp.chComparator) }.sortedWith(comp)
+        return Multinomial(model, newTerms, comp)
+    }
+
+    private fun checkTermOrder(y: Multinomial<T>) {
+        require(termComparator == y.termComparator) { "The term comparators are different." }
+    }
+
+    private fun checkTermOrder(ys: Iterable<Multinomial<T>>) {
+        require(ys.all { it.termComparator == termComparator }) { "The term comparators are different." }
+    }
+
+    private fun fromTerms(ts: List<MTerm<T>>): Multinomial<T> {
+        return Multinomial(model, ts, termComparator)
+    }
+
+    fun leadTermComp(y : Multinomial<T>) : Int{
+        return termComparator.compare(leadTerm, y.leadTerm)
     }
 
     /*
@@ -275,6 +342,7 @@ internal constructor(
 
         if (model != other.model) return false
         if (terms != other.terms) return false
+        if (termComparator != other.termComparator) return false
 
         return true
     }
@@ -292,7 +360,8 @@ internal constructor(
         if (model != obj.model) {
             return false
         }
-        for ((a, b) in terms.zip(obj.terms)) {
+        val otherTerms = if (termComparator == obj.termComparator) obj.terms else obj.terms.sortedWith(termComparator)
+        for ((a, b) in terms.zip(otherTerms)) {
             if (!a.chsEquals(b) || !model.isEqual(a.c, b.c)) {
                 return false
             }
@@ -302,18 +371,25 @@ internal constructor(
 
     override fun <N : Any> mapTo(newCalculator: EqualPredicate<N>, mapper: Function<T, N>): Multinomial<N> {
         require(newCalculator is Ring)
-        return mapTermsPossiblyZero(terms, newCalculator) { mapper.apply(it) }
+        return mapTermsPossiblyZero(terms, newCalculator, termComparator) { mapper.apply(it) }
     }
 
     /*
     Term-wise operations
      */
     override fun times(k: T): Multinomial<T> {
-        return mapTermsPossiblyZero(terms, model) { model.multiply(k, it) }
+        return mapTermsPossiblyZero(terms, model, termComparator) { model.multiply(k, it) }
+    }
+
+    private fun termMultiply(t1: MTerm<T>, t2: MTerm<T>): MTerm<T> {
+        val c = model.multiply(t1.c, t2.c)
+        if (model.isZero(c)) return MTerm(EMPTY_ARRAY, c)
+        val newChs = MTerm.multiplyChars(t1.chs, t2.chs, termComparator.chComparator)
+        return MTerm(newChs, c)
     }
 
     fun times(t: MTerm<T>): Multinomial<T> {
-        return mapTermsPossiblyZeroT(terms, model) {
+        return mapTermsPossiblyZeroT(terms, model, termComparator) {
             termMultiply(it, t)
         }
     }
@@ -328,19 +404,14 @@ internal constructor(
 //        return mapTermsNonZeroT { termDivide(it, t) }
 //    }
 
-    protected fun termMultiply(t1: MTerm<T>, t2: MTerm<T>): MTerm<T> {
-        val c = model.multiply(t1.c, t2.c)
-        val chs = MTerm.multiplyChars(t1.chs, t2.chs)
-        return MTerm(chs, c)
-    }
-
 
     /*
     Multinomial as a ring
      */
 
     override fun plus(y: Multinomial<T>): Multinomial<T> {
-        return addTerms2(model, terms, y.terms)
+        checkTermOrder(y)
+        return addTerms2(model, termComparator, terms, y.terms)
     }
 
     override fun unaryMinus(): Multinomial<T> {
@@ -348,7 +419,8 @@ internal constructor(
     }
 
     override fun times(y: Multinomial<T>): Multinomial<T> {
-        return multiplyTerms(model, terms, y.terms)
+        checkTermOrder(y)
+        return multiplyTerms(model, termComparator, terms, y.terms)
     }
 
 
@@ -366,17 +438,16 @@ internal constructor(
 
     override fun divideAndRemainder(y: Multinomial<T>): Pair<Multinomial<T>, Multinomial<T>> {
         require(model is UnitRing<T>) { "The model must support `exactDivide`" }
-        require(!y.isZero) { "The divisor cannot be zero." }
-        if (isZero) {
-            return this to this
-        }
+        if(y.isZero) throw ArithmeticException("The divisor cannot be zero.")
+        checkTermOrder(y)
+        if (isZero) return this to this
         var p = this
         val qTerms = mutableListOf<MTerm<T>>()
         val rTerms = mutableListOf<MTerm<T>>()
         while (!p.isZero) {
             if (!p.leadTerm.chsContains(y.leadTerm)) {
                 rTerms.add(p.leadTerm)
-                p = Multinomial(model, p.terms.subList(0, p.terms.size - 1))
+                p = fromTerms(p.terms.subList(0, p.terms.size - 1))
                 continue
             }
             val q = termExactDiv(model, p.leadTerm, y.leadTerm)
@@ -385,25 +456,24 @@ internal constructor(
         }
         qTerms.reverse()
         rTerms.reverse()
-        val q = Multinomial(model, qTerms)
-        val r = Multinomial(model, rTerms)
+        val q = fromTerms(qTerms)
+        val r = fromTerms(rTerms)
         return q to r
     }
 
     fun divideAndRemainder(fs: List<Multinomial<T>>): Pair<List<Multinomial<T>>, Multinomial<T>> {
         require(fs.isNotEmpty())
         require(model is UnitRing<T>) { "The model must support `exactDivide`" }
-        require(fs.all { !it.isZero }) { "The divisor cannot be zero." }
-        if (isZero) {
-            return Collections.nCopies(fs.size, this) to this
-        }
+        if(fs.any { it.isZero }) throw ArithmeticException("The divisor cannot be zero.")
+        checkTermOrder(fs)
+        if (isZero) return Collections.nCopies(fs.size, this) to this
         var p = this
         val qTerms = List(fs.size) { mutableListOf<MTerm<T>>() }
         val rTerms = mutableListOf<MTerm<T>>()
         while (!p.isZero) {
             var found = false
             var i = 0
-            while(i < fs.size) {
+            while (i < fs.size) {
                 val f = fs[i]
                 val leadTermF = f.leadTerm
                 if (!p.leadTerm.chsContains(leadTermF)) {
@@ -417,15 +487,15 @@ internal constructor(
             }
             if (!found) {
                 rTerms.add(p.leadTerm)
-                p = Multinomial(model, p.terms.subList(0, p.terms.size - 1))
+                p = fromTerms(p.terms.subList(0, p.terms.size - 1))
             }
         }
         val qList = qTerms.map {
             it.reverse()
-            Multinomial(model, it)
+            fromTerms(it)
         }
         rTerms.reverse()
-        val r = Multinomial(model, rTerms)
+        val r = fromTerms(rTerms)
         return qList to r
     }
 
@@ -441,25 +511,23 @@ internal constructor(
         private inline fun <T : Any, R : Any> mapTermsPossiblyZeroT(
             terms: List<MTerm<T>>,
             model: Ring<R>,
+            termComparator: TermComparator,
             transform: (MTerm<T>) -> MTerm<R>
         ): Multinomial<R> {
             val newTerms = terms.mapNotNullTo(ArrayList(terms.size)) { t ->
                 val t2 = transform(t)
                 if (model.isZero(t2.c)) null else t2
             }
-            return Multinomial(model, newTerms)
+            return Multinomial(model, newTerms, termComparator)
         }
 
         private inline fun <T : Any, R : Any> mapTermsPossiblyZero(
             terms: List<MTerm<T>>,
             model: Ring<R>,
+            termComparator: TermComparator,
             transform: (T) -> R
         ): Multinomial<R> {
-            val newTerms = terms.mapNotNullTo(ArrayList(terms.size)) { t ->
-                val v = transform(t.c)
-                if (model.isZero(v)) null else MTerm(t.chs, v)
-            }
-            return Multinomial(model, newTerms)
+            return mapTermsPossiblyZeroT(terms, model, termComparator) { MTerm(it.chs, transform(it.c)) }
         }
 
         private fun <T : Any> add2Term(model: Ring<T>, a: MTerm<T>, b: MTerm<T>): MTerm<T>? {
@@ -475,124 +543,159 @@ internal constructor(
         }
 
         private fun <T : Any> mergeTerms(
-            model: Ring<T>,
-            rawTerms: List<MTerm<T>>,
-            maxMergeSizeEst: Int = 3,
-            estimatedSize: Int = rawTerms.size
+            model: Ring<T>, termComparator: Comparator<MTerm<*>>, rawTerms: List<MTerm<T>>,
+            maxMergeSizeEst: Int = 3, estimatedSize: Int = rawTerms.size
         ): List<MTerm<T>> {
             val tempList = ArrayList<T>(maxMergeSizeEst)
             return DataStructureUtil.mergeRawList(
                 rawTerms,
-                comparing = { x, y -> x.compareTo(y) },
+                comparator = termComparator,
                 merger2 = { x, y -> add2Term(model, x, y) },
                 mergerMulti = { list -> addMultiTerm(model, list, tempList) },
                 estimatedSize = estimatedSize
             )
         }
 
-        private fun <T : Any> addTerms2(model: Ring<T>, a: List<MTerm<T>>, b: List<MTerm<T>>): Multinomial<T> {
+        private fun <T : Any> addTerms2(
+            model: Ring<T>,
+            termComparator: TermComparator,
+            a: List<MTerm<T>>,
+            b: List<MTerm<T>>
+        ): Multinomial<T> {
             val result = DataStructureUtil.mergeSorted2(
                 a, b,
-                comparing = { x, y -> x.compareTo(y) },
+                comparator = termComparator,
                 merger2 = { x, y -> add2Term(model, x, y) },
             )
-            return Multinomial(model, result)
+            return Multinomial(model, result, termComparator)
         }
 
-        private fun <T : Any> addTermsAll(model: Ring<T>, termsList: List<List<MTerm<T>>>): Multinomial<T> {
+        private fun <T : Any> addTermsAll(
+            model: Ring<T>,
+            termComparator: TermComparator,
+            termsList: List<List<MTerm<T>>>
+        ): Multinomial<T> {
             val tempList = ArrayList<T>(termsList.size)
             val resultTerms = DataStructureUtil.mergeSortedK(
                 termsList,
+                comparator = termComparator,
                 merger2 = { x, y -> add2Term(model, x, y) },
                 mergerMulti = { list -> addMultiTerm(model, list, tempList) }
             )
-            return Multinomial(model, resultTerms)
+            return Multinomial(model, resultTerms, termComparator)
         }
 
-        private fun <T : Any> multiplyTerms(model: Ring<T>, a: List<MTerm<T>>, b: List<MTerm<T>>): Multinomial<T> {
+//        private fun <T : Any> termMultiply(
+//            model: Ring<T>, termComparator: TermComparator,
+//            t1: MTerm<T>, t2: MTerm<T>
+//        ): MTerm<T> {
+//            val c = model.multiply(t1.c, t2.c)
+//            if (model.isZero(c)) {
+//                return MTerm(EMPTY_ARRAY, c)
+//            }
+//            val newChs = MTerm.multiplyChars(t1.chs, t2.chs, termComparator.chComparator)
+//            return MTerm(newChs, c)
+//        }
+
+        private fun <T : Any> multiplyTerms(
+            model: Ring<T>, tc: TermComparator, a: List<MTerm<T>>, b: List<MTerm<T>>
+        ): Multinomial<T> {
             if (a.isEmpty() || b.isEmpty()) {
-                return Multinomial(model, emptyList())
+                return Multinomial(model, emptyList(), tc)
             }
             val result = ArrayList<MTerm<T>>(a.size * b.size)
             for (ai in a) {
                 for (bj in b) {
                     val v = model.multiply(ai.c, bj.c)
                     if (model.isZero(v)) continue
-                    val newChs = MTerm.multiplyChars(ai.chs, bj.chs)
+                    val newChs = MTerm.multiplyChars(ai.chs, bj.chs, tc.chComparator)
                     result.add(MTerm(newChs, v))
                 }
             }
-            val resTerms = mergeTerms(model, result, estimatedSize = a.size + b.size)
-            return Multinomial(model, resTerms)
+            val resTerms = mergeTerms(model, tc, result, estimatedSize = a.size + b.size)
+            return Multinomial(model, resTerms, tc)
         }
 
-        private fun <T : Any>  termExactDiv(model : UnitRing<T>, t1 : MTerm<T>, t2 : MTerm<T>) : MTerm<T> {
+        private fun <T : Any> termExactDiv(model: UnitRing<T>, t1: MTerm<T>, t2: MTerm<T>): MTerm<T> {
             val c = model.exactDivide(t1.c, t2.c)
             val chs = t1.chsExactDivide(t2)
             return MTerm(chs, c)
         }
 
+        val DEFAULT_TERM_COMP: TermComparator = MTerm.getLexComparator()
+
         /**
          * Returns a zero multinomial.
          */
-        fun <T : Any> zero(model: Ring<T>): Multinomial<T> {
-            return Multinomial(model, emptyList())
+        fun <T : Any> zero(model: Ring<T>, comp: TermComparator = DEFAULT_TERM_COMP): Multinomial<T> {
+            return Multinomial(model, emptyList(), comp)
         }
 
         /**
          * Creates a multinomial from a list of terms.
          */
-        fun <T : Any> fromTerms(model: Ring<T>, terms: List<MTerm<T>>): Multinomial<T> {
-            val filteredTerms = terms.map { it.normalize() }.filter { !model.isZero(it.c) }
-            return Multinomial(model, mergeTerms(model, filteredTerms))
+        fun <T : Any> fromTerms(
+            model: Ring<T>,
+            terms: List<MTerm<T>>,
+            comp: TermComparator = DEFAULT_TERM_COMP
+        ): Multinomial<T> {
+            val filteredTerms = terms.map { it.normalized(comp.chComparator) }.filter { !model.isZero(it.c) }
+            return Multinomial(model, mergeTerms(model, comp, filteredTerms), comp)
         }
 
         /**
          * Creates a multinomial from a list of terms.
          */
-        fun <T : Any> of(mc: Ring<T>, vararg terms: Pair<T, String>): Multinomial<T> {
-            return fromTerms(mc, terms.map { MTerm.parse(it.first, it.second) })
+        fun <T : Any> of(
+            mc: Ring<T>,
+            vararg terms: Pair<T, String>,
+            comp: TermComparator = DEFAULT_TERM_COMP
+        ): Multinomial<T> {
+            return fromTerms(mc, terms.map { MTerm.parse(it.first, it.second) }, comp)
         }
 
         /**
          * Creates a constant multinomial.
          */
-        fun <T : Any> constant(model: Ring<T>, c: T): Multinomial<T> {
+        fun <T : Any> constant(model: Ring<T>, c: T, comp: TermComparator = DEFAULT_TERM_COMP): Multinomial<T> {
             return if (model.isZero(c)) {
-                zero(model)
+                zero(model, comp)
             } else {
-                Multinomial(model, listOf(MTerm(EMPTY_ARRAY, c))) // use a singleton array
+                Multinomial(model, listOf(MTerm(EMPTY_ARRAY, c)), comp) // use a singleton array
             }
         }
 
         /**
          * Creates a multinomial `1`.
          */
-        fun <T : Any> one(model: UnitRing<T>): Multinomial<T> {
-            return constant(model, model.one)
+        fun <T : Any> one(model: UnitRing<T>, comp: TermComparator = DEFAULT_TERM_COMP): Multinomial<T> {
+            return constant(model, model.one, comp)
         }
 
         /**
          * Creates a monomial from a term.
          */
-        fun <T : Any> monomial(model: Ring<T>, t: MTerm<T>): Multinomial<T> {
+        fun <T : Any> monomial(model: Ring<T>, t: MTerm<T>, comp: TermComparator = DEFAULT_TERM_COMP): Multinomial<T> {
             if (model.isZero(t.c)) {
                 return zero(model)
             }
-            return Multinomial(model, listOf(t.normalize()))
+            return Multinomial(model, listOf(t.normalized(comp.chComparator)), comp)
         }
 
         /**
          * Creates a monomial from a coefficient and a character.
          */
-        fun <T : Any> monomial(model: Ring<T>, c: T, ch: String, pow: Int = 1): Multinomial<T> {
+        fun <T : Any> monomial(
+            model: Ring<T>, c: T, ch: String, pow: Int = 1,
+            comp: TermComparator = DEFAULT_TERM_COMP
+        ): Multinomial<T> {
             if (model.isZero(c)) {
-                return zero(model)
+                return zero(model, comp)
             }
             if (pow == 0) {
-                return constant(model, c)
+                return constant(model, c, comp)
             }
-            return monomial(model, MTerm(arrayOf(ChPow(ch, pow)), c))
+            return monomial(model, MTerm(arrayOf(ChPow(ch, pow)), c), comp)
         }
 
         /**
@@ -610,10 +713,10 @@ internal constructor(
          *
          */
         fun <T : Any> of(
-            model: UnitRing<T>,
+            model: UnitRing<T>, comp: TermComparator = DEFAULT_TERM_COMP,
             builderAction: MultinomialBuilderScope<T>.() -> Multinomial<T>
         ): Multinomial<T> {
-            return MultinomialBuilderScope(model).builderAction()
+            return MultinomialBuilderScope(model, comp).builderAction()
         }
 
         /**
@@ -630,9 +733,12 @@ internal constructor(
             when (terms.size) {
                 0 -> return zero(model)
                 1 -> return terms[0]
-                2 -> return addTerms2(model, terms[0].terms, terms[1].terms)
+                2 -> terms[0] + terms[1]
+//                2 -> return addTerms2(model, terms[0].terms, terms[1].terms)
             }
-            return addTermsAll(model, terms.map { it.terms })
+            val tc = terms[0].termComparator
+            require(terms.all { it.termComparator == tc }) { "The term comparators are different." }
+            return addTermsAll(model, tc, terms.map { it.terms })
         }
 
     }
@@ -696,22 +802,22 @@ open class MultinomialOnField<T : Any>(model: Field<T>) : MultinomialOnUnitRing<
 }
 
 
-class MultinomialBuilderScope<T : Any>(val model: UnitRing<T>) {
+class MultinomialBuilderScope<T : Any>(val model: UnitRing<T>, val tc: TermComparator) {
 
-    val x = Multinomial.monomial(model, model.one, "x")
-    val y = Multinomial.monomial(model, model.one, "y")
-    val z = Multinomial.monomial(model, model.one, "z")
-    val w = Multinomial.monomial(model, model.one, "w")
-    val a = Multinomial.monomial(model, model.one, "a")
-    val b = Multinomial.monomial(model, model.one, "b")
+    val x = Multinomial.monomial(model, model.one, "x", 1, tc)
+    val y = Multinomial.monomial(model, model.one, "y", 1, tc)
+    val z = Multinomial.monomial(model, model.one, "z", 1, tc)
+    val w = Multinomial.monomial(model, model.one, "w", 1, tc)
+    val a = Multinomial.monomial(model, model.one, "a", 1, tc)
+    val b = Multinomial.monomial(model, model.one, "b", 1, tc)
 
-    val one = Multinomial.constant(model, model.one)
-    val zero = Multinomial.zero(model)
+    val one = Multinomial.constant(model, model.one, tc)
+    val zero = Multinomial.zero(model, tc)
 
 
     operator fun T.times(chs: String): Multinomial<T> {
         val term = MTerm.parse(this, chs)
-        return Multinomial(model, listOf(term))
+        return Multinomial(model, listOf(term), tc)
     }
 
     operator fun T.times(m: Multinomial<T>): Multinomial<T> {

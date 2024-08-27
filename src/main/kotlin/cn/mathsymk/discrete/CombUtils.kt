@@ -270,7 +270,7 @@ object CombUtils {
             return combination(n, t)
         }
         return try {
-            permutation(n, t) / factorial(m)
+            permutation(n, m) / factorial(m)
         } catch (ae: ArithmeticException) {
 //            combinationDeg(n, m, t)
             TODO()

@@ -1,6 +1,7 @@
 package cn.mathsymk.util
 
 import java.util.*
+import kotlin.Comparator
 import kotlin.collections.ArrayList
 
 object DataStructureUtil {
@@ -10,13 +11,13 @@ object DataStructureUtil {
      * Given a list of unordered terms, sort the terms and merge the terms with the same index using the `comparing` function.
      */
     inline fun <T> mergeRawList(
-        rawList: List<T>, crossinline comparing: (T, T) -> Int,
+        rawList: List<T>, comparator: Comparator<in T>,
         crossinline merger2: (T, T) -> T?,
         crossinline mergerMulti: (List<T>) -> T?,
         estimatedSize: Int = rawList.size
     ): List<T> {
-        val sortedTerms = rawList.sortedWith { a, b -> comparing(a, b) }
-        return mergeSorted1(sortedTerms, comparing, merger2, mergerMulti, estimatedSize)
+        val sortedTerms = rawList.sortedWith(comparator)
+        return mergeSorted1(sortedTerms, comparator, merger2, mergerMulti, estimatedSize)
     }
 
     /**
@@ -24,7 +25,7 @@ object DataStructureUtil {
      */
     inline fun <T> mergeSorted1(
         sortedList: List<T>,
-        crossinline comparing: (T, T) -> Int,
+        comparator: Comparator<in T>,
         crossinline merger2: (T, T) -> T?,
         crossinline mergerMulti: (List<T>) -> T?,
         estimatedSize: Int = sortedList.size
@@ -37,7 +38,7 @@ object DataStructureUtil {
             val term = sortedList[i]
             // find next terms with the same index
             var next = i + 1
-            while (next < sortedList.size && comparing(term, sortedList[next]) == 0) {
+            while (next < sortedList.size && comparator.compare(term, sortedList[next]) == 0) {
                 next++
             }
             if (next == i + 1) {
@@ -64,7 +65,7 @@ object DataStructureUtil {
     inline fun <T> mergeSorted2(
         list1: List<T>,
         list2: List<T>,
-        crossinline comparing: (T, T) -> Int,
+        comparator: Comparator<in T>,
         crossinline merger2: (T, T) -> T?
     ): List<T> {
         val result = ArrayList<T>(list1.size + list2.size)
@@ -73,7 +74,7 @@ object DataStructureUtil {
         while (i < list1.size && j < list2.size) {
             val ai = list1[i]
             val bj = list2[j]
-            val c = comparing(ai, bj)
+            val c = comparator.compare(ai, bj)
             if (c == 0) {
                 merger2(ai, bj)?.let { result.add(it) }
                 i++
@@ -97,10 +98,10 @@ object DataStructureUtil {
         return result
     }
 
-    inline fun <reified T> mergeSorted2(
+    inline fun <reified T> mergeSorted2Arr(
         list1: Array<T>,
         list2: Array<T>,
-        crossinline comparing: (T, T) -> Int,
+        crossinline compFunc: (T, T) -> Int,
         crossinline merger2: (T, T) -> T?
     ): Array<T> {
         val result = arrayOfNulls<T>(list1.size + list2.size)
@@ -110,7 +111,7 @@ object DataStructureUtil {
         while (i < list1.size && j < list2.size) {
             val ai = list1[i]
             val bj = list2[j]
-            val c = comparing(ai, bj)
+            val c = compFunc(ai, bj)
             if (c == 0) {
                 merger2(ai, bj)?.let { result[pos++] = it }
                 i++
@@ -135,18 +136,14 @@ object DataStructureUtil {
         return result2 as Array<T>
     }
 
-    data class MergeEntry<T : Comparable<T>>(val v: T, val arrayIndex: Int, val elementIndex: Int) :
-        Comparable<MergeEntry<T>> {
-        override fun compareTo(other: MergeEntry<T>): Int {
-            return v.compareTo(other.v)
-        }
-    }
+    data class MergeEntry<T>(val v: T, val arrayIndex: Int, val elementIndex: Int)
 
     /**
      * Merge multiple sorted lists.
      */
-    inline fun <T : Comparable<T>> mergeSortedK(
+    inline fun <T> mergeSortedK(
         lists: List<List<T>>,
+        comparator: Comparator<in T>,
         crossinline merger2: (T, T) -> T?,
         crossinline mergerMulti: (List<T>) -> T?,
     ): List<T> {
@@ -157,7 +154,7 @@ object DataStructureUtil {
 
         val result = ArrayList<T>(lists.sumOf { it.size })
 
-        val queue = PriorityQueue<MergeEntry<T>>(lists.size)
+        val queue = PriorityQueue<MergeEntry<T>>(lists.size, compareBy(comparator) { it.v })
         for (i in lists.indices) {
             if (lists[i].isNotEmpty()) {
                 queue.add(MergeEntry(lists[i][0], i, 0))
@@ -175,10 +172,7 @@ object DataStructureUtil {
             }
         }
         return mergeSorted1(
-            result,
-            { a, b -> a.compareTo(b) },
-            merger2,
-            mergerMulti,
+            result, comparator, merger2, mergerMulti,
             estimatedSize = result.size / lists.size + 1 // the mean size of each list
         )
     }

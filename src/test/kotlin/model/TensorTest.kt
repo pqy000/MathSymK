@@ -26,7 +26,7 @@ class TensorTest {
 //    val v = Tensor.zeros(mc, *shape)
 //    val w = Tensor.ones(mc, *shape)
         val u = Tensor.of(shape, mc) { it.sum() }
-        println(u.slice(null, 0 downTo -1 step 2).joinToString())
+//        println(u.slice(null, 0 downTo -1 step 2).joinToString())
         assertEquals(2, u.slice(null, 0 downTo -1 step 2).size)
     }
 

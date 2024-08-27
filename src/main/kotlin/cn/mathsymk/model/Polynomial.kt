@@ -9,6 +9,7 @@ import cn.mathsymk.model.struct.times
 import cn.mathsymk.structure.*
 import cn.mathsymk.util.DataStructureUtil
 import cn.mathsymk.util.ModelPatterns
+import java.util.Comparator
 import java.util.function.Function
 
 /**
@@ -627,7 +628,7 @@ class Polynomial<T : Any> internal constructor(
             val tempList = ArrayList<T>(maxMergeSizeEst)
             return DataStructureUtil.mergeRawList(
                 rawTerms,
-                comparing = { x, y -> x.pow - y.pow },
+                comparator = Comparator.naturalOrder(),
                 merger2 = { x, y -> add2Term(model, x, y) },
                 mergerMulti = { list -> addMultiTerm(model, list, tempList) },
                 estimatedSize = estimatedSize
@@ -637,7 +638,7 @@ class Polynomial<T : Any> internal constructor(
         private fun <T : Any> addTerms2(model: Ring<T>, a: List<PTerm<T>>, b: List<PTerm<T>>): Polynomial<T> {
             val result = DataStructureUtil.mergeSorted2(
                 a, b,
-                comparing = { x, y -> x.pow - y.pow },
+                comparator = Comparator.naturalOrder(),
                 merger2 = { x, y -> add2Term(model, x, y) },
             )
             return Polynomial(model, result)
@@ -647,6 +648,7 @@ class Polynomial<T : Any> internal constructor(
             val tempList = ArrayList<T>(termsList.size)
             val resultTerms = DataStructureUtil.mergeSortedK(
                 termsList,
+                comparator = Comparator.naturalOrder(),
                 merger2 = { x, y -> add2Term(model, x, y) },
                 mergerMulti = { list -> addMultiTerm(model, list, tempList) }
             )
