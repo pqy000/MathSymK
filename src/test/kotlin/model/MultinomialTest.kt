@@ -3,7 +3,9 @@ package model
 import TestUtils.assertValueEquals
 import cn.mathsymk.model.ChPow
 import cn.mathsymk.model.MTerm
+import cn.mathsymk.model.Multinomial
 import cn.mathsymk.model.Multinomial.Companion.of
+import cn.mathsymk.model.Multinomial.Companion.with
 import cn.mathsymk.model.NumberModels
 import kotlin.test.*
 
@@ -12,10 +14,10 @@ class MultinomialTest {
 
     @Test
     fun additionOfMultinomials() {
-        val m1 = of(model) { x + 2 * y }
-        val m2 = of(model) { 3 * x + 4 * z }
+        val m1 = with(model) { x + 2 * y }
+        val m2 = with(model) { 3 * x + 4 * z }
         val result = m1 + m2
-        val expected = of(model) { 4 * x + 4 * z + 2 * y }
+        val expected = with(model) { 4 * x + 4 * z + 2 * y }
         assertEquals(expected, result)
 
     }
@@ -117,25 +119,48 @@ class MultinomialTest {
 
     @Test
     fun divideAndRemainderComprehensive() {
-        run{
-            val m1 = of(model) { 3 * "x^2y" + 4 * "xy^3" + 3 * "x" } // 3x^2y + 4xy^3 + 3x
-            val p = of(model) { 2 * "xy" + 1 * "y" } // 2xy + y
-            val m3 = of(model) { 3 * "x" + 4 * "y" }
+        with(model) {
+            val m1 = 3 * "x^2y" + 4 * "xy^3" + 3 * "x"  // 3x^2y + 4xy^3 + 3x
+            val p = 2 * "xy" + 1 * "y"  // 2xy + y
+            val m3 = 3 * "x" + 4 * "y"
             val product = m1 * p //  3xy + 6x^2y + 3x^2y^2 + 4xy^4 + 6x^3y^2 + 8x^2y^4
             val f = product + m3 //
             val (q, r) = f.divideAndRemainder(p)
             assertValueEquals(f, q * p + r)
-            assertTrue(f.leadTermComp(q*p) >= 0)
+            assertTrue(f.leadTermCompare(q * p) >= 0)
         }
 
-        run{
-            val f = of(model) { 1 * "x^2y" + 1 * "xy^2" + 1 * "y^2" } // x^2 + xy^2 + y^2
-            val p1 = of(model) { 1 * "xy" - 1 * "" } // x + y
-            val p2 = of(model) { 1 * "y^2" - 1 * "" } // y^2 - 1
-            val (qs,r) = f.divideAndRemainder(listOf(p1, p2))
+        with(model) {
+            val f = "x^2y".m + "xy^2".m + "y^2".m
+            val p1 = "xy".m - 1.m
+            val p2 = "y^2".m - 1.m
+            val (qs, r) = f.divideAndRemainder(listOf(p1, p2))
             assertValueEquals(f, qs[0] * p1 + qs[1] * p2 + r)
-            assertTrue(f.leadTermComp(qs[0]*p1) >= 0)
-            assertTrue(f.leadTermComp(qs[1]*p1) >= 0)
+            assertTrue(f.leadTermCompare(qs[0] * p1) >= 0)
+            assertTrue(f.leadTermCompare(qs[1] * p1) >= 0)
+        }
+    }
+
+
+    @Test
+    fun testOrder() {
+        val tc0 = Multinomial.DEFAULT_TERM_COMPARATOR
+        with(model, tc0){
+            // x < y < z, so the power of x is compared first
+            val f = "xy".m + "x^2".m + "y^2".m + "z".m
+            assertEquals("x^2".m.leadTerm, f.leadTerm)
+        }
+        val tc1 = Multinomial.getTermComparatorLexGraded(Comparator.reverseOrder())
+        with(model, tc1) {
+            // x > y > z, the power of z is compared first
+            val f = "xy".m + "x^2".m + "y^2".m + "z".m
+            assertEquals(z.leadTerm, f.leadTerm)
+        }
+        run{
+            val f1 = with(model, tc0){ "xy".m + "x^2".m + "y^2".m + "z".m }
+            val f2 = with(model, tc1){ "xy".m + "x^2".m + "y^2".m + "z".m }
+            assertNotEquals(f1,f2) // different order
+            assertValueEquals(f1,f2) // different order, but valueEquals == true
         }
     }
 
@@ -145,24 +170,26 @@ fun main() {
     val model = NumberModels.intModP(97, cached = true)
     val ints = NumberModels.intAsIntegers()
     run {
-        val m1 = of(model) { 3 * "x^2y" + 4 * "xy^3" + 3 * "x" } // 3x^2y + 4xy^3 + 3x
-        val m2 = of(model) { 2 * "xy" + 1 * "y" } // 2xy + y
-        val m3 = of(model) { 3 * "x" + 4 * "y" }
+        val m1 =
+            with(model) { 3 * "x^2y" + 4 * "xy^3" + 3 * "x" } // 3x^2y + 4xy^3 + 3x
+        val m2 = with(model) { 2 * "xy" + 1 * "y" } // 2xy + y
+        val m3 = with(model) { 3 * "x" + 4 * "y" }
         val product = m1 * m2 //  3xy + 6x^2y + 3x^2y^2 + 4xy^4 + 6x^3y^2 + 8x^2y^4
         val m4 = product + m3 //
         val (q, r) = m4.divideAndRemainder(m2)
         assertEquals(m1, q)
-        assertEquals(of(model) { 3 * "x" + 4 * "y" }, r)
+        assertEquals(with(model) { 3 * "x" + 4 * "y" }, r)
     }
     run {
-        val m1 = of(ints) { 1 * "x^2y" + 1 * "xy^2" + 1 * "y^2" } // x^2 + xy^2 + y^2
-        val m2 = of(ints) { 1 * "xy" - 1 * "" } // x + y
-        val m3 = of(ints) { 1 * "y^2" - 1 * "" } // y^2 - 1
+        val m1 =
+            with(ints) { 1 * "x^2y" + 1 * "xy^2" + 1 * "y^2" } // x^2 + xy^2 + y^2
+        val m2 = with(ints) { 1 * "xy" - 1 * "" } // x + y
+        val m3 = with(ints) { 1 * "y^2" - 1 * "" } // y^2 - 1
         println(m1)
         println(m2)
         println(m3)
         println()
-        val (qs,r) = m1.divideAndRemainder(listOf(m2, m3))
+        val (qs, r) = m1.divideAndRemainder(listOf(m2, m3))
         println(qs)
         println(r)
     }
