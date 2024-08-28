@@ -805,6 +805,7 @@ internal constructor(
 
         fun <T:Any> asRing(model : Ring<T>) : Ring<Multinomial<T>> = TODO()
 
+        fun <T:Any> asUFD(model : Field<T>) : UniqueFactorizationDomain<Multinomial<T>> = TODO()
 
 
     }
