@@ -13,23 +13,23 @@ interface OrderPredicate<T> : EqualPredicate<T>, Comparator<T> {
 
 
 /**
- * Describes an abelian group with a order relation denoted by `<, <=, >, >=`.
+ * Describes an Abelian group with an order.
  *
- * The order must be consistent with addition, that is:
+ * The order is consistent with addition, that is:
+ * * `x < y`    implies    `x + c < y + c`,  for any `c`.
  *
- *     x < y    implies    x + a < y + a, for any a
  *
  *
  */
 interface OrderedAddGroupCal<T : Any> : AddGroup<T>, OrderPredicate<T> {
 
     /**
-     * Compares two elements.
+     * Compares two elements, returning a negative integer, zero, or a positive integer as the first argument is less than, equal to, or greater than the second.
      */
     override fun compare(o1: T, o2: T): Int
 
     /**
-     * Returns the absolute value `|x|` of [x]`.
+     * Returns the absolute value `|x|` of [x].
      * If `x >= 0` then `x` is returned, otherwise `-x` is returned.
      *
      * The triangle inequality is satisfied:

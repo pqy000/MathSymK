@@ -527,6 +527,7 @@ data class Fraction internal constructor(
         @JvmField
         val HALF = Fraction(1, 2)
 
+
         private fun gcdReduce(num: Long, den: Long): LongArray {
             val re = LongArray(2)
             val g = NTFunctions.gcd(num, den)

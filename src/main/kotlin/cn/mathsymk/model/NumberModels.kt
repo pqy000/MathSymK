@@ -256,7 +256,7 @@ object NumberModels {
 
     object BigIntegerAsIntegers : Integers<BigInteger> {
 
-        override val numberClass: Class<*>
+        override val numberClass: Class<BigInteger>
             get() = BigInteger::class.java
 
         override fun contains(x: BigInteger): Boolean {
@@ -442,7 +442,7 @@ object NumberModels {
             return Math.pow(x, n.toDouble())
         }
 
-        override fun squareRoot(x: Double): Double {
+        override fun sqrt(x: Double): Double {
             return kotlin.math.sqrt(x)
         }
 
@@ -559,7 +559,7 @@ object NumberModels {
             return x.pow(n.toInt())
         }
 
-        override fun squareRoot(x: BigDecimal): BigDecimal {
+        override fun sqrt(x: BigDecimal): BigDecimal {
             return x.sqrt(mc)
         }
 
