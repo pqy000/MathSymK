@@ -236,13 +236,20 @@ internal constructor(val nume: T, val deno: T, model: Ring<T>) :
 //        }
 
         /**
-         * Returns
+         * Returns the fraction field of the given ring.
          */
-        fun <T : Any> asField(model: IntegralDomain<T>): Field<RingFraction<T>> {
-            return NumberModels.asField(zero(model), one(model), null)
+        fun <T : Any> asField(model: IntegralDomain<T>): RingFractionAsField<T> {
+            return RingFractionAsField(model)
         }
 
     }
 }
 
-//class RingFractionAsField<T : Any>(model: Ring<T>)
+class RingFractionAsField<T : Any>(val model: IntegralDomain<T>) : AsField<RingFraction<T>>(RingFraction.zero(model),RingFraction.one(model)){
+
+    /**
+     * The inclusion function from the ring to the field.
+     */
+    val T.f : RingFraction<T>
+        get() = RingFraction.of(this, model)
+}

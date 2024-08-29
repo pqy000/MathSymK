@@ -61,6 +61,8 @@ open class AsField<T : FieldModel<T>>(zero: T, one: T, override val characterist
 }
 
 
+typealias BigFraction = RingFraction<BigInteger>
+
 object NumberModels {
     /**
      * Gets a group calculator on the GroupNumberModel.
@@ -630,5 +632,16 @@ object NumberModels {
         }
     }
 
+
+    fun fractions() : Fraction.FractionAsQuotient {
+        return Fraction.FractionAsQuotient
+    }
+
+    /**
+     * Gets the field of fractions of integers.
+     */
+    fun fractionBig() : Field<BigFraction>{
+        return RingFraction.asField(BigIntegerAsIntegers)
+    }
 
 }

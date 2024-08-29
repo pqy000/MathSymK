@@ -1,12 +1,9 @@
 package model
 
 import TestUtils.assertValueEquals
-import cn.mathsymk.model.ChPow
-import cn.mathsymk.model.MTerm
-import cn.mathsymk.model.Multinomial
+import cn.mathsymk.model.*
 import cn.mathsymk.model.Multinomial.Companion.of
 import cn.mathsymk.model.Multinomial.Companion.with
-import cn.mathsymk.model.NumberModels
 import kotlin.test.*
 
 class MultinomialTest {
@@ -64,25 +61,26 @@ class MultinomialTest {
 
     @Test
     fun parseMultinomial() {
-        val term = MTerm.parse(3, "x^2y")
-        val expected = MTerm(arrayOf(ChPow("x", 2), ChPow("y", 1)), 3)
+        val term = TermChs.parseChar("x^2y")
+        val expected = TermChs(arrayOf(ChPow("x", 2), ChPow("y", 1)))
         assertEquals(expected, term)
     }
 
     @Test
     fun testTermOrder() {
         // chsStrictSmallerThan
-        val t1 = MTerm.parse(3, "x^2y")
-        val t2 = MTerm.parse(3, "x^2z")
-        val t3 = MTerm.parse(3, "x^3")
-        val t4 = MTerm.parse(3, "x^2")
-        assertTrue(t2.chsContains(t4))
-        assertTrue(t3.chsContains(t4))
-        assertTrue(t1.chsContains(t4))
-        val t5 = MTerm.parse(3, "x^2yz")
-        assertTrue(t5.chsContains(t1))
-        assertTrue(t5.chsContains(t2))
-        assertFalse(t2.chsContains(t1))
+        val chComp = Comparator.naturalOrder<String>()
+        val t1 = TermChs.parseChar( "x^2y")
+        val t2 = TermChs.parseChar( "x^2z")
+        val t3 = TermChs.parseChar( "x^3")
+        val t4 = TermChs.parseChar( "x^2")
+        assertTrue(t2.contains(t4,chComp))
+        assertTrue(t3.contains(t4,chComp))
+        assertTrue(t1.contains(t4,chComp))
+        val t5 = TermChs.parseChar( "x^2yz")
+        assertTrue(t5.contains(t1,chComp))
+        assertTrue(t5.contains(t2,chComp))
+        assertFalse(t2.contains(t1,chComp))
 
     }
 
@@ -135,6 +133,7 @@ class MultinomialTest {
             val p1 = "xy".m - 1.m
             val p2 = "y^2".m - 1.m
             val (qs, r) = f.divideAndRemainder(listOf(p1, p2))
+            println("$qs, $r")
             assertValueEquals(f, qs[0] * p1 + qs[1] * p2 + r)
             assertTrue(f.leadTermCompare(qs[0] * p1) >= 0)
             assertTrue(f.leadTermCompare(qs[1] * p1) >= 0)
@@ -144,8 +143,8 @@ class MultinomialTest {
 
     @Test
     fun testOrder() {
-        val tc0 = Multinomial.DEFAULT_TERM_COMPARATOR
-        with(model, tc0){
+        val tc0 = Multinomial.DEFAULT_MONOMIAL_ORDER
+        with(model, tc0) {
             // x < y < z, so the power of x is compared first
             val f = "xy".m + "x^2".m + "y^2".m + "z".m
             assertEquals("x^2".m.leadTerm, f.leadTerm)
@@ -156,11 +155,11 @@ class MultinomialTest {
             val f = "xy".m + "x^2".m + "y^2".m + "z".m
             assertEquals(z.leadTerm, f.leadTerm)
         }
-        run{
-            val f1 = with(model, tc0){ "xy".m + "x^2".m + "y^2".m + "z".m }
-            val f2 = with(model, tc1){ "xy".m + "x^2".m + "y^2".m + "z".m }
-            assertNotEquals(f1,f2) // different order
-            assertValueEquals(f1,f2) // different order, but valueEquals == true
+        run {
+            val f1 = with(model, tc0) { "xy".m + "x^2".m + "y^2".m + "z".m }
+            val f2 = with(model, tc1) { "xy".m + "x^2".m + "y^2".m + "z".m }
+            assertNotEquals(f1, f2) // different order
+            assertValueEquals(f1, f2) // different order, but valueEquals == true
         }
     }
 
