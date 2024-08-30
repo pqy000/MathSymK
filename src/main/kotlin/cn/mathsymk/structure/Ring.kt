@@ -39,6 +39,13 @@ interface UnitRing<T : Any> : Ring<T>, MulMonoid<T> {
     fun exactDivide(a: T, b: T): T {
         throw UnsupportedOperationException()
     }
+
+    /**
+     * Exact division of two numbers.
+     */
+    operator fun T.div(y: T): T {
+        return exactDivide(this, y)
+    }
 }
 
 interface CommutativeRing<T : Any> : Ring<T>{
@@ -78,5 +85,9 @@ interface DivisionRing<T : Any> : UnitRing<T>, MulGroup<T> {
             throw ArithmeticException("Divided by zero")
         }
         return divide(x, of(n))
+    }
+
+    override fun T.div(y: T): T {
+        return divide(this, y)
     }
 }

@@ -231,10 +231,9 @@ interface Reals<T : Any> : Quotients<T>, CompleteField<T> {
      *  * <tt>Pi, [STR_PI]</tt> :the ratio of the circumference of a circle to its
      * diameter.  See: [Math.PI]
      *  * <tt>e, [STR_E]</tt> :the base of the natural logarithms. See: [Math.E]
-     *  * <tt>i, [STR_I]</tt> :the square root of `-1`.
      *
      *
-     * @param name the name of the constant value,case insensitive
+     * @param name the name of the constant value, case insensitive
      * @return a number that represents the constant value.
      * @throws UnsupportedOperationException if this operation can not be done. (optional)
      */

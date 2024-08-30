@@ -43,10 +43,7 @@ interface UniqueFactorizationDomain<T : Any> : IntegralDomain<T> {
     fun isExactDivide(a: T, b: T): Boolean
 
 
-    /**
-     * Exact division of two numbers.
-     */
-    operator fun T.div(y: T): T = exactDivide(this, y)
+
 }
 
 

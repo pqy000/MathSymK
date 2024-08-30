@@ -71,9 +71,5 @@ interface MathObject<T : Any, S : EqualPredicate<T>> : CalculatorHolder<T, S>, I
 
 
 abstract class AbstractMathObject<T : Any, S : EqualPredicate<T>>(override val model: S) : MathObject<T, S> {
-//    override fun toString(): String {
-//        return toString(NumberFormatter.defaultFormatter())
-//    }
-
 
 }
