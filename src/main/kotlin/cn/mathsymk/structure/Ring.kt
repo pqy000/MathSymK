@@ -5,10 +5,24 @@ package cn.mathsymk.structure
  */
 interface Ring<T : Any> : AddGroup<T>, MulSemigroup<T> {
 
-
+    /**
+     * Zero, the additive identity.
+     *
+     * @return `0`
+     */
+    override val zero: T
 }
 
 interface UnitRing<T : Any> : Ring<T>, MulMonoid<T> {
+
+
+
+    /**
+     * One, the multiplicative identity.
+     *
+     * @return `1`
+     */
+    override val one: T
 
     /**
      * Determines whether the given element is a unit, namely invertible with respect to multiplication.
@@ -21,8 +35,8 @@ interface UnitRing<T : Any> : Ring<T>, MulMonoid<T> {
         throw UnsupportedOperationException()
     }
 
-    override val numberClass: Class<*>
-        get() = super<Ring>.numberClass
+    override val numberClass: Class<T>
+        get() = zero.javaClass
 
     fun of(n: Long): T {
         return multiplyLong(one, n)

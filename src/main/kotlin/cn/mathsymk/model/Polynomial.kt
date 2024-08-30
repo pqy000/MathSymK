@@ -987,6 +987,10 @@ open class PolyOnRing<T : Any>(model: Ring<T>) : Ring<Polynomial<T>>, Module<T, 
     @Suppress("CanBePrimaryConstructorProperty")
     open val model: Ring<T> = model
 
+
+
+
+
     final override val zero: Polynomial<T> = Polynomial.zero(model)
 
     override val scalars: Ring<T>
@@ -1021,9 +1025,6 @@ open class PolyOnRing<T : Any>(model: Ring<T>) : Ring<Polynomial<T>>, Module<T, 
         return x * y
     }
 
-    override val numberClass: Class<*>
-        get() = Polynomial::class.java
-
     override fun isEqual(x: Polynomial<T>, y: Polynomial<T>): Boolean {
         return x.valueEquals(y)
     }
@@ -1051,8 +1052,6 @@ open class PolyOnRing<T : Any>(model: Ring<T>) : Ring<Polynomial<T>>, Module<T, 
 
 open class PolyOnUnitRing<T : Any>(model: UnitRing<T>) : PolyOnRing<T>(model), UnitRing<Polynomial<T>> {
 
-    override val numberClass: Class<*>
-        get() = Polynomial::class.java
     override val one: Polynomial<T> = Polynomial.one(model)
 
     val x: Polynomial<T>
@@ -1061,8 +1060,6 @@ open class PolyOnUnitRing<T : Any>(model: UnitRing<T>) : PolyOnRing<T>(model), U
 
 open class PolyOnField<T : Any>(override val model: Field<T>) : PolyOnUnitRing<T>(model),
     EuclideanDomain<Polynomial<T>>, Algebra<T, Polynomial<T>> {
-    override val numberClass: Class<*>
-        get() = Polynomial::class.java
 
     override val scalars: Field<T>
         get() = model

@@ -13,7 +13,7 @@ open class IntModN(val n: Int) : OrderedRing<Int>, CommutativeRing<Int>, UnitRin
         require(n >= 2) { "n must be at least 2, given $n" }
     }
 
-    override val numberClass: Class<*>
+    override val numberClass: Class<Int>
         get() = Int::class.java
 
     override fun contains(x: Int): Boolean {
