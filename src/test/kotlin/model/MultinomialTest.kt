@@ -149,7 +149,7 @@ class MultinomialTest {
             val f = "xy".m + "x^2".m + "y^2".m + "z".m
             assertEquals("x^2".m.leadTerm, f.leadTerm)
         }
-        val tc1 = Multinomial.getTermComparatorLexGraded(Comparator.reverseOrder())
+        val tc1 = Multinomial.getMonomialOrderLexGraded(Comparator.reverseOrder())
         with(model, tc1) {
             // x > y > z, the power of z is compared first
             val f = "xy".m + "x^2".m + "y^2".m + "z".m

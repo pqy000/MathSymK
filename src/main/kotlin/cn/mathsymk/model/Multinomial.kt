@@ -273,7 +273,7 @@ internal constructor(
      * For example, with the default term order, the leading term of `1 + x + z + x^2 + x^2 z` is `x^2 z`.
      *
      * @throws NoSuchElementException if the multinomial is zero.
-     * @see termComparator
+     * @see termOrder
      */
     val leadTerm: MTerm<T>
         get() = terms.last()
@@ -461,7 +461,7 @@ internal constructor(
         }
 
         /**
-         * The default term comparator.
+         * The default monomial order.
          */
         val DEFAULT_MONOMIAL_ORDER: MonomialOrder = TermChs.getLexComparator()
 
@@ -575,11 +575,11 @@ internal constructor(
             TODO()
         }
 
-        fun getTermComparatorLex(chComparator: Comparator<String>): MonomialOrder {
+        fun getMonomialOrderLex(chComparator: Comparator<String>): MonomialOrder {
             return TermChs.getLexComparator(chComparator)
         }
 
-        fun getTermComparatorLexGraded(chComparator: Comparator<String>): MonomialOrder {
+        fun getMonomialOrderLexGraded(chComparator: Comparator<String>): MonomialOrder {
             return TermChs.getGradedLexComparator(chComparator)
         }
 
@@ -631,8 +631,6 @@ open class MultinomialOnRing<T : Any>(model: Ring<T>) : Ring<Multinomial<T>> {
         return x * y
     }
 
-    override val numberClass: Class<*>
-        get() = Multinomial::class.java
 
     override fun isEqual(x: Multinomial<T>, y: Multinomial<T>): Boolean {
         return x.valueEquals(y)
@@ -661,8 +659,6 @@ open class MultinomialOnRing<T : Any>(model: Ring<T>) : Ring<Multinomial<T>> {
 
 open class MultinomialOnUnitRing<T : Any>(model: UnitRing<T>) : MultinomialOnRing<T>(model), UnitRing<Multinomial<T>> {
     override val one: Multinomial<T> = Multinomial.constant(model.one, model)
-    override val numberClass: Class<*>
-        get() = Multinomial::class.java
 }
 
 open class MultinomialOnField<T : Any>(model: Field<T>) : MultinomialOnUnitRing<T>(model),

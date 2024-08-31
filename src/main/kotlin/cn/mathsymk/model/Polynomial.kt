@@ -1,7 +1,7 @@
 package cn.mathsymk.model
 
-import cn.mathsymk.AbstractMathObject
 import cn.mathsymk.IMathObject
+import cn.mathsymk.MathObject
 import cn.mathsymk.function.MathOperator
 import cn.mathsymk.model.struct.AlgebraModel
 import cn.mathsymk.model.struct.EuclidDomainModel
@@ -15,6 +15,7 @@ import java.util.function.Function
 /**
  * Describes a term of a polynomial with a power and a value.
  */
+@JvmRecord
 data class PTerm<T : Any>(val pow: Int, val value: T) : Comparable<PTerm<T>> {
     override fun toString(): String {
         return "($pow, $value)"
@@ -28,14 +29,16 @@ data class PTerm<T : Any>(val pow: Int, val value: T) : Comparable<PTerm<T>> {
 /**
  * Represents a polynomial with coefficients of type [T].
  */
-class Polynomial<T : Any> internal constructor(
-    model: Ring<T>,
+@JvmRecord
+data class Polynomial<T : Any> internal constructor(
+    override val model: Ring<T>,
     /**
      * A list of terms of this polynomial.
      */
     val terms: List<PTerm<T>>
-) : AbstractMathObject<T, Ring<T>>(model),
-    AlgebraModel<T, Polynomial<T>>, EuclidDomainModel<Polynomial<T>>, MathOperator<T> {
+) : MathObject<T, Ring<T>>,
+    AlgebraModel<T, Polynomial<T>>, EuclidDomainModel<Polynomial<T>>,
+    MathOperator<T> {
 
     /**
      * The degree of this polynomial, which is the highest power of `x` in this polynomial.
@@ -137,25 +140,6 @@ class Polynomial<T : Any> internal constructor(
                 "$value*x^$index"
             }
         }
-    }
-
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other !is Polynomial<*>) return false
-
-        if (model != other.model) return false
-        if (terms != other.terms) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int {
-        var result = model.hashCode()
-        for (term in terms) {
-            result = 31 * result + term.hashCode()
-        }
-        return result
     }
 
     override fun valueEquals(obj: IMathObject<T>): Boolean {
@@ -986,9 +970,6 @@ open class PolyOnRing<T : Any>(model: Ring<T>) : Ring<Polynomial<T>>, Module<T, 
 
     @Suppress("CanBePrimaryConstructorProperty")
     open val model: Ring<T> = model
-
-
-
 
 
     final override val zero: Polynomial<T> = Polynomial.zero(model)
