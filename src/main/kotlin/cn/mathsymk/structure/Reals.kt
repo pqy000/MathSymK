@@ -7,7 +7,7 @@ package cn.mathsymk.structure
  *
  * @author Ezrnest
  */
-interface Reals<T : Any> : OrderedField<T>, Field<T>,SupportElementaryFunctions<T> {
+interface Reals<T : Any> : OrderedField<T>, Field<T>,ProvideElementaryFunctions<T> {
     // Re-created at 2024/8/11 18:54 by Ezrnest
 
     /**
@@ -15,7 +15,6 @@ interface Reals<T : Any> : OrderedField<T>, Field<T>,SupportElementaryFunctions<
      */
     override val characteristic: Long
         get() = 0
-
 
 
 
@@ -125,5 +124,7 @@ interface Reals<T : Any> : OrderedField<T>, Field<T>,SupportElementaryFunctions<
         return arcsin(divide(x, sqrt(one + x*x)))
     }
 
-
+    override fun arctan2(y: T, x: T): T {
+        return arctan(divide(y, x))
+    }
 }

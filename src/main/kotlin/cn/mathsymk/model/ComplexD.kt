@@ -11,30 +11,23 @@ import kotlin.math.pow
  * @author lyc
  */
 @JvmRecord
-data class ComplexD(val a: Double, val b: Double) : FieldModel<ComplexD> {
+data class ComplexD(val re: Double, val im: Double) : FieldModel<ComplexD> {
     // re-written at 2024/8/29 16:57
 
-    /**
-     * Returns the real part of this.
-     *
-     * @return `Re(this)`
-     */
-    val re: Double
-        get() = a
+    override fun toString(): String {
+        return if (im < 0) {
+            "$re${im}i"
+        } else {
+            "$re+${im}i"
+        }
+    }
 
-    /**
-     * Returns the imaginary part of this.
-     *
-     * @return `Im(this)`
-     */
-    val im: Double
-        get() = b
 
     /**
      * Returns the argument of this complex number, which falls in the range of `(-pi,pi]`.
      */
     val arg: Double
-        get() = atan2(b, a)
+        get() = atan2(im, re)
 
     /**
      * Returns the modulus of this complex number.
@@ -42,7 +35,7 @@ data class ComplexD(val a: Double, val b: Double) : FieldModel<ComplexD> {
      * @return `|this|`
      */
     val mod: Double
-        get() = hypot(a, b)
+        get() = hypot(re, im)
 
     /**
      * Returns the modulus of this complex number as a complex number.
@@ -62,7 +55,7 @@ data class ComplexD(val a: Double, val b: Double) : FieldModel<ComplexD> {
      * @return `this + y`
      */
     override fun plus(y: ComplexD): ComplexD {
-        return ComplexD(a + y.a, b + y.b)
+        return ComplexD(re + y.re, im + y.im)
     }
 
     /**
@@ -71,7 +64,7 @@ data class ComplexD(val a: Double, val b: Double) : FieldModel<ComplexD> {
      * @return `-this`
      */
     override fun unaryMinus(): ComplexD {
-        return ComplexD(-a, -b)
+        return ComplexD(-re, -im)
     }
 
     /**
@@ -81,7 +74,7 @@ data class ComplexD(val a: Double, val b: Double) : FieldModel<ComplexD> {
      * @return `this - y`
      */
     override fun minus(y: ComplexD): ComplexD {
-        return ComplexD(a - y.a, b - y.b)
+        return ComplexD(re - y.re, im - y.im)
     }
 
     /**
@@ -91,11 +84,11 @@ data class ComplexD(val a: Double, val b: Double) : FieldModel<ComplexD> {
      * @return `this * y`
      */
     override fun times(y: ComplexD): ComplexD {
-        return ComplexD(a * y.a - b * y.b, a * y.b + b * y.a)
+        return ComplexD(re * y.re - im * y.im, re * y.im + im * y.re)
     }
 
     operator fun times(d: Double): ComplexD {
-        return ComplexD(a * d, b * d)
+        return ComplexD(re * d, im * d)
     }
 
 
@@ -107,16 +100,16 @@ data class ComplexD(val a: Double, val b: Double) : FieldModel<ComplexD> {
      * @throws ArithmeticException if z = 0
      */
     override fun div(y: ComplexD): ComplexD {
-        val d = y.a * y.a + y.b * y.b
-        var an = a * y.a + b * y.b
-        var bn = b * y.a - a * y.b
+        val d = y.re * y.re + y.im * y.im
+        var an = re * y.re + im * y.im
+        var bn = im * y.re - re * y.im
         an /= d
         bn /= d
         return ComplexD(an, bn)
     }
 
     operator fun div(d: Double): ComplexD {
-        return ComplexD(a / d, b / d)
+        return ComplexD(re / d, im / d)
     }
 
 
@@ -126,8 +119,8 @@ data class ComplexD(val a: Double, val b: Double) : FieldModel<ComplexD> {
      * @return `1/this`
      */
     override fun inv(): ComplexD {
-        val mod2 = a * a + b * b
-        return ComplexD(a / mod2, -b / mod2)
+        val mod2 = re * re + im * im
+        return ComplexD(re / mod2, -im / mod2)
     }
 
 
@@ -136,7 +129,7 @@ data class ComplexD(val a: Double, val b: Double) : FieldModel<ComplexD> {
      *
      */
     val conj: ComplexD
-        get() = ComplexD(a, -b)
+        get() = ComplexD(re, -im)
 
 
     /**
@@ -220,7 +213,7 @@ data class ComplexD(val a: Double, val b: Double) : FieldModel<ComplexD> {
     }
 
     override val isZero: Boolean
-        get() = a == 0.0 && b == 0.0
+        get() = re == 0.0 && im == 0.0
 
 
     private class RootResult(size: Long, private val m: Double, private val arg: Double) : ComplexResult(size) {
@@ -334,30 +327,8 @@ data class ComplexD(val a: Double, val b: Double) : FieldModel<ComplexD> {
 //        return PVector.valueOf(a, b, mc)
 //    }
 
-    override fun equals(other: Any?): Boolean {
-        if (other is ComplexD) {
-            return a == other.a && b == other.b
-        }
-        return false
-    }
 
-    override fun hashCode(): Int {
-        var result = a.hashCode()
-        result = 31 * result + b.hashCode()
-        return result
-    }
 
-    override fun toString(): String {
-        val sb = StringBuilder()
-        sb.append(a).append(' ')
-        if (b < 0) {
-            sb.append("- ").append(-b)
-        } else {
-            sb.append("+ ").append(b)
-        }
-        sb.append('i')
-        return sb.toString()
-    }
 
     private class LogResult(private val x: Double, private val arg: Double) : ComplexResult(-1) {
         override fun iterator(): Iterator<ComplexD> {
@@ -382,8 +353,8 @@ data class ComplexD(val a: Double, val b: Double) : FieldModel<ComplexD> {
             get() = true
 
         override fun contains(z: ComplexD): Boolean {
-            if (z.a == x) {
-                var b = z.b
+            if (z.re == x) {
+                var b = z.im
                 if (b < 0) {
                     b = -b
                 }
@@ -441,16 +412,16 @@ data class ComplexD(val a: Double, val b: Double) : FieldModel<ComplexD> {
          * @return `e^z`
          */
         fun exp(z: ComplexD): ComplexD {
-            val m = kotlin.math.exp(z.a)
-            return modArg(m, z.b)
+            val m = kotlin.math.exp(z.re)
+            return modArg(m, z.im)
         }
 
         /**
          * Returns the result of `e<sup>it</sup>`.
          */
         fun expIt(t: ComplexD): ComplexD {
-            val a = -t.b
-            val b = t.a
+            val a = -t.im
+            val b = t.re
             val m = kotlin.math.exp(a)
             return modArg(m, b)
         }
@@ -470,7 +441,7 @@ data class ComplexD(val a: Double, val b: Double) : FieldModel<ComplexD> {
          */
         fun logarithm(z: ComplexD): ComplexResult {
             val main = ln(z)
-            return LogResult(main.a, main.b)
+            return LogResult(main.re, main.im)
         }
 
         /**
@@ -499,12 +470,12 @@ data class ComplexD(val a: Double, val b: Double) : FieldModel<ComplexD> {
          * @return sin(z)
          */
         fun sin(z: ComplexD): ComplexD {
-            val iz = ComplexD(-z.b, z.a)
+            val iz = ComplexD(-z.im, z.re)
             val eiz = exp(iz)
-            val t = eiz.a * eiz.a + eiz.b * eiz.b
+            val t = eiz.re * eiz.re + eiz.im * eiz.im
             val tt = t * 2.0
-            val a = eiz.b * (t + 1) / tt
-            val b = eiz.a * (t - 1) / tt
+            val a = eiz.im * (t + 1) / tt
+            val b = eiz.re * (t - 1) / tt
             return ComplexD(a, b)
         }
 
@@ -518,12 +489,12 @@ data class ComplexD(val a: Double, val b: Double) : FieldModel<ComplexD> {
          * @return cos(z)
          */
         fun cos(z: ComplexD): ComplexD {
-            val iz = ComplexD(-z.b, z.a)
+            val iz = ComplexD(-z.im, z.re)
             val eiz = exp(iz)
-            val t = eiz.a * eiz.a + eiz.b * eiz.b
+            val t = eiz.re * eiz.re + eiz.im * eiz.im
             val tt = t * 2.0
-            val a = eiz.b * (t - 1) / tt
-            val b = eiz.a * (t + 1) / tt
+            val a = eiz.im * (t - 1) / tt
+            val b = eiz.re * (t + 1) / tt
             return ComplexD(a, b)
         }
 
@@ -537,68 +508,13 @@ data class ComplexD(val a: Double, val b: Double) : FieldModel<ComplexD> {
          * @return tan(z)
          */
         fun tan(z: ComplexD): ComplexD {
-            val iz = ComplexD(-z.b, z.a)
+            val iz = ComplexD(-z.im, z.re)
             val t = exp(iz)
             //a^2-b^2
-            val a0 = t.a * t.a - t.b * t.b
-            val b0 = 2 * t.a * t.b
+            val a0 = t.re * t.re - t.im * t.im
+            val b0 = 2 * t.re * t.im
             val re = ComplexD(a0 - 1, b0).div(ComplexD(a0 + 1, b0))
-            return ComplexD(-re.b, re.a)
+            return ComplexD(-re.im, re.re)
         }
-
-//        /**
-//         * Format the given complex with the given precision.
-//         *
-//         * @param precision indicate the precision.
-//         */
-//        fun format(z: ComplexD, precision: Int): String {
-//            return format(z)
-//        }
-
-//        /**
-//         * Format the given complex with default precision.
-//         *
-//         * @param z a complex number
-//         */
-//        fun format(z: ComplexD): String {
-//            val sb = StringBuilder()
-//            val df = SNFSupport.DF
-//            if (z.b < -DEFAULT_RANGE_OF_ZERO || z.b > DEFAULT_RANGE_OF_ZERO) {
-//                sb.append(df.format(z.a))
-//            } else {
-//                sb.append('0')
-//            }
-//            if (z.b < -DEFAULT_RANGE_OF_ZERO || z.b > DEFAULT_RANGE_OF_ZERO) {
-//                if (z.b < 0) {
-//                    sb.append('-').append(df.format(-z.b))
-//                } else {
-//                    sb.append('+').append(df.format(z.b))
-//                }
-//                sb.append('i')
-//            }
-//            return sb.toString()
-//        }
-//
-//        private const val DEFAULT_RANGE_OF_ZERO = 0.0005
-
-
-        //	public static void main(String[] args) {
-//        val calculator: ComplexICalculator = ComplexICalculator()
-
-        //		//test here 
-        ////		ComplexI[] zs = new ComplexI[16];
-        ////		zs[0] = of(-2,1);
-        ////		zs[1] = of(1,-2);
-        ////		print(zs[0].reciprocal().add(zs[1].reciprocal()));
-        //		ComplexI w = modArg(1, TWO_PI/3),sum = ZERO;
-        //		print(format(w));
-        //		for(int i=0;i<2011;i++){
-        //			sum = sum.add(w.pow(i));
-        //		}
-        //		print(format(sum));
-        //		print(format(w.pow(30).add(w.pow(40)).add(w.pow(50))));
-        //		print(format(w.pow(2009).add(w.reciprocal().pow(2009))));
-        //		
-        //	}
     }
 }

@@ -75,7 +75,7 @@ open class IntModN(val n: Int) : OrderedRing<Int>, CommutativeRing<Int>, UnitRin
 
 open class IntModP(p: Int) : IntModN(p), Field<Int> {
     override fun isUnit(x: Int): Boolean {
-        return x != 0
+        return mod(x) != 0
     }
 
 
@@ -88,6 +88,7 @@ open class IntModP(p: Int) : IntModN(p), Field<Int> {
         get() = n.toLong()
 
     override fun reciprocal(x: Int): Int {
+        if(mod(x) == 0) throw ArithmeticException("Division by zero")
         return NTFunctions.modInverse(x, n)
     }
 
@@ -114,8 +115,12 @@ internal class IntModPCached(p: Int) : IntModP(p) {
     }
 
     override fun reciprocal(x: Int): Int {
+        val m = mod(x)
+        if(m == 0) throw ArithmeticException("Division by zero")
         return invTable[mod(x)]
     }
+
+
 }
 
 

@@ -4,7 +4,7 @@ package cn.mathsymk.structure
 /**
  *
  */
-interface SupportElementaryFunctions<T> {
+interface ProvideElementaryFunctions<T> {
 
     /**
      * Gets a constant by the [name]
@@ -104,6 +104,11 @@ interface SupportElementaryFunctions<T> {
      * Returns `arctan(x)`, the inverse tangent function.
      */
     fun arctan(x: T): T
+
+    /**
+     * Returns `arctan2(y, x) = arctan(y/x)`, the inverse tangent function with two arguments.
+     */
+    fun arctan2(y: T, x: T): T
 
     companion object{
 

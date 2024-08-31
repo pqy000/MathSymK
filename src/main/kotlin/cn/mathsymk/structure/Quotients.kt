@@ -1,7 +1,7 @@
 package cn.mathsymk.structure
 
 /**
- * Describes the rational numbers, or quotients, **Q**.
+ * Describes the rational numbers, or quotients, ℚ.
  */
 interface Quotients<T : Any> : OrderedField<T> {
 

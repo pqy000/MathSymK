@@ -490,6 +490,10 @@ object NumberModels {
             return kotlin.math.tan(x)
         }
 
+        override fun arctan2(y: Double, x: Double): Double {
+            return kotlin.math.atan2(y, x)
+        }
+
         override fun arccos(x: Double): Double {
             return kotlin.math.acos(x)
         }
@@ -575,7 +579,6 @@ object NumberModels {
             TODO("Not yet implemented")
         }
 
-
         override fun exp(x: BigDecimal): BigDecimal {
             TODO("Not yet implemented")
         }
@@ -591,6 +594,8 @@ object NumberModels {
         override fun arcsin(x: BigDecimal): BigDecimal {
             TODO("Not yet implemented")
         }
+
+
 
         companion object {
             operator fun invoke(precision: Int, roundingMode: RoundingMode): BigDecimalAsReals {

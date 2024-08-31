@@ -114,4 +114,6 @@ interface Algebra<K:Any,V:Any> : LinearSpace<K,V>, Ring<V> {
     /*
     Rewritten at 2024/8/25
      */
+
+
 }

@@ -1,6 +1,7 @@
 package model
 
 import cn.mathsymk.model.NumberModels
+import org.junit.jupiter.api.assertThrows
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -33,6 +34,19 @@ class NumberModelsTest {
         assertEquals(3, int.divideToInteger(3, 1))
         assertEquals(1, int.exactDivide(2, 2))
         assertEquals(-3, int.exactDivide(-3, 1))
+    }
+
+    @Test
+    fun testIntModP(){
+        run{
+            val intMod97 = NumberModels.intModP(97)
+            assertEquals(3, intMod97.add(1,2))
+            assertEquals(96, intMod97.subtract(1,2))
+            assertEquals(2, intMod97.multiply(1,2))
+            assertEquals(49, intMod97.reciprocal(2))
+            assertEquals(49, intMod97.divide(98, 2))
+            assertThrows<ArithmeticException> { intMod97.divide(98, 0) }
+        }
     }
 
 }

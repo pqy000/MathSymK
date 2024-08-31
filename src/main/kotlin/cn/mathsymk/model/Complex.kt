@@ -1,10 +1,5 @@
 package cn.mathsymk.model
 
-import cn.mathsymk.AbstractMathObject
-import cn.mathsymk.IMathObject
-import cn.mathsymk.MathObject
-import cn.mathsymk.model.struct.AlgebraModel
-import cn.mathsymk.model.struct.FieldModel
 import cn.mathsymk.structure.*
 import java.util.function.Function
 
@@ -50,97 +45,204 @@ Created by liyicheng 2020/2/24
 //    }
 //}
 
-class Complex<T : Any>(val a: T, val b: T, model: Ring<T>) : AbstractMathObject<T, Ring<T>>(model),
-    FieldModel<Complex<T>>, AlgebraModel<T, Complex<T>> {
+/**
+ * Defines the complex number, which is a number that can be written as `a+bi`, where `a` is the real part and `b` is the imaginary part.
+ * The complex numbers satisfy:
+ * * Addition: `(a+bi)+(c+di) = (a+c) + (b+d)i`
+ * * Multiplication: `i^2 = -1`, `(a+bi)(c+di) = (ac-bd) + (ad+bc)i`
+ *
+ *
+ */
+@JvmRecord
+data class Complex<T : Any>(val a: T, val b: T) {
     /*
     Created by lyc at 2024/8/29
      */
-    override fun valueEquals(obj: IMathObject<T>): Boolean {
-        if (obj !is Complex) {
-            return false
+
+//    /*
+//    MathObject
+//     */
+//
+//
+//    override fun valueEquals(obj: IMathObject<T>): Boolean {
+//        if (obj !is Complex) {
+//            return false
+//        }
+//        return model.isEqual(a, obj.a) && model.isEqual(b, obj.b)
+//    }
+
+    override fun toString(): String {
+//        if (model.isZero(b)) return "$a"
+//        if (model.isZero(a)) return "${b}i"
+        return "$a+${b}i"
+    }
+
+
+    fun <N : Any> mapTo(mapper: Function<T, N>): Complex<N> {
+        return Complex(mapper.apply(a), mapper.apply(b))
+    }
+
+    companion object{
+
+        fun <T:Any> asRing(model: Ring<T>): ComplexOnRing<T> {
+            return ComplexOnRing(model)
         }
-        return model.isEqual(a, obj.a) && model.isEqual(b, obj.b)
-    }
 
-    override fun <N : Any> mapTo(newCalculator: EqualPredicate<N>, mapper: Function<T, N>): Complex<N> {
-        return Complex(mapper.apply(a), mapper.apply(b), newCalculator as Ring<N>)
-    }
-
-
-    override val isZero: Boolean
-        get() = model.isZero(a) && model.isZero(b)
-
-    private fun of(a: T, b: T): Complex<T> {
-        return Complex(a, b, model)
-    }
-
-    override fun plus(y: Complex<T>): Complex<T> {
-        return model.eval { of(a + y.a, b + y.b) }
-    }
-
-    override fun unaryMinus(): Complex<T> {
-        return model.eval { of(-a, -b) }
-    }
-
-    override fun times(y: Complex<T>): Complex<T> {
-        return model.eval { of(a * y.a - b * y.b, a * y.b + b * y.a) }
-    }
-
-    override fun times(k: T): Complex<T> {
-        return model.eval { of(k * a, k * b) }
-    }
-
-    override fun inv(): Complex<T> {
-        require(model is UnitRing)
-        return model.eval {
-            val d = a * a + b * b
-            of(a / d, -b / d)
+        fun <T:Any> asUnitRing(model: UnitRing<T>): ComplexOnUnitRing<T> {
+            return ComplexOnUnitRing(model)
         }
+
+        fun <T:Any> asField(model: Field<T>): ComplexOnField<T> {
+            return ComplexOnField(model)
+        }
+
+//        fun <T:Any> from(reals : Reals<T>) : ComplexOnField<T> {
+//            return ComplexOnField(reals)
+//        }
+    }
+}
+
+open class ComplexOnRing<T : Any>(model: Ring<T>) : Ring<Complex<T>>, Module<T, Complex<T>> {
+    override val zero: Complex<T> = Complex(model.zero, model.zero)
+    override val scalars: Ring<T>
+        get() = model
+
+    @Suppress("CanBePrimaryConstructorProperty")
+    open val model: Ring<T> = model
+
+
+    override fun isEqual(x: Complex<T>, y: Complex<T>): Boolean {
+        return model.isEqual(x.a, y.a) && model.isEqual(x.b, y.b)
     }
 
-    override fun div(k: T): Complex<T> {
-        require(model is UnitRing)
-        return model.eval { of(a / k, b / k) }
+    override fun isZero(x: Complex<T>): Boolean {
+        return model.isZero(x.a) && model.isZero(x.b)
     }
+
+    fun of(a: T, b: T): Complex<T> {
+        return Complex(a, b)
+    }
+
+    override fun negate(x: Complex<T>): Complex<T> {
+        return Complex(model.negate(x.a), model.negate(x.b))
+    }
+
+    override fun scalarMul(k: T, v: Complex<T>): Complex<T> {
+        return model.eval { of(k * v.a, k * v.b) }
+    }
+
+    operator fun T.times(v: Complex<T>): Complex<T> {
+        return scalarMul(this, v)
+    }
+
+    operator fun Complex<T>.times(k: T): Complex<T> {
+        return scalarMul(k, this)
+    }
+
+
+
+
+    override fun contains(x: Complex<T>): Boolean {
+        return model.contains(x.a) && model.contains(x.b)
+    }
+
+    override fun add(x: Complex<T>, y: Complex<T>): Complex<T> {
+        return Complex(model.add(x.a, y.a), model.add(x.b, y.b))
+    }
+
 
     /*
-    Extra methods
+    Complex number related methods
      */
 
-    val mod: T
-        get() {
-            require(model is Reals)
-            return model.squareRoot(modSquared)
-        }
 
-    val modSquared: T
+    val Complex<T>.modSquared: T
         get() {
             return model.eval { a * a + b * b }
         }
 
-    val conjugate: Complex<T>
+    val Complex<T>.conjugate: Complex<T>
         get() {
             return model.eval { of(a, -b) }
         }
+
+    override fun multiply(x: Complex<T>, y: Complex<T>): Complex<T> {
+        return model.eval { of(x.a * y.a - x.b * y.b, x.a * y.b + x.b * y.a) }
+    }
+
+    override fun subtract(x: Complex<T>, y: Complex<T>): Complex<T> {
+        return model.eval { of(x.a - y.a, x.b - y.b) }
+    }
+
+    override fun multiplyLong(x: Complex<T>, n: Long): Complex<T> {
+        return model.eval { of(x.a * n, x.b * n) }
+    }
+
+    override fun sum(elements: List<Complex<T>>): Complex<T> {
+        return model.eval {
+            val a = model.sum(elements.map { it.a })
+            val b = model.sum(elements.map { it.b })
+            of(a, b)
+        }
+    }
 }
 
+open class ComplexOnUnitRing<T : Any>(override val model: UnitRing<T>) :
+    ComplexOnRing<T>(model), UnitRing<Complex<T>> {
+    override val one: Complex<T>
+        get() = Complex(model.one, model.zero)
 
-/**
- * Complex number, a type of number that can be written as `A+Bi`, where A,B are
- * both real number, and "i" is the square root of `-1`.
- *
- *
- * In this type of number, all calculation will consider that both A and B are real number,
- * and followings are the basic rules.
- *  * Add:<pre> (A+Bi)+(C+Di) = (A+B)+(C+Di)</pre>
- *  * Negate:<pre> -(A+Bi) = -A + (-B)i</pre>
- *  * Subtract:<pre>Z1 - Z2 = Z1 + (-Z2)</pre>
- *  * Multiple:<pre>(A+Bi)*(C+Di)=(AC-BD)+(AD+BC)i</pre>
- *  * Divide:<pre>(A+Bi)/(C+Di)=1/(C^2+D^2)*((AC+BD)+(BC-AD)i)</pre>
- * Operations such as modulus and conjugate are also provided.
- *
- *
- *
- * @author lyc
- *
- */
+
+}
+
+open class ComplexOnField<T : Any>(override val model: Field<T>) :
+    ComplexOnUnitRing<T>(model), Field<Complex<T>>,
+    Algebra<T, Complex<T>> {
+    override val scalars: Field<T>
+        get() = model
+    override val characteristic: Long?
+        get() = model.characteristic
+
+
+    override fun reciprocal(x: Complex<T>): Complex<T> {
+        val d = model.eval { x.a * x.a + x.b * x.b }
+        return model.eval { of(x.a / d, -x.b / d) }
+    }
+
+    override fun divide(x: Complex<T>, y: Complex<T>): Complex<T> {
+        val d = model.eval { y.a * y.a + y.b * y.b }
+        return model.eval {
+            val t1 = x.a * y.a + x.b * y.b
+            val t2 = x.b * y.a - x.a * y.b
+            of(t1 / d, t2 / d)
+        }
+    }
+
+    override fun scalarDiv(x: Complex<T>, k: T): Complex<T> {
+        return model.eval { of(x.a / k, x.b / k) }
+    }
+
+    operator fun Complex<T>.div(k: T): Complex<T> {
+        return scalarDiv(this, k)
+    }
+
+    operator fun Complex<T>.inv(): Complex<T> {
+        return reciprocal(this)
+    }
+
+    operator fun T.div(v: Complex<T>): Complex<T> {
+        return v.inv() * this
+    }
+
+    val Complex<T>.arg: T
+        get() {
+            val model = model as Reals
+            return model.arctan2(b, a)
+        }
+
+    val Complex<T>.mod : T
+        get() {
+            val model = model as Reals
+            return model.sqrt(modSquared)
+        }
+}
