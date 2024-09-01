@@ -910,13 +910,12 @@ data class Polynomial<T : Any> internal constructor(
             Created by lyc at 2020-03-01 16:02
              */
             val mc = f.model as UniqueFactorizationDomain<T>
-            val (f,g) = if (f.degree > g.degree) f to g else g to f
+            var (A, B) = if (f.degree > g.degree) f to g else g to f
 
-            val a = f.cont()
-            val b = g.cont()
-            val d = mc.gcd(a, b)
-            var A = f.div(a)
-            var B = g.div(b)
+            val a = A.cont()
+            val b = B.cont()
+            A = A.div(a)
+            B = B.div(b)
             while (true) {
                 val R = pseudoDivisionR(A, B)
                 if (R.isZero) {
@@ -929,6 +928,7 @@ data class Polynomial<T : Any> internal constructor(
                 A = B
                 B = R.toPrimitive()
             }
+            val d = mc.gcd(a, b)
             return d * B
         }
 
@@ -974,22 +974,42 @@ data class Polynomial<T : Any> internal constructor(
     }
 }
 
-open class PolyOnRing<T : Any>(model: Ring<T>) : Ring<Polynomial<T>>, Module<T, Polynomial<T>> {
+open class PolyOnRing<T : Any>(_model: Ring<T>) : Ring<Polynomial<T>>,
+    Module<T, Polynomial<T>>,
+    InclusionTo<T, Polynomial<T>> {
 
-    @Suppress("CanBePrimaryConstructorProperty")
-    open val model: Ring<T> = model
+    open val model: Ring<T> = _model
 
-
-    final override val zero: Polynomial<T> = Polynomial.zero(model)
+    final override val zero: Polynomial<T> = Polynomial.zero(_model)
 
     override val scalars: Ring<T>
         get() = model
+
+
+    val T.p: Polynomial<T>
+        get() = Polynomial.constant(model, this)
+
+    override fun include(t: T): Polynomial<T> {
+        return Polynomial.constant(model, t)
+    }
+
+    val T.x: Polynomial<T>
+        get() = Polynomial.power(model, 1, this)
+
+    val T.x2: Polynomial<T>
+        get() = Polynomial.power(model, 2, this)
+
+    val T.x3: Polynomial<T>
+        get() = Polynomial.power(model, 3, this)
+
+    val T.x4: Polynomial<T>
+        get() = Polynomial.power(model, 4, this)
 
     override fun scalarMul(k: T, v: Polynomial<T>): Polynomial<T> {
         return v.times(k)
     }
 
-    fun of(vararg coef: T): Polynomial<T> {
+    fun poly(vararg coef: T): Polynomial<T> {
         return Polynomial.of(model, *coef)
     }
 
@@ -1037,17 +1057,37 @@ open class PolyOnRing<T : Any>(model: Ring<T>) : Ring<Polynomial<T>>, Module<T, 
     override fun sum(elements: List<Polynomial<T>>): Polynomial<T> {
         return Polynomial.sum(model, elements)
     }
+
+    operator fun T.plus(x: Polynomial<T>): Polynomial<T> {
+        return x.plus(this)
+    }
+
+    operator fun T.times(x: Polynomial<T>): Polynomial<T> {
+        return x.times(this)
+    }
 }
 
-open class PolyOnUnitRing<T : Any>(model: UnitRing<T>) : PolyOnRing<T>(model), UnitRing<Polynomial<T>> {
+open class PolyOnUnitRing<T : Any>(_model: UnitRing<T>) : PolyOnRing<T>(_model), UnitRing<Polynomial<T>> {
+    override val model: UnitRing<T> = _model
 
-    override val one: Polynomial<T> = Polynomial.one(model)
+    override val one: Polynomial<T> = Polynomial.one(_model)
 
     val x: Polynomial<T>
-        get() = Polynomial.x(model as UnitRing<T>)
+        get() = Polynomial.x(model)
+
+    val x2: Polynomial<T>
+        get() = Polynomial.power(model, 2, model.one)
+
+    val x3: Polynomial<T>
+        get() = Polynomial.power(model, 3, model.one)
+
+    val x4: Polynomial<T>
+        get() = Polynomial.power(model, 4, model.one)
+
 }
 
-open class PolyOnUFD<T:Any>(model: UniqueFactorizationDomain<T>) : PolyOnUnitRing<T>(model),UniqueFactorizationDomain<Polynomial<T>> {
+open class PolyOnUFD<T : Any>(model: UniqueFactorizationDomain<T>) : PolyOnUnitRing<T>(model),
+    UniqueFactorizationDomain<Polynomial<T>> {
 
     override fun gcd(a: Polynomial<T>, b: Polynomial<T>): Polynomial<T> {
         return a.gcd(b)

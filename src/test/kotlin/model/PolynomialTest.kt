@@ -15,7 +15,7 @@ import kotlin.test.assertEquals
 class PolynomialTest {
     private val fractions = Fraction.FractionAsQuotient
     private val ints = NumberModels.IntAsIntegers
-
+    private val pInt = Polynomial.from(ints)
 
     private fun ofF(vararg cs: Int): Polynomial<Fraction> {
         return Polynomial.fromList(ints, cs.asList()).mapTo(fractions, Fraction::of)
@@ -28,20 +28,30 @@ class PolynomialTest {
     private val x = Polynomial.x(ints)
 
     @Test
-    fun testSum() {
-        val f = Polynomial.of(ints, 1, 2, 1)
-        val g = Polynomial.of(ints, 1, 1)
-        val h = Polynomial.of(ints, 2, 3, 1)
-        assertEquals(h, f + g, "(x^2+2x+1)+(x+1) = x^2+3x+2")
-        assertEquals(-1, (f - f).degree)
-        assertEquals(Polynomial.zero(ints), f - f)
-        assertEquals(f, f + Polynomial.zero(ints))
-        assertEquals(f, Polynomial.zero(ints) + f)
+    fun testCreate() {
+        with(pInt) {
+            assertEquals(poly(1, 2, 1), 1 + 2 * x + x2)
+            assertEquals(poly(1, 2, 1), Polynomial.of(ints, 1, 2, 1))
+        }
+    }
 
-        assertEquals(f * 3, f + f + f)
-        assertEquals(f * 3, Polynomial.sum(ints, f, f, f))
-        assertEquals(f, Polynomial.sum(ints, f, -f, f))
-        assertEquals(f + g, Polynomial.sum(ints, f, g))
+    @Test
+    fun testSum() {
+        with(pInt) {
+            val f = 1 + 2 * x + x2
+            val g = 1 + x
+            val h = 2 + 3 * x + x2
+            assertEquals(h, f + g, "(x^2+2x+1)+(x+1) = x^2+3x+2")
+            assertEquals(-1, (f - f).degree)
+            assertEquals(Polynomial.zero(ints), f - f)
+            assertEquals(f, f + Polynomial.zero(ints))
+            assertEquals(f, Polynomial.zero(ints) + f)
+
+            assertEquals(f * 3, f + f + f)
+            assertEquals(f * 3, Polynomial.sum(ints, f, f, f))
+            assertEquals(f, Polynomial.sum(ints, f, -f, f))
+            assertEquals(f + g, Polynomial.sum(ints, f, g))
+        }
     }
 
 

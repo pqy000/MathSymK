@@ -61,7 +61,7 @@ open class AsField<T : FieldModel<T>>(zero: T, one: T, override val characterist
 }
 
 
-typealias BigFraction = RingFraction<BigInteger>
+typealias BigFraction = RFraction<BigInteger>
 
 object NumberModels {
     /**
@@ -646,7 +646,7 @@ object NumberModels {
      * Gets the field of fractions of integers.
      */
     fun fractionBig() : Field<BigFraction>{
-        return RingFraction.asField(BigIntegerAsIntegers)
+        return RFraction.asField(BigIntegerAsIntegers)
     }
 
 }

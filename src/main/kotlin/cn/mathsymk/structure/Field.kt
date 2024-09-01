@@ -24,7 +24,7 @@ package cn.mathsymk.structure
  * - Rational numbers `Q`. [Quotients][cn.mathsymk.structure.Quotients]
  * - Real numbers `R`. [Reals][cn.mathsymk.structure.Reals]
  * - Complex numbers `C`.
- * - Fraction fields of integral domains. [FractionField][cn.mathsymk.model.RingFraction]
+ * - Fraction fields of integral domains. [FractionField][cn.mathsymk.model.RFraction]
  *
  * ## Hierarchy of algebraic structures
  * In the hierarchy of algebraic structures, a field is a division ring whose multiplication is commutative.

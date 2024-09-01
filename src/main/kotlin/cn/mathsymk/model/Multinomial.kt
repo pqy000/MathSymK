@@ -64,10 +64,10 @@ data class TermChs(val data: Array<ChPow>, val totalPow: Int = data.sumOf { it.p
         var j = 0
         for (i in other.data.indices) {
             // find the corresponding character in other
-            while (j < data.size && chComp.compare(data[j].ch,other.data[i].ch) < 0) {
+            while (j < data.size && chComp.compare(data[j].ch, other.data[i].ch) < 0) {
                 j++
             }
-            if (j == data.size || chComp.compare(data[j].ch,other.data[i].ch) != 0) {
+            if (j == data.size || chComp.compare(data[j].ch, other.data[i].ch) != 0) {
                 return false
             }
             if (data[j].pow < other.data[i].pow) {
@@ -219,9 +219,9 @@ data class TermChs(val data: Array<ChPow>, val totalPow: Int = data.sumOf { it.p
             return TermChs(data)
         }
 
-        fun single(ch : String, pow : Int = 1) : TermChs {
+        fun single(ch: String, pow: Int = 1): TermChs {
             require(pow >= 0) { "The power must be non-negative." }
-            if(pow == 0){
+            if (pow == 0) {
                 return EMPTY
             }
             return TermChs(arrayOf(ChPow(ch, pow)))
@@ -260,7 +260,6 @@ internal constructor(
     /*
     Basic operations
      */
-
 
 
     override val isZero: Boolean
@@ -392,7 +391,7 @@ internal constructor(
         val qTerms = mutableListOf<MTerm<T>>()
         val rTerms = mutableListOf<MTerm<T>>()
         while (!p.isZero) {
-            if (! p.leadTerm.contains(y.leadTerm)) {
+            if (!p.leadTerm.contains(y.leadTerm)) {
                 rTerms.add(p.leadTerm)
                 p = fromTerms(p.terms.subList(0, p.terms.size - 1))
                 continue
@@ -540,11 +539,16 @@ internal constructor(
             if (model.isZero(c)) {
                 return zero(model, comp)
             }
-            val term = MTerm(c, TermChs.single(ch,pow))
+            val term = MTerm(c, TermChs.single(ch, pow))
             return Multinomial(model, listOf(term), comp)
         }
 
-        fun <T:Any> monomialParse(c : T, chars : String, model: Ring<T>, comp: MonomialOrder = DEFAULT_MONOMIAL_ORDER) : Multinomial<T> {
+        fun <T : Any> monomialParse(
+            c: T,
+            chars: String,
+            model: Ring<T>,
+            comp: MonomialOrder = DEFAULT_MONOMIAL_ORDER
+        ): Multinomial<T> {
             val term = MTerm(c, TermChs.parseChar(chars))
             return Multinomial(model, listOf(term), comp)
         }
@@ -564,12 +568,12 @@ internal constructor(
          *
          *
          */
-        inline fun <T : Any, R> with(
-            model: UnitRing<T>, comp: MonomialOrder = DEFAULT_MONOMIAL_ORDER,
-            action: MultinomialBuilderScope<T>.() -> R
-        ): R {
-            return action(MultinomialBuilderScope(model, comp))
-        }
+//        inline fun <T : Any, R> with(
+//            model: UnitRing<T>, comp: MonomialOrder = DEFAULT_MONOMIAL_ORDER,
+//            action: MultinomialBuilderScope<T>.() -> R
+//        ): R {
+//            return action(MultinomialBuilderScope(model, comp))
+//        }
 
         fun <T : Any> parse(str: String, model: UnitRing<T>, comp: MonomialOrder = DEFAULT_MONOMIAL_ORDER) {
             TODO()
@@ -604,20 +608,51 @@ internal constructor(
         }
 
 
-        fun <T : Any> asRing(model: Ring<T>): Ring<Multinomial<T>> = TODO()
+        fun <T : Any> from(
+            model: Ring<T>,
+            monomialOrder: MonomialOrder = DEFAULT_MONOMIAL_ORDER
+        ): MultinomialOnRing<T> {
+            return MultinomialOnRing(model, monomialOrder)
+        }
 
-        fun <T : Any> asUFD(model: Field<T>): UniqueFactorizationDomain<Multinomial<T>> = TODO()
+        fun <T : Any> from(
+            model: UnitRing<T>,
+            monomialOrder: MonomialOrder = DEFAULT_MONOMIAL_ORDER
+        ): MultinomialOnUnitRing<T> {
+            return MultinomialOnUnitRing(model, monomialOrder)
+        }
+
+        fun <T : Any> from(
+            model: Field<T>,
+            monomialOrder: MonomialOrder = DEFAULT_MONOMIAL_ORDER
+        ): MultinomialOnField<T> {
+            return MultinomialOnField(model, monomialOrder)
+        }
 
 
     }
 }
 
-open class MultinomialOnRing<T : Any>(model: Ring<T>) : Ring<Multinomial<T>> {
+open class MultinomialOnRing<T : Any>(protected val _model: Ring<T>, val monomialOrder: MonomialOrder) :
+    Ring<Multinomial<T>>, InclusionTo<T, Multinomial<T>> {
 
-    @Suppress("CanBePrimaryConstructorProperty")
-    open val model: Ring<T> = model
+    open val model: Ring<T>
+        get() = _model
 
-    final override val zero: Multinomial<T> = Multinomial.zero(model)
+    final override val zero: Multinomial<T> = Multinomial.zero(_model, monomialOrder)
+
+
+    fun constant(c: T): Multinomial<T> {
+        return Multinomial.constant(c, model, monomialOrder)
+    }
+
+    override fun include(t: T): Multinomial<T> {
+        return constant(t)
+    }
+
+//    val T.const: Multinomial<T>
+//        get() = Multinomial.constant(this, model, monomialOrder)
+
 
     override fun add(x: Multinomial<T>, y: Multinomial<T>): Multinomial<T> {
         return x + y
@@ -657,52 +692,58 @@ open class MultinomialOnRing<T : Any>(model: Ring<T>) : Ring<Multinomial<T>> {
     }
 }
 
-open class MultinomialOnUnitRing<T : Any>(model: UnitRing<T>) : MultinomialOnRing<T>(model), UnitRing<Multinomial<T>> {
-    override val one: Multinomial<T> = Multinomial.constant(model.one, model)
-}
+open class MultinomialOnUnitRing<T : Any>(_model: UnitRing<T>, order: MonomialOrder) :
+    MultinomialOnRing<T>(_model, order),
+    UnitRing<Multinomial<T>> {
 
-open class MultinomialOnField<T : Any>(model: Field<T>) : MultinomialOnUnitRing<T>(model),
-    IntegralDomain<Multinomial<T>> {
+    override val model: UnitRing<T>
+        get() = _model as UnitRing<T>
 
-}
+    override val one: Multinomial<T> = Multinomial.constant(_model.one, _model)
 
-
-class MultinomialBuilderScope<T : Any>(val model: UnitRing<T>, val tc: MonomialOrder) {
-
-    val x = ch("x")
-    val y = ch("y")
-    val z = ch("z")
-    val w = ch("w")
-    val a = ch("a")
-    val b = ch("b")
-    val c = ch("c")
-
-
-    val one = Multinomial.constant(model.one, model, tc)
-    val zero = Multinomial.zero(model, tc)
+    val x get() = ch("x")
+    val y get() = ch("y")
+    val z get() = ch("z")
+    val w get() = ch("w")
+    val a get() = ch("a")
+    val b get() = ch("b")
+    val c get() = ch("c")
 
     fun of(vararg terms: Pair<T, String>): Multinomial<T> {
-        return Multinomial.of(model, *terms, comp = tc)
+        return Multinomial.of(model, *terms, comp = monomialOrder)
     }
 
     fun ch(name: String): Multinomial<T> {
-        return Multinomial.monomialParse(model.one, name, model, tc)
+        return Multinomial.monomialParse(model.one, name, model, monomialOrder)
     }
 
-    val String.m: Multinomial<T>
-        get() = ch(this)
-
-    val T.m: Multinomial<T>
-        get() = Multinomial.constant(this, model, tc)
+    val String.m get() = Multinomial.monomialParse(model.one, this, model, monomialOrder)
 
 
     operator fun T.times(chs: String): Multinomial<T> {
         val term = MTerm(this, TermChs.parseChar(chs))
-        return Multinomial(model, listOf(term), tc)
+        return Multinomial(model, listOf(term), monomialOrder)
     }
+
+    val T.x get() = this * "x"
+    val T.y get() = this * "y"
+    val T.z get() = this * "z"
+    val T.a get() = this * "a"
+    val T.b get() = this * "b"
+    val T.c get() = this * "c"
+    val T.xy get() = this * "xy"
+    val T.xz get() = this * "xz"
+    val T.yz get() = this * "yz"
+    val T.xyz get() = this * "xyz"
 
     operator fun T.times(m: Multinomial<T>): Multinomial<T> {
         return m.times(this)
     }
+
+
+}
+
+open class MultinomialOnField<T : Any>(model: Field<T>, order: MonomialOrder) : MultinomialOnUnitRing<T>(model, order),
+    IntegralDomain<Multinomial<T>> {
 
 }
