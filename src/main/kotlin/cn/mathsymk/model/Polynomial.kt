@@ -3,6 +3,7 @@ package cn.mathsymk.model
 import cn.mathsymk.IMathObject
 import cn.mathsymk.MathObject
 import cn.mathsymk.function.MathOperator
+import cn.mathsymk.model.Polynomial.Companion.primitiveGCD
 import cn.mathsymk.model.struct.AlgebraModel
 import cn.mathsymk.model.struct.EuclidDomainModel
 import cn.mathsymk.model.struct.times
@@ -791,6 +792,12 @@ data class Polynomial<T : Any> internal constructor(
         }
 
         /**
+         */
+        fun <T : Any> from(model: UniqueFactorizationDomain<T>): PolyOnUFD<T> {
+            return PolyOnUFD(model)
+        }
+
+        /**
          * Returns a `EuclideanDomain<Polynomial<T>>` on a `Field<T>`.
          *
          * @see EuclideanDomain
@@ -896,17 +903,18 @@ data class Polynomial<T : Any> internal constructor(
         fun <T : Any> primitiveGCD(f: Polynomial<T>, g: Polynomial<T>): Polynomial<T> {
             if (f.isZero) return g
             if (g.isZero) return f
+
             /*
             See Algorithm 3.2.10, page 117 of
             'A Course in Computational Algebraic Number Theory', Henri Cohen
             Created by lyc at 2020-03-01 16:02
              */
-            val mc = f.model
+            val mc = f.model as UniqueFactorizationDomain<T>
+            val (f,g) = if (f.degree > g.degree) f to g else g to f
 
-            val rc = mc as UniqueFactorizationDomain<T>
             val a = f.cont()
             val b = g.cont()
-            val d = rc.gcd(a, b)
+            val d = mc.gcd(a, b)
             var A = f.div(a)
             var B = g.div(b)
             while (true) {
@@ -1039,7 +1047,27 @@ open class PolyOnUnitRing<T : Any>(model: UnitRing<T>) : PolyOnRing<T>(model), U
         get() = Polynomial.x(model as UnitRing<T>)
 }
 
-open class PolyOnField<T : Any>(override val model: Field<T>) : PolyOnUnitRing<T>(model),
+open class PolyOnUFD<T:Any>(model: UniqueFactorizationDomain<T>) : PolyOnUnitRing<T>(model),UniqueFactorizationDomain<Polynomial<T>> {
+
+    override fun gcd(a: Polynomial<T>, b: Polynomial<T>): Polynomial<T> {
+        return a.gcd(b)
+    }
+
+    override fun isUnit(x: Polynomial<T>): Boolean {
+        return x.isUnit()
+    }
+
+    override fun exactDivide(a: Polynomial<T>, b: Polynomial<T>): Polynomial<T> {
+        return a.exactDivide(b)
+    }
+
+    override fun isExactDivide(a: Polynomial<T>, b: Polynomial<T>): Boolean {
+        return a.divideAndRemainder(b).second.isZero
+    }
+}
+
+
+open class PolyOnField<T : Any>(override val model: Field<T>) : PolyOnUFD<T>(model),
     EuclideanDomain<Polynomial<T>>, Algebra<T, Polynomial<T>> {
 
     override val scalars: Field<T>
@@ -1065,9 +1093,14 @@ open class PolyOnField<T : Any>(override val model: Field<T>) : PolyOnUnitRing<T
         return a.gcd(b)
     }
 
-//    override fun Polynomial<T>.div(k: T): Polynomial<T> {
-//        TODO("Not yet implemented")
-//    }
+    override fun isExactDivide(a: Polynomial<T>, b: Polynomial<T>): Boolean {
+        return a.divideAndRemainder(b).second.isZero
+    }
+
+    override fun exactDivide(a: Polynomial<T>, b: Polynomial<T>): Polynomial<T> {
+        return a.exactDivide(b)
+    }
+
 }
 
 

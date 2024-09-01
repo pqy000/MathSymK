@@ -226,10 +226,6 @@ open class ComplexOnField<T : Any>(override val model: Field<T>) :
         return scalarDiv(this, k)
     }
 
-    operator fun Complex<T>.inv(): Complex<T> {
-        return reciprocal(this)
-    }
-
     operator fun T.div(v: Complex<T>): Complex<T> {
         return v.inv() * this
     }

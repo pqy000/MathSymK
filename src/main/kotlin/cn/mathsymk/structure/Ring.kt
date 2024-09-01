@@ -104,4 +104,8 @@ interface DivisionRing<T : Any> : UnitRing<T>, MulGroup<T> {
     override fun T.div(y: T): T {
         return divide(this, y)
     }
+
+    operator fun T.inv(): T {
+        return reciprocal(this)
+    }
 }

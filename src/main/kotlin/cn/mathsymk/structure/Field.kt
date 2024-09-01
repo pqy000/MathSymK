@@ -29,7 +29,7 @@ package cn.mathsymk.structure
  * ## Hierarchy of algebraic structures
  * In the hierarchy of algebraic structures, a field is a division ring whose multiplication is commutative.
  */
-interface Field<T : Any> : DivisionRing<T>, CommutativeRing<T> {
+interface Field<T : Any> : DivisionRing<T>, EuclideanDomain<T> {
     /**
      * Returns the characteristic of this field.
      *
@@ -60,5 +60,12 @@ interface Field<T : Any> : DivisionRing<T>, CommutativeRing<T> {
      */
     override val isCommutative: Boolean
         get() = true
+
+
+    override fun divideAndRemainder(a: T, b: T): Pair<T, T> {
+        return (a/b) to zero
+    }
+
+
 
 }
