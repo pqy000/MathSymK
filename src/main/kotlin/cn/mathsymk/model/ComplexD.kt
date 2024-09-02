@@ -1,9 +1,14 @@
 package cn.mathsymk.model
 
+import cn.mathsymk.model.ComplexD.Companion.TWO_PI
+import cn.mathsymk.model.ComplexD.Companion.modArg
 import cn.mathsymk.model.struct.FieldModel
 import kotlin.math.atan2
 import kotlin.math.hypot
 import kotlin.math.pow
+
+
+
 
 /**
  *
@@ -179,11 +184,12 @@ data class ComplexD(val re: Double, val im: Double) : FieldModel<ComplexD> {
      */
     fun root(n: Long): ComplexResult {
         require(n > 0) { "n<=0" }
-        val arg = arg
-        var m = mod
-
-        m = kotlin.math.exp(kotlin.math.ln(m) / n)
-        return RootResult(n, m, arg)
+        TODO()
+//        val arg = arg
+//        var m = mod
+//
+//        m = kotlin.math.exp(kotlin.math.ln(m) / n)
+//        return RootResult(n, m, arg)
     }
 
     /**
@@ -194,117 +200,31 @@ data class ComplexD(val re: Double, val im: Double) : FieldModel<ComplexD> {
      * @param f a Fraction
      */
     fun pow(f: Fraction): ComplexResult {
-        if (f.signum == 0) {
-//			if(this.a == 0 && this.b == 0){
-//				throw new IllegalArgumentException("0^0");
-//			}
-            return RootResult(1, 1.0, arg)
-        }
-        val p: Long
-        val q: Long
-        if (f.signum == -1) {
-            p = f.deno
-            q = f.numeratorAbs
-        } else {
-            p = f.nume
-            q = f.deno
-        }
-        return pow(p).root(q)
+        TODO()
+//        if (f.signum == 0) {
+////			if(this.a == 0 && this.b == 0){
+////				throw new IllegalArgumentException("0^0");
+////			}
+//            return RootResult(1, 1.0, arg)
+//        }
+//        val p: Long
+//        val q: Long
+//        if (f.signum == -1) {
+//            p = f.deno
+//            q = f.numeratorAbs
+//        } else {
+//            p = f.nume
+//            q = f.deno
+//        }
+//        return pow(p).root(q)
     }
 
     override val isZero: Boolean
         get() = re == 0.0 && im == 0.0
 
 
-    private class RootResult(size: Long, private val m: Double, private val arg: Double) : ComplexResult(size) {
-        override fun iterator(): Iterator<ComplexD> {
-            return object : Iterator<ComplexD> {
-                private var index: Long = 0
-
-                override fun next(): ComplexD {
-                    return modArg(m, ((index++) * TWO_PI + arg) / size)
-                }
-
-                override fun hasNext(): Boolean {
-                    return index < size
-                }
-            }
-        }
-
-        override fun mainValue(): ComplexD {
-            return modArg(m, arg / size)
-        }
-
-        override val isInfinite: Boolean
-            get() = false
-
-        override fun contains(z: ComplexD): Boolean {
-            if (z.mod == m) {
-                //we use two-divide method
-                val arg = z.arg
-                var downer: Long = 0
-                var upper = size - 1
-                while (downer <= upper) {
-                    val t = (downer + upper) / 2
-                    val arg0 = (arg + t * TWO_PI) / size
-                    if (arg0 == arg) {
-                        return true
-                    } else if (arg0 < arg) {
-                        downer = t + 1
-                    } else {
-                        upper = t - 1
-                    }
-                }
-            }
-            return false
-        }
-    }
 
 
-    /**
-     * This class describes the complex result set of multiple result functions in complex
-     * calculation such as root() or so on.
-     *
-     *
-     * In the implement of this class,usually,the results will only be calculated when
-     * they are required,and they are not saved,so if the result is required for multiple times,
-     * extra temptation is recommended.
-     *
-     * @author lyc
-     */
-    abstract class ComplexResult internal constructor(protected val size: Long) : Iterable<ComplexD> {
-        /**
-         * Returns the number of complexes in this result set,if the
-         * number of results is infinite,this method should return `-1`
-         *
-         * @return the number of results,or `-1`
-         */
-        fun number(): Long {
-            return size
-        }
-
-        open val isInfinite: Boolean
-            /**
-             * Returns `true` if the number of result.
-             */
-            get() = size == -1L
-
-        /**
-         * Returns the main value of this result.
-         *
-         * @return a complex number
-         */
-        abstract fun mainValue(): ComplexD
-
-        /**
-         * Returns `true` if the result contains the result.This method is
-         * usually used in the infinite-value result.
-         *
-         * @param z complex number
-         * @return `true` if the result contains the specific complex.
-         */
-        abstract fun contains(z: ComplexD): Boolean
-    }
 
 
 //    /**
@@ -330,42 +250,6 @@ data class ComplexD(val re: Double, val im: Double) : FieldModel<ComplexD> {
 
 
 
-    private class LogResult(private val x: Double, private val arg: Double) : ComplexResult(-1) {
-        override fun iterator(): Iterator<ComplexD> {
-            return object : Iterator<ComplexD> {
-                var index: Long = 0
-
-                override fun hasNext(): Boolean {
-                    return true
-                }
-
-                override fun next(): ComplexD {
-                    return ComplexD(x, arg + TWO_PI * index++)
-                }
-            }
-        }
-
-        override fun mainValue(): ComplexD {
-            return ComplexD(x, arg)
-        }
-
-        override val isInfinite: Boolean
-            get() = true
-
-        override fun contains(z: ComplexD): Boolean {
-            if (z.re == x) {
-                var b = z.im
-                if (b < 0) {
-                    b = -b
-                }
-                while (b > 0) {
-                    b -= TWO_PI
-                }
-                return b == 0.0
-            }
-            return false
-        }
-    }
 
 
     companion object {
@@ -440,8 +324,9 @@ data class ComplexD(val re: Double, val im: Double) : FieldModel<ComplexD> {
          * @return the results.
          */
         fun logarithm(z: ComplexD): ComplexResult {
-            val main = ln(z)
-            return LogResult(main.re, main.im)
+            TODO()
+//            val main = ln(z)
+//            return LogResult(main.re, main.im)
         }
 
         /**
@@ -518,3 +403,128 @@ data class ComplexD(val re: Double, val im: Double) : FieldModel<ComplexD> {
         }
     }
 }
+
+
+
+/**
+ * This class describes the complex result set of multiple result functions in complex
+ * calculation such as root() or so on.
+ *
+ *
+ * In the implement of this class,usually,the results will only be calculated when
+ * they are required,and they are not saved,so if the result is required for multiple times,
+ * extra temptation is recommended.
+ *
+ * @author lyc
+ */
+interface ComplexResult : Iterable<ComplexD> {
+    //TODO
+    /**
+     * Returns the main value of this result.
+     *
+     * @return a complex number
+     */
+    val mainValue: ComplexD
+
+//    /**
+//     * Returns the number of complexes in this result set,if the
+//     * number of results is infinite,this method should return `-1`
+//     *
+//     * @return the number of results,or `-1`
+//     */
+//    fun number(): Long {
+//        return size
+//    }
+//
+//    open val isInfinite: Boolean
+//        /**
+//         * Returns `true` if the number of result.
+//         */
+//        get() = size == -1L
+
+
+}
+
+//private class RootResult(size: Long, private val m: Double, private val arg: Double) : ComplexResult(size) {
+//    override fun iterator(): Iterator<ComplexD> {
+//        return object : Iterator<ComplexD> {
+//            private var index: Long = 0
+//
+//            override fun next(): ComplexD {
+//                return modArg(m, ((index++) * TWO_PI + arg) / size)
+//            }
+//
+//            override fun hasNext(): Boolean {
+//                return index < size
+//            }
+//        }
+//    }
+//
+//    override fun mainValue(): ComplexD {
+//        return modArg(m, arg / size)
+//    }
+//
+//    override val isInfinite: Boolean
+//        get() = false
+//
+//    override fun contains(z: ComplexD): Boolean {
+//        if (z.mod == m) {
+//            //we use two-divide method
+//            val arg = z.arg
+//            var downer: Long = 0
+//            var upper = size - 1
+//            while (downer <= upper) {
+//                val t = (downer + upper) / 2
+//                val arg0 = (arg + t * TWO_PI) / size
+//                if (arg0 == arg) {
+//                    return true
+//                } else if (arg0 < arg) {
+//                    downer = t + 1
+//                } else {
+//                    upper = t - 1
+//                }
+//            }
+//        }
+//        return false
+//    }
+//}
+//
+
+
+
+//    private class LogResult(private val x: Double, private val arg: Double) : ComplexResult(-1) {
+//        override fun iterator(): Iterator<ComplexD> {
+//            return object : Iterator<ComplexD> {
+//                var index: Long = 0
+//
+//                override fun hasNext(): Boolean {
+//                    return true
+//                }
+//
+//                override fun next(): ComplexD {
+//                    return ComplexD(x, arg + TWO_PI * index++)
+//                }
+//            }
+//        }
+//
+//        override fun mainValue(): ComplexD {
+//            return ComplexD(x, arg)
+//        }
+//
+//        override val isInfinite: Boolean
+//            get() = true
+//
+//        override fun contains(z: ComplexD): Boolean {
+//            if (z.re == x) {
+//                var b = z.im
+//                if (b < 0) {
+//                    b = -b
+//                }
+//                while (b > 0) {
+//                    b -= TWO_PI
+//                }
+//                return b == 0.0
+//            }
+//            return false
+//        }
+//    }

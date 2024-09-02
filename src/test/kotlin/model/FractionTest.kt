@@ -318,27 +318,37 @@ class FractionTest {
         assertEquals(Fraction.of(4, 3), f.abs())
     }
 
+    @Test
+    fun divideToInteger(){
+        run{
+            val f1 = Fraction.of(7, 3)
+            val f2 = Fraction.of(2, 3)
+            val result = f1.divideToInteger(f2)
+            assertEquals(3, result)
+        }
+    }
+
 
     @Test
     fun divideAndRemainderScenarios() {
         run {
             val f1 = Fraction.of(7, 3)
             val f2 = Fraction.of(2, 3)
-            val (quotient, remainder) = f1.divideAndRemainder(f2)
+            val (quotient, remainder) = f1.divideToIntAndRemainder(f2)
             assertEquals(3, quotient)
             assertEquals(Fraction.of(1, 3), remainder)
         }
         run {
             val f1 = Fraction.of(7, 3)
             val f2 = Fraction.of(1, 2)
-            val (quotient, remainder) = f1.divideAndRemainder(f2)
+            val (quotient, remainder) = f1.divideToIntAndRemainder(f2)
             assertEquals(4, quotient)
             assertEquals(Fraction.of(1, 3), remainder)
         }
         run {
             val f1 = Fraction.of(0, 1)
             val f2 = Fraction.of(1, 3)
-            val (quotient, remainder) = f1.divideAndRemainder(f2)
+            val (quotient, remainder) = f1.divideToIntAndRemainder(f2)
             assertEquals(0, quotient)
             assertEquals(Fraction.ZERO, remainder)
         }
@@ -346,39 +356,39 @@ class FractionTest {
             val f1 = Fraction.of(1, 2)
             val f2 = Fraction.of(0, 1)
             assertThrows(ArithmeticException::class.java) {
-                f1.divideAndRemainder(f2)
+                f1.divideToIntAndRemainder(f2)
             }
         }
     }
 
-    @Test
-    fun remainderScenarios() {
-        run {
-            val f1 = Fraction.of(7, 3)
-            val f2 = Fraction.of(2, 3)
-            val result = f1.remainder(f2)
-            assertEquals(Fraction.of(1, 3), result)
-        }
-        run {
-            val f1 = Fraction.of(7, 3)
-            val f2 = Fraction.of(1, 2)
-            val result = f1.remainder(f2)
-            assertEquals(Fraction.of(1, 3), result)
-        }
-        run {
-            val f1 = Fraction.of(0, 1)
-            val f2 = Fraction.of(1, 3)
-            val result = f1.remainder(f2)
-            assertEquals(Fraction.ZERO, result)
-        }
-        run {
-            val f1 = Fraction.of(1, 2)
-            val f2 = Fraction.of(0, 1)
-            assertThrows(ArithmeticException::class.java) {
-                f1.remainder(f2)
-            }
-        }
-    }
+//    @Test
+//    fun remainderScenarios() {
+//        run {
+//            val f1 = Fraction.of(7, 3)
+//            val f2 = Fraction.of(2, 3)
+//            val result = f1.remainder(f2)
+//            assertEquals(Fraction.of(1, 3), result)
+//        }
+//        run {
+//            val f1 = Fraction.of(7, 3)
+//            val f2 = Fraction.of(1, 2)
+//            val result = f1.remainder(f2)
+//            assertEquals(Fraction.of(1, 3), result)
+//        }
+//        run {
+//            val f1 = Fraction.of(0, 1)
+//            val f2 = Fraction.of(1, 3)
+//            val result = f1.remainder(f2)
+//            assertEquals(Fraction.ZERO, result)
+//        }
+//        run {
+//            val f1 = Fraction.of(1, 2)
+//            val f2 = Fraction.of(0, 1)
+//            assertThrows(ArithmeticException::class.java) {
+//                f1.remainder(f2)
+//            }
+//        }
+//    }
 
     @Test
     fun toStringWithBracketScenarios() {

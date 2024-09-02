@@ -11,7 +11,7 @@ import cn.mathsymk.structure.*
  *
  * ## Fraction field
  *
- * If the ring is an [IntegralDomain], then the fraction is a field.
+ * If the ring is an [IntegralDomain], then the fractions form a field.
  *
  *
  *

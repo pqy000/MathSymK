@@ -81,6 +81,7 @@ interface LinearSpace<K : Any, V : Any> : Module<K, V> {
         return scalarMul(scalars.reciprocal(k), x)
     }
 
+    // not possible to define this function because of JVM overloading rules
 //    operator fun V.div(k: K): V {
 //        return scalarDiv(this, k)
 //    }

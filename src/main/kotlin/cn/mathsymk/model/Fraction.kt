@@ -267,14 +267,14 @@ data class Fraction internal constructor(
         return of(num, lcm)
     }
 
-    /**
-     * Returns the remainder of this fraction divided by the specified `y` to integer value.
-     * This method is equivalent to [remainder].
-     *
-     * @see divideToIntegerValue
-     * @see remainder
-     */
-    operator fun rem(y: Fraction) = remainder(y)
+//    /**
+//     * Returns the remainder of this fraction divided by the specified `y` to integer value.
+//     * This method is equivalent to [remainder].
+//     *
+//     * @see divideToIntegerValue
+//     * @see remainder
+//     */
+//    operator fun rem(y: Fraction) = remainder(y)
 
 
     /**
@@ -412,7 +412,7 @@ data class Fraction internal constructor(
      * @return The integer part of `this / divisor`.
      * @throws ArithmeticException if `divisor==0`
      */
-    fun divideToIntegerValue(divisor: Fraction): Long {
+    fun divideToInteger(divisor: Fraction): Long {
         if (isZero) {
             return 0
         }
@@ -423,27 +423,27 @@ data class Fraction internal constructor(
     /**
      * Divides this by the specified `divisor` to integer value and returns the remainder.
      *
-     * For example, `(7/2).divideAndRemainder(3/2) = (2, 1/2)`.
+     * For example, `(7/2).divideToIntAndRemainder(3/2) = (2, 1/2)`.
      *
      * @return A pair of `Long` and `Fraction` where the first element is the integer part of `this / divisor`
      * @throws ArithmeticException if `divisor==0`
      */
-    fun divideAndRemainder(divisor: Fraction): Pair<Long, Fraction> {
-        val q = this.divideToIntegerValue(divisor)
+    fun divideToIntAndRemainder(divisor: Fraction): Pair<Long, Fraction> {
+        val q = this.divideToInteger(divisor)
         val r = this - q * divisor
         return q to r
     }
 
-    /**
-     * Returns the remainder of this fraction divided by the specified `divisor` to integer value.
-     *
-     * @throws ArithmeticException if `divisor==0`
-     * @see divideToIntegerValue
-     * @see divideAndRemainder
-     */
-    fun remainder(divisor: Fraction): Fraction {
-        return divideAndRemainder(divisor).second
-    }
+//    /**
+//     * Returns the remainder of this fraction divided by the specified `divisor` to integer value.
+//     *
+//     * @throws ArithmeticException if `divisor==0`
+//     * @see divideToIntegerValue
+//     * @see divideAndRemainder
+//     */
+//    fun remainder(divisor: Fraction): Fraction {
+//        return divideAndRemainder(divisor).second
+//    }
 
 
     /**
