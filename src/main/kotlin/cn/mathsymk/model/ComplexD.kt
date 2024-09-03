@@ -1,7 +1,5 @@
 package cn.mathsymk.model
 
-import cn.mathsymk.model.ComplexD.Companion.TWO_PI
-import cn.mathsymk.model.ComplexD.Companion.modArg
 import cn.mathsymk.model.struct.FieldModel
 import kotlin.math.atan2
 import kotlin.math.hypot
@@ -9,9 +7,8 @@ import kotlin.math.pow
 
 
 
-
 /**
- *
+ * Describes a complex number with double precision.
  *
  * @author lyc
  */

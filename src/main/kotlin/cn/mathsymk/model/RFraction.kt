@@ -1,7 +1,5 @@
 package cn.mathsymk.model
 
-import cn.mathsymk.model.Fraction.Companion.of
-import cn.mathsymk.numberTheory.NTFunctions
 import cn.mathsymk.structure.*
 
 /**
@@ -98,12 +96,11 @@ internal constructor(val nume: T, val deno: T) {
     }
 }
 
-open class RFractionOnRing<T : Any>(model: UnitRing<T>) : Ring<RFraction<T>>,Module<T,RFraction<T>> {
+open class RFractionOnRing<T : Any>(_model: UnitRing<T>) : Ring<RFraction<T>>,Module<T,RFraction<T>> {
 
-    @Suppress("CanBePrimaryConstructorProperty")
-    open val model: UnitRing<T> = model
+    open val model: UnitRing<T> = _model
 
-    final override val zero: RFraction<T> = RFraction(model.zero, model.one)
+    final override val zero: RFraction<T> = RFraction(_model.zero, _model.one)
 
     override fun contains(x: RFraction<T>): Boolean {
         return model.contains(x.nume) && model.contains(x.deno)
@@ -130,21 +127,6 @@ open class RFractionOnRing<T : Any>(model: UnitRing<T>) : Ring<RFraction<T>>,Mod
     override val scalars: Ring<T>
         get() = model
 
-
-
-    /*
-   Simplifying
-    */
-//    protected fun gcdReduce(n: T, d: T): RingFraction<T> {
-//        val model = model
-//        if (model !is UniqueFactorizationDomain) {
-//            return of(n, d)
-//        }
-//        model.eval {
-//            val g = gcd(n, d)
-//            return of(exactDivide(n, g), exactDivide(d, g))
-//        }
-//    }
 
     protected open fun simplifyFrac(nume: T, deno: T): RFraction<T> {
         return RFraction(nume, deno)

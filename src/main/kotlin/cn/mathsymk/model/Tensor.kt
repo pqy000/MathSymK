@@ -95,7 +95,6 @@ interface Tensor<T : Any> : MathObject<T, EqualPredicate<T>>, AlgebraModel<T, Te
     override operator fun get(idx: Index): T
 
 
-
     /*
     Math operations:
      */
@@ -549,23 +548,21 @@ interface Tensor<T : Any> : MathObject<T, EqualPredicate<T>>, AlgebraModel<T, Te
          * @see of
          */
         operator fun <T : Any> invoke(
-            shape: IntArray,
-            mc: EqualPredicate<T>,
+            shape: IntArray, mc: EqualPredicate<T>,
             supplier: (Index) -> T
         ): MutableTensor<T> {
             return of(shape, mc, supplier)
         }
 
         /**
-         * Creates a tensor from the given multi-dimensional list/array. [elements] (and its
+         * Creates a tensor from the given multidimensional list/array. [elements] (and its
          * nesting lists) can contain either elements
          * of type `T` or lists, and the shape in each dimension should be consistent.
          *
          *
          */
-        fun <T : Any> of(elements: List<Any>, mc: EqualPredicate<T>): MutableTensor<T> {
-            @Suppress("UNCHECKED_CAST")
-            return ATensor.fromNestingList(elements, mc, mc.numberClass as Class<T>)
+        inline fun <reified T : Any> of(elements: List<Any>, mc: EqualPredicate<T>): MutableTensor<T> {
+            return ATensor.fromNestingList(elements, mc, T::class.java)
         }
 
         /**
@@ -579,8 +576,7 @@ interface Tensor<T : Any> : MathObject<T, EqualPredicate<T>>, AlgebraModel<T, Te
                 "$size elements expected but ${elements.size} is given!"
             }
             val data = Arrays.copyOf(elements, size, Array<Any>::class.java)
-            @Suppress("UNCHECKED_CAST")
-            return ATensor(mc, shape, data as Array<T>)
+            return ATensor(mc, shape, data)
         }
 
         /**
@@ -593,7 +589,7 @@ interface Tensor<T : Any> : MathObject<T, EqualPredicate<T>>, AlgebraModel<T, Te
         }
 
         /**
-         * Creates a tensor of the given [shape] with a iterable of elements, it is required that the size of
+         * Creates a tensor of the given [shape] with an iterable of elements, it is required that the size of
          * [elements] not smaller than the product of [shape].
          */
         fun <T : Any> of(shape: IntArray, mc: EqualPredicate<T>, elements: Iterable<T>): MutableTensor<T> {
@@ -1211,7 +1207,8 @@ abstract class AbstractMutableTensor<T : Any>(mc: EqualPredicate<T>, shape: IntA
  * An array-implementation of tensor.
  */
 class ATensor<T : Any>
-internal constructor(mc: EqualPredicate<T>, shape: IntArray, val data: Array<T>) : AbstractMutableTensor<T>(mc, shape) {
+internal constructor(mc: EqualPredicate<T>, shape: IntArray, val data: Array<Any>) :
+    AbstractMutableTensor<T>(mc, shape) {
     private val shifts: IntArray = IntArray(dim)
 
     init {
@@ -1235,15 +1232,18 @@ internal constructor(mc: EqualPredicate<T>, shape: IntArray, val data: Array<T>)
 
 
     override fun getChecked(idx: Index): T {
-        return data[toPos(idx)]
+        @Suppress("UNCHECKED_CAST")
+        return data[toPos(idx)] as T
     }
 
     override fun elementSequence(): Sequence<T> {
-        return data.asSequence()
+        @Suppress("UNCHECKED_CAST")
+        return data.asSequence() as Sequence<T>
     }
 
     override fun flattenToList(): List<T> {
-        return data.asList()
+        @Suppress("UNCHECKED_CAST")
+        return data.asList() as List<T>
     }
 
     override fun copy(): ATensor<T> {
@@ -1261,31 +1261,35 @@ internal constructor(mc: EqualPredicate<T>, shape: IntArray, val data: Array<T>)
 
     private inline fun inlineApplyAll(f: (T) -> T): ATensor<T> {
         for (i in 0 until size) {
-            data[i] = f(data[i])
+            @Suppress("UNCHECKED_CAST")
+            data[i] = f(data[i] as T)
         }
         return this
     }
 
 
     override fun applyAll(f: (T) -> T): MutableTensor<T> {
-        val ndata = arrayOfNulls<Any>(size)
-        for (i in 0 until size) {
-            ndata[i] = f(data[i])
+        val ndata = Array<Any>(size) { i ->
+            @Suppress("UNCHECKED_CAST")
+            f(data[i] as T)
         }
-        @Suppress("UNCHECKED_CAST")
-        return ATensor(model, sh, ndata as Array<T>)
+        return ATensor(model, sh, ndata)
     }
 
     override fun transform(f: (T) -> T) {
-        for (i in 0 until size) {
-            data[i] = f(data[i])
-        }
+        inlineApplyAll(f)
+//        for (i in 0 until size) {
+//            data[i] = f(data[i] as T)
+//        }
     }
 
     override val isZero: Boolean
         get() {
             val mc = model as Ring
-            return data.all { mc.isZero(it) }
+            return data.all {
+                @Suppress("UNCHECKED_CAST")
+                mc.isZero(it as T)
+            }
         }
 
 
@@ -1343,13 +1347,15 @@ internal constructor(mc: EqualPredicate<T>, shape: IntArray, val data: Array<T>)
             val d1 = data
             val d2 = y.data
             for (i in 0 until size) {
-                d1[i] = f(d1[i], d2[i])
+                @Suppress("UNCHECKED_CAST")
+                d1[i] = f(d1[i] as T, d2[i] as T)
             }
         } else {
             var pos = 0
             val data = this.data
             for (s in y.elementSequence()) {
-                data[pos] = f(data[pos], s)
+                @Suppress("UNCHECKED_CAST")
+                data[pos] = f(data[pos] as T, s)
                 pos++
             }
         }
@@ -1384,60 +1390,46 @@ internal constructor(mc: EqualPredicate<T>, shape: IntArray, val data: Array<T>)
 
     @Suppress("UNCHECKED_CAST")
     override fun <N : Any> mapTo(newCalculator: EqualPredicate<N>, mapper: Function<T, N>): ATensor<N> {
-        val ndata = arrayOfNulls<Any>(size)
-        for (i in 0 until size) {
-            ndata[i] = mapper.apply(data[i])
+        val ndata = Array<Any>(size) { i ->
+            mapper.apply(data[i] as T)
         }
-        return ATensor(newCalculator, sh, ndata as Array<N>)
+        return ATensor(newCalculator, sh, ndata)
     }
 
 
     companion object {
-        @Suppress("UNCHECKED_CAST")
+
         fun <T : Any> buildFromSequence(mc: EqualPredicate<T>, shape: IntArray, sequence: Sequence<T>): ATensor<T> {
             val size = MathUtils.product(shape)
-            val data = arrayOfNulls<Any>(size)
-            var pos = 0
-            for (t in sequence.take(size)) {
-                data[pos++] = t
-            }
-            require(pos == size)
-            return ATensor(mc, shape, data as Array<T>)
+            val seqIt = sequence.iterator()
+            val data = Array<Any>(size) { seqIt.next() }
+            return ATensor(mc, shape, data)
         }
 
-        @Suppress("UNCHECKED_CAST")
         private inline fun <T : Any> apply2(x: ATensor<T>, y: ATensor<T>, f: (T, T) -> T): ATensor<T> {
             checkShape(x, y)
             val d1 = x.data
             val d2 = y.data
-            val ndata = arrayOfNulls<Any>(x.size)
-            for (i in 0 until x.size) {
-                ndata[i] = f(d1[i], d2[i])
+            val ndata = Array<Any>(x.size) {
+                @Suppress("UNCHECKED_CAST")
+                f(d1[it] as T, d2[it] as T)
             }
-            return ATensor(x.model, x.sh, ndata as Array<T>)
+            return ATensor(x.model, x.sh, ndata)
         }
 
-        @Suppress("UNCHECKED_CAST")
         fun <T : Any> copyOf(tensor: Tensor<T>): ATensor<T> {
             val shape = tensor.shape
             if (tensor is ATensor) {
                 return tensor.copy()
             }
-            val size = MathUtils.product(shape)
-            val data = arrayOfNulls<Any>(size)
-            var pos = 0
-            for (t in tensor.elementSequence()) {
-                data[pos++] = t
-            }
-            return ATensor(tensor.model, shape, data as Array<T>)
+            return buildFromSequence(tensor.model, shape, tensor.elementSequence())
         }
 
         fun <T : Any> constant(c: T, shape: IntArray, mc: EqualPredicate<T>): ATensor<T> {
             val size = MathUtils.product(shape)
-            val data = arrayOfNulls<Any>(size)
-            Arrays.fill(data, c)
-            @Suppress("UNCHECKED_CAST")
-            return ATensor(mc, shape, data as Array<T>)
+            // create an array of the given type
+            val data = Array<Any>(size) { c }
+            return ATensor(mc, shape, data)
         }
 
         fun <T : Any> zeros(shape: IntArray, mc: Ring<T>): ATensor<T> {
@@ -1458,7 +1450,6 @@ internal constructor(mc: EqualPredicate<T>, shape: IntArray, val data: Array<T>)
 //            return ATensor(m.calculator, intArrayOf(r, c), data as Array<T>)
 //        }
 
-        @Suppress("UNCHECKED_CAST")
         fun <T : Any> wedge(x: ATensor<T>, y: ATensor<T>): ATensor<T> {
             val mc = x.model as Ring<T>
             val shape = x.shape + y.shape
@@ -1469,16 +1460,18 @@ internal constructor(mc: EqualPredicate<T>, shape: IntArray, val data: Array<T>)
             var pos = 0
             for (a in dataX) {
                 for (b in dataY) {
-                    data[pos++] = mc.multiply(a, b)
+                    @Suppress("UNCHECKED_CAST")
+                    data[pos++] = mc.multiply(a as T, b as T)
                 }
             }
-            return ATensor(mc, shape, data as Array<T>)
+            @Suppress("UNCHECKED_CAST")
+            return ATensor(mc, shape, data as Array<Any>)
         }
 
 
         private fun <T : Any> recurAdd(
-            list: List<Any>, shape: IntArray, level: Int, pos: Int,
-            dest: Array<T>, clz: Class<T>
+            list: List<Any?>, shape: IntArray, level: Int, pos: Int,
+            dest: Array<Any?>, clz: Class<T>
         ): Int {
             val size = shape[level]
             require(list.size == size) {
@@ -1495,21 +1488,19 @@ internal constructor(mc: EqualPredicate<T>, shape: IntArray, val data: Array<T>)
                 require(e is List<*>) {
                     "Nesting level mismatch!"
                 }
-                @Suppress("UNCHECKED_CAST")
-                p = recurAdd(e as List<Any>, shape, level + 1, p, dest, clz)
+                p = recurAdd(e as List<Any?>, shape, level + 1, p, dest, clz)
             }
             return p
         }
 
-        fun <T : Any> fromNestingList(list: List<Any>, mc: EqualPredicate<T>, clz: Class<T>): ATensor<T> {
+        fun <T : Any> fromNestingList(list: List<Any>, mc: EqualPredicate<T>, clazz: Class<T>): ATensor<T> {
             val sh = arrayListOf<Int>()
-//            val clz = mc.numberClass
             var l = list
             while (true) {
                 require(l.isNotEmpty())
                 sh += l.size
                 val e = l[0]
-                if (clz.isInstance(e)) {
+                if (clazz.isInstance(e)) {
                     break
                 }
                 require(e is List<*>) {
@@ -1522,11 +1513,11 @@ internal constructor(mc: EqualPredicate<T>, shape: IntArray, val data: Array<T>)
             val shape = sh.toIntArray()
             val size = MathUtils.product(shape)
 
-            @Suppress("UNCHECKED_CAST")
-            val data = arrayOfNulls<Any>(size) as Array<T>
-            val pos = recurAdd(list, shape, 0, 0, data, clz)
+            val data = arrayOfNulls<Any>(size)
+            val pos = recurAdd(list, shape, 0, 0, data, clazz)
             assert(pos == size)
-            return ATensor(mc, shape, data)
+            @Suppress("UNCHECKED_CAST")
+            return ATensor(mc, shape, data as Array<Any>)
         }
     }
 

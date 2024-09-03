@@ -203,11 +203,11 @@ interface AddMonoid<T : Any> : AddSemigroup<T> {
     }
 
 
-    /**
-     * Returns the class of the number.
-     */
-    override val numberClass: Class<T>
-        get() = zero.javaClass
+//    /**
+//     * Returns the class of the number.
+//     */
+//    override val numberClass: Class<T>
+//        get() = zero.javaClass
 }
 
 /**
@@ -395,11 +395,11 @@ interface MulMonoid<T : Any> : MulSemigroup<T> {
         return ps.fold(one, this::multiply)
     }
 
-    /**
-     * Returns the class of the number.
-     */
-    override val numberClass: Class<T>
-        get() = one.javaClass
+//    /**
+//     * Returns the class of the number.
+//     */
+//    override val numberClass: Class<T>
+//        get() = one.javaClass
 }
 
 
@@ -526,7 +526,7 @@ fun <T : Any> AddGroup<T>.asGroup(): Group<T> {
             return m.add(x, y)
         }
 
-        override val numberClass: Class<T>
-            get() = m.numberClass
+//        override val numberClass: Class<T>
+//            get() = m.numberClass
     }
 }

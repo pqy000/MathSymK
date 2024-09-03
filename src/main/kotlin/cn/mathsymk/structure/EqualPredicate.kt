@@ -35,32 +35,31 @@ interface EqualPredicate<T> {
      */
     fun isEqual(x: T, y: T): Boolean
 
-    /**
-     * Gets the class of the number that this calculator deals with.
-     */
-    val numberClass: Class<T>
+//    /**
+//     * Gets the class of the number that this calculator deals with.
+//     */
+//    val numberClass: Class<T>
 
     companion object {
 
         @JvmStatic
-        fun <T> naturalEqual(clz: Class<T>): EqualPredicate<T> {
+        fun <T> naturalEqual(): EqualPredicate<T> {
             return object : EqualPredicate<T> {
                 override fun isEqual(x: T, y: T): Boolean {
                     return Objects.equals(x, y)
                 }
 
-                override val numberClass: Class<T> = clz
+//                override val numberClass: Class<T> = clz
             }
         }
 
         @JvmStatic
-        fun <T> refEqual(clz: Class<T>): EqualPredicate<T> {
+        fun <T> refEqual(): EqualPredicate<T> {
             return object : EqualPredicate<T> {
                 override fun isEqual(x: T, y: T): Boolean {
                     return x === y
                 }
-
-                override val numberClass: Class<T> = clz
+//                override val numberClass: Class<T> = clz
             }
         }
     }

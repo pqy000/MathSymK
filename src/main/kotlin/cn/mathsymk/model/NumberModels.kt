@@ -256,8 +256,8 @@ object NumberModels {
 
     object BigIntegerAsIntegers : Integers<BigInteger> {
 
-        override val numberClass: Class<BigInteger>
-            get() = BigInteger::class.java
+//        override val numberClass: Class<BigInteger>
+//            get() = BigInteger::class.java
 
         override fun contains(x: BigInteger): Boolean {
             return true
@@ -388,8 +388,8 @@ object NumberModels {
 
         override val one: Double = 1.0
 
-        override val numberClass: Class<Double>
-            get() = Double::class.java
+//        override val numberClass: Class<Double>
+//            get() = Double::class.java
 
         override fun abs(x: Double): Double {
             return kotlin.math.abs(x)
@@ -514,8 +514,8 @@ object NumberModels {
 
         override val one: BigDecimal = BigDecimal.ONE
 
-        override val numberClass: Class<BigDecimal>
-            get() = BigDecimal::class.java
+//        override val numberClass: Class<BigDecimal>
+//            get() = BigDecimal::class.java
 
         override fun abs(x: BigDecimal): BigDecimal {
             return x.abs()

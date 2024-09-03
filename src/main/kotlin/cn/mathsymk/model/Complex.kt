@@ -102,13 +102,14 @@ data class Complex<T : Any>(val a: T, val b: T) {
     }
 }
 
-open class ComplexOnRing<T : Any>(model: Ring<T>) : Ring<Complex<T>>, Module<T, Complex<T>> {
-    override val zero: Complex<T> = Complex(model.zero, model.zero)
+open class ComplexOnRing<T : Any>(_model: Ring<T>) : Ring<Complex<T>>, Module<T, Complex<T>> {
+    override val zero: Complex<T> = Complex(_model.zero, _model.zero)
     override val scalars: Ring<T>
         get() = model
 
-    @Suppress("CanBePrimaryConstructorProperty")
-    open val model: Ring<T> = model
+
+
+    open val model: Ring<T> = _model
 
 
     override fun isEqual(x: Complex<T>, y: Complex<T>): Boolean {
@@ -189,15 +190,15 @@ open class ComplexOnRing<T : Any>(model: Ring<T>) : Ring<Complex<T>>, Module<T, 
 
 open class ComplexOnUnitRing<T : Any>(override val model: UnitRing<T>) :
     ComplexOnRing<T>(model), UnitRing<Complex<T>> {
+
     override val one: Complex<T>
         get() = Complex(model.one, model.zero)
-
-
 }
 
 open class ComplexOnField<T : Any>(override val model: Field<T>) :
     ComplexOnUnitRing<T>(model), Field<Complex<T>>,
     Algebra<T, Complex<T>> {
+
     override val scalars: Field<T>
         get() = model
     override val characteristic: Long?

@@ -10,6 +10,193 @@ import cn.mathsymk.function.BijectiveOperator
 import cn.mathsymk.numberTheory.NTFunctions
 import cn.mathsymk.util.ArraySup
 
+
+/**
+ * A cycle is a permutation that shifts some [elements] in this permutation by one.
+ * For example, a cycle whose [elements] are `(0,2,4,1)` maps `0 -> 2, 2 -> 4, 4 -> 1, 1 -> 0`,
+ * while other elements are not changed.
+ *
+ * @author liyicheng
+ * 2018-03-03 15:44
+ */
+interface Cycle : Permutation {
+    /**
+     * Gets an array that contains all the elements in the Cycle's order.
+     * The permutation satisfies that `apply(elements[i ])=elements[(i+1)%length]`.
+     *
+     * @return
+     */
+    val elements: IntArray
+
+    /**
+     * Gets the length of the cycle, `cycleLength = elements.size`.
+     */
+    val cycleLength: Int
+        get() = elements.size
+
+    /**
+     * Determines whether the element should be rotated.
+     *
+     * @param x
+     * @return
+     */
+    fun containsInCycle(x: Int): Boolean
+
+
+    override fun rank(): Int {
+        return cycleLength
+    }
+
+
+    override fun decompose(): List<Cycle> {
+        return listOf(this)
+    }
+
+
+    override fun apply(x: Int): Int {
+        if (cycleLength <= 1 || !containsInCycle(x)) {
+            return x
+        }
+        val earr = elements
+        var index: Int = ArraySup.firstIndexOf(x, earr)
+        index--
+        if (index < 0) {
+            index += earr.size
+        }
+        return earr[index]
+    }
+
+
+    @Suppress("DuplicatedCode") // for non-generic types
+    override fun permute(array: IntArray, inPlace: Boolean): IntArray {
+        val result = if (inPlace) array else array.clone()
+        if (cycleLength <= 1) {
+            return result
+        }
+        val cycle = elements
+        // place elements[i] to elements[i+1]
+        val t = result[cycle.last()]
+        for (i in 0 until cycle.size - 1) {
+            result[cycle[i + 1]] = result[cycle[i]]
+        }
+        result[cycle[0]] = t
+        return result
+    }
+
+    @Suppress("DuplicatedCode") // for non-generic types
+    override fun <T> permute(array: Array<T>, inPlace: Boolean): Array<T> {
+        val result = if (inPlace) array else array.clone()
+        if (cycleLength <= 1) {
+            return result
+        }
+        val cycle = elements
+        // place elements[i] to elements[i+1]
+        val t = result[cycle.last()]
+        for (i in 0 until cycle.size - 1) {
+            result[cycle[i + 1]] = result[cycle[i]]
+        }
+        result[cycle[0]] = t
+        return result
+    }
+}
+
+/**
+ * A transposition permutation is a permutation that only swap two elements.
+ * By convenience, it is not strictly required that the two elements are not equal.
+ *
+ * @author liyicheng
+ * 2018-03-02 20:47
+ */
+interface Transposition : Cycle {
+    /**
+     * Gets the index of the first element of the swapping, which has
+     * a smaller index.
+     *
+     * @return
+     */
+    val first: Int
+
+    /**
+     * Gets the index of the second element of the swapping, which has
+     * a bigger index.
+     *
+     * @return
+     */
+    val second: Int
+
+    override val cycleLength: Int
+        get() = if (first == second) 1 else 2
+
+    override val elements: IntArray
+        get() {
+            val a = first
+            val b = second
+            if (a == b) {
+                return intArrayOf(a)
+            }
+            return intArrayOf(a, b)
+        }
+
+    /*
+     */
+    override fun containsInCycle(x: Int): Boolean {
+        return x == first || x == second
+    }
+
+
+    override fun apply(x: Int): Int {
+        val f = first
+        val s = second
+        if (x == f) {
+            return s
+        }
+        if (x == s) {
+            return f
+        }
+        return x
+    }
+
+
+    override fun invert(y: Int): Int {
+        //symmetry
+        return apply(y)
+    }
+
+
+    override fun inverse(): Transposition {
+        return this
+    }
+
+
+    override fun decomposeTransposition(): List<Transposition> {
+        return listOf(this)
+    }
+
+
+    override fun decompose(): List<Cycle> {
+        return listOf<Cycle>(this)
+    }
+
+    override fun permute(array: IntArray, inPlace: Boolean): IntArray {
+        val result = if (inPlace) array else array.clone()
+        ArraySup.swap(result, first, second)
+        return result
+    }
+
+    override fun <T> permute(array: Array<T>, inPlace: Boolean): Array<T> {
+        val result = if (inPlace) array else array.clone()
+        ArraySup.swap(result, first, second)
+        return result
+    }
+
+
+    override fun getArray(): IntArray {
+        val arr: IntArray = ArraySup.indexArray(size)
+        return permute(arr)
+    }
+}
+
+
 /**
  * A permutation describes a transformation on a finite set of elements.
  *
@@ -119,7 +306,7 @@ interface Permutation : BijectiveOperator<Int>, Composable<Permutation>, Compara
      * Reduces this permutation to several elementary permutations  The last element in the
      * list is the first permutation that should be applied. Therefore, assume the elements
      * in the list in order are `p1,p2,p3...pn`, then `p1·p2·...·pn == this`, where
-     * `·` is the compose of permutations 
+     * `·` is the compose of permutations
      *
      *
      * For example, if `this=(4,0,3,1,2)`, then the returned list can
@@ -282,7 +469,7 @@ interface Permutation : BijectiveOperator<Int>, Composable<Permutation>, Compara
 //        return ArraySup.compareLexi(getArray(), other.getArray())
     }
 
-    companion object{
+    companion object {
 
         fun checkDistinct(array: IntArray, ubound: Int) {
             val marks = BooleanArray(ubound)
@@ -491,7 +678,7 @@ interface Permutation : BijectiveOperator<Int>, Composable<Permutation>, Compara
 
 
         /**
-         * Returns a list of all the `n`-size permutations 
+         * Returns a list of all the `n`-size permutations
          * The permutations are ordered by the [Permutation.index] of the permutation.
          *
          * This method only supports `n` smaller than 13.
@@ -565,15 +752,17 @@ interface Permutation : BijectiveOperator<Int>, Composable<Permutation>, Compara
          *
          */
         fun getCalculator(size: Int): Group<Permutation> {
-            return PermutationCalculator(size)
+            return PermutationGroup(size)
         }
 
-        @JvmRecord
-        private data class PermutationCalculator(
+        private class PermutationGroup(
             val size: Int,
-            override val identity: Permutation = identity(size),
-            override val numberClass: Class<Permutation> = Permutation::class.java
+            override val identity: Permutation = identity(size)
         ) : Group<Permutation> {
+
+//            override val numberClass: Class<Permutation>
+//                get() = Permutation::class.java
+
             override fun isEqual(x: Permutation, y: Permutation): Boolean {
                 return Companion.isEqual(x, y)
             }
@@ -601,189 +790,3 @@ interface Permutation : BijectiveOperator<Int>, Composable<Permutation>, Compara
     }
 }
 
-
-
-/**
- * A cycle is a permutation that shifts some [elements] in this permutation by one.
- * For example, a cycle whose [elements] are `(0,2,4,1)` maps `0 -> 2, 2 -> 4, 4 -> 1, 1 -> 0`,
- * while other elements are not changed.
- *
- * @author liyicheng
- * 2018-03-03 15:44
- */
-interface Cycle : Permutation {
-    /**
-     * Gets an array that contains all the elements in the Cycle's order.
-     * The permutation satisfies that `apply(elements[i ])=elements[(i+1)%length]`.
-     *
-     * @return
-     */
-    val elements: IntArray
-
-    /**
-     * Gets the length of the cycle, `cycleLength = elements.size`.
-     */
-    val cycleLength: Int
-        get() = elements.size
-
-    /**
-     * Determines whether the element should be rotated.
-     *
-     * @param x
-     * @return
-     */
-    fun containsInCycle(x: Int): Boolean
-
-
-    override fun rank(): Int {
-        return cycleLength
-    }
-
-
-    override fun decompose(): List<Cycle> {
-        return listOf(this)
-    }
-
-
-    override fun apply(x: Int): Int {
-        if (cycleLength <= 1 || !containsInCycle(x)) {
-            return x
-        }
-        val earr = elements
-        var index: Int = ArraySup.firstIndexOf(x, earr)
-        index--
-        if (index < 0) {
-            index += earr.size
-        }
-        return earr[index]
-    }
-
-
-    @Suppress("DuplicatedCode") // for non-generic types
-    override fun permute(array: IntArray, inPlace: Boolean): IntArray {
-        val result = if (inPlace) array else array.clone()
-        if (cycleLength <= 1) {
-            return result
-        }
-        val cycle = elements
-        // place elements[i] to elements[i+1]
-        val t = result[cycle.last()]
-        for (i in 0 until cycle.size - 1) {
-            result[cycle[i + 1]] = result[cycle[i]]
-        }
-        result[cycle[0]] = t
-        return result
-    }
-
-    @Suppress("DuplicatedCode") // for non-generic types
-    override fun <T> permute(array: Array<T>, inPlace: Boolean): Array<T> {
-        val result = if (inPlace) array else array.clone()
-        if (cycleLength <= 1) {
-            return result
-        }
-        val cycle = elements
-        // place elements[i] to elements[i+1]
-        val t = result[cycle.last()]
-        for (i in 0 until cycle.size - 1) {
-            result[cycle[i + 1]] = result[cycle[i]]
-        }
-        result[cycle[0]] = t
-        return result
-    }
-}
-
-/**
- * A transposition permutation is a permutation that only swap two elements.
- * By convenience, it is not strictly required that the two elements are not equal.
- *
- * @author liyicheng
- * 2018-03-02 20:47
- */
-interface Transposition : Cycle {
-    /**
-     * Gets the index of the first element of the swapping, which has
-     * a smaller index.
-     *
-     * @return
-     */
-    val first: Int
-
-    /**
-     * Gets the index of the second element of the swapping, which has
-     * a bigger index.
-     *
-     * @return
-     */
-    val second: Int
-
-    override val cycleLength: Int
-        get() = if (first == second) 1 else 2
-
-    override val elements: IntArray
-        get() {
-            val a = first
-            val b = second
-            if (a == b) {
-                return intArrayOf(a)
-            }
-            return intArrayOf(a, b)
-        }
-
-    /*
-     */
-    override fun containsInCycle(x: Int): Boolean {
-        return x == first || x == second
-    }
-
-
-    override fun apply(x: Int): Int {
-        val f = first
-        val s = second
-        if (x == f) {
-            return s
-        }
-        if (x == s) {
-            return f
-        }
-        return x
-    }
-
-
-    override fun invert(y: Int): Int {
-        //symmetry
-        return apply(y)
-    }
-
-
-    override fun inverse(): Transposition {
-        return this
-    }
-
-
-    override fun decomposeTransposition(): List<Transposition> {
-        return listOf(this)
-    }
-
-
-    override fun decompose(): List<Cycle> {
-        return listOf<Cycle>(this)
-    }
-
-    override fun permute(array: IntArray, inPlace: Boolean): IntArray {
-        val result = if (inPlace) array else array.clone()
-        ArraySup.swap(result, first, second)
-        return result
-    }
-
-    override fun <T> permute(array: Array<T>, inPlace: Boolean): Array<T> {
-        val result = if (inPlace) array else array.clone()
-        ArraySup.swap(result, first, second)
-        return result
-    }
-
-
-    override fun getArray(): IntArray {
-        val arr: IntArray = ArraySup.indexArray(size)
-        return permute(arr)
-    }
-}
