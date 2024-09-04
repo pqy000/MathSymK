@@ -568,7 +568,7 @@ internal object TensorImpl {
     }
 
     fun <T : Any> isLinearDependent(x: Tensor<T>, y: Tensor<T>, mc : Field<T>): Boolean {
-        Tensor.checkShape(x, y)
+        checkShape(x, y)
 //        val idx = IntArray(x.dim)
         if (x.isZero || y.isZero) {
             return true

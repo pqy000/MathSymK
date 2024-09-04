@@ -1,15 +1,13 @@
 package cn.mathsymk.linear
 
-import cn.mathsymk.AbstractMathObject
 import cn.mathsymk.IMathObject
 import cn.mathsymk.MathObject
+import cn.mathsymk.discrete.Permutation
 import cn.mathsymk.model.struct.AlgebraModel
 import cn.mathsymk.model.struct.GenTensor
 import cn.mathsymk.model.struct.Index
 import cn.mathsymk.structure.*
 import cn.mathsymk.util.IterUtils
-import cn.mathsymk.discrete.Permutation
-import cn.mathsymk.linear.Tensor.Companion.checkShape
 import cn.mathsymk.util.MathUtils
 import java.util.*
 import java.util.function.Function

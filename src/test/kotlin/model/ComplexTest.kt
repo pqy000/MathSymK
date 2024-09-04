@@ -115,9 +115,9 @@ class ComplexTest {
 //    }
 }
 
-fun main() {
-    val l = listOf(0,0)
-    val a : Int = l[0]
-    val b : Int = l[1]
-    println(l[0] / l[1])
-}
+//fun main() {
+//    val l = listOf(0,0)
+//    val a : Int = l[0]
+//    val b : Int = l[1]
+//    println(l[0] / l[1])
+//}

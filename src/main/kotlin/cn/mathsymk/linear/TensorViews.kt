@@ -1,14 +1,10 @@
 package cn.mathsymk.linear
 
-import cn.mathsymk.model.struct.Index
-import cn.mathsymk.model.struct.shapeString
-import cn.mathsymk.numberTheory.NTFunctions
-import cn.mathsymk.structure.*
-import cn.mathsymk.util.IterUtils
 import cn.mathsymk.discrete.Permutation
+import cn.mathsymk.model.struct.Index
+import cn.mathsymk.structure.AddSemigroup
 import cn.mathsymk.util.ArraySup
-import java.util.*
-import kotlin.math.min
+import cn.mathsymk.util.IterUtils
 
 
 /*

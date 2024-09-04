@@ -79,6 +79,12 @@ interface GenMatrix<T> : GenTuple<T> {
     override val size: Int
         get() = row * column
 
+    /**
+     * Gets the shape of this matrix: `(row, column)`.
+     */
+    val shape: Pair<Int, Int>
+        get() = row to column
+
     operator fun get(i: Int, j: Int): T
 
     override fun applyAll(f: (T) -> T): GenMatrix<T>
@@ -91,7 +97,7 @@ interface GenMatrix<T> : GenTuple<T> {
     /**
      * Determines whether this matrix is the same shape as [y].
      */
-    fun isSameShape(y: GenMatrix<*>): Boolean {
+    fun shapeMatches(y: GenMatrix<*>): Boolean {
         return row == y.row && column == y.column
     }
 
@@ -138,11 +144,7 @@ interface GenVector<T> : GenTuple<T> {
     }
 }
 
-/**
- * Gets the shape of this matrix: `(row, column)`.
- */
-val <T> GenMatrix<T>.shape: Pair<Int, Int>
-    get() = row to column
+
 
 inline val GenMatrix<*>.rowIndices: IntRange
     get() = 0..<row
