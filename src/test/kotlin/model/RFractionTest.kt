@@ -9,7 +9,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class RFractionTest {
-    val ints = NumberModels.IntAsIntegers
+    val ints = NumberModels.intAsIntegers()
     val qInt = RFraction.asField(ints)
 
     val polyInt = Polynomial.from(ints)
@@ -307,7 +307,7 @@ class RFractionTest {
 
 
 fun main() {
-    val ints = NumberModels.IntAsIntegers
+    val ints = NumberModels.intAsIntegers()
     val polyRing = Polynomial.from(ints)
     val qField = RFraction.asField(polyRing)
     with(polyRing) { // polynomial ring over integers, Z[x]

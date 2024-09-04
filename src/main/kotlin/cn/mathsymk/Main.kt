@@ -29,15 +29,9 @@ import kotlin.system.measureTimeMillis
 
 //fun <T>
 
-fun <T : Any> getClass(t: T): Class<T> {
-    return t.javaClass
-}
 
 fun main() {
 //    val t = typeOf<String>()
-
-    println(getClass<Any>(""))
-    println(getClass(""))
     println(typeOf<String>())
     println(typeOf<List<String>>())
 }

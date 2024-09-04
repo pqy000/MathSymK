@@ -10,7 +10,7 @@ import kotlin.test.assertTrue
 
 class ComplexTest {
 
-    val ℚ = Fraction.FractionAsQuotient
+    val ℚ = Fraction.asQuotient
     val ℂ = Complex.asField(ℚ)
 
     val intP = NumberModels.intModP(97)

@@ -9,7 +9,7 @@ class NumberModelsTest {
 
     @Test
     fun testDoubleAsReals() {
-        val real = NumberModels.DoubleAsReals()
+        val real = NumberModels.doubleAsReals()
         assert(real.contains(1.0))
         assertEquals(0.0, real.zero)
         assertEquals(2.0, real.add(1.0, 1.0))
@@ -18,10 +18,9 @@ class NumberModelsTest {
         assertEquals(2.0 - 1.0, real.subtract(2.0, 1.0))
     }
 
-
     @Test
     fun testIntAsIntegers() {
-        val int = NumberModels.IntAsIntegers
+        val int = NumberModels.intAsIntegers()
         assert(int.contains(1))
         assertEquals(0, int.zero)
         assertEquals(2, int.add(1, 1))
@@ -38,15 +37,25 @@ class NumberModelsTest {
 
     @Test
     fun testIntModP(){
-        run{
-            val intMod97 = NumberModels.intModP(97)
-            assertEquals(3, intMod97.add(1,2))
-            assertEquals(96, intMod97.subtract(1,2))
-            assertEquals(2, intMod97.multiply(1,2))
-            assertEquals(49, intMod97.reciprocal(2))
-            assertEquals(49, intMod97.divide(98, 2))
-            assertThrows<ArithmeticException> { intMod97.divide(98, 0) }
+        with(NumberModels.intModP(97)){
+            assertEquals(3, add(1,2))
+            assertEquals(96, subtract(1,2))
+            assertEquals(2, multiply(1,2))
+            assertEquals(49, reciprocal(2))
+            assertEquals(49, divide(98, 2))
+            assertThrows<ArithmeticException> { divide(98, 0) }
         }
     }
 
+
+    @Test
+    fun testBigFrac(){
+        val bigFrac = NumberModels.fractionBig()
+        with(bigFrac) {
+            val f1 = bfrac(1,2)
+            val f2 = bfrac(1,3)
+            assertEquals(bfrac(5,6), f1 + f2)
+
+        }
+    }
 }

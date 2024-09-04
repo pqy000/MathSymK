@@ -1,5 +1,7 @@
 package cn.mathsymk.model
 
+import cn.mathsymk.model.Fraction.Companion.ONE
+import cn.mathsymk.model.Fraction.Companion.ZERO
 import cn.mathsymk.util.exceptions.ExceptionUtil
 import cn.mathsymk.model.struct.FieldModel
 import cn.mathsymk.numberTheory.NTFunctions
@@ -897,58 +899,64 @@ data class Fraction internal constructor(
 //        val fractionSimplifier: Simplifier<Fraction> = FractionSimplifier()
     }
 
-    /**
-     * A calculator for the class Fraction.
-     */
-    object FractionAsQuotient : Quotients<Fraction> {
-        override fun isEqual(x: Fraction, y: Fraction): Boolean {
-            return x == y
-        }
+}
 
-        override fun negate(x: Fraction): Fraction {
-            return -x
-        }
+/**
+ * A calculator for the class Fraction.
+ */
+object FractionAsQuotient : Quotients<Fraction> {
+    override fun isEqual(x: Fraction, y: Fraction): Boolean {
+        return x == y
+    }
 
-        override val zero: Fraction
-            get() = ZERO
-        override val one: Fraction
-            get() = ONE
+    override fun negate(x: Fraction): Fraction {
+        return -x
+    }
 
-        override fun contains(x: Fraction): Boolean {
-            return true
-        }
+    override val zero: Fraction
+        get() = ZERO
+    override val one: Fraction
+        get() = ONE
 
-        override fun add(x: Fraction, y: Fraction): Fraction {
-            return x + y
-        }
+    fun frac(n: Long, d: Long): Fraction = Fraction.of(n, d)
 
-        override fun subtract(x: Fraction, y: Fraction): Fraction {
-            return x - y
-        }
-
-        override fun multiply(x: Fraction, y: Fraction): Fraction {
-            return x * y
-        }
-
-        override fun divide(x: Fraction, y: Fraction): Fraction {
-            return x / y
-        }
+    fun frac(n: Int, d: Int): Fraction = Fraction.of(n.toLong(), d.toLong())
 
 
-        override fun reciprocal(x: Fraction): Fraction {
-            return x.reciprocal()
-        }
 
-        override fun compare(o1: Fraction, o2: Fraction): Int {
-            return o1.compareTo(o2)
-        }
 
-        override fun power(x: Fraction, n: Long): Fraction {
-            return x.pow(n)
-        }
+    override fun contains(x: Fraction): Boolean {
+        return true
+    }
+
+    override fun add(x: Fraction, y: Fraction): Fraction {
+        return x + y
+    }
+
+    override fun subtract(x: Fraction, y: Fraction): Fraction {
+        return x - y
+    }
+
+    override fun multiply(x: Fraction, y: Fraction): Fraction {
+        return x * y
+    }
+
+    override fun divide(x: Fraction, y: Fraction): Fraction {
+        return x / y
     }
 
 
+    override fun reciprocal(x: Fraction): Fraction {
+        return x.reciprocal()
+    }
+
+    override fun compare(o1: Fraction, o2: Fraction): Int {
+        return o1.compareTo(o2)
+    }
+
+    override fun power(x: Fraction, n: Long): Fraction {
+        return x.pow(n)
+    }
 }
 
 fun Long.toFrac(): Fraction = Fraction.of(this)

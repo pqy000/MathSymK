@@ -43,7 +43,6 @@ interface UniqueFactorizationDomain<T : Any> : IntegralDomain<T> {
     fun isExactDivide(a: T, b: T): Boolean
 
 
-
 }
 
 
@@ -136,10 +135,7 @@ interface EuclideanDomain<T : Any> : UniqueFactorizationDomain<T> {
      */
     fun gcdUV(a: T, b: T): Triple<T, T, T> {
         return gcdUVExtendedEuclid(
-            a,
-            b,
-            zero,
-            one,
+            a, b, zero, one,
             this::isZero,
             this::subtract,
             this::multiply,
@@ -483,19 +479,12 @@ interface Integers<T : Any> : EuclideanDomain<T>, OrderedRing<T> {
      * @see mod
      */
     override fun remainder(a: T, b: T): T {
-        if (isZero(b)) {
-            throw ArithmeticException("Divide by zero: $a % $b")
-        }
+//        if (isZero(b)) {
+//            throw ArithmeticException("Divide by zero: $a % $b")
+//        }
         val m = mod(abs(a), abs(b))
-        if (isZero(m)) {
-            return m
-        }
-        return if (isNegative(a)) {
-            m - b
-        } else {
-            m
-        }
-
+        if (isZero(m)) return m
+        return if (isNegative(a)) m - b else m
     }
 
     /**
@@ -676,6 +665,16 @@ interface Integers<T : Any> : EuclideanDomain<T>, OrderedRing<T> {
         return ans
     }
 
+
+    fun of(n : Int) : T{
+        return of(n.toLong())
+    }
+
+    val Int.v : T
+        get() = of(this)
+
+    val Long.v : T
+        get() = of(this)
 }
 
 

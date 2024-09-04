@@ -1,7 +1,7 @@
 package cn.mathsymk.structure
 
 /**
- * Describes the rational numbers, or quotients, ℚ.
+ * Describes the rational numbers, namely quotients, ℚ.
  */
 interface Quotients<T : Any> : OrderedField<T> {
 
@@ -14,13 +14,13 @@ interface Quotients<T : Any> : OrderedField<T> {
     /**
      * Returns the number value corresponding to the integer.
      */
-    val Int.v
+    val Int.v : T
         get() = of(this.toLong())
 
     /**
      * Returns the number value corresponding to the integer.
      */
-    val Long.v
+    val Long.v : T
         get() = of(this)
 
 }

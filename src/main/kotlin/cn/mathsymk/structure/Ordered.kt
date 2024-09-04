@@ -1,15 +1,14 @@
 package cn.mathsymk.structure
 
-interface OrderPredicate<T> : EqualPredicate<T>, Comparator<T> {
-
-    operator fun T.compareTo(y: T): Int = compare(this, y)
-}
-
-
 /*
  * Created by liyicheng at 2021-05-06 19:32
  */
 
+
+interface OrderPredicate<T> : EqualPredicate<T>, Comparator<T> {
+
+    operator fun T.compareTo(y: T): Int = compare(this, y)
+}
 
 
 /**

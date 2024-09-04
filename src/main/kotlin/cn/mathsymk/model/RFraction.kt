@@ -82,8 +82,8 @@ internal constructor(val nume: T, val deno: T) {
 //            return NumberModels.asField(zero(model, d), one(model, d), null)
 //        }
 
-        fun <T : Any> asRing(model: UnitRing<T>): RFractionOnRing<T> {
-            return RFractionOnRing(model)
+        fun <T : Any> asRing(model: UnitRing<T>): RFractionOnUnitRing<T> {
+            return RFractionOnUnitRing(model)
         }
 
         /**
@@ -96,11 +96,14 @@ internal constructor(val nume: T, val deno: T) {
     }
 }
 
-open class RFractionOnRing<T : Any>(_model: UnitRing<T>) : Ring<RFraction<T>>,Module<T,RFraction<T>> {
+
+open class RFractionOnUnitRing<T : Any>(_model: UnitRing<T>) : UnitRing<RFraction<T>>,Module<T,RFraction<T>> {
 
     open val model: UnitRing<T> = _model
 
     final override val zero: RFraction<T> = RFraction(_model.zero, _model.one)
+
+    final override val one: RFraction<T> = _model.one.let { RFraction(it, it) }
 
     override fun contains(x: RFraction<T>): Boolean {
         return model.contains(x.nume) && model.contains(x.deno)
@@ -108,7 +111,7 @@ open class RFractionOnRing<T : Any>(_model: UnitRing<T>) : Ring<RFraction<T>>,Mo
 
     fun frac(nume: T, deno: T): RFraction<T> {
         if (model.isZero(deno)) {
-            throw ArithmeticException("Cannot divide by zero: $nume / $deno")
+            throw ArithmeticException("Divide by zero: $nume / $deno")
         }
         return simplifyFrac(nume, deno)
     }
@@ -147,7 +150,6 @@ open class RFractionOnRing<T : Any>(_model: UnitRing<T>) : Ring<RFraction<T>>,Mo
     }
 
     override fun add(x: RFraction<T>, y: RFraction<T>): RFraction<T> {
-
         model.eval {
             val n = x.nume * y.deno + x.deno * y.nume
             val d = x.deno * y.deno
@@ -189,13 +191,11 @@ open class RFractionOnRing<T : Any>(_model: UnitRing<T>) : Ring<RFraction<T>>,Mo
 
 }
 
-class RFractionOnInt<T : Any>(override val model: IntegralDomain<T>) : RFractionOnRing<T>(model),
+open class RFractionOnInt<T : Any>(override val model: IntegralDomain<T>) : RFractionOnUnitRing<T>(model),
     Field<RFraction<T>> {
 
-    override val one: RFraction<T>
-        get() = RFraction(model.one, model.one)
-
     override fun simplifyFrac(nume: T, deno: T): RFraction<T> {
+        val model = model
         if (model is UniqueFactorizationDomain) {
             val g = model.gcd(nume, deno)
             val n = model.exactDivide(nume, g)
