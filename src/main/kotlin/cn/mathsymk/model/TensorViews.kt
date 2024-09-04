@@ -748,15 +748,24 @@ internal object TensorImpl {
      *      where tIdx[l] = i_{tToResList[k][l]} or j_{tToMulList[k][l]}
      *
      *
+     * For example, let us be given tensors `t1, t2, t3` with shapes `s1=(2,3), s2=(3,4), s3=(3,4,5)`,
+     * The following code provides
+     *
+     *     val r = einsum(listOf(t1, t2, t3), resShape = intArrayOf(2, 5), mulShape = intArrayOf(3,4),
+     *                    tToResList = listOf(listOf(0 to 0), listOf(), listOf(2 to 1)),
+     *                    tToMulList = listOf(listOf(1 to 0), listOf(0 to 0, 1 to 1), listOf(0 to 0, 1 to 1))
+     *                    )
+     *     r.shape // (2,5)
+     *
      * @param resShape the shape of resulting tensors
      * @param mulShape the shape of multiplying axes
-     * @param tToResList whose element represents a tensor's axis that is only selected.
-     * @param tToMulList whose element represents a tensor's axis that will be multiplied (with other tensors'
-     * corresponding axes)
+     * @param tToResList
+     * @param tToMulList
+     * corresponding axes and summed.
      */
     fun <T:Any> einsum(ts: List<Tensor<T>>,
                    resShape: IntArray, mulShape: IntArray,
-                   tToResList: List<IntArray>, tToMulList: List<IntArray>,
+                   tToResList: List<List<Pair<Int,Int>>>, tToMulList: List<List<Pair<Int,Int>>>,
                    mc: UnitRing<T>): ATensor<T> {
         val n = ts.size
         val result = ATensor.constant(mc.zero, resShape, mc)
@@ -764,13 +773,11 @@ internal object TensorImpl {
         val tIdxList = Array(ts.size) { IntArray(ts[it].dim) }
 
         val mIndices = IterUtils.prodIdxN(mulShape)
-        fun placeIdx(partIdx: Index, tToPartList: List<IntArray>) {
+        fun placeIdx(partIdx: Index, tToPartList: List<List<Pair<Int,Int>>>) {
             for (k in 0 until n) {
                 val tToPart = tToPartList[k]
                 val tIdx = tIdxList[k]
-                for (l in tToPart.indices step 2) {
-                    val axisT = tToPart[l]
-                    val axisR = tToPart[l + 1]
+                for((axisT, axisR) in tToPart) {
                     tIdx[axisT] = partIdx[axisR]
                 }
             }
@@ -850,17 +857,17 @@ internal object TensorImpl {
         val resShape = shapeFor(res)
         val mulShape = shapeFor(mul)
         val n = ts.size
-        val tToResList = ArrayList<IntArray>(n)
-        val tToMulList = ArrayList<IntArray>(n)
+        val tToResList = ArrayList<List<Pair<Int,Int>>>(n)
+        val tToMulList = ArrayList<List<Pair<Int,Int>>>(n)
         for (k in 0 until n) {
             val t = ts[k]
             val tShape = t.shape
             val axes = tAxes[k]
-            val tToRes = arrayListOf<Int>()
-            val tToMul = arrayListOf<Int>()
+            val tToRes = arrayListOf<Pair<Int,Int>>()
+            val tToMul = arrayListOf<Pair<Int,Int>>()
             for (l in 0 until t.dim) {
                 val ch = axes[l]
-                fun addIdxAndCheckShape(chToPartIdx: Map<String, Int>, tToPart: MutableList<Int>, partShape: IntArray) {
+                fun addIdxAndCheckShape(chToPartIdx: Map<String, Int>, tToPart: MutableList<Pair<Int,Int>>, partShape: IntArray) {
                     val idx = chToPartIdx[ch] ?: return
                     if (partShape[idx] == 0) {
                         partShape[idx] = tShape[l]
@@ -872,14 +879,13 @@ internal object TensorImpl {
 
                         }
                     }
-                    tToPart += l
-                    tToPart += idx
+                    tToPart += (l to idx)
                 }
                 addIdxAndCheckShape(chToResIdx, tToRes, resShape)
                 addIdxAndCheckShape(chToMulIdx, tToMul, mulShape)
             }
-            tToResList += tToRes.toIntArray()
-            tToMulList += tToMul.toIntArray()
+            tToResList += tToRes
+            tToMulList += tToMul
         }
         //TODO optimize the order of mul
         val mc = ts[0].model as UnitRing
