@@ -145,10 +145,10 @@ val <T> GenMatrix<T>.shape: Pair<Int, Int>
     get() = row to column
 
 inline val GenMatrix<*>.rowIndices: IntRange
-    get() = 0 until row
+    get() = 0..<row
 
 inline val GenMatrix<*>.colIndices: IntRange
-    get() = 0 until column
+    get() = 0..<column
 
 inline val GenVector<*>.indices: IntRange
-    get() = 0 until size
+    get() = 0..<size

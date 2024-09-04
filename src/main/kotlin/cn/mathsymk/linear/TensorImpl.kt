@@ -1,183 +1,144 @@
-package cn.mathsymk.model
+package cn.mathsymk.linear
 
+import cn.mathsymk.AbstractMathObject
+import cn.mathsymk.linear.Tensor.Companion.checkShape
 import cn.mathsymk.model.struct.Index
 import cn.mathsymk.model.struct.shapeString
 import cn.mathsymk.numberTheory.NTFunctions
 import cn.mathsymk.structure.*
 import cn.mathsymk.util.IterUtils
-import cn.mathsymk.discrete.Permutation
-import cn.mathsymk.util.ArraySup
+import cn.mathsymk.util.MathUtils
 import java.util.*
+import java.util.function.Function
 import kotlin.math.min
 
 
-/*
- * Created by liyicheng at 2021-04-11 10:04
- */
+abstract class AbstractTensor<T : Any>(
+    mc: EqualPredicate<T>,
+    /**
+     * The shape of the tensor, it should not be modified
+     */
+    protected val sh: IntArray
+) : AbstractMathObject<T, EqualPredicate<T>>(mc), Tensor<T> {
+
+    //Created by lyc at 2021-03-31 20:39
 
 
-open class SlicedView<T:Any>(
-        tensor: Tensor<T>,
-        /**
-         * The ranges in t. `ranges.size = t.dim`.
-         */
-        protected val ranges: List<IntProgression>,
-        /**
-         * Maps the axis to [tensor]'s axis. `axisMap.size = this.dim`.
-         *
-         * `axisMap[i ] = -1` means a new axis.
-         */
-        protected val axisMap: IntArray,
+    override val shape: IntArray
+        get() = sh.clone()
 
-        shape: IntArray,
-) : AbstractTensor<T>(tensor.model, shape) {
+    override fun lengthAt(axis: Int): Int {
+        require(axis in 0 until dim)
+        return sh[axis]
+    }
 
-    protected open val t = tensor
+    override fun isSameShape(y: Tensor<*>): Boolean {
+        if (y is AbstractTensor) {
+            return sh.contentEquals(y.sh)
+        }
+        return sh.contentEquals(y.shape)
+    }
 
-//    init {
-//        //check shape
-//
-//    }
+
+    final override val dim: Int
+        get() = sh.size
+
+
+    override val size: Int
+        get() = MathUtils.product(shape)
+
+
+    override val indices: Sequence<Index> = IterUtils.prodIdxN(sh)
 
     /**
-     * The shifts in the index of t. `shifts.size = t.dim`.
+     * Checks whether `idx` is a valid index for this tensor, throws exception if necessary.
      */
-    protected val shifts: IntArray = IntArray(ranges.size) { i -> ranges[i].first }
+    protected fun checkIdx(idx: Index) {
+        require(idx.size == dim) {
+            "Dim mismatch: required $dim, given ${idx.size}"
+        }
+        for (i in 0 until dim) {
+            if (!(0 <= idx[i] && idx[i] < sh[i])) {
+                throw IndexOutOfBoundsException(
+                    "Tensor index out of bound at axis $i: " +
+                            "Shape=${sh.contentToString()}, Index=${idx.contentToString()}"
+                )
+            }
+        }
+    }
 
-    protected val steps: IntArray = IntArray(ranges.size) { i -> ranges[i].step }
+    /**
+     * Gets the element in this tensor. The index is already checked valid.
+     * The index should not be modified.
+     */
+    protected abstract fun getChecked(idx: Index): T
+
+
+    /**
+     * Gets an element in this tensor according to the index.
+     *
+     * @param idx the index, it is required that `0 <= idx < shape`
+     */
+    override operator fun get(idx: Index): T {
+        checkIdx(idx)
+        return getChecked(idx)
+    }
 
     /*
-    Index Convention:
-    idx: in the view
-    pos: in the backing tensor
+    Math operations:
      */
 
     /**
-     * All the indices related to this sliced view in the original tensor.
-     *
-     * The sequence is not ordered.
+     * Determines whether this tensor is all-zero.
      */
-    protected val originalIndicesNoOrder: Sequence<Index> = IterUtils.prodIdx(ranges, copy = false)
-
-
-    protected fun mapIdxTo(idx: Index, pos: Index) {
-        // pos[axisMap[i]] + shifts[i]
-        shifts.copyInto(pos)
-        for (l in 0 until dim) {
-            val axis = axisMap[l]
-            if (axis < 0) {
-                // new axis
-                continue
-            }
-            pos[axis] += idx[l] * steps[axis]
+    override val isZero: Boolean
+        get() {
+            val mc = model as Ring<T>
+            return elementSequence().all { mc.isZero(it) }
         }
-    }
 
-    protected fun mapIdx(idx: Index): Index {
-        val pos = IntArray(t.dim)
-        mapIdxTo(idx, pos)
-        return pos
-    }
-
-    override fun getChecked(idx: Index): T {
-        val pos = mapIdx(idx)
-        return t[pos]
-    }
-
-
-//    override fun elementSequence(): Sequence<T> {
-//        return originalIndices.map { pos -> t[pos] }
+    //    override fun permute(p: Permutation): Tensor<T> {
+//        require(p.size() == dim)
+//        val sh = this.shape
+//        val ranges = shape.map { 0 until it }
+//        return SlicedView(this, ranges, p.array, p.apply(sh))
 //    }
 
 
-    protected fun composeSliceTo(am: IntArray, ranges: List<IntProgression>)
-            : Pair<IntArray, MutableList<IntProgression>> {
-        for (i in am.indices) {
-            if (am[i] >= 0) {
-                am[i] = axisMap[am[i]]
-            }
-        }
-        val newRanges = this.ranges.toMutableList()
-        for (i in ranges.indices) {
-            val r0 = this.ranges[axisMap[i]]
-            val r1 = ranges[i]
-            val first = r0.first + r1.first * r0.step
-            val step = r0.step * r1.step
-            val last = r0.first + r1.last * r0.step
-            newRanges[axisMap[i]] = IntProgression.fromClosedRange(first, last, step)
-        }
-        return am to newRanges
-    }
+    /*
+    General methods for MathObject
+     */
 
-    override fun slice(slices: List<Any?>): Tensor<T> {
-        val (am, ranges, sh) = TensorImpl.computeSliceView(this, slices)
-        val (newAxisMap, newRanges) = composeSliceTo(am, ranges)
-        return SlicedView(this.t, newRanges, newAxisMap, sh)
-    }
-
-    override fun permute(p: Permutation): Tensor<T> {
-        val am = p.inverse().getArray()
-        for (i in am.indices) {
-            am[i] = axisMap[am[i]]
-        }
-        return SlicedView(t, ranges, am, p.permute(shape))
-    }
-
+//    override fun <N> mapTo(newCalculator: EqualPredicate<N>, mapper: Function<T, N>): Tensor<N> {
+//        return ATensor.buildFromSequence(newCalculator, sh, elementSequence().map { mapper.apply(it) })
+//    }
 }
 
-class MutableSliceView<T:Any>(
-        tensor: MutableTensor<T>, ranges: List<IntProgression>,
-        /**
-         * maps the axis to t's axis. `axisMap.size = this.dim`
-         */
-        axisMap: IntArray,
-
-        shape: IntArray,
-) : SlicedView<T>(tensor, ranges, axisMap, shape), MutableTensor<T> {
-    override val t: MutableTensor<T> = tensor
-
-    override fun set(idx: Index, v: T) {
-        checkIdx(idx)
-        val pos = mapIdx(idx)
-        t[pos] = v
-    }
-
+abstract class AbstractMutableTensor<T : Any>(mc: EqualPredicate<T>, shape: IntArray) : AbstractTensor<T>(mc, shape),
+    MutableTensor<T> {
     override fun applyAll(f: (T) -> T): MutableTensor<T> {
         return mapTo(model, f)
     }
 
-
-//    override fun <N> mapTo(newCalculator: MathCalculator<N>, mapper: Function<T, N>): MutableTensor<N> {
-//        return ATensor.buildFromSequence(newCalculator, sh, elementSequence().map { mapper.apply(it) })
-//    }
-
-    override fun slice(slices: List<Any?>): MutableTensor<T> {
-        val (am, ranges, sh) = TensorImpl.computeSliceView(this, slices)
-        val (newAxisMap, newRanges) = composeSliceTo(am, ranges)
-        return MutableSliceView(this.t, newRanges, newAxisMap, sh)
+    override fun plus(y: Tensor<T>): MutableTensor<T> {
+        return super<MutableTensor>.plus(y)
     }
 
-    override fun newAxisAt(axis: Int): MutableTensor<T> {
-        val (am, ranges, sh) = TensorImpl.newAxisSliceView(this, axis)
-        val (newAxisMap, newRanges) = composeSliceTo(am, ranges)
-        return MutableSliceView(this.t, newRanges, newAxisMap, sh)
+    override fun times(y: Tensor<T>): MutableTensor<T> {
+        return super<MutableTensor>.times(y)
     }
 
-    override fun permute(p: Permutation): MutableTensor<T> {
-        val ranges = this.ranges
-        val am = p.inverse().getArray()
-        for (i in am.indices) {
-            am[i] = axisMap[am[i]]
-        }
-        val (newAxisMap, newRanges) = composeSliceTo(am, ranges)
-        return MutableSliceView(this.t, newRanges, newAxisMap, sh)
+    override fun unaryMinus(): MutableTensor<T> {
+        return super<MutableTensor>.unaryMinus()
     }
 
+    override fun minus(y: Tensor<T>): MutableTensor<T> {
+        return super<MutableTensor>.minus(y)
+    }
 
-    /*
-    Inherited methods:
-     */
-
+    override fun div(y: Tensor<T>): MutableTensor<T> {
+        return super<MutableTensor>.div(y)
+    }
 
     override fun permute(vararg reorderedAxes: Int): MutableTensor<T> {
         return super<MutableTensor>.permute(*reorderedAxes)
@@ -186,156 +147,29 @@ class MutableSliceView<T:Any>(
     override fun transpose(axis1: Int, axis2: Int): MutableTensor<T> {
         return super<MutableTensor>.transpose(axis1, axis2)
     }
-
-
-    override fun setAll(v: T) {
-        originalIndicesNoOrder.forEach { idx -> t[idx] = v }
-    }
-
-    override fun sumAll(): T {
-        val mc = model as AddSemigroup
-        return originalIndicesNoOrder.map { idx -> t[idx] }.reduce(mc::add) // no order here
-    }
-
-    override fun transform(f: (T) -> T) {
-        originalIndicesNoOrder.forEach { idx -> t[idx] = f(t[idx]) }
-    }
-
 }
 
-abstract class CombinedView<T:Any>(tensors: List<Tensor<T>>, shape: IntArray)
-    : AbstractTensor<T>(tensors[0].model, shape) {
-    open val ts: List<Tensor<T>> = tensors
 
-
-    override fun sumAll(): T {
-        val mc = model as AddSemigroup
-        return ts.asSequence().map { it.sumAll() }.reduce(mc::add)
-    }
-
-
-    override val isZero: Boolean
-        get() = ts.all { it.isZero }
-
-    override fun all(predicate: (T) -> Boolean): Boolean {
-        return ts.all { it.all(predicate) }
-    }
-
-    override fun any(predicate: (T) -> Boolean): Boolean {
-        return ts.any { it.any(predicate) }
-    }
-
-}
-
-open class ConcatView<T:Any>(val axis: Int, tensors: List<Tensor<T>>, shape: IntArray)
-    : CombinedView<T>(tensors, shape) {
-
-    protected val axisLevels = IntArray(tensors.size + 1)
-
-    override val ts: List<Tensor<T>> = tensors
+/**
+ * An array-implementation of tensor.
+ */
+class ATensor<T : Any>
+internal constructor(mc: EqualPredicate<T>, shape: IntArray, val data: Array<Any>) :
+    AbstractMutableTensor<T>(mc, shape) {
+    private val shifts: IntArray = IntArray(dim)
 
     init {
-        axisLevels[0] = 0
-        for (i in tensors.indices) {
-            axisLevels[i + 1] = axisLevels[i] + tensors[i].lengthAt(axis)
-        }
-    }
-
-    override fun getChecked(idx: Index): T {
-        val k = ArraySup.binarySearchFloor(axisLevels, 0, axisLevels.size, idx[axis])
-        val nIdx = idx.copyOf()
-        nIdx[axis] -= axisLevels[k]
-        return ts[k][nIdx]
-    }
-
-}
-
-class MutableConcatView<T:Any>(axis: Int, tensors: List<MutableTensor<T>>, shape: IntArray)
-    : ConcatView<T>(axis, tensors, shape), MutableTensor<T> {
-    override val ts: List<MutableTensor<T>> = tensors
-    override fun set(idx: Index, v: T) {
-        checkIdx(idx)
-        val k = ArraySup.binarySearchFloor(axisLevels, 0, axisLevels.size, idx[axis])
-        val nIdx = idx.copyOf()
-        nIdx[axis] -= axisLevels[k]
-        ts[k][nIdx] = v
-    }
-
-    override fun setAll(v: T) {
-        for (t in ts) {
-            t.setAll(v)
-        }
-    }
-}
-
-open class StackView<T:Any>(val axis: Int, tensors: List<Tensor<T>>, shape: IntArray)
-    : CombinedView<T>(tensors, shape) {
-
-    override val ts: List<Tensor<T>> = tensors
-    protected fun transIdx(idx: Index): Index {
-        val nIdx = IntArray(dim - 1)
-        idx.copyInto(nIdx, endIndex = axis)
-        idx.copyInto(nIdx, axis, axis + 1)
-        return nIdx
-    }
-
-    override fun getChecked(idx: Index): T {
-        val k = idx[axis]
-        val nIdx = transIdx(idx)
-        return ts[k][nIdx]
-    }
-
-    override fun sumAll(): T {
-        val mc = model as AddSemigroup
-        return ts.asSequence().map { it.sumAll() }.reduce(mc::add)
-    }
-
-    override val isZero: Boolean
-        get() = ts.all { it.isZero }
-
-}
-
-class MutableStackView<T:Any>(axis: Int, tensors: List<MutableTensor<T>>, shape: IntArray)
-    : StackView<T>(axis, tensors, shape), MutableTensor<T> {
-    override val ts: List<MutableTensor<T>> = tensors
-    override fun set(idx: Index, v: T) {
-        checkIdx(idx)
-        val nIdx = transIdx(idx)
-        val k = idx[axis]
-        ts[k][nIdx] = v
-    }
-
-    override fun setAll(v: T) {
-        for (t in ts) {
-            t.setAll(v)
-        }
-    }
-}
-
-
-open class ReshapedView<T:Any>(tensor: Tensor<T>, shape: IntArray)
-    : AbstractTensor<T>(tensor.model, shape) {
-
-    open val t: Tensor<T> = tensor
-
-    protected fun computeShift(shape: IntArray): IntArray {
-        val dim = shape.size
-        val shifts = IntArray(dim)
         var s = 1
         for (i in (dim - 1) downTo 0) {
             shifts[i] = s
             s *= shape[i]
         }
-        return shifts
     }
 
-    private val shifts: IntArray = computeShift(shape)
-    private val shiftsT: IntArray = computeShift(tensor.shape)
+    override val size: Int
+        get() = data.size
 
-    /**
-     * Converts the index to absolute position in 1-d array.
-     */
-    protected fun toPos(idx: Index): Int {
+    private fun toPos(idx: Index): Int {
         var pos = 0
         for (i in 0 until dim) {
             pos += idx[i] * shifts[i]
@@ -343,165 +177,299 @@ open class ReshapedView<T:Any>(tensor: Tensor<T>, shape: IntArray)
         return pos
     }
 
-    /**
-     * Converts the absolute position in 1-d array to index in t.
-     */
-    protected fun toIdx(pos0: Int): Index {
-        val idx = IntArray(dim)
-        var pos = pos0
-        for (i in 0 until dim) {
-            val t = pos / shiftsT[i]
-            pos -= t * shiftsT[i]
-            idx[i] = t
-        }
-        return idx
-    }
 
     override fun getChecked(idx: Index): T {
-        val pos = toPos(idx)
-        val tIdx = toIdx(pos)
-        return t[tIdx]
-    }
-
-    override fun sumAll(): T {
-        return t.sumAll()
+        @Suppress("UNCHECKED_CAST")
+        return data[toPos(idx)] as T
     }
 
     override fun elementSequence(): Sequence<T> {
-        return t.elementSequence()
+        @Suppress("UNCHECKED_CAST")
+        return data.asSequence() as Sequence<T>
     }
 
     override fun flattenToList(): List<T> {
-        return t.flattenToList()
+        @Suppress("UNCHECKED_CAST")
+        return data.asList() as List<T>
     }
 
-    override fun reshape(vararg newShape: Int): Tensor<T> {
-        return t.reshape(*newShape)
+    override fun copy(): ATensor<T> {
+        return ATensor(model, sh, data.clone())
     }
 
-    override fun ravel(): Tensor<T> {
-        return if (dim == 1) {
-            this
-        } else {
-            t.ravel()
-        }
-    }
-
-    override fun all(predicate: (T) -> Boolean): Boolean {
-        return t.all(predicate)
-    }
-
-    override fun any(predicate: (T) -> Boolean): Boolean {
-        return t.any(predicate)
-    }
-}
-
-class MutableReshapedView<T:Any>(tensor: MutableTensor<T>, shape: IntArray)
-    : ReshapedView<T>(tensor, shape), MutableTensor<T> {
-    override val t: MutableTensor<T> = tensor
     override fun set(idx: Index, v: T) {
         checkIdx(idx)
-        val pos = toPos(idx)
-        val tIdx = toIdx(pos)
-        t[tIdx] = v
+        data[toPos(idx)] = v
     }
 
     override fun setAll(v: T) {
-        t.setAll(v)
+        Arrays.fill(data, v)
+    }
+
+    private inline fun inlineApplyAll(f: (T) -> T): ATensor<T> {
+        for (i in 0 until size) {
+            @Suppress("UNCHECKED_CAST")
+            data[i] = f(data[i] as T)
+        }
+        return this
+    }
+
+
+    override fun applyAll(f: (T) -> T): MutableTensor<T> {
+        val ndata = Array<Any>(size) { i ->
+            @Suppress("UNCHECKED_CAST")
+            f(data[i] as T)
+        }
+        return ATensor(model, sh, ndata)
     }
 
     override fun transform(f: (T) -> T) {
-        t.transform(f)
+        inlineApplyAll(f)
+//        for (i in 0 until size) {
+//            data[i] = f(data[i] as T)
+//        }
     }
+
+    override val isZero: Boolean
+        get() {
+            val mc = model as Ring
+            return data.all {
+                @Suppress("UNCHECKED_CAST")
+                mc.isZero(it as T)
+            }
+        }
+
+
+    override fun plus(y: Tensor<T>): MutableTensor<T> {
+        if (y is ATensor && isSameShape(y)) {
+            val mc = model as AddSemigroup<T>
+            return apply2(this, y, mc::add)
+        }
+        return super.plus(y)
+
+    }
+
+    override fun unaryMinus(): MutableTensor<T> {
+        val mc = model as AddGroup<T>
+        return copy().inlineApplyAll(mc::negate)
+    }
+
+    override fun minus(y: Tensor<T>): MutableTensor<T> {
+        if (y is ATensor && isSameShape(y)) {
+            val mc = model as AddGroup<T>
+            return apply2(this, y, mc::subtract)
+        }
+        return super.plus(y)
+    }
+
+    override fun times(k: T): MutableTensor<T> {
+        val mc = model as Ring<T>
+        return applyAll { t -> mc.multiply(k, t) }
+    }
+
+    override fun div(k: T): MutableTensor<T> {
+        val mc = model as Field<T>
+        return applyAll { t -> mc.divide(k, t) }
+    }
+
+    override fun times(y: Tensor<T>): MutableTensor<T> {
+        if (y is ATensor && isSameShape(y)) {
+            val mc = model as Ring<T>
+            return apply2(this, y, mc::multiply)
+        }
+        return super.times(y)
+    }
+
+    override fun div(y: Tensor<T>): MutableTensor<T> {
+        if (y is ATensor && isSameShape(y)) {
+            val mc = model as Field
+            return apply2(this, y, mc::divide)
+        }
+        return super.div(y)
+    }
+
+    private inline fun apply2InPlace(y: Tensor<T>, f: (T, T) -> T) {
+        checkShape(this, y)
+        if (y is ATensor) {
+            val d1 = data
+            val d2 = y.data
+            for (i in 0 until size) {
+                @Suppress("UNCHECKED_CAST")
+                d1[i] = f(d1[i] as T, d2[i] as T)
+            }
+        } else {
+            var pos = 0
+            val data = this.data
+            for (s in y.elementSequence()) {
+                @Suppress("UNCHECKED_CAST")
+                data[pos] = f(data[pos] as T, s)
+                pos++
+            }
+        }
+    }
+
+    override fun plusAssign(y: Tensor<T>) {
+        val y1 = y.broadcastTo(*sh)
+        return apply2InPlace(y1, (model as AddSemigroup<T>)::add)
+    }
+
+    override fun minusAssign(y: Tensor<T>) {
+        val y1 = y.broadcastTo(*sh)
+        return apply2InPlace(y1, (model as AddGroup<T>)::subtract)
+    }
+
+    override fun timesAssign(y: Tensor<T>) {
+        val y1 = y.broadcastTo(*sh)
+        return apply2InPlace(y1, (model as Ring<T>)::multiply)
+    }
+
+    override fun divAssign(y: Tensor<T>) {
+        val y1 = y.broadcastTo(*sh)
+        return apply2InPlace(y1, (model as Field<T>)::divide)
+    }
+
 
     override fun reshape(vararg newShape: Int): MutableTensor<T> {
-        return t.reshape(*newShape)
+        val sh = newShape.clone()
+        TensorImpl.prepareNewShape(this, sh)
+        return ATensor(model, sh, data)
     }
 
-    override fun ravel(): MutableTensor<T> {
-        return if (dim == 1) {
-            this
-        } else {
-            t.ravel()
+    @Suppress("UNCHECKED_CAST")
+    override fun <N : Any> mapTo(newCalculator: EqualPredicate<N>, mapper: Function<T, N>): ATensor<N> {
+        val ndata = Array<Any>(size) { i ->
+            mapper.apply(data[i] as T)
         }
+        return ATensor(newCalculator, sh, ndata)
     }
-}
 
-class BroadcastView<T:Any>(
-        val t: Tensor<T>, shape: IntArray,
-//                             val originAxes: IntArray,
-        val d: Int,
-        private val extendedAxes: IntArray,
-//                             val newAxes: IntArray
-) : AbstractTensor<T>(t.model, shape) {
-    /*
-     * originAxes[i]
-     */
 
-    override fun getChecked(idx: Index): T {
-        val tIdx = idx.copyOfRange(d, idx.size)
-        for (ax in extendedAxes) {
-            tIdx[ax] = 0
+    companion object {
+
+        fun <T : Any> buildFromSequence(mc: EqualPredicate<T>, shape: IntArray, sequence: Sequence<T>): ATensor<T> {
+            val size = MathUtils.product(shape)
+            val seqIt = sequence.iterator()
+            val data = Array<Any>(size) { seqIt.next() }
+            return ATensor(mc, shape, data)
         }
-        return t[tIdx]
-    }
 
-    //    override fun getChecked(idx: Index): T {
-//        val tIdx = IntArray(t.dim)
-//        for (i in originAxes.indices) {
-//            tIdx[i] = idx[originAxes[i]]
+        private inline fun <T : Any> apply2(x: ATensor<T>, y: ATensor<T>, f: (T, T) -> T): ATensor<T> {
+            checkShape(x, y)
+            val d1 = x.data
+            val d2 = y.data
+            val ndata = Array<Any>(x.size) {
+                @Suppress("UNCHECKED_CAST")
+                f(d1[it] as T, d2[it] as T)
+            }
+            return ATensor(x.model, x.sh, ndata)
+        }
+
+        fun <T : Any> copyOf(tensor: Tensor<T>): ATensor<T> {
+            val shape = tensor.shape
+            if (tensor is ATensor) {
+                return tensor.copy()
+            }
+            return buildFromSequence(tensor.model, shape, tensor.elementSequence())
+        }
+
+        fun <T : Any> constant(c: T, shape: IntArray, mc: EqualPredicate<T>): ATensor<T> {
+            val size = MathUtils.product(shape)
+            // create an array of the given type
+            val data = Array<Any>(size) { c }
+            return ATensor(mc, shape, data)
+        }
+
+        fun <T : Any> zeros(shape: IntArray, mc: Ring<T>): ATensor<T> {
+            return constant(mc.zero, shape, mc)
+        }
+
+//        fun <T:Any> fromMatrix(m: AbstractMatrix<T>): ATensor<T> {
+//            var pos = 0
+//            val r = m.row
+//            val c = m.column
+//            val data = arrayOfNulls<Any>(r * c)
+//            for (i in 0 until r) {
+//                for (j in 0 until c) {
+//                    data[pos++] = m[i, j]
+//                }
+//            }
+//            @Suppress("UNCHECKED_CAST")
+//            return ATensor(m.calculator, intArrayOf(r, c), data as Array<T>)
 //        }
-//        for (ax in extendedAxes) {
-//            tIdx[ax] = 0
-//        }
-//        return t[tIdx]
-//    }
-//
-    override fun sumAll(): T {
-        val re = t.sumAll()
-        var k = 1L
-        for (ax in 0 until d) {
-            k *= sh[ax]
+
+        fun <T : Any> wedge(x: ATensor<T>, y: ATensor<T>): ATensor<T> {
+            val mc = x.model as Ring<T>
+            val shape = x.shape + y.shape
+            val size = x.size * y.size
+            val data = arrayOfNulls<Any>(size)
+            val dataX = x.data
+            val dataY = y.data
+            var pos = 0
+            for (a in dataX) {
+                for (b in dataY) {
+                    @Suppress("UNCHECKED_CAST")
+                    data[pos++] = mc.multiply(a as T, b as T)
+                }
+            }
+            @Suppress("UNCHECKED_CAST")
+            return ATensor(mc, shape, data as Array<Any>)
         }
-        val mc = model as AddSemigroup
-        return mc.multiplyLong(re, k)
-    }
 
-}
 
-open class IndexMapView<T:Any>(
-        open val tensor: Tensor<T>,
-        /**
-         * Axis map.
-         *
-         *     tIdx[i] = idx[am[i]]
-         */
-        val am: IntArray,
-        val offsets: IntArray,
-        shape: IntArray) : AbstractTensor<T>(tensor.model, shape) {
-
-    protected fun mapIdx(idx: Index): IntArray {
-        val tIdx = offsets.clone()
-        for (i in tIdx.indices) {
-            tIdx[i] += idx[am[i]]
+        private fun <T : Any> recurAdd(
+            list: List<Any?>, shape: IntArray, level: Int, pos: Int,
+            dest: Array<Any?>, clz: Class<T>
+        ): Int {
+            val size = shape[level]
+            require(list.size == size) {
+                "Required length at axis $level is $size, but ${list.size} is given!"
+            }
+            var p = pos
+            if (level == shape.lastIndex) {
+                for (e in list) {
+                    dest[p++] = clz.cast(e)
+                }
+                return pos + size
+            }
+            for (e in list) {
+                require(e is List<*>) {
+                    "Nesting level mismatch!"
+                }
+                p = recurAdd(e as List<Any?>, shape, level + 1, p, dest, clz)
+            }
+            return p
         }
-        return tIdx
+
+        fun <T : Any> fromNestingList(list: List<Any>, mc: EqualPredicate<T>, clazz: Class<T>): ATensor<T> {
+            val sh = arrayListOf<Int>()
+            var l = list
+            while (true) {
+                require(l.isNotEmpty())
+                sh += l.size
+                val e = l[0]
+                if (clazz.isInstance(e)) {
+                    break
+                }
+                require(e is List<*>) {
+                    "Elements in the given list should be either list or object of required type. " +
+                            "Given: $e"
+                }
+                @Suppress("UNCHECKED_CAST")
+                l = e as List<Any>
+            }
+            val shape = sh.toIntArray()
+            val size = MathUtils.product(shape)
+
+            val data = arrayOfNulls<Any>(size)
+            val pos = recurAdd(list, shape, 0, 0, data, clazz)
+            assert(pos == size)
+            @Suppress("UNCHECKED_CAST")
+            return ATensor(mc, shape, data as Array<Any>)
+        }
     }
 
-    override fun getChecked(idx: Index): T {
-        val tIdx = mapIdx(idx)
-        return tensor[tIdx]
-    }
 }
 
-class MutableIndexMapView<T:Any>(override val tensor: MutableTensor<T>, am: IntArray, offsets: IntArray, shape: IntArray) :
-        IndexMapView<T>(tensor, am, offsets, shape), MutableTensor<T> {
-    override fun set(idx: Index, v: T) {
-        checkIdx(idx)
-        val tIdx = mapIdx(idx)
-        tensor[tIdx] = v
-    }
-}
 
 internal object TensorImpl {
 
@@ -514,18 +482,16 @@ internal object TensorImpl {
     }
 
 
-    fun <T:Any> add(x: Tensor<T>, y: Tensor<T>): MutableTensor<T> {
-        val (x1, y1) = broadcast(x, y)
-        val mc = x.model as AddSemigroup<T>
-        return ATensor.buildFromSequence(mc, x1.shape, x1.indices.map { idx -> mc.add(x1[idx], y1[idx]) })
+    fun <T : Any> add(_x: Tensor<T>, _y: Tensor<T>, mc : AddSemigroup<T>): MutableTensor<T> {
+        val (x, y) = broadcast(_x, _y)
+        return ATensor.buildFromSequence(mc, x.shape, x.indices.map { idx -> mc.add(x[idx], y[idx]) })
     }
 
     /**
-     * Returns the negate of this tensor.
+     * Returns the negation of this tensor.
      *
      */
-    fun <T:Any> negate(x: Tensor<T>): MutableTensor<T> {
-        val mc = x.model as AddGroup
+    fun <T : Any> negate(x: Tensor<T>, mc : AddGroup<T>): MutableTensor<T> {
         return ATensor.buildFromSequence(mc, x.shape, x.indices.map { idx -> mc.negate(x[idx]) })
     }
 
@@ -535,25 +501,22 @@ internal object TensorImpl {
      * The sum of two tensor `x,y` has the
      * shape of `max(x.shape, y.shape)`, here `max` means element-wise maximum of two arrays.
      */
-    fun <T:Any> subtract(x0: Tensor<T>, y0: Tensor<T>): MutableTensor<T> {
+    fun <T : Any> subtract(x0: Tensor<T>, y0: Tensor<T>, model : AddGroup<T>): MutableTensor<T> {
         val (x, y) = broadcast(x0, y0)
-        val mc = x.model as AddGroup
-        return ATensor.buildFromSequence(mc, x.shape, x.indices.map { idx -> mc.subtract(x[idx], y[idx]) })
+        return ATensor.buildFromSequence(model, x.shape, x.indices.map { idx -> model.subtract(x[idx], y[idx]) })
     }
 
     /**
      * Returns the result of multiplying this tensor with a scalar.
      */
-    fun <T:Any> multiply(x: Tensor<T>, k: T): MutableTensor<T> {
-        val mc = x.model as Ring
+    fun <T : Any> multiply(x: Tensor<T>, k: T, mc : MulSemigroup<T>): MutableTensor<T> {
         return ATensor.buildFromSequence(mc, x.shape, x.indices.map { idx -> mc.multiply(k, x[idx]) })
     }
 
     /**
      * Returns the result of dividing this tensor with a scalar.
      */
-    fun <T:Any> divide(x: Tensor<T>, k: T): MutableTensor<T> {
-        val mc = x.model as DivisionRing
+    fun <T : Any> divide(x: Tensor<T>, k: T, mc : MulGroup<T>): MutableTensor<T> {
         return ATensor.buildFromSequence(mc, x.shape, x.indices.map { idx -> mc.divide(k, x[idx]) })
     }
 
@@ -561,9 +524,8 @@ internal object TensorImpl {
      * Returns the **element-wise** product of this tensor and `y`.
      *
      */
-    fun <T:Any> multiply(x0: Tensor<T>, y0: Tensor<T>): MutableTensor<T> {
+    fun <T : Any> multiply(x0: Tensor<T>, y0: Tensor<T>, mc : MulSemigroup<T>): MutableTensor<T> {
         val (x, y) = broadcast(x0, y0)
-        val mc = x.model as Ring
         return ATensor.buildFromSequence(mc, x.shape, x.indices.map { idx -> mc.multiply(x[idx], y[idx]) })
     }
 
@@ -572,30 +534,26 @@ internal object TensorImpl {
      *
      * @throws ArithmeticException if zero-division happens
      */
-    fun <T:Any> divide(x0: Tensor<T>, y0: Tensor<T>): MutableTensor<T> {
-//        Tensor.checkShape(x, y)
+    fun <T : Any> divide(x0: Tensor<T>, y0: Tensor<T>, mc : MulGroup<T>): MutableTensor<T> {
         val (x, y) = broadcast(x0, y0)
-        val mc = x.model as DivisionRing
         return ATensor.buildFromSequence(mc, x.shape, x.indices.map { idx -> mc.divide(x[idx], y[idx]) })
     }
 
-    fun <T:Any> inner(x: Tensor<T>, y: Tensor<T>): T {
+    fun <T : Any> inner(x: Tensor<T>, y: Tensor<T>, mc : Ring<T>): T {
         require(x.isSameShape(y)) {
             "Two tensor must have the same shape for inner!" +
                     "Given shapes: ${x.shape.contentToString()}, ${y.shape.contentToString()}."
         }
-        val mc = x.model as Ring
         return x.elementSequence().zip(y.elementSequence()).fold(mc.zero) { re, (a, b) ->
             mc.eval { re + a * b }
         }
     }
 
-    fun <T:Any> wedge(x: Tensor<T>, y: Tensor<T>): MutableTensor<T> {
+    fun <T : Any> wedge(x: Tensor<T>, y: Tensor<T>, mc : Ring<T>): MutableTensor<T> {
         if (x is ATensor && y is ATensor) {
             return ATensor.wedge(x, y)
         }
         val shape = x.shape + y.shape
-        val mc = x.model as Ring
         val result = ATensor.constant(mc.zero, shape, mc)
         val data = result.data
         var pos = 0
@@ -609,15 +567,12 @@ internal object TensorImpl {
         return result
     }
 
-    fun <T:Any> isLinearDependent(x: Tensor<T>, y: Tensor<T>): Boolean {
+    fun <T : Any> isLinearDependent(x: Tensor<T>, y: Tensor<T>, mc : Field<T>): Boolean {
         Tensor.checkShape(x, y)
 //        val idx = IntArray(x.dim)
         if (x.isZero || y.isZero) {
             return true
         }
-        val mc = x.model as Field
-//        val a = x[idx]
-//        val b = y[idx]
         var k: T? = null
         for ((a, b) in x.elementSequence().zip(y.elementSequence())) {
             if (k == null) {
@@ -641,7 +596,7 @@ internal object TensorImpl {
     }
 
 
-    fun <T:Any> computeSliceView(x: Tensor<T>, slices: List<Any?>)
+    fun <T : Any> computeSliceView(x: Tensor<T>, slices: List<Any?>)
             : Triple<IntArray, List<IntProgression>, IntArray> {
         // remark: we need union type here
         var l = 0 // in this tensor
@@ -659,11 +614,12 @@ internal object TensorImpl {
                     ranges.add(i..i)
                     l++
                 }
+
                 is IntProgression -> {
                     val r = IntProgression.fromClosedRange(
-                            addIfNegative(t.first, shape[l]),
-                            addIfNegative(t.last, shape[l]),
-                            t.step
+                        addIfNegative(t.first, shape[l]),
+                        addIfNegative(t.last, shape[l]),
+                        t.step
                     )
                     require(!r.isEmpty())
                     ranges.add(r)
@@ -671,16 +627,19 @@ internal object TensorImpl {
                     am.add(l)
                     l++
                 }
+
                 null -> {
                     am.add(l)
                     ranges.add(0 until shape[l])
                     ns.add(shape[l])
                     l++
                 }
+
                 Tensor.NEW_AXIS -> {
                     ns.add(1)
                     am.add(-1)
                 }
+
                 Tensor.DOTS -> {
                     var rem = x.dim - ranges.size
                     for (j in (pos + 1) until slices.size) {
@@ -699,6 +658,7 @@ internal object TensorImpl {
                         l++
                     }
                 }
+
                 else -> {
                     throw IllegalArgumentException("Not supported slice for $t")
                 }
@@ -763,21 +723,23 @@ internal object TensorImpl {
      * @param tToMulList
      * corresponding axes and summed.
      */
-    fun <T:Any> einsum(ts: List<Tensor<T>>,
-                   resShape: IntArray, mulShape: IntArray,
-                   tToResList: List<List<Pair<Int,Int>>>, tToMulList: List<List<Pair<Int,Int>>>,
-                   mc: UnitRing<T>): ATensor<T> {
+    fun <T : Any> einsum(
+        ts: List<Tensor<T>>,
+        resShape: IntArray, mulShape: IntArray,
+        tToResList: List<List<Pair<Int, Int>>>, tToMulList: List<List<Pair<Int, Int>>>,
+        mc: UnitRing<T>
+    ): ATensor<T> {
         val n = ts.size
         val result = ATensor.constant(mc.zero, resShape, mc)
         val data = result.data
         val tIdxList = Array(ts.size) { IntArray(ts[it].dim) }
 
         val mIndices = IterUtils.prodIdxN(mulShape)
-        fun placeIdx(partIdx: Index, tToPartList: List<List<Pair<Int,Int>>>) {
+        fun placeIdx(partIdx: Index, tToPartList: List<List<Pair<Int, Int>>>) {
             for (k in 0 until n) {
                 val tToPart = tToPartList[k]
                 val tIdx = tIdxList[k]
-                for((axisT, axisR) in tToPart) {
+                for ((axisT, axisR) in tToPart) {
                     tIdx[axisT] = partIdx[axisR]
                 }
             }
@@ -807,7 +769,7 @@ internal object TensorImpl {
     val CHAR_PATTERN = "\\w\\d*".toRegex()
 
 
-    fun <T:Any> einsum(ts: List<Tensor<T>>, expr: String): MutableTensor<T> {
+    fun <T : Any> einsum(ts: List<Tensor<T>>, expr: String): MutableTensor<T> {
         require(ts.isNotEmpty())
         val i1 = expr.indexOf("->")
         val tAxes = if (i1 >= 0) {
@@ -857,17 +819,21 @@ internal object TensorImpl {
         val resShape = shapeFor(res)
         val mulShape = shapeFor(mul)
         val n = ts.size
-        val tToResList = ArrayList<List<Pair<Int,Int>>>(n)
-        val tToMulList = ArrayList<List<Pair<Int,Int>>>(n)
+        val tToResList = ArrayList<List<Pair<Int, Int>>>(n)
+        val tToMulList = ArrayList<List<Pair<Int, Int>>>(n)
         for (k in 0 until n) {
             val t = ts[k]
             val tShape = t.shape
             val axes = tAxes[k]
-            val tToRes = arrayListOf<Pair<Int,Int>>()
-            val tToMul = arrayListOf<Pair<Int,Int>>()
+            val tToRes = arrayListOf<Pair<Int, Int>>()
+            val tToMul = arrayListOf<Pair<Int, Int>>()
             for (l in 0 until t.dim) {
                 val ch = axes[l]
-                fun addIdxAndCheckShape(chToPartIdx: Map<String, Int>, tToPart: MutableList<Pair<Int,Int>>, partShape: IntArray) {
+                fun addIdxAndCheckShape(
+                    chToPartIdx: Map<String, Int>,
+                    tToPart: MutableList<Pair<Int, Int>>,
+                    partShape: IntArray
+                ) {
                     val idx = chToPartIdx[ch] ?: return
                     if (partShape[idx] == 0) {
                         partShape[idx] = tShape[l]
@@ -893,7 +859,7 @@ internal object TensorImpl {
     }
 
 
-    fun <T:Any> sumInOneAxis(t: Tensor<T>, sumAxis: Int): MutableTensor<T> {
+    fun <T : Any> sumInOneAxis(t: Tensor<T>, sumAxis: Int): MutableTensor<T> {
         val mc = t.model as Ring
         val axis = addIfNegative(sumAxis, t.dim)
         require(axis in 0 until t.dim)
@@ -925,7 +891,7 @@ internal object TensorImpl {
     /**
      * Returns the sum of [t] in given [sumAxes] and [remAxes], it is required that both axes are non-empty.
      */
-    fun <T:Any> sumInAxes(t: Tensor<T>, sumAxes: IntArray, remAxes: IntArray): MutableTensor<T> {
+    fun <T : Any> sumInAxes(t: Tensor<T>, sumAxes: IntArray, remAxes: IntArray): MutableTensor<T> {
         val mc = t.model as Ring
         val tShape = t.shape
         fun makeShapeArray(axes: IntArray): IntArray {
@@ -963,7 +929,7 @@ internal object TensorImpl {
     }
 
 
-    fun <T:Any> sum(t: Tensor<T>, sumAxesList: List<Int>): MutableTensor<T> {
+    fun <T : Any> sum(t: Tensor<T>, sumAxesList: List<Int>): MutableTensor<T> {
         if (sumAxesList.isEmpty()) {
             return Tensor.scalar(t.sumAll(), t.model)
         }
@@ -984,7 +950,7 @@ internal object TensorImpl {
         return sumInAxes(t, sumAxes.toIntArray(), remAxes.toIntArray())
     }
 
-    fun <T:Any> prepareConcat(ts: List<Tensor<T>>, axis: Int): Pair<Int, IntArray> {
+    fun <T : Any> prepareConcat(ts: List<Tensor<T>>, axis: Int): Pair<Int, IntArray> {
         require(ts.isNotEmpty())
         val dim = ts[0].dim
         val shape = ts[0].shape
@@ -1012,7 +978,7 @@ internal object TensorImpl {
     }
 
 
-    fun <T:Any> prepareStack(ts: List<Tensor<T>>, axis: Int): Pair<Int, IntArray> {
+    fun <T : Any> prepareStack(ts: List<Tensor<T>>, axis: Int): Pair<Int, IntArray> {
         require(ts.isNotEmpty())
         require(ts.all { it.isSameShape(ts[0]) }) {
             "Cannot stack tensors of shapes: ${ts.joinToString { it.shape.contentToString() }}"
@@ -1059,7 +1025,7 @@ internal object TensorImpl {
         }
     }
 
-    fun <T:Any> broadcastTo(t: Tensor<T>, ns: IntArray): Tensor<T> {
+    fun <T : Any> broadcastTo(t: Tensor<T>, ns: IntArray): Tensor<T> {
         if (t.shape.contentEquals(ns)) {
             return t
         }
@@ -1077,13 +1043,15 @@ internal object TensorImpl {
                 extendedAxes.add(l)
                 continue
             }
-            throw IllegalArgumentException("Cannot broadcast ${t.shape.contentToString()} to ${ns.contentToString()}, shape mismatch" +
-                    "at axis ${l + d}.")
+            throw IllegalArgumentException(
+                "Cannot broadcast ${t.shape.contentToString()} to ${ns.contentToString()}, shape mismatch" +
+                        "at axis ${l + d}."
+            )
         }
         return BroadcastView(t, ns, d, extendedAxes.toIntArray())
     }
 
-    private fun <T:Any> broadcast0(t1: Tensor<T>, t2: Tensor<T>): Pair<Tensor<T>, Tensor<T>> {
+    private fun <T : Any> broadcast0(t1: Tensor<T>, t2: Tensor<T>): Pair<Tensor<T>, Tensor<T>> {
         val nDim = t2.dim
         val newShape = IntArray(nDim)
         val d2 = t2.dim - t1.dim
@@ -1106,8 +1074,10 @@ internal object TensorImpl {
                 extended2.add(l + d2)
                 continue
             }
-            throw IllegalArgumentException("Cannot broadcast ${s1.contentToString()} with ${s2.contentToString()}, " +
-                    "shape mismatch at axis ${l} .")
+            throw IllegalArgumentException(
+                "Cannot broadcast ${s1.contentToString()} with ${s2.contentToString()}, " +
+                        "shape mismatch at axis ${l} ."
+            )
         }
         s2.copyInto(newShape, endIndex = d2)
         val r1 = BroadcastView(t1, newShape, d2, extended1.toIntArray())
@@ -1121,7 +1091,7 @@ internal object TensorImpl {
 
     }
 
-    fun <T:Any> broadcast(t1: Tensor<T>, t2: Tensor<T>): Pair<Tensor<T>, Tensor<T>> {
+    fun <T : Any> broadcast(t1: Tensor<T>, t2: Tensor<T>): Pair<Tensor<T>, Tensor<T>> {
         if (t1.isSameShape(t2)) {
             return t1 to t2
         }
@@ -1147,7 +1117,7 @@ internal object TensorImpl {
      *     z[i,j] = sum(k, x[i,k] * y[k,j])
      *
      */
-    fun <T:Any> matmul(x: Tensor<T>, y: Tensor<T>, r: Int): MutableTensor<T> {
+    fun <T : Any> matmul(x: Tensor<T>, y: Tensor<T>, r: Int): MutableTensor<T> {
         val shape1 = x.shape
         val shape2 = y.shape
         val dim1 = shape1.size
@@ -1198,7 +1168,7 @@ internal object TensorImpl {
      *
      *
      */
-    fun <T:Any> tensorDot(x: Tensor<T>, y: Tensor<T>, r: Int): MutableTensor<T> {
+    fun <T : Any> tensorDot(x: Tensor<T>, y: Tensor<T>, r: Int): MutableTensor<T> {
         val shape1 = x.shape
         val shape2 = y.shape
         val dim1 = shape1.size
@@ -1286,12 +1256,12 @@ internal object TensorImpl {
 
     }
 
-    fun <T:Any> diagonal(x: Tensor<T>, axis1: Int, axis2: Int, offset: Int): Tensor<T> {
+    fun <T : Any> diagonal(x: Tensor<T>, axis1: Int, axis2: Int, offset: Int): Tensor<T> {
         val (am, offsets, shape) = prepareDiag(x, axis1, axis2, offset)
         return IndexMapView(x, am, offsets, shape)
     }
 
-    fun <T:Any> diagonal(x: MutableTensor<T>, axis1: Int, axis2: Int, offset: Int): MutableTensor<T> {
+    fun <T : Any> diagonal(x: MutableTensor<T>, axis1: Int, axis2: Int, offset: Int): MutableTensor<T> {
         val (am, offsets, shape) = prepareDiag(x, axis1, axis2, offset)
         return MutableIndexMapView(x, am, offsets, shape)
     }

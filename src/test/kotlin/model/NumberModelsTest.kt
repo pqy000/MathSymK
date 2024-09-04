@@ -47,6 +47,16 @@ class NumberModelsTest {
         }
     }
 
+    @Test
+    fun testBigInteger(){
+        with(NumberModels.bigIntegerAsIntegers()) {
+            assertEquals(0.toBigInteger(), zero)
+            assertEquals(2.toBigInteger(), add(1.toBigInteger(), 1.toBigInteger()))
+            assertEquals((-1).toBigInteger(), negate(1.toBigInteger()))
+            assertEquals(1.toBigInteger() - 1.toBigInteger(), subtract(1.toBigInteger(), 1.toBigInteger()))
+            assertEquals(2.toBigInteger() - 1.toBigInteger(), subtract(2.toBigInteger(), 1.toBigInteger()))
+        }
+    }
 
     @Test
     fun testBigFrac(){
@@ -55,7 +65,6 @@ class NumberModelsTest {
             val f1 = bfrac(1,2)
             val f2 = bfrac(1,3)
             assertEquals(bfrac(5,6), f1 + f2)
-
         }
     }
 }

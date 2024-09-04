@@ -9,8 +9,7 @@ import cn.mathsymk.util.exceptions.ExceptionUtil
  */
 interface RingModel<T : RingModel<T>> : AddGroupModel<T>, MulMonoidModel<T> {
 
-
-    val isZero: Boolean
+    override val isZero: Boolean
 }
 
 //inline operator fun <T : RingNumberModel<T>> RingNumberModel<T>.times(y: T): T = multiply(y)

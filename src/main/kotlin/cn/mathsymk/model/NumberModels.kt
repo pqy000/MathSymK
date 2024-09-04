@@ -647,7 +647,7 @@ object NumberModels {
 
     fun bigIntegerAsIntegers(): Integers<BigInteger> = BigIntegerAsIntegers
 
-    fun doubleAsReals(): Reals<Double> = DoubleAsReals()
+    fun doubleAsReals(dev : Double = Double.MIN_VALUE): Reals<Double> = DoubleAsReals(dev)
 
     fun bigDecimalAsReals(mc: MathContext = MathContext.DECIMAL128): Reals<BigDecimal> = BigDecimalAsReals(mc)
 

@@ -38,6 +38,9 @@ interface MulMonoidModel<T : MulMonoidModel<T>> {
  *
  */
 interface AddGroupModel<T : AddGroupModel<T>> : AddMonoidModel<T> {
+
+    val isZero: Boolean
+
     /**
      * Returns `this + y` as the operation defined in the group.
      */

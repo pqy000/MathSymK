@@ -1,8 +1,10 @@
 package model
 
 import TestUtils.assertValueEquals
+import cn.mathsymk.linear.Tensor
 import cn.mathsymk.model.*
-import cn.mathsymk.model.TensorImpl
+import cn.mathsymk.linear.TensorImpl
+import cn.mathsymk.linear.get
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
@@ -51,6 +53,7 @@ class TensorTest {
 //    val w = Tensor.ones(mc, *shape)
 //        val s1 =
         val u = Tensor.of(shape, mc) { it.sum() }
+//        u[intArrayOf(1,1)] = 3
         u[1, 1] = 3
         assertEquals(3, u[1, 1])
     }
