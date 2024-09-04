@@ -14,7 +14,7 @@ import java.util.function.Function
  *
  * @author Ezrnest
  */
-interface Vector<T : Any> : GenVector<T>, MathObject<T, EqualPredicate<T>>, VectorModel<T, Vector<T>> {
+interface Vector<T> : GenVector<T>, MathObject<T, EqualPredicate<T>>, VectorModel<T, Vector<T>> {
     /*
     Created by Ezrnest at 2024/09/04 15:33
      */
@@ -29,7 +29,7 @@ interface Vector<T : Any> : GenVector<T>, MathObject<T, EqualPredicate<T>>, Vect
         return indices.all { model.isEqual(this[it], obj[it]) }
     }
 
-    override fun <N : Any> mapTo(newCalculator: EqualPredicate<N>, mapper: Function<T, N>): Vector<N> {
+    override fun <N> mapTo(newCalculator: EqualPredicate<N>, mapper: Function<T, N>): Vector<N> {
         return VectorImpl.apply1(this, newCalculator, mapper::apply)
     }
 
@@ -101,18 +101,18 @@ interface Vector<T : Any> : GenVector<T>, MathObject<T, EqualPredicate<T>>, Vect
 
 
     companion object {
-        fun <T : Any> of(data: List<T>, model: EqualPredicate<T>): Vector<T> {
-            val arr = Array<Any>(data.size) { k -> data[k] }
+        fun <T> of(data: List<T>, model: EqualPredicate<T>): Vector<T> {
+            val arr = Array<Any?>(data.size) { k -> data[k] }
             return AVector(arr, model)
         }
 
-        fun <T : Any> of(model: EqualPredicate<T>, vararg data: T): Vector<T> {
-            val arr = Array<Any>(data.size) { k -> data[k] }
+        fun <T> of(model: EqualPredicate<T>, vararg data: T): Vector<T> {
+            val arr = Array<Any?>(data.size) { k -> data[k] }
             return AVector(arr, model)
         }
 
-        inline operator fun <T : Any> invoke(size: Int, model: EqualPredicate<T>, supplier: (Int) -> T): Vector<T> {
-            val data = Array<Any>(size) { k -> supplier(k) }
+        inline operator fun <T> invoke(size: Int, model: EqualPredicate<T>, supplier: (Int) -> T): Vector<T> {
+            val data = Array<Any?>(size) { k -> supplier(k) }
             return AVector(data, model)
         }
 
@@ -120,7 +120,7 @@ interface Vector<T : Any> : GenVector<T>, MathObject<T, EqualPredicate<T>>, Vect
 }
 
 
-interface MutableVector<T : Any> : Vector<T> {
+interface MutableVector<T> : Vector<T> {
     fun set(i: Int, value: T)
 
     fun copy(): MutableVector<T> {
@@ -129,8 +129,8 @@ interface MutableVector<T : Any> : Vector<T> {
 }
 
 
-data class AVector<T : Any>(
-    val data: Array<Any>,
+data class AVector<T>(
+    val data: Array<Any?>,
     override val model: EqualPredicate<T>
 ) : MutableVector<T> {
     init {
@@ -190,89 +190,83 @@ data class AVector<T : Any>(
 
 object VectorImpl {
 
-    private inline fun <T : Any> apply2(
+    private inline fun <T> apply2(
         x: GenVector<T>, y: GenVector<T>,
         model: EqualPredicate<T>, f: (T, T) -> T
     ): AVector<T> {
         require(x.isSameSize(y))
-        val data = Array<Any>(x.size) { k ->
+        val data = Array<Any?>(x.size) { k ->
             f(x[k], y[k])
         }
         return AVector(data, model)
     }
 
-    internal inline fun <T : Any> apply1(x: GenVector<T>, model: EqualPredicate<T>, f: (T) -> T): AVector<T> {
-        val newData = Array<Any>(x.size) { k -> f(x[k]) }
+    internal inline fun <T, N> apply1(x: GenVector<T>, model: EqualPredicate<N>, f: (T) -> N): AVector<N> {
+        val newData = Array<Any?>(x.size) { k -> f(x[k]) }
         return AVector(newData, model)
     }
 
-    internal inline fun <T : Any, N : Any> apply1(x: GenVector<T>, model: EqualPredicate<N>, f: (T) -> N): AVector<N> {
-        val newData = Array<Any>(x.size) { k -> f(x[k]) }
-        return AVector(newData, model)
+    fun <T> copyOf(x: Vector<T>): AVector<T> {
+        return apply1(x, x.model) { it }
     }
 
-    fun <T : Any> constant(size: Int, value: T, model: EqualPredicate<T>): AVector<T> {
-        return AVector(Array<Any>(size) { value }, model)
+    fun <T> constant(size: Int, value: T, model: EqualPredicate<T>): AVector<T> {
+        return AVector(Array(size) { value }, model)
     }
 
-    fun <T : Any> zero(size: Int, model: AddMonoid<T>): AVector<T> {
+    fun <T> zero(size: Int, model: AddMonoid<T>): AVector<T> {
         return constant(size, model.zero, model)
     }
 
-    fun <T : Any> copyOf(x: Vector<T>): AVector<T> {
-        val data = Array<Any>(x.size) { k -> x[k] }
-        return AVector(data, x.model)
-    }
-
-    fun <T : Any> add(x: GenVector<T>, y: GenVector<T>, model: AddSemigroup<T>): AVector<T> {
+    fun <T> add(x: GenVector<T>, y: GenVector<T>, model: AddSemigroup<T>): AVector<T> {
         return apply2(x, y, model, model::add)
     }
 
-    fun <T : Any> subtract(x: GenVector<T>, y: GenVector<T>, model: AddGroup<T>): AVector<T> {
+    fun <T> subtract(x: GenVector<T>, y: GenVector<T>, model: AddGroup<T>): AVector<T> {
         return apply2(x, y, model, model::subtract)
     }
 
-    fun <T : Any> negate(x: GenVector<T>, model: AddGroup<T>): AVector<T> {
+    fun <T> negate(x: GenVector<T>, model: AddGroup<T>): AVector<T> {
         return apply1(x, model, model::negate)
     }
 
-    fun <T : Any> multiply(x: GenVector<T>, k: T, model: MulSemigroup<T>): AVector<T> {
+    fun <T> multiply(x: GenVector<T>, k: T, model: MulSemigroup<T>): AVector<T> {
         return apply1(x, model) { model.multiply(k, it) }
     }
 
-    fun <T : Any> multiplyLong(x: GenVector<T>, k: Long, model: AddGroup<T>): AVector<T> {
+    fun <T> multiplyLong(x: GenVector<T>, k: Long, model: AddGroup<T>): AVector<T> {
         return apply1(x, model) { model.multiplyLong(it, k) }
     }
 
-    fun <T : Any> divide(x: GenVector<T>, k: T, model: MulGroup<T>): AVector<T> {
+    fun <T> divide(x: GenVector<T>, k: T, model: MulGroup<T>): AVector<T> {
         return apply1(x, model) { model.divide(it, k) }
     }
 
-    fun <T : Any> sum(vs: List<GenVector<T>>, size: Int, cal: AddMonoid<T>): AVector<T> {
+    fun <T> sum(vs: List<GenVector<T>>, size: Int, cal: AddMonoid<T>): AVector<T> {
         require(vs.all { it.size == size }) { "Size mismatch! " }
         return vs.fold(zero(size, cal)) { acc, v -> add(acc, v, cal) }
     }
 
-    fun <T : Any> inner(x: GenVector<T>, y: GenVector<T>, model: Ring<T>): T {
+    fun <T> inner(x: GenVector<T>, y: GenVector<T>, model: Ring<T>): T {
         require(x.isSameSize(y))
         return x.indices.fold(model.zero) { acc, i -> model.add(acc, model.multiply(x[i], y[i])) }
     }
 
-    fun <T : Any> odot(x: GenVector<T>, y: GenVector<T>, model: MulSemigroup<T>): AVector<T> {
+    fun <T> odot(x: GenVector<T>, y: GenVector<T>, model: MulSemigroup<T>): AVector<T> {
         require(x.isSameSize(y))
         return apply2(x, y, model, model::multiply)
     }
 
 
-    fun <T : Any> normSq(x: GenVector<T>, model: Ring<T>): T {
+    fun <T> normSq(x: GenVector<T>, model: Ring<T>): T {
         return inner(x, x, model)
     }
 
-    fun <T : Any> norm(x: GenVector<T>, model: Reals<T>): T {
+    fun <T> norm(x: GenVector<T>, model: Reals<T>): T {
         return model.sqrt(normSq(x, model))
     }
 
-    fun <T : Any> unitize(x: GenVector<T>, model: Reals<T>): AVector<T> {
+    fun <T> unitize(x: GenVector<T>, model: Reals<T>): AVector<T> {
         val n = norm(x, model)
         return apply1(x, model) { model.divide(it, n) }
     }

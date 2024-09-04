@@ -12,7 +12,7 @@ import cn.mathsymk.util.IterUtils
  */
 
 
-open class SlicedView<T:Any>(
+open class SlicedView<T>(
     tensor: Tensor<T>,
     /**
          * The ranges in t. `ranges.size = t.dim`.
@@ -121,7 +121,7 @@ open class SlicedView<T:Any>(
 
 }
 
-class MutableSliceView<T:Any>(
+class MutableSliceView<T>(
     tensor: MutableTensor<T>, ranges: List<IntProgression>,
     /**
          * maps the axis to t's axis. `axisMap.size = this.dim`
@@ -199,7 +199,7 @@ class MutableSliceView<T:Any>(
 
 }
 
-abstract class CombinedView<T:Any>(tensors: List<Tensor<T>>, shape: IntArray)
+abstract class CombinedView<T>(tensors: List<Tensor<T>>, shape: IntArray)
     : AbstractTensor<T>(tensors[0].model, shape) {
     open val ts: List<Tensor<T>> = tensors
 
@@ -223,7 +223,7 @@ abstract class CombinedView<T:Any>(tensors: List<Tensor<T>>, shape: IntArray)
 
 }
 
-open class ConcatView<T:Any>(val axis: Int, tensors: List<Tensor<T>>, shape: IntArray)
+open class ConcatView<T>(val axis: Int, tensors: List<Tensor<T>>, shape: IntArray)
     : CombinedView<T>(tensors, shape) {
 
     protected val axisLevels = IntArray(tensors.size + 1)
@@ -246,7 +246,7 @@ open class ConcatView<T:Any>(val axis: Int, tensors: List<Tensor<T>>, shape: Int
 
 }
 
-class MutableConcatView<T:Any>(axis: Int, tensors: List<MutableTensor<T>>, shape: IntArray)
+class MutableConcatView<T>(axis: Int, tensors: List<MutableTensor<T>>, shape: IntArray)
     : ConcatView<T>(axis, tensors, shape), MutableTensor<T> {
     override val ts: List<MutableTensor<T>> = tensors
     override fun set(idx: Index, v: T) {
@@ -264,7 +264,7 @@ class MutableConcatView<T:Any>(axis: Int, tensors: List<MutableTensor<T>>, shape
     }
 }
 
-open class StackView<T:Any>(val axis: Int, tensors: List<Tensor<T>>, shape: IntArray)
+open class StackView<T>(val axis: Int, tensors: List<Tensor<T>>, shape: IntArray)
     : CombinedView<T>(tensors, shape) {
 
     override val ts: List<Tensor<T>> = tensors
@@ -291,7 +291,7 @@ open class StackView<T:Any>(val axis: Int, tensors: List<Tensor<T>>, shape: IntA
 
 }
 
-class MutableStackView<T:Any>(axis: Int, tensors: List<MutableTensor<T>>, shape: IntArray)
+class MutableStackView<T>(axis: Int, tensors: List<MutableTensor<T>>, shape: IntArray)
     : StackView<T>(axis, tensors, shape), MutableTensor<T> {
     override val ts: List<MutableTensor<T>> = tensors
     override fun set(idx: Index, v: T) {
@@ -309,7 +309,7 @@ class MutableStackView<T:Any>(axis: Int, tensors: List<MutableTensor<T>>, shape:
 }
 
 
-open class ReshapedView<T:Any>(tensor: Tensor<T>, shape: IntArray)
+open class ReshapedView<T>(tensor: Tensor<T>, shape: IntArray)
     : AbstractTensor<T>(tensor.model, shape) {
 
     open val t: Tensor<T> = tensor
@@ -392,7 +392,7 @@ open class ReshapedView<T:Any>(tensor: Tensor<T>, shape: IntArray)
     }
 }
 
-class MutableReshapedView<T:Any>(tensor: MutableTensor<T>, shape: IntArray)
+class MutableReshapedView<T>(tensor: MutableTensor<T>, shape: IntArray)
     : ReshapedView<T>(tensor, shape), MutableTensor<T> {
     override val t: MutableTensor<T> = tensor
     override fun set(idx: Index, v: T) {
@@ -423,7 +423,7 @@ class MutableReshapedView<T:Any>(tensor: MutableTensor<T>, shape: IntArray)
     }
 }
 
-class BroadcastView<T:Any>(
+class BroadcastView<T>(
     val t: Tensor<T>, shape: IntArray,
 //                             val originAxes: IntArray,
     val d: Int,
@@ -465,7 +465,7 @@ class BroadcastView<T:Any>(
 
 }
 
-open class IndexMapView<T:Any>(
+open class IndexMapView<T>(
     open val tensor: Tensor<T>,
     /**
          * Axis map.
@@ -490,7 +490,7 @@ open class IndexMapView<T:Any>(
     }
 }
 
-class MutableIndexMapView<T:Any>(override val tensor: MutableTensor<T>, am: IntArray, offsets: IntArray, shape: IntArray) :
+class MutableIndexMapView<T>(override val tensor: MutableTensor<T>, am: IntArray, offsets: IntArray, shape: IntArray) :
         IndexMapView<T>(tensor, am, offsets, shape), MutableTensor<T> {
     override fun set(idx: Index, v: T) {
         checkIdx(idx)

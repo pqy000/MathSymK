@@ -25,13 +25,13 @@ data class Quaternion<T>(val a: T, val b: T, val c: T, val d: T) {
         /**
          * Creates the quaternion numbers from the given field
          */
-        fun <T : Any> from(field: Field<T>): QuaternionNumbers<T> {
+        fun <T> from(field: Field<T>): QuaternionNumbers<T> {
             return QuaternionNumbers(field)
         }
     }
 }
 
-class QuaternionNumbers<T : Any>(val field: Field<T>) : DivisionRing<Quaternion<T>>, Algebra<T, Quaternion<T>> {
+class QuaternionNumbers<T>(val field: Field<T>) : DivisionRing<Quaternion<T>>, Algebra<T, Quaternion<T>> {
     /**
      * The quaternion numbers are not commutative.
      */

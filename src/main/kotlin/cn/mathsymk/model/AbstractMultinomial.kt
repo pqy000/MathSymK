@@ -13,7 +13,7 @@ data class Term<T, K>(val c: T, val key: K){
     }
 }
 
-abstract class AbstractMultinomial<T : Any, K, C : Comparator<K>, R : AbstractMultinomial<T, K, C, R>>(
+abstract class AbstractMultinomial<T, K, C : Comparator<K>, R : AbstractMultinomial<T, K, C, R>>(
     model: Ring<T>,
     /**
      * The terms of this multinomial in a sorted order given by [termOrder].
@@ -172,12 +172,12 @@ abstract class AbstractMultinomial<T : Any, K, C : Comparator<K>, R : AbstractMu
     }
 
     companion object {
-        protected fun <T : Any, K> add2Term(model: Ring<T>, t1: Term<T, K>, t2: Term<T, K>): Term<T, K>? {
+        protected fun <T, K> add2Term(model: Ring<T>, t1: Term<T, K>, t2: Term<T, K>): Term<T, K>? {
             val r = model.add(t1.c, t2.c)
             return if (model.isZero(r)) null else Term(r, t1.key)
         }
 
-        protected fun <T : Any, K> addMultiTerms(
+        protected fun <T, K> addMultiTerms(
             model: Ring<T>, terms: List<Term<T, K>>, tempList: ArrayList<T>
         ): Term<T, K>? {
             tempList.clear()
@@ -188,7 +188,7 @@ abstract class AbstractMultinomial<T : Any, K, C : Comparator<K>, R : AbstractMu
 
 
         @JvmStatic
-        protected fun <T : Any, K> mergeTerms(
+        protected fun <T, K> mergeTerms(
             model: Ring<T>, comparatorTerm: Comparator<Term<T, K>>,
             rawTerms: List<Term<T, K>>
         ): List<Term<T, K>> {

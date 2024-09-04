@@ -242,7 +242,7 @@ typealias MTerm<T> = Term<T, TermChs>
  * ## Term (monomial) order
  *
  */
-class Multinomial<T : Any>
+class Multinomial<T>
 internal constructor(
     model: Ring<T>,
     /**
@@ -338,7 +338,7 @@ internal constructor(
         return true
     }
 
-    override fun <N : Any> mapTo(newCalculator: EqualPredicate<N>, mapper: Function<T, N>): Multinomial<N> {
+    override fun <N> mapTo(newCalculator: EqualPredicate<N>, mapper: Function<T, N>): Multinomial<N> {
         require(newCalculator is Ring)
         val newTerms = terms.mapNotNullTo(ArrayList(terms.size)) { t ->
             val c = mapper.apply(t.c)
@@ -453,7 +453,7 @@ internal constructor(
 
     companion object {
 
-        private fun <T : Any> termExactDiv(model: UnitRing<T>, t1: MTerm<T>, t2: MTerm<T>): MTerm<T> {
+        private fun <T> termExactDiv(model: UnitRing<T>, t1: MTerm<T>, t2: MTerm<T>): MTerm<T> {
             val c = model.exactDivide(t1.c, t2.c)
             val chs = t1.key.exactDivide(t2.key)
             return MTerm(c, chs)
@@ -467,14 +467,14 @@ internal constructor(
         /**
          * Returns a zero multinomial.
          */
-        fun <T : Any> zero(model: Ring<T>, comp: MonomialOrder = DEFAULT_MONOMIAL_ORDER): Multinomial<T> {
+        fun <T> zero(model: Ring<T>, comp: MonomialOrder = DEFAULT_MONOMIAL_ORDER): Multinomial<T> {
             return Multinomial(model, emptyList(), comp)
         }
 
         /**
          * Creates a multinomial from a list of terms, possibly unordered and containing zero terms.
          */
-        fun <T : Any> fromTerms(
+        fun <T> fromTerms(
             terms: List<MTerm<T>>, model: Ring<T>, comp: MonomialOrder = DEFAULT_MONOMIAL_ORDER
         ): Multinomial<T> {
             val filteredTerms = terms.mapNotNull {
@@ -488,7 +488,7 @@ internal constructor(
         /**
          * Creates a multinomial from a list of terms.
          */
-        fun <T : Any> of(
+        fun <T> of(
             mc: Ring<T>,
             vararg terms: Pair<T, String>,
             comp: MonomialOrder = DEFAULT_MONOMIAL_ORDER
@@ -499,7 +499,7 @@ internal constructor(
         /**
          * Creates a constant multinomial.
          */
-        fun <T : Any> constant(c: T, model: Ring<T>, comp: MonomialOrder = DEFAULT_MONOMIAL_ORDER): Multinomial<T> {
+        fun <T> constant(c: T, model: Ring<T>, comp: MonomialOrder = DEFAULT_MONOMIAL_ORDER): Multinomial<T> {
             return if (model.isZero(c)) {
                 zero(model, comp)
             } else {
@@ -510,14 +510,14 @@ internal constructor(
         /**
          * Creates a multinomial `1`.
          */
-        fun <T : Any> one(model: UnitRing<T>, comp: MonomialOrder = DEFAULT_MONOMIAL_ORDER): Multinomial<T> {
+        fun <T> one(model: UnitRing<T>, comp: MonomialOrder = DEFAULT_MONOMIAL_ORDER): Multinomial<T> {
             return constant(model.one, model, comp)
         }
 
         /**
          * Creates a monomial from a term.
          */
-        fun <T : Any> monomial(
+        fun <T> monomial(
             t: MTerm<T>,
             model: Ring<T>,
             comp: MonomialOrder = DEFAULT_MONOMIAL_ORDER
@@ -532,7 +532,7 @@ internal constructor(
         /**
          * Creates a monomial from a coefficient and a character.
          */
-        fun <T : Any> monomial(
+        fun <T> monomial(
             c: T, ch: String, pow: Int, model: Ring<T>,
             comp: MonomialOrder = DEFAULT_MONOMIAL_ORDER
         ): Multinomial<T> {
@@ -543,7 +543,7 @@ internal constructor(
             return Multinomial(model, listOf(term), comp)
         }
 
-        fun <T : Any> monomialParse(
+        fun <T> monomialParse(
             c: T,
             chars: String,
             model: Ring<T>,
@@ -568,14 +568,14 @@ internal constructor(
          *
          *
          */
-//        inline fun <T : Any, R> with(
+//        inline fun <T, R> with(
 //            model: UnitRing<T>, comp: MonomialOrder = DEFAULT_MONOMIAL_ORDER,
 //            action: MultinomialBuilderScope<T>.() -> R
 //        ): R {
 //            return action(MultinomialBuilderScope(model, comp))
 //        }
 
-        fun <T : Any> parse(str: String, model: UnitRing<T>, comp: MonomialOrder = DEFAULT_MONOMIAL_ORDER) {
+        fun <T> parse(str: String, model: UnitRing<T>, comp: MonomialOrder = DEFAULT_MONOMIAL_ORDER) {
             TODO()
         }
 
@@ -590,14 +590,14 @@ internal constructor(
         /**
          * Sums a list of multinomials.
          */
-        fun <T : Any> sum(model: Ring<T>, vararg terms: Multinomial<T>): Multinomial<T> {
+        fun <T> sum(model: Ring<T>, vararg terms: Multinomial<T>): Multinomial<T> {
             return sum(model, terms.asList())
         }
 
         /**
          * Sums a list of multinomials.
          */
-        fun <T : Any> sum(model: Ring<T>, ms: List<Multinomial<T>>): Multinomial<T> {
+        fun <T> sum(model: Ring<T>, ms: List<Multinomial<T>>): Multinomial<T> {
             when (ms.size) {
                 0 -> return zero(model)
                 1 -> return ms[0]
@@ -608,21 +608,21 @@ internal constructor(
         }
 
 
-        fun <T : Any> from(
+        fun <T> from(
             model: Ring<T>,
             monomialOrder: MonomialOrder = DEFAULT_MONOMIAL_ORDER
         ): MultinomialOnRing<T> {
             return MultinomialOnRing(model, monomialOrder)
         }
 
-        fun <T : Any> from(
+        fun <T> from(
             model: UnitRing<T>,
             monomialOrder: MonomialOrder = DEFAULT_MONOMIAL_ORDER
         ): MultinomialOnUnitRing<T> {
             return MultinomialOnUnitRing(model, monomialOrder)
         }
 
-        fun <T : Any> from(
+        fun <T> from(
             model: Field<T>,
             monomialOrder: MonomialOrder = DEFAULT_MONOMIAL_ORDER
         ): MultinomialOnField<T> {
@@ -633,7 +633,7 @@ internal constructor(
     }
 }
 
-open class MultinomialOnRing<T : Any>(protected val _model: Ring<T>, val monomialOrder: MonomialOrder) :
+open class MultinomialOnRing<T>(protected val _model: Ring<T>, val monomialOrder: MonomialOrder) :
     Ring<Multinomial<T>>, InclusionTo<T, Multinomial<T>> {
 
     open val model: Ring<T>
@@ -692,7 +692,7 @@ open class MultinomialOnRing<T : Any>(protected val _model: Ring<T>, val monomia
     }
 }
 
-open class MultinomialOnUnitRing<T : Any>(_model: UnitRing<T>, order: MonomialOrder) :
+open class MultinomialOnUnitRing<T>(_model: UnitRing<T>, order: MonomialOrder) :
     MultinomialOnRing<T>(_model, order),
     UnitRing<Multinomial<T>> {
 
@@ -743,7 +743,7 @@ open class MultinomialOnUnitRing<T : Any>(_model: UnitRing<T>, order: MonomialOr
 
 }
 
-open class MultinomialOnField<T : Any>(model: Field<T>, order: MonomialOrder) : MultinomialOnUnitRing<T>(model, order),
+open class MultinomialOnField<T>(model: Field<T>, order: MonomialOrder) : MultinomialOnUnitRing<T>(model, order),
     IntegralDomain<Multinomial<T>> {
 
 }

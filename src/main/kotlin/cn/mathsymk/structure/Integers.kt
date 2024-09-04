@@ -11,7 +11,7 @@ import java.math.BigInteger
  *
  *
  */
-interface UniqueFactorizationDomain<T : Any> : IntegralDomain<T> {
+interface UniqueFactorizationDomain<T> : IntegralDomain<T> {
 
     /**
      * Determines whether the given element is a unit, namely invertible with respect to multiplication.
@@ -55,7 +55,7 @@ interface UniqueFactorizationDomain<T : Any> : IntegralDomain<T> {
  *
  * See [EuclideanDomain](https://mathworld.wolfram.com/EuclideanDomain.html) for more information.
  */
-interface EuclideanDomain<T : Any> : UniqueFactorizationDomain<T> {
+interface EuclideanDomain<T> : UniqueFactorizationDomain<T> {
 
     /*
     * Created by liyicheng at 2020-03-09 19:32
@@ -349,7 +349,7 @@ interface EuclideanDomain<T : Any> : UniqueFactorizationDomain<T> {
         /**
          * Creates a quotient field with a prime element [prime].
          */
-        fun <T : Any> quotientFieldCalculator(domain: EuclideanDomain<T>, prime: T): Field<T> {
+        fun <T> quotientFieldCalculator(domain: EuclideanDomain<T>, prime: T): Field<T> {
             return QuotientField(domain, prime)
         }
     }
@@ -363,7 +363,7 @@ interface EuclideanDomain<T : Any> : UniqueFactorizationDomain<T> {
  *
  * @author liyicheng 2017-09-09 20:33
  */
-interface Integers<T : Any> : EuclideanDomain<T>, OrderedRing<T> {
+interface Integers<T> : EuclideanDomain<T>, OrderedRing<T> {
     /**
      * Returns the integer `1` of type T.
      */

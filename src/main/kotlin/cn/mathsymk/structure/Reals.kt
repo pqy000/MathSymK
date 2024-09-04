@@ -7,7 +7,7 @@ package cn.mathsymk.structure
  *
  * @author Ezrnest
  */
-interface Reals<T : Any> : OrderedField<T>, Field<T>,ProvideElementaryFunctions<T> {
+interface Reals<T> : OrderedField<T>, Field<T>,ProvideElementaryFunctions<T> {
     // Re-created at 2024/8/11 18:54 by Ezrnest
 
     /**

@@ -15,7 +15,7 @@ import cn.mathsymk.structure.*
  *
  */
 @JvmRecord
-data class RFraction<T : Any>
+data class RFraction<T>
 internal constructor(val nume: T, val deno: T) {
     /*
     Basic properties:
@@ -26,7 +26,7 @@ internal constructor(val nume: T, val deno: T) {
     }
 
 
-    fun <N : Any> mapTo(mapper: (T) -> N): RFraction<N> {
+    fun <N> mapTo(mapper: (T) -> N): RFraction<N> {
         return RFraction(mapper(nume), mapper(deno))
     }
 
@@ -34,7 +34,7 @@ internal constructor(val nume: T, val deno: T) {
     companion object {
 
 
-//        fun <T : Any> of(nume: T, deno: T, model: Ring<T>): RingFraction<T> {
+//        fun <T> of(nume: T, deno: T, model: Ring<T>): RingFraction<T> {
 //            if (model.isZero(deno)) {
 //                throw ArithmeticException("Cannot divide by zero: $nume / $deno")
 //            }
@@ -43,18 +43,18 @@ internal constructor(val nume: T, val deno: T) {
 //        }
 //
 //
-//        fun <T : Any> of(nume: T, model: UnitRing<T>): RingFraction<T> {
+//        fun <T> of(nume: T, model: UnitRing<T>): RingFraction<T> {
 //            return RingFraction(nume, model.one)
 //        }
 //
-//        fun <T : Any> zero(model: UnitRing<T>): RingFraction<T> {
+//        fun <T> zero(model: UnitRing<T>): RingFraction<T> {
 //            return RingFraction(model.zero, model.one)
 //        }
 //
 //        /**
 //         * Returns a zero fraction with the given denominator: `0 / deno`.
 //         */
-//        fun <T : Any> zero(model: Ring<T>, deno: T): RingFraction<T> {
+//        fun <T> zero(model: Ring<T>, deno: T): RingFraction<T> {
 //            if (model.isZero(deno)) {
 //                throw ArithmeticException("The denominator cannot be zero: $deno")
 //            }
@@ -64,7 +64,7 @@ internal constructor(val nume: T, val deno: T) {
 //        /**
 //         * Returns a one fraction with the given denominator: `deno / deno`.
 //         */
-//        fun <T : Any> one(model: Ring<T>, deno: T): RingFraction<T> {
+//        fun <T> one(model: Ring<T>, deno: T): RingFraction<T> {
 //            if (model.isZero(deno)) {
 //                throw ArithmeticException("The denominator cannot be zero: $deno")
 //            }
@@ -74,22 +74,22 @@ internal constructor(val nume: T, val deno: T) {
 //        /**
 //         * Returns a one fraction with the given denominator: `1 / 1`.
 //         */
-//        fun <T : Any> one(model: UnitRing<T>): RingFraction<T> {
+//        fun <T> one(model: UnitRing<T>): RingFraction<T> {
 //            return RingFraction(model.one, model.one)
 //        }
 
-//        fun <T : Any> asField(model: Ring<T>, d: T): Field<RingFraction<T>> {
+//        fun <T> asField(model: Ring<T>, d: T): Field<RingFraction<T>> {
 //            return NumberModels.asField(zero(model, d), one(model, d), null)
 //        }
 
-        fun <T : Any> asRing(model: UnitRing<T>): RFractionOnUnitRing<T> {
+        fun <T> asRing(model: UnitRing<T>): RFractionOnUnitRing<T> {
             return RFractionOnUnitRing(model)
         }
 
         /**
          * Returns the fraction field of the given ring.
          */
-        fun <T : Any> asField(model: IntegralDomain<T>): RFractionOnInt<T> {
+        fun <T> asField(model: IntegralDomain<T>): RFractionOnInt<T> {
             return RFractionOnInt(model)
         }
 
@@ -97,7 +97,7 @@ internal constructor(val nume: T, val deno: T) {
 }
 
 
-open class RFractionOnUnitRing<T : Any>(_model: UnitRing<T>) : UnitRing<RFraction<T>>,Module<T,RFraction<T>> {
+open class RFractionOnUnitRing<T>(_model: UnitRing<T>) : UnitRing<RFraction<T>>,Module<T,RFraction<T>> {
 
     open val model: UnitRing<T> = _model
 
@@ -191,7 +191,7 @@ open class RFractionOnUnitRing<T : Any>(_model: UnitRing<T>) : UnitRing<RFractio
 
 }
 
-open class RFractionOnInt<T : Any>(override val model: IntegralDomain<T>) : RFractionOnUnitRing<T>(model),
+open class RFractionOnInt<T>(override val model: IntegralDomain<T>) : RFractionOnUnitRing<T>(model),
     Field<RFraction<T>> {
 
     override fun simplifyFrac(nume: T, deno: T): RFraction<T> {

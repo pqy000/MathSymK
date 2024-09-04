@@ -20,7 +20,7 @@ interface OrderPredicate<T> : EqualPredicate<T>, Comparator<T> {
  *
  *
  */
-interface OrderedAddGroupCal<T : Any> : AddGroup<T>, OrderPredicate<T> {
+interface OrderedAddGroupCal<T> : AddGroup<T>, OrderPredicate<T> {
 
     /**
      * Compares two elements, returning a negative integer, zero, or a positive integer as the first argument is less than, equal to, or greater than the second.
@@ -78,7 +78,7 @@ interface OrderedAddGroupCal<T : Any> : AddGroup<T>, OrderPredicate<T> {
  *
  *
  */
-interface OrderedRing<T : Any> : Ring<T>, OrderedAddGroupCal<T>
+interface OrderedRing<T> : Ring<T>, OrderedAddGroupCal<T>
 
 /**
  * Describes a field with a order relation denoted by `<`, which satisfies:
@@ -87,5 +87,5 @@ interface OrderedRing<T : Any> : Ring<T>, OrderedAddGroupCal<T>
  *     x > 0    implies    -x < 0
  *
  */
-interface OrderedField<T : Any> : Field<T>, OrderedRing<T>
+interface OrderedField<T> : Field<T>, OrderedRing<T>
 

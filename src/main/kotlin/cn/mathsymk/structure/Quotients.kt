@@ -3,7 +3,7 @@ package cn.mathsymk.structure
 /**
  * Describes the rational numbers, namely quotients, ℚ.
  */
-interface Quotients<T : Any> : OrderedField<T> {
+interface Quotients<T> : OrderedField<T> {
 
     /**
      * The characteristic of quotient number field is zero.

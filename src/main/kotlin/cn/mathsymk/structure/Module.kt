@@ -18,7 +18,7 @@ package cn.mathsymk.structure
  * @param R the ring of scalars
  * @param V the module
  */
-interface Module<R : Any, V : Any> : AddGroup<V> {
+interface Module<R, V> : AddGroup<V> {
     /*
     Rewritten at 2024/8/25 19:12
      */
@@ -65,7 +65,7 @@ interface Module<R : Any, V : Any> : AddGroup<V> {
  *
  * @author  liyicheng Created at 2018/11/29 16:57
  */
-interface LinearSpace<K : Any, V : Any> : Module<K, V> {
+interface LinearSpace<K , V > : Module<K, V> {
     /*
     Rewritten at 2024/8/25 19:12
     Created by liyicheng at 2020-03-07 10:42
@@ -111,7 +111,7 @@ interface LinearSpace<K : Any, V : Any> : Module<K, V> {
  * Created at 2018/11/29 18:46
  * @author  liyicheng
  */
-interface Algebra<K:Any,V:Any> : LinearSpace<K,V>, Ring<V> {
+interface Algebra<K,V> : LinearSpace<K,V>, Ring<V> {
     /*
     Rewritten at 2024/8/25
      */

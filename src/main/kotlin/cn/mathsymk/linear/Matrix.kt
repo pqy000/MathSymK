@@ -6,7 +6,7 @@ import cn.mathsymk.model.struct.*
 import cn.mathsymk.structure.*
 import java.util.function.Function
 
-interface Matrix<T : Any> : GenMatrix<T>, MathObject<T, EqualPredicate<T>>, AlgebraModel<T, Matrix<T>> {
+interface Matrix<T> : GenMatrix<T>, MathObject<T, EqualPredicate<T>>, AlgebraModel<T, Matrix<T>> {
 
     /*
     Matrix
@@ -36,7 +36,7 @@ interface Matrix<T : Any> : GenMatrix<T>, MathObject<T, EqualPredicate<T>>, Alge
     MathObject
      */
 
-    override fun <N : Any> mapTo(newCalculator: EqualPredicate<N>, mapper: Function<T, N>): Matrix<N> {
+    override fun <N> mapTo(newCalculator: EqualPredicate<N>, mapper: Function<T, N>): Matrix<N> {
         return MatrixImpl.apply1(this, newCalculator, mapper::apply)
     }
 
@@ -167,7 +167,7 @@ interface Matrix<T : Any> : GenMatrix<T>, MathObject<T, EqualPredicate<T>>, Alge
     }
 }
 
-interface MutableMatrix<T : Any> : Matrix<T> {
+interface MutableMatrix<T> : Matrix<T> {
     operator fun set(i: Int, j: Int, value: T)
 
     fun setRow(i: Int, row: Vector<T>){

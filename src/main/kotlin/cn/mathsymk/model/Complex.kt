@@ -54,7 +54,7 @@ Created by liyicheng 2020/2/24
  *
  */
 @JvmRecord
-data class Complex<T : Any>(val a: T, val b: T) {
+data class Complex<T>(val a: T, val b: T) {
     /*
     Created by lyc at 2024/8/29
      */
@@ -78,31 +78,31 @@ data class Complex<T : Any>(val a: T, val b: T) {
     }
 
 
-    fun <N : Any> mapTo(mapper: Function<T, N>): Complex<N> {
+    fun <N> mapTo(mapper: Function<T, N>): Complex<N> {
         return Complex(mapper.apply(a), mapper.apply(b))
     }
 
     companion object{
 
-        fun <T:Any> asRing(model: Ring<T>): ComplexOnRing<T> {
+        fun <T> asRing(model: Ring<T>): ComplexOnRing<T> {
             return ComplexOnRing(model)
         }
 
-        fun <T:Any> asUnitRing(model: UnitRing<T>): ComplexOnUnitRing<T> {
+        fun <T> asUnitRing(model: UnitRing<T>): ComplexOnUnitRing<T> {
             return ComplexOnUnitRing(model)
         }
 
-        fun <T:Any> asField(model: Field<T>): ComplexOnField<T> {
+        fun <T> asField(model: Field<T>): ComplexOnField<T> {
             return ComplexOnField(model)
         }
 
-//        fun <T:Any> from(reals : Reals<T>) : ComplexOnField<T> {
+//        fun <T> from(reals : Reals<T>) : ComplexOnField<T> {
 //            return ComplexOnField(reals)
 //        }
     }
 }
 
-open class ComplexOnRing<T : Any>(_model: Ring<T>) : Ring<Complex<T>>, Module<T, Complex<T>> {
+open class ComplexOnRing<T>(_model: Ring<T>) : Ring<Complex<T>>, Module<T, Complex<T>> {
     override val zero: Complex<T> = Complex(_model.zero, _model.zero)
     override val scalars: Ring<T>
         get() = model
@@ -188,14 +188,14 @@ open class ComplexOnRing<T : Any>(_model: Ring<T>) : Ring<Complex<T>>, Module<T,
     }
 }
 
-open class ComplexOnUnitRing<T : Any>(override val model: UnitRing<T>) :
+open class ComplexOnUnitRing<T>(override val model: UnitRing<T>) :
     ComplexOnRing<T>(model), UnitRing<Complex<T>> {
 
     override val one: Complex<T>
         get() = Complex(model.one, model.zero)
 }
 
-open class ComplexOnField<T : Any>(override val model: Field<T>) :
+open class ComplexOnField<T>(override val model: Field<T>) :
     ComplexOnUnitRing<T>(model), Field<Complex<T>>,
     Algebra<T, Complex<T>> {
 

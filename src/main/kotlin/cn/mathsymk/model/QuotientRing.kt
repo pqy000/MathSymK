@@ -124,14 +124,14 @@ internal class IntModPCached(p: Int) : IntModP(p) {
 }
 
 
-open class QuotientRing<T : Any>(open val ring: Ring<T>) {
+open class QuotientRing<T>(open val ring: Ring<T>) {
 
 }
 
 /**
  * Describes the field of rational numbers modulo `p`.
  */
-class QuotientField<T : Any>(val domain: EuclideanDomain<T>, val p: T) : Field<T> {
+class QuotientField<T>(val domain: EuclideanDomain<T>, val p: T) : Field<T> {
 
     override val characteristic: Long?
         get() = null

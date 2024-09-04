@@ -19,7 +19,7 @@ import kotlin.math.abs
  * 2018-02-27 17:09
  *
  */
-interface Semigroup<T : Any> : EqualPredicate<T>, BiMathOperator<T> {
+interface Semigroup<T> : EqualPredicate<T>, BiMathOperator<T> {
     /*
     Re-designed by lyc on 2024/8/11
      */
@@ -36,7 +36,7 @@ interface Semigroup<T : Any> : EqualPredicate<T>, BiMathOperator<T> {
 }
 
 
-interface Monoid<T : Any> : Semigroup<T> {
+interface Monoid<T> : Semigroup<T> {
 
     /**
      * Gets the identity element of this semigroup.
@@ -64,7 +64,7 @@ interface Monoid<T : Any> : Semigroup<T> {
  *
  * @author LI Yicheng,  2018-02-27 17:32
  */
-interface Group<T : Any> : Monoid<T> {
+interface Group<T> : Monoid<T> {
     /*
     Re-designed by lyc on 2024/8/11
      */
@@ -97,7 +97,7 @@ interface Group<T : Any> : Monoid<T> {
  *
  * @see Semigroup
  */
-interface AddSemigroup<T : Any> : EqualPredicate<T> {
+interface AddSemigroup<T> : EqualPredicate<T> {
     //Created by lyc at 2021-05-03 22:09
     //Updated by lyc at 2024-08-11
 
@@ -160,7 +160,7 @@ interface AddSemigroup<T : Any> : EqualPredicate<T> {
  *
  * @author liyicheng 2021-05-07 18:44
  */
-interface AddMonoid<T : Any> : AddSemigroup<T> {
+interface AddMonoid<T> : AddSemigroup<T> {
     //Updated by lyc at 2024-08-11
 
     /**
@@ -238,7 +238,7 @@ interface AddMonoid<T : Any> : AddSemigroup<T> {
  *
  * @author liyicheng 2021-05-07 18:45
  */
-interface AddGroup<T : Any> : AddMonoid<T> {
+interface AddGroup<T> : AddMonoid<T> {
     //Updated by lyc at 2024-08-11
 
     /**
@@ -351,7 +351,7 @@ interface MulSemigroup<T> : EqualPredicate<T> {
  * @author liyicheng 2021-05-07 19:02
  * @see Monoid
  */
-interface MulMonoid<T : Any> : MulSemigroup<T> {
+interface MulMonoid<T> : MulSemigroup<T> {
     /*
      * Created by liyicheng at 2020-03-06 22:14
      */
@@ -433,7 +433,7 @@ interface MulMonoid<T : Any> : MulSemigroup<T> {
  * @author liyicheng 2021-05-07 19:05
  * @see Group
  */
-interface MulGroup<T : Any> : MulMonoid<T> {
+interface MulGroup<T> : MulMonoid<T> {
     //Updated by lyc at 2024-08-11
 
     /**
@@ -493,16 +493,16 @@ interface MulGroup<T : Any> : MulMonoid<T> {
  *
  *      apply(apply(inverse(x), a), x)
  */
-fun <T : Any> Group<T>.conjugateBy(a: T, x: T) = eval { apply(apply(inverse(x), a), x) }
+fun <T> Group<T>.conjugateBy(a: T, x: T) = eval { apply(apply(inverse(x), a), x) }
 
 /**
  * Returns the commutator of [a] and [b]: `[a,b]` = `a^-1*b^-1*a*b`
  */
-fun <T : Any> Group<T>.commutator(a: T, b: T) = eval {
+fun <T> Group<T>.commutator(a: T, b: T) = eval {
     apply(apply(apply(inverse(a), inverse(b)), a), b)
 }
 
-fun <T : Any> AddGroup<T>.asGroup(): Group<T> {
+fun <T> AddGroup<T>.asGroup(): Group<T> {
     val m = this
     return object : Group<T> {
         override fun isEqual(x: T, y: T): Boolean {

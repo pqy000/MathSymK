@@ -17,7 +17,7 @@ import java.util.function.Function
  * Describes a term of a polynomial with a power and a value.
  */
 @JvmRecord
-data class PTerm<T : Any>(val pow: Int, val value: T) : Comparable<PTerm<T>> {
+data class PTerm<T>(val pow: Int, val value: T) : Comparable<PTerm<T>> {
     override fun toString(): String {
         return "($pow, $value)"
     }
@@ -31,7 +31,7 @@ data class PTerm<T : Any>(val pow: Int, val value: T) : Comparable<PTerm<T>> {
  * Represents a polynomial with coefficients of type [T].
  */
 @JvmRecord
-data class Polynomial<T : Any> internal constructor(
+data class Polynomial<T> internal constructor(
     override val model: Ring<T>,
     /**
      * A list of terms of this polynomial.
@@ -158,7 +158,7 @@ data class Polynomial<T : Any> internal constructor(
         return true
     }
 
-    override fun <N : Any> mapTo(newCalculator: EqualPredicate<N>, mapper: Function<T, N>): Polynomial<N> {
+    override fun <N> mapTo(newCalculator: EqualPredicate<N>, mapper: Function<T, N>): Polynomial<N> {
         val newModel = newCalculator as Ring<N>
         return mapTermsPossiblyZero(terms, newModel) { mapper.apply(it) }
     }
@@ -557,7 +557,7 @@ data class Polynomial<T : Any> internal constructor(
 
 
     companion object {
-        private inline fun <T : Any, R : Any> mapTermsPossiblyZeroT(
+        private inline fun <T, R> mapTermsPossiblyZeroT(
             terms: List<PTerm<T>>,
             model: Ring<R>,
             transform: (PTerm<T>) -> PTerm<R>
@@ -569,7 +569,7 @@ data class Polynomial<T : Any> internal constructor(
             return Polynomial(model, newTerms)
         }
 
-        private inline fun <T : Any, R : Any> mapTermsPossiblyZero(
+        private inline fun <T, R> mapTermsPossiblyZero(
             terms: List<PTerm<T>>,
             model: Ring<R>,
             transform: (T) -> R
@@ -585,7 +585,7 @@ data class Polynomial<T : Any> internal constructor(
         /**
          * Adds two terms with the same power.
          */
-        private fun <T : Any> add2Term(model: Ring<T>, a: PTerm<T>, b: PTerm<T>): PTerm<T>? {
+        private fun <T> add2Term(model: Ring<T>, a: PTerm<T>, b: PTerm<T>): PTerm<T>? {
             val r = model.add(a.value, b.value)
             return if (model.isZero(r)) null else PTerm(a.pow, r)
         }
@@ -593,7 +593,7 @@ data class Polynomial<T : Any> internal constructor(
         /**
          * Adds multiple terms with the same power.
          */
-        private fun <T : Any> addMultiTerm(model: Ring<T>, list: List<PTerm<T>>, tempList: ArrayList<T>): PTerm<T>? {
+        private fun <T> addMultiTerm(model: Ring<T>, list: List<PTerm<T>>, tempList: ArrayList<T>): PTerm<T>? {
             tempList.clear()
             list.mapTo(tempList) { it.value }
             val sum = model.sum(tempList)
@@ -604,7 +604,7 @@ data class Polynomial<T : Any> internal constructor(
         /**
          * Merges an unordered list of terms into a polynomial.
          */
-        private fun <T : Any> mergeTerms(
+        private fun <T> mergeTerms(
             model: Ring<T>,
             rawTerms: List<PTerm<T>>,
             maxMergeSizeEst: Int = 3,
@@ -620,7 +620,7 @@ data class Polynomial<T : Any> internal constructor(
             )
         }
 
-        private fun <T : Any> addTerms2(model: Ring<T>, a: List<PTerm<T>>, b: List<PTerm<T>>): Polynomial<T> {
+        private fun <T> addTerms2(model: Ring<T>, a: List<PTerm<T>>, b: List<PTerm<T>>): Polynomial<T> {
             val result = DataStructureUtil.mergeSorted2(
                 a, b,
                 comparator = Comparator.naturalOrder(),
@@ -629,7 +629,7 @@ data class Polynomial<T : Any> internal constructor(
             return Polynomial(model, result)
         }
 
-        private fun <T : Any> addTermsAll(model: Ring<T>, termsList: List<List<PTerm<T>>>): Polynomial<T> {
+        private fun <T> addTermsAll(model: Ring<T>, termsList: List<List<PTerm<T>>>): Polynomial<T> {
             val tempList = ArrayList<T>(termsList.size)
             val resultTerms = DataStructureUtil.mergeSortedK(
                 termsList,
@@ -641,7 +641,7 @@ data class Polynomial<T : Any> internal constructor(
         }
 
 
-        private fun <T : Any> multiplyTerms(model: Ring<T>, a: List<PTerm<T>>, b: List<PTerm<T>>): Polynomial<T> {
+        private fun <T> multiplyTerms(model: Ring<T>, a: List<PTerm<T>>, b: List<PTerm<T>>): Polynomial<T> {
             if (a.isEmpty() || b.isEmpty()) {
                 return zero(model)
             }
@@ -664,7 +664,7 @@ data class Polynomial<T : Any> internal constructor(
          * Returns a zero polynomial.
          */
         @JvmStatic
-        fun <T : Any> zero(model: Ring<T>): Polynomial<T> {
+        fun <T> zero(model: Ring<T>): Polynomial<T> {
             return Polynomial(model, emptyList())
         }
 
@@ -672,7 +672,7 @@ data class Polynomial<T : Any> internal constructor(
          * Returns a constant polynomial.
          */
         @JvmStatic
-        fun <T : Any> constant(model: Ring<T>, c: T): Polynomial<T> {
+        fun <T> constant(model: Ring<T>, c: T): Polynomial<T> {
             if (model.isZero(c)) {
                 return zero(model)
             }
@@ -683,7 +683,7 @@ data class Polynomial<T : Any> internal constructor(
          * Returns a polynomial with a single term `1`.
          */
         @JvmStatic
-        fun <T : Any> one(model: UnitRing<T>): Polynomial<T> {
+        fun <T> one(model: UnitRing<T>): Polynomial<T> {
             return constant(model, model.one)
         }
 
@@ -691,7 +691,7 @@ data class Polynomial<T : Any> internal constructor(
          * Returns a polynomial with a single term `x`.
          */
         @JvmStatic
-        fun <T : Any> x(model: UnitRing<T>): Polynomial<T> {
+        fun <T> x(model: UnitRing<T>): Polynomial<T> {
             return Polynomial(model, listOf(PTerm(1, model.one)))
         }
 
@@ -699,7 +699,7 @@ data class Polynomial<T : Any> internal constructor(
          * Returns a polynomial `ax + b`.
          */
         @JvmStatic
-        fun <T : Any> linear(model: Ring<T>, a: T, b: T): Polynomial<T> {
+        fun <T> linear(model: Ring<T>, a: T, b: T): Polynomial<T> {
             return Polynomial(model, listOf(PTerm(1, a), PTerm(0, b)))
         }
 
@@ -713,7 +713,7 @@ data class Polynomial<T : Any> internal constructor(
          * @return a polynomial with the specified coefficients.
          */
         @JvmStatic
-        fun <T : Any> fromList(model: Ring<T>, coefficients: List<T>): Polynomial<T> {
+        fun <T> fromList(model: Ring<T>, coefficients: List<T>): Polynomial<T> {
             val terms = coefficients.mapIndexedNotNull { index, value ->
                 if (model.isZero(value)) {
                     null
@@ -733,7 +733,7 @@ data class Polynomial<T : Any> internal constructor(
          * @see fromList
          */
         @JvmStatic
-        fun <T : Any> of(model: Ring<T>, vararg coef: T): Polynomial<T> {
+        fun <T> of(model: Ring<T>, vararg coef: T): Polynomial<T> {
             return fromList(model, coef.asList())
         }
 
@@ -741,7 +741,7 @@ data class Polynomial<T : Any> internal constructor(
         /**
          * Creates a polynomial `a * x^p`.
          */
-        fun <T : Any> power(model: Ring<T>, p: Int, a: T): Polynomial<T> {
+        fun <T> power(model: Ring<T>, p: Int, a: T): Polynomial<T> {
             require(p >= 0) { "The power must be non-negative." }
             if (model.isZero(a)) {
                 return zero(model)
@@ -752,7 +752,7 @@ data class Polynomial<T : Any> internal constructor(
         /**
          * Returns the sum of a list of polynomials.
          */
-        fun <T : Any> sum(model: Ring<T>, list: List<Polynomial<T>>): Polynomial<T> {
+        fun <T> sum(model: Ring<T>, list: List<Polynomial<T>>): Polynomial<T> {
             when (list.size) {
                 0 -> return zero(model)
                 1 -> return list[0]
@@ -764,7 +764,7 @@ data class Polynomial<T : Any> internal constructor(
         /**
          * Returns the sum of the given polynomials.
          */
-        fun <T : Any> sum(model: Ring<T>, vararg polys: Polynomial<T>): Polynomial<T> {
+        fun <T> sum(model: Ring<T>, vararg polys: Polynomial<T>): Polynomial<T> {
             return sum(model, polys.asList())
         }
 
@@ -778,7 +778,7 @@ data class Polynomial<T : Any> internal constructor(
          *
          * @see [Ring]
          */
-        fun <T : Any> asRing(model: Ring<T>): PolyOnRing<T> {
+        fun <T> asRing(model: Ring<T>): PolyOnRing<T> {
             return PolyOnRing(model)
         }
 
@@ -787,13 +787,13 @@ data class Polynomial<T : Any> internal constructor(
          *
          * @see [UnitRing]
          */
-        fun <T : Any> asRing(model: UnitRing<T>): PolyOnUnitRing<T> {
+        fun <T> asRing(model: UnitRing<T>): PolyOnUnitRing<T> {
             return PolyOnUnitRing(model)
         }
 
         /**
          */
-        fun <T : Any> from(model: UniqueFactorizationDomain<T>): PolyOnUFD<T> {
+        fun <T> from(model: UniqueFactorizationDomain<T>): PolyOnUFD<T> {
             return PolyOnUFD(model)
         }
 
@@ -803,7 +803,7 @@ data class Polynomial<T : Any> internal constructor(
          * @see EuclideanDomain
          * @see Field
          */
-        fun <T : Any> asRing(model: Field<T>): PolyOnField<T> {
+        fun <T> asRing(model: Field<T>): PolyOnField<T> {
             return PolyOnField(model)
         }
 
@@ -824,7 +824,7 @@ data class Polynomial<T : Any> internal constructor(
          * @param T the calculator for [T] should at least be a ring calculator.
          */
         @Suppress("LocalVariableName")
-        fun <T : Any> pseudoDivision(A: Polynomial<T>, B: Polynomial<T>): Pair<Polynomial<T>, Polynomial<T>> {
+        fun <T> pseudoDivision(A: Polynomial<T>, B: Polynomial<T>): Pair<Polynomial<T>, Polynomial<T>> {
             require(!B.isZero)
             /*
             See Algorithm 3.1.2, page 112 of
@@ -867,7 +867,7 @@ data class Polynomial<T : Any> internal constructor(
          */
         @Suppress("LocalVariableName")
         @JvmStatic
-        fun <T : Any> pseudoDivisionR(A: Polynomial<T>, B: Polynomial<T>): Polynomial<T> {
+        fun <T> pseudoDivisionR(A: Polynomial<T>, B: Polynomial<T>): Polynomial<T> {
             require(!B.isZero)
             /*
             See Algorithm 3.1.2, page 112 of
@@ -900,7 +900,7 @@ data class Polynomial<T : Any> internal constructor(
          * @see [subResultantGCD]
          */
         @JvmStatic
-        fun <T : Any> primitiveGCD(f: Polynomial<T>, g: Polynomial<T>): Polynomial<T> {
+        fun <T> primitiveGCD(f: Polynomial<T>, g: Polynomial<T>): Polynomial<T> {
             if (f.isZero) return g
             if (g.isZero) return f
 
@@ -939,7 +939,7 @@ data class Polynomial<T : Any> internal constructor(
          */
         @Suppress("LocalVariableName")
         @JvmStatic
-        fun <T : Any> subResultantGCD(f: Polynomial<T>, g: Polynomial<T>): Polynomial<T> {
+        fun <T> subResultantGCD(f: Polynomial<T>, g: Polynomial<T>): Polynomial<T> {
             /*
             See Algorithm 3.3.1, page 118 of
             'A Course in Computational Algebraic Number Theory', Henri Cohen
@@ -974,7 +974,7 @@ data class Polynomial<T : Any> internal constructor(
     }
 }
 
-open class PolyOnRing<T : Any>(_model: Ring<T>) : Ring<Polynomial<T>>,
+open class PolyOnRing<T>(_model: Ring<T>) : Ring<Polynomial<T>>,
     Module<T, Polynomial<T>>,
     InclusionTo<T, Polynomial<T>> {
 
@@ -1067,7 +1067,7 @@ open class PolyOnRing<T : Any>(_model: Ring<T>) : Ring<Polynomial<T>>,
     }
 }
 
-open class PolyOnUnitRing<T : Any>(_model: UnitRing<T>) : PolyOnRing<T>(_model), UnitRing<Polynomial<T>> {
+open class PolyOnUnitRing<T>(_model: UnitRing<T>) : PolyOnRing<T>(_model), UnitRing<Polynomial<T>> {
     override val model: UnitRing<T> = _model
 
     override val one: Polynomial<T> = Polynomial.one(_model)
@@ -1086,7 +1086,7 @@ open class PolyOnUnitRing<T : Any>(_model: UnitRing<T>) : PolyOnRing<T>(_model),
 
 }
 
-open class PolyOnUFD<T : Any>(model: UniqueFactorizationDomain<T>) : PolyOnUnitRing<T>(model),
+open class PolyOnUFD<T>(model: UniqueFactorizationDomain<T>) : PolyOnUnitRing<T>(model),
     UniqueFactorizationDomain<Polynomial<T>> {
 
     override fun gcd(a: Polynomial<T>, b: Polynomial<T>): Polynomial<T> {
@@ -1107,7 +1107,7 @@ open class PolyOnUFD<T : Any>(model: UniqueFactorizationDomain<T>) : PolyOnUnitR
 }
 
 
-open class PolyOnField<T : Any>(override val model: Field<T>) : PolyOnUFD<T>(model),
+open class PolyOnField<T>(override val model: Field<T>) : PolyOnUFD<T>(model),
     EuclideanDomain<Polynomial<T>>, Algebra<T, Polynomial<T>> {
 
     override val scalars: Field<T>
