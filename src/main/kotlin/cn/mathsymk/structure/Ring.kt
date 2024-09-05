@@ -1,5 +1,7 @@
 package cn.mathsymk.structure
 
+import cn.mathsymk.model.Fraction
+
 /**
  *
  */
@@ -38,9 +40,13 @@ interface UnitRing<T> : Ring<T>, MulMonoid<T> {
 //    override val numberClass: Class<T>
 //        get() = zero.javaClass
 
+    /**
+     * Returns element in this ring that represents `one * n`, namely adding `one` for `n` times.
+     */
     fun of(n: Long): T {
         return multiplyLong(one, n)
     }
+
 
     /**
      * Returns the result of exact division `a/b`.
@@ -99,6 +105,13 @@ interface DivisionRing<T> : UnitRing<T>, MulGroup<T> {
             throw ArithmeticException("Divided by zero")
         }
         return divide(x, of(n))
+    }
+
+    /**
+     * Returns the element in this division that represents the given fraction, `of(q.nume)/of(q.deno)`.
+     */
+    fun of(q : Fraction): T {
+        return of(q.nume) / of(q.deno)
     }
 
     override fun T.div(y: T): T {

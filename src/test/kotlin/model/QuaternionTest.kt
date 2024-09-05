@@ -1,5 +1,6 @@
 package model
 
+import TestUtils.assertEquals
 import cn.mathsymk.model.NumberModels
 import cn.mathsymk.model.Quaternion
 import kotlin.test.Test
@@ -49,7 +50,7 @@ class QuaternionTest {
         with(quaterion) {
             val q = quat(1, 2, 3, 4)
             val result = q.conj
-            assertTrue { isEqual(quat(1, -2, -3, -4), result) }
+            assertEquals(quat(1, -2, -3, -4), result)
         }
     }
 

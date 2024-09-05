@@ -80,6 +80,11 @@ interface Matrix<T> : GenMatrix<T>, MathObject<T, EqualPredicate<T>>, AlgebraMod
 
     /**
      * Returns the matrix product of this matrix and the given matrix.
+     * It is required that `this.column == y.row`.
+     *
+     *
+     * Let `C = A * B`, then `C[i, j] = sum(k; A[i, k] * B[k, j])` for all `i` and `j`.
+     *
      */
     override operator fun times(y: Matrix<T>): Matrix<T> {
         return MatrixImpl.matmul(this, y, model as Ring)

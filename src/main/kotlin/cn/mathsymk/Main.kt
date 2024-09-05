@@ -1,9 +1,5 @@
 package cn.mathsymk
 
-import cn.mathsymk.model.NumberModels
-import cn.mathsymk.structure.eval
-import kotlin.reflect.typeOf
-import kotlin.system.measureTimeMillis
 
 
 //fun testVariousLetters() {
@@ -29,9 +25,3 @@ import kotlin.system.measureTimeMillis
 
 //fun <T>
 
-
-fun main() {
-//    val t = typeOf<String>()
-    println(typeOf<String>())
-    println(typeOf<List<String>>())
-}

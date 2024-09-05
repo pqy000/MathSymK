@@ -65,7 +65,7 @@ interface Module<R, V> : AddGroup<V> {
  *
  * @author  liyicheng Created at 2018/11/29 16:57
  */
-interface LinearSpace<K , V > : Module<K, V> {
+interface LinearSpace<K , V> : Module<K, V> {
     /*
     Rewritten at 2024/8/25 19:12
     Created by liyicheng at 2020-03-07 10:42
@@ -100,8 +100,6 @@ interface LinearSpace<K , V > : Module<K, V> {
     fun isLinearDependent(vs: List<V>): Boolean {
         throw UnsupportedOperationException()
     }
-
-
 }
 
 /**
@@ -115,6 +113,5 @@ interface Algebra<K,V> : LinearSpace<K,V>, Ring<V> {
     /*
     Rewritten at 2024/8/25
      */
-
 
 }

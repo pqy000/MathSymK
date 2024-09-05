@@ -1,5 +1,6 @@
 package linear
 
+import TestUtils.assertEquals
 import cn.mathsymk.linear.Vector
 import cn.mathsymk.model.NumberModels
 import kotlin.test.Test
@@ -9,6 +10,7 @@ import kotlin.test.assertTrue
 class VectorTest {
     val ints = NumberModels.intAsIntegers()
     val reals = NumberModels.doubleAsReals(1E-7)
+    val vectors3 = Vector.space(reals, 3)
 
     @Test
     fun applyAll_appliesFunctionToAllElements() {
@@ -56,8 +58,42 @@ class VectorTest {
 
     @Test
     fun unitize_returnsUnitVector() {
-        val vector = Vector.of(listOf(3.0, 4.0), reals)
-        val result = vector.unitize()
-        assertEquals(listOf(0.6, 0.8), result.toList())
+        with(vectors3) {
+            val v = vec(3.0, 4.0, 5.0)
+            val result = v.unitize()
+            assertEquals(vec(0.4242640687119285, 0.565685424949238, 0.7071067811865475), result)
+        }
+
+        with(vectors3) {
+            val vector = vec(3.0, 4.0)
+            val result = vector.unitize()
+            assertEquals(vec(0.6, 0.8), result)
+        }
+    }
+
+    @Test
+    fun div_dividesVectorByScalar() {
+        with(vectors3) {
+            val v = vec(1.0, 2.0, 3.0)
+            val result = v / 2.0
+            assertEquals(vec(0.5, 1.0, 1.5), result)
+        }
+    }
+
+    @Test
+    fun odot_calculatesHadamardProduct() {
+        val vector1 = Vector.of(listOf(1, 2, 3), ints)
+        val vector2 = Vector.of(listOf(4, 5, 6), ints)
+        val result = vector1 odot vector2
+        assertEquals(listOf(4, 10, 18), result.toList())
+    }
+
+    @Test
+    fun testVectorSpace() {
+        with(vectors3) {
+            val v1 = vec(1.0, 2.0, 3.0)
+            val v2 = vec(4.0, 5.0, 6.0)
+            assertEquals(vec(5.0, 7.0, 9.0), v1 + v2)
+        }
     }
 }
