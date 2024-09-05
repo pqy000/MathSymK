@@ -31,13 +31,12 @@ interface ProvideElementaryFunctions<T> {
     fun nroot(x: T, n: Long): T
 
      /**
-     * Returns `a^b`, the power operation.
+     * Returns `base^pow`, the exponential function.
      *
-     * @param a the base
-     * @param b the exponent
-     * @return `a^b`
+     * @param base the base
+     * @param pow the exponent
      */
-    fun exp(a: T, b: T): T
+    fun exp(base: T, pow: T): T
 
     /**
      * Returns `e^x`, the exponential function.
@@ -116,3 +115,4 @@ interface ProvideElementaryFunctions<T> {
         val E = "e"
     }
 }
+

@@ -82,7 +82,7 @@ data class Complex<T>(val a: T, val b: T) {
         return Complex(mapper.apply(a), mapper.apply(b))
     }
 
-    companion object{
+    companion object {
 
         fun <T> asRing(model: Ring<T>): ComplexOnRing<T> {
             return ComplexOnRing(model)
@@ -106,7 +106,6 @@ open class ComplexOnRing<T>(_model: Ring<T>) : Ring<Complex<T>>, Module<T, Compl
     override val zero: Complex<T> = Complex(_model.zero, _model.zero)
     override val scalars: Ring<T>
         get() = model
-
 
 
     open val model: Ring<T> = _model
@@ -139,8 +138,6 @@ open class ComplexOnRing<T>(_model: Ring<T>) : Ring<Complex<T>>, Module<T, Compl
     operator fun Complex<T>.times(k: T): Complex<T> {
         return scalarMul(k, this)
     }
-
-
 
 
     override fun contains(x: Complex<T>): Boolean {
@@ -230,16 +227,20 @@ open class ComplexOnField<T>(override val model: Field<T>) :
     operator fun T.div(v: Complex<T>): Complex<T> {
         return v.inv() * this
     }
+}
 
-    val Complex<T>.arg: T
-        get() {
-            val model = model as Reals
-            return model.arctan2(b, a)
-        }
+open class ComplexFromReals<T>(override val reals: Reals<T>) : ComplexOnField<T>(reals), ComplexNumbers<T, Complex<T>> {
 
-    val Complex<T>.mod : T
-        get() {
-            val model = model as Reals
-            return model.sqrt(modSquared)
-        }
+    override val model: Reals<T>
+        get() = reals
+
+
+    override fun re(z: Complex<T>): T {
+        return z.a
+    }
+
+    override fun im(z: Complex<T>): T {
+        return z.b
+    }
+
 }

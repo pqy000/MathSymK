@@ -27,8 +27,8 @@ interface Reals<T> : OrderedField<T>, Field<T>,ProvideElementaryFunctions<T> {
      *
      *
      */
-    override fun exp(a: T, b: T): T {
-        return exp(ln(a) * b)
+    override fun exp(base: T, pow: T): T {
+        return exp(ln(base) * pow)
     }
 
     /**
