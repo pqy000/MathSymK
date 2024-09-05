@@ -211,7 +211,7 @@ data class Polynomial<T> internal constructor(
         return mapTermsNonZeroT { PTerm(it.pow, transform(it.value)) }
     }
 
-    override fun times(k: T): Polynomial<T> {
+    override fun scalarMul(k: T): Polynomial<T> {
         if (model.isZero(k)) {
             return Polynomial(model, emptyList())
         }
@@ -272,8 +272,8 @@ data class Polynomial<T> internal constructor(
         return multiplyTerms(model, terms, y.terms)
     }
 
-    override fun times(n: Long): Polynomial<T> {
-        return if (n == 0L) {
+    override fun timesLong(n: Long): Polynomial<T> {
+        return if (isZero || n == 0L) {
             zero(model)
         } else {
             mapTermsPossiblyZero(terms, model) { model.multiplyLong(it, n) }
@@ -300,7 +300,7 @@ data class Polynomial<T> internal constructor(
         return ModelPatterns.binaryProduce(n, this) { a, b -> a * b }
     }
 
-    override fun div(k: T): Polynomial<T> {
+    override fun scalarDiv(k: T): Polynomial<T> {
         if (model.isZero(k)) {
             throw ArithmeticException("Division by zero")
         }
@@ -322,7 +322,7 @@ data class Polynomial<T> internal constructor(
         if (isZero || mc.isOne(c)) {
             return this
         }
-        return div(c)
+        return scalarDiv(c)
     }
 
 
@@ -473,7 +473,7 @@ data class Polynomial<T> internal constructor(
         if (isZero) {
             return this
         }
-        return div(cont())
+        return scalarDiv(cont())
     }
 
 //    /**
@@ -914,8 +914,8 @@ data class Polynomial<T> internal constructor(
 
             val a = A.cont()
             val b = B.cont()
-            A = A.div(a)
-            B = B.div(b)
+            A = A.scalarDiv(a)
+            B = B.scalarDiv(b)
             while (true) {
                 val R = pseudoDivisionR(A, B)
                 if (R.isZero) {
@@ -965,7 +965,7 @@ data class Polynomial<T> internal constructor(
                     break
                 }
                 A = B
-                B = mc.eval { R.div(g1 * (h1 pow t)) }
+                B = mc.eval { R.scalarDiv(g1 * (h1 pow t)) }
                 g1 = A.leadCoef
                 h1 = mc.eval { h1 * ((g1 / h1) pow t) }
             }
@@ -1114,7 +1114,7 @@ open class PolyOnField<T>(override val model: Field<T>) : PolyOnUFD<T>(model),
         get() = model
 
     override fun scalarDiv(x: Polynomial<T>, k: T): Polynomial<T> {
-        return x.div(k)
+        return x.scalarDiv(k)
     }
 
     override fun divideAndRemainder(a: Polynomial<T>, b: Polynomial<T>): Pair<Polynomial<T>, Polynomial<T>> {

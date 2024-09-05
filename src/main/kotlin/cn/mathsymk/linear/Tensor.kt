@@ -130,14 +130,18 @@ interface Tensor<T> : MathObject<T, EqualPredicate<T>>, AlgebraModel<T, Tensor<T
     /**
      * Returns the result of multiplying this tensor with a scalar as a new tensor.
      */
-    override fun times(k: T): Tensor<T> {
+    override fun scalarMul(k: T): Tensor<T> {
         return TensorImpl.multiply(this, k, model as MulSemigroup<T>)
+    }
+
+    override fun timesLong(n: Long): Tensor<T> {
+        return TensorImpl.multiplyLong(this, n, model as AddSemigroup<T>)
     }
 
     /**
      * Returns the result of dividing this tensor with a scalar as a new tensor.
      */
-    override fun div(k: T): Tensor<T> {
+    override fun scalarDiv(k: T): Tensor<T> {
         return TensorImpl.divide(this, k, model as MulGroup<T>)
     }
 
@@ -850,11 +854,11 @@ interface MutableTensor<T> : Tensor<T> {
         return TensorImpl.subtract(this, y, model as AddGroup<T>)
     }
 
-    override fun times(k: T): MutableTensor<T> {
+    override fun scalarMul(k: T): MutableTensor<T> {
         return TensorImpl.multiply(this, k, model as MulSemigroup<T>)
     }
 
-    override fun div(k: T): MutableTensor<T> {
+    override fun scalarDiv(k: T): MutableTensor<T> {
         return TensorImpl.multiply(this, k, model as MulGroup<T>)
     }
 

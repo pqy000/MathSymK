@@ -118,7 +118,7 @@ data class Fraction internal constructor(
     /**
      * Returns `this * n`.
      */
-    override fun times(n: Long): Fraction {
+    override fun timesLong(n: Long): Fraction {
         if (n == 0L) {
             return ZERO
         }

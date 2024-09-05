@@ -65,11 +65,11 @@ interface Matrix<T> : GenMatrix<T>, MathObject<T, EqualPredicate<T>>, AlgebraMod
         return MatrixImpl.negate(this, model as AddGroup<T>)
     }
 
-    override fun times(k: T): Matrix<T> {
+    override fun scalarMul(k: T): Matrix<T> {
         return MatrixImpl.multiply(this, k, model as MulSemigroup)
     }
 
-    override fun div(k: T): Matrix<T> {
+    override fun scalarDiv(k: T): Matrix<T> {
         return MatrixImpl.divide(this, k, model as MulGroup)
     }
 
@@ -86,13 +86,33 @@ interface Matrix<T> : GenMatrix<T>, MathObject<T, EqualPredicate<T>>, AlgebraMod
      * Let `C = A * B`, then `C[i, j] = sum(k; A[i, k] * B[k, j])` for all `i` and `j`.
      *
      */
-    override operator fun times(y: Matrix<T>): Matrix<T> {
+    infix fun matmul(y: Matrix<T>): Matrix<T> {
         return MatrixImpl.matmul(this, y, model as Ring)
     }
 
+    /**
+     * Returns the matrix product of this matrix and the given matrix.
+     * It is required that `this.column == y.row`.
+     *
+     *
+     * Let `C = A * B`, then `C[i, j] = sum(k; A[i, k] * B[k, j])` for all `i` and `j`.
+     *
+     * @see matmul
+     *
+     */
+    override operator fun times(y: Matrix<T>): Matrix<T> {
+        return this.matmul(y)
+    }
 
-    infix fun matmul(y: Matrix<T>): Matrix<T> {
-        return this * y
+
+
+
+    infix fun matmul(v : Vector<T>): Vector<T> {
+        return MatrixImpl.matmul(this, v, model as Ring)
+    }
+
+    operator fun times(v: Vector<T>): Vector<T> {
+        return this.matmul(v)
     }
 
 
@@ -171,6 +191,54 @@ interface Matrix<T> : GenMatrix<T>, MathObject<T, EqualPredicate<T>>, AlgebraMod
 
     }
 }
+
+//fun <T> Matrix<T>.times(v: Vector<T>): Vector<T> {
+//    return MatrixImpl.matmul(this, v, model as Ring)
+//}
+
+
+fun <T> RowVector<T>.matmul(m: Matrix<T>): RowVector<T> {
+    return RowVector(MatrixImpl.matmul(this, m, this.v.model as Ring))
+}
+
+operator fun <T> RowVector<T>.times(m: Matrix<T>): RowVector<T> {
+    return this.matmul(m)
+}
+
+
+@JvmRecord
+data class VectorAsColMatrix<T>(val v : Vector<T>) : Matrix<T>{
+    override val model: EqualPredicate<T>
+        get() = v.model
+    override val row: Int
+        get() = v.size
+    override val column: Int
+        get() = 1
+    override fun get(i: Int, j: Int): T {
+        require(j == 0)
+        return v[i]
+    }
+}
+
+@JvmRecord
+data class VectorAsRowMatrix<T>(val v : Vector<T>) : Matrix<T>{
+    override val model: EqualPredicate<T>
+        get() = v.model
+    override val row: Int
+        get() = 1
+    override val column: Int
+        get() = v.size
+    override fun get(i: Int, j: Int): T {
+        require(i == 0)
+        return v[j]
+    }
+}
+
+
+val <T> Vector<T>.asMatrix : Matrix<T> get() = VectorAsColMatrix(this)
+val <T> RowVector<T>.asMatrix : Matrix<T> get() = VectorAsRowMatrix(this.v)
+
+
 
 interface MutableMatrix<T> : Matrix<T> {
     operator fun set(i: Int, j: Int, value: T)

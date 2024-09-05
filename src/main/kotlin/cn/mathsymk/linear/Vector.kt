@@ -12,6 +12,8 @@ import java.util.function.Function
 /**
  * Describes a vector
  *
+ * By default, all the vectors are treated as column vectors.
+ *
  * @author Ezrnest
  */
 interface Vector<T> : GenVector<T>, MathObject<T, EqualPredicate<T>>, VectorModel<T, Vector<T>> {
@@ -48,11 +50,12 @@ interface Vector<T> : GenVector<T>, MathObject<T, EqualPredicate<T>>, VectorMode
         return VectorImpl.negate(this, model as AddGroup<T>)
     }
 
-    override fun times(k: T): Vector<T> {
+    override fun scalarMul(k: T): Vector<T> {
         return VectorImpl.multiply(this, k, model as MulSemigroup<T>)
     }
 
-    override fun div(k: T): Vector<T> {
+
+    override fun scalarDiv(k: T): Vector<T> {
         return VectorImpl.divide(this, k, model as MulGroup<T>)
     }
 
@@ -60,10 +63,9 @@ interface Vector<T> : GenVector<T>, MathObject<T, EqualPredicate<T>>, VectorMode
         return VectorImpl.subtract(this, y, model as AddGroup<T>)
     }
 
-    override fun times(n: Long): Vector<T> {
+    override fun timesLong(n: Long): Vector<T> {
         return VectorImpl.multiplyLong(this, n, model as AddGroup<T>)
     }
-
 
     /**
      * Returns the inner (dot) product of this vector and the given vector: `⟨this, v⟩`.
@@ -156,10 +158,51 @@ interface Vector<T> : GenVector<T>, MathObject<T, EqualPredicate<T>>, VectorMode
             return Vector(length, model) { k -> if (k == index) model.one else model.zero }
         }
 
+
         fun <T> space(field: Field<T>, length: Int): CanonicalVectorSpace<T> {
             return CanonicalVectorSpace(length, field)
         }
     }
+}
+
+/**
+ * A wrapper class for a row vector.
+ */
+@JvmRecord
+data class RowVector<T>(val v : Vector<T>) : GenVector<T>{
+    override val size: Int
+        get() = v.size
+
+    override fun elementSequence(): Sequence<T> {
+        return v.elementSequence()
+    }
+
+    override fun get(i: Int): T {
+        return v[i]
+    }
+
+    override fun toList(): List<T> {
+        return v.toList()
+    }
+
+    override fun applyAll(f: (T) -> T): RowVector<T> {
+        return RowVector(v.applyAll(f))
+    }
+}
+
+/**
+ * Returns a row vector view of this vector.
+ *
+ * This method enables writing codes such as `v.T * A * v`, where `A` is a matrix.
+ */
+val <T> Vector<T>.T : RowVector<T> get() = RowVector(this)
+
+fun <T> RowVector<T>.matmul(v : Vector<T>) : T {
+    return this.v inner v
+}
+
+operator fun <T> RowVector<T>.times(v : Vector<T>) : T {
+    return this.matmul(v)
 }
 
 
@@ -228,6 +271,14 @@ data class AVector<T>(
         result = 31 * result + model.hashCode()
         return result
     }
+
+    companion object {
+
+        inline operator fun <T> invoke(size: Int, model: EqualPredicate<T>, init: (Int) -> T): AVector<T> {
+            val data = Array<Any?>(size) { k -> init(k) }
+            return AVector(data, model)
+        }
+    }
 }
 
 object VectorImpl {
@@ -237,15 +288,11 @@ object VectorImpl {
         model: EqualPredicate<T>, f: (T, T) -> T
     ): AVector<T> {
         require(x.isSameSize(y))
-        val data = Array<Any?>(x.size) { k ->
-            f(x[k], y[k])
-        }
-        return AVector(data, model)
+        return AVector(x.size, model) { k -> f(x[k], y[k]) }
     }
 
     internal inline fun <T, N> apply1(x: GenVector<T>, model: EqualPredicate<N>, f: (T) -> N): AVector<N> {
-        val newData = Array<Any?>(x.size) { k -> f(x[k]) }
-        return AVector(newData, model)
+        return AVector(x.size, model) { k -> f(x[k]) }
     }
 
     fun <T> copyOf(x: Vector<T>): AVector<T> {
@@ -331,8 +378,6 @@ open class CanonicalVectorSpace<K>(override val vectorLength: Int, override val 
         require(data.size == vectorLength)
         return Vector.of(data.asList(), scalars)
     }
-
-
 
 
     override fun contains(x: Vector<K>): Boolean {

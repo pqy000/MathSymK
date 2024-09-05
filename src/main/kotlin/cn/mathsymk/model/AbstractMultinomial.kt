@@ -141,7 +141,7 @@ abstract class AbstractMultinomial<T, K, C : Comparator<K>, R : AbstractMultinom
     override val isZero: Boolean
         get() = terms.isEmpty()
 
-    override fun times(k: T): R {
+    override fun scalarMul(k: T): R {
         if (model.isZero(k)) return fromTerms(emptyList())
         return mapTermsPossiblyZero { Term(model.multiply(k, it.c), it.key) }
     }
@@ -165,7 +165,7 @@ abstract class AbstractMultinomial<T, K, C : Comparator<K>, R : AbstractMultinom
         return multiplyTerms(terms, y.terms)
     }
 
-    override fun div(k: T): R {
+    override fun scalarDiv(k: T): R {
         val model = model
         require(model is UnitRing) { "The model must support division." }
         return mapTermsNonZero { Term(model.exactDivide(it.c, k), it.key) }

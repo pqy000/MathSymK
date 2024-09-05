@@ -1,8 +1,7 @@
 package cn.mathsymk.linear
 
 import cn.mathsymk.model.struct.GenMatrix
-import cn.mathsymk.model.struct.colIndices
-import cn.mathsymk.model.struct.rowIndices
+import cn.mathsymk.model.struct.GenVector
 import cn.mathsymk.structure.*
 
 data class AMatrix<T>(
@@ -198,28 +197,39 @@ data class AMatrix<T>(
 
     companion object {
 
-        internal inline fun <T> apply2(x: AMatrix<T>, y: AMatrix<T>, f: (T, T) -> T): AMatrix<T> {
-            require(x.shapeMatches(y))
+        internal inline fun <T> ofFlatten(row: Int, col: Int, model: EqualPredicate<T>, init: (Int) -> T): AMatrix<T> {
+            val data = Array<Any?>(row * col) { init(it) }
+            return AMatrix(row, col, model, data)
+        }
+
+        internal inline operator fun <T> invoke(
+            row: Int,
+            col: Int,
+            model: EqualPredicate<T>,
+            init: (Int, Int) -> T
+        ): AMatrix<T> {
+            return of(row, col, model, init)
+        }
+
+        internal inline fun <T, N> apply2(
+            x: AMatrix<T>, y: AMatrix<T>,
+            model: EqualPredicate<N>, f: (T, T) -> N
+        ): AMatrix<N> {
+//            require(x.shapeMatches(y))
             val d1 = x.data
             val d2 = y.data
-            val newData = Array<Any?>(d1.size) { k ->
+            return ofFlatten(x.row, x.column, model) { k ->
                 @Suppress("UNCHECKED_CAST")
                 f(d1[k] as T, d2[k] as T)
             }
-            return AMatrix(x.row, x.column, x.model, newData)
         }
 
-        internal inline fun <T, N> apply1(
-            x: AMatrix<T>,
-            model: EqualPredicate<N>,
-            f: (T) -> N
-        ): AMatrix<N> {
+        internal inline fun <T, N> apply1(x: AMatrix<T>, model: EqualPredicate<N>, f: (T) -> N): AMatrix<N> {
             val data = x.data
-            val newData = Array<Any?>(data.size) { k ->
+            return ofFlatten(x.row, x.column, model) { k ->
                 @Suppress("UNCHECKED_CAST")
                 f(data[k] as T)
             }
-            return AMatrix(x.row, x.column, model, newData)
         }
 
         fun <T> copyOf(x: GenMatrix<T>, mc: EqualPredicate<T>): AMatrix<T> {
@@ -231,15 +241,14 @@ data class AMatrix<T>(
 
         inline fun <T> of(row: Int, column: Int, model: EqualPredicate<T>, init: (Int, Int) -> T): AMatrix<T> {
             val data = Array<Any?>(row * column) { }
-            for (i in 0 until row) {
+            for (i in 0..<row) {
                 val pos = i * column
-                for (j in 0 until column) {
+                for (j in 0..<column) {
                     data[pos + j] = init(i, j)
                 }
             }
             return AMatrix(row, column, model, data)
         }
-
 
 
     }
@@ -309,25 +318,23 @@ open class TransposedMatrixView<T>(open val origin: Matrix<T>) : Matrix<T> {
 object MatrixImpl {
 
 
-
-    internal inline fun <T> apply2(
+    internal inline fun <T, N> apply2(
         x: GenMatrix<T>, y: GenMatrix<T>,
-        model: EqualPredicate<T>, f: (T, T) -> T
-    ): AMatrix<T> {
+        model: EqualPredicate<N>, f: (T, T) -> N
+    ): AMatrix<N> {
         require(x.shapeMatches(y))
         if (x is AMatrix && y is AMatrix) {
-            return AMatrix.apply2(x, y, f)
+            return AMatrix.apply2(x, y, model, f) // flattened version
         }
-        return AMatrix.of(x.row, x.column, model) { i, j -> f(x[i, j], y[i, j]) }
+        return AMatrix(x.row, x.column, model) { i, j -> f(x[i, j], y[i, j]) }
     }
 
     internal inline fun <T, N> apply1(x: GenMatrix<T>, model: EqualPredicate<N>, f: (T) -> N): AMatrix<N> {
         if (x is AMatrix) {
-            return AMatrix.apply1(x, model, f)
+            return AMatrix.apply1(x, model, f)// flattened version
         }
-        return AMatrix.of(x.row, x.column, model) { i, j -> f(x[i, j]) }
+        return AMatrix(x.row, x.column, model) { i, j -> f(x[i, j]) }
     }
-
 
 
     fun <T> hadamard(x: GenMatrix<T>, y: GenMatrix<T>, model: MulSemigroup<T>): AMatrix<T> {
@@ -358,6 +365,42 @@ object MatrixImpl {
             sum
         }
     }
+
+    /**
+     * Matrix-vector multiplication: `Ay`, where `y` is a column vector.
+     *
+     */
+    fun <T> matmul(A: GenMatrix<T>, y: GenVector<T>, model: Ring<T>): MutableVector<T> {
+        require(A.column == y.size) {
+            "Shape mismatch in matmul: (${A.row}, ${A.column}) * (${y.size})"
+        }
+        return Vector(A.row, model) { i ->
+            var sum = model.zero
+            for (k in 0 until A.column) {
+                sum = model.eval { sum + A[i, k] * y[k] }
+            }
+            sum
+        }
+    }
+
+    /**
+     * Matrix-vector multiplication: `v.T A`, where `v` is a column vector.
+     *
+     * The result will be a vector
+     */
+    fun <T> matmul(v: GenVector<T>, A: GenMatrix<T>, model: Ring<T>): MutableVector<T> {
+        require(v.size == A.row) {
+            "Shape mismatch in matmul: (${v.size}) * (${A.row}, ${A.column})"
+        }
+        return Vector(A.column, model) { j ->
+            var sum = model.zero
+            for (k in 0..<A.row) {
+                sum = model.eval { sum + v[k] * A[k, j] }
+            }
+            sum
+        }
+    }
+
 
     fun <T> multiply(x: GenMatrix<T>, k: T, model: MulSemigroup<T>): AMatrix<T> {
         return apply1(x, model) { model.multiply(k, it) }

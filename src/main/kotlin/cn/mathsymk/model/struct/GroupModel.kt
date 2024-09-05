@@ -6,15 +6,23 @@ import cn.mathsymk.util.ModelPatterns
 interface AddMonoidModel<T : AddMonoidModel<T>> {
     operator fun plus(y: T): T
 
-
     /**
-     * 'multiply' this with the given long, which is the result of summing `this`
-     * for `k` times.
+     * Returns the result of summing `this + this + ... + this` for `n` times.
+     *
      */
-    operator fun times(n: Long): T {
+    fun timesLong(n: Long): T {
         @Suppress("UNCHECKED_CAST")
         val x = this as T
         return ModelPatterns.binaryProduce(n, x) { a, b -> a + b }
+    }
+
+    /**
+     * Multiplies `this` by `n`, see [timesLong].
+     *
+     * @see timesLong
+     */
+    operator fun times(n: Long): T {
+        return timesLong(n)
     }
 }
 
@@ -58,14 +66,14 @@ interface AddGroupModel<T : AddGroupModel<T>> : AddMonoidModel<T> {
         return plus(-y)
     }
 
-    override fun times(n: Long): T {
+    override fun timesLong(n: Long): T {
         if (n < 0) {
-            return unaryMinus().times(n)
+            return -(super.timesLong(-n))
         }
         if (n == 0L) {
             return plus(-this)
         }
-        return super.times(n)
+        return super.timesLong(n)
     }
 }
 

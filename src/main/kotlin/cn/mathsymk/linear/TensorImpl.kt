@@ -215,7 +215,7 @@ internal constructor(mc: EqualPredicate<T>, shape: IntArray, val data: Array<Any
     }
 
 
-    override fun applyAll(f: (T) -> T): MutableTensor<T> {
+    override fun applyAll(f: (T) -> T): ATensor<T> {
         val ndata = Array<Any?>(size) { i ->
             @Suppress("UNCHECKED_CAST")
             f(data[i] as T)
@@ -249,7 +249,7 @@ internal constructor(mc: EqualPredicate<T>, shape: IntArray, val data: Array<Any
 
     }
 
-    override fun unaryMinus(): MutableTensor<T> {
+    override fun unaryMinus(): ATensor<T> {
         val mc = model as AddGroup<T>
         return copy().inlineApplyAll(mc::negate)
     }
@@ -262,12 +262,12 @@ internal constructor(mc: EqualPredicate<T>, shape: IntArray, val data: Array<Any
         return super.plus(y)
     }
 
-    override fun times(k: T): MutableTensor<T> {
+    override fun scalarMul(k: T): ATensor<T> {
         val mc = model as Ring<T>
         return applyAll { t -> mc.multiply(k, t) }
     }
 
-    override fun div(k: T): MutableTensor<T> {
+    override fun scalarDiv(k: T): ATensor<T> {
         val mc = model as Field<T>
         return applyAll { t -> mc.divide(k, t) }
     }
@@ -511,6 +511,10 @@ internal object TensorImpl {
      */
     fun <T> multiply(x: Tensor<T>, k: T, mc : MulSemigroup<T>): MutableTensor<T> {
         return ATensor.buildFromSequence(mc, x.shape, x.indices.map { idx -> mc.multiply(k, x[idx]) })
+    }
+
+    fun <T> multiplyLong(x: Tensor<T>, k: Long, mc : AddSemigroup<T>): MutableTensor<T> {
+        return ATensor.buildFromSequence(mc, x.shape, x.indices.map { idx -> mc.multiplyLong(x[idx], k) })
     }
 
     /**

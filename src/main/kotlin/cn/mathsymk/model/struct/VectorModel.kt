@@ -5,10 +5,18 @@ package cn.mathsymk.model.struct
  */
 interface ModuleModel<R, V : ModuleModel<R, V>> : AddGroupModel<V> {
 
+
     /**
-     * Performs the scalar multiplication.
+     * Multiplies this by a scalar `k`.
      */
-    operator fun times(k: R): V
+    fun scalarMul(k: R): V
+
+    /**
+     * The scalar multiplication.
+     */
+    operator fun times(k: R): V{
+        return scalarMul(k)
+    }
 
 }
 
@@ -18,9 +26,18 @@ interface ModuleModel<R, V : ModuleModel<R, V>> : AddGroupModel<V> {
 interface VectorModel<K, V : VectorModel<K, V>> : ModuleModel<K, V> {
 
     /**
-     * Performs the scalar division.
+     * The scalar division: `this / k`.
      */
-    operator fun div(k: K): V
+    fun scalarDiv(k: K): V
+
+    /**
+     * The scalar division `this / k`, a shorthand for [scalarDiv].
+     *
+     * @see scalarDiv
+     */
+    operator fun div(k: K): V {
+        return scalarDiv(k)
+    }
 
 
     /**
@@ -33,7 +50,8 @@ interface VectorModel<K, V : VectorModel<K, V>> : ModuleModel<K, V> {
     }
 }
 
-operator fun <K, V : ModuleModel<K, V>> K.times(v: ModuleModel<K, V>) = v.times(this)
+// since there is no type constrain on K, introducing this method would cause pollution
+//operator fun <K, V : ModuleModel<K, V>> K.times(v: ModuleModel<K, V>) = v.times(this)
 
 
 /**

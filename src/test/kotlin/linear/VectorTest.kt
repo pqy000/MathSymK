@@ -1,8 +1,11 @@
 package linear
 
 import TestUtils.assertEquals
+import cn.mathsymk.linear.T
 import cn.mathsymk.linear.Vector
+import cn.mathsymk.linear.times
 import cn.mathsymk.model.NumberModels
+import cn.mathsymk.structure.Field
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -95,5 +98,23 @@ class VectorTest {
             val v2 = vec(4.0, 5.0, 6.0)
             assertEquals(vec(5.0, 7.0, 9.0), v1 + v2)
         }
+    }
+
+    @Test
+    fun testRowVector(){
+        with(vectors3) {
+            val v = vec(1.0, 2.0, 3.0)
+            assertEquals(inner(v,v), v.T * v)
+        }
+//        with(Vector.space(NumberModels.longAsIntegers() as Field<Long>, 3)){
+//            val v1 = vec(1, 2, 3)
+//            val v2 = vec(4, 5, 6)
+//            scalarMul(2, v1)
+//            assertEquals(vec(5, 7, 9), v1 + v2)
+//        }
+//        val v = Vector.of(NumberModels.longAsIntegers(), 1, 2, 3)
+//        run{
+//
+//        }
     }
 }
