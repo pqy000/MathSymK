@@ -978,10 +978,6 @@ fun <T, A : Appendable> Tensor<T>.joinToL(
     val shape = this.shape
     val idx = IntArray(shape.size)
     var level = 0
-//    val counts =
-//    for (l in 0 until dim) {
-//        buffer.append(prefixes[l])
-//    }
     Outer@
     while (true) {
         while (idx[level] == shape[level]) {
@@ -1039,16 +1035,8 @@ fun <T, A : Appendable> Tensor<T>.joinTo(
     }
 
     val pres = Collections.nCopies(dim, prefix)
-
-
-//    val pres = Collections.nCopies(dim, prefix)
     val posts = Collections.nCopies(dim, postfix)
     val limits = IntArray(dim) { limit }
-
-//    val truns = ArrayList<CharSequence>(dim)
-//    val vtruncated = truncated.asIterable().joinToString(separator = "\n")
-//    repeat(dim - 1) { truns.add(vtruncated) }
-//    truns.add(truncated)
     val truns = Collections.nCopies(dim, truncated)
     val trans = transform ?: Any?::toString
     return this.joinToL(buffer, seps, pres, posts, limits, truns, trans)

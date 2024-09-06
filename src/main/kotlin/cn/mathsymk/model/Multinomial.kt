@@ -717,6 +717,10 @@ open class MultinomialOnUnitRing<T>(_model: UnitRing<T>, order: MonomialOrder) :
         return Multinomial.monomialParse(model.one, name, model, monomialOrder)
     }
 
+    fun monomial(name: String, pow: Int = 1): Multinomial<T> {
+        return Multinomial.monomial(model.one, name, pow, model, monomialOrder)
+    }
+
     val String.m get() = Multinomial.monomialParse(model.one, this, model, monomialOrder)
 
 
@@ -738,6 +742,14 @@ open class MultinomialOnUnitRing<T>(_model: UnitRing<T>, order: MonomialOrder) :
 
     operator fun T.times(m: Multinomial<T>): Multinomial<T> {
         return m.times(this)
+    }
+
+    override fun exactDivide(a: Multinomial<T>, b: Multinomial<T>): Multinomial<T> {
+        val (q,r) = a.divideAndRemainder(b)
+        if(!r.isZero){
+            throw ArithmeticException("The division is not exact.")
+        }
+        return q
     }
 
 

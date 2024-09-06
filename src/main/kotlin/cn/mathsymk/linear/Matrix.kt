@@ -105,9 +105,7 @@ interface Matrix<T> : GenMatrix<T>, MathObject<T, EqualPredicate<T>>, AlgebraMod
     }
 
 
-
-
-    infix fun matmul(v : Vector<T>): Vector<T> {
+    infix fun matmul(v: Vector<T>): Vector<T> {
         return MatrixImpl.matmul(this, v, model as Ring)
     }
 
@@ -179,7 +177,7 @@ interface Matrix<T> : GenMatrix<T>, MathObject<T, EqualPredicate<T>>, AlgebraMod
     /**
      *
      */
-    fun slice(rows : IntArray, cols : IntArray): Matrix<T> {
+    fun slice(rows: IntArray, cols: IntArray): Matrix<T> {
         return SlicedMatrixView(this, rows, cols)
     }
 
@@ -196,9 +194,75 @@ interface Matrix<T> : GenMatrix<T>, MathObject<T, EqualPredicate<T>>, AlgebraMod
     }
 
     companion object {
-         operator fun <T> invoke(row: Int, column: Int, model: EqualPredicate<T>, init: (Int, Int) -> T): Matrix<T> {
-             return AMatrix.of(row, column, model, init)
-         }
+        operator fun <T> invoke(row: Int, column: Int, model: EqualPredicate<T>, init: (Int, Int) -> T): Matrix<T> {
+            return AMatrix.of(row, column, model, init)
+        }
+
+        operator fun <T> invoke(n : Int, model: EqualPredicate<T>, init: (Int, Int) -> T): Matrix<T> {
+            return invoke(n, n, model, init)
+        }
+
+        fun <T> product(vararg matrices: Matrix<T>): Matrix<T> {
+            return product(matrices.asList())
+        }
+
+        fun <T> product(matrices: List<Matrix<T>>): Matrix<T> {
+            return matrices.reduce { acc, matrix -> acc.matmul(matrix) }
+            // TODO optimize
+        }
+
+        /**
+         * Creates a new matrix from a list of column vectors.
+         */
+        fun <T> fromColumns(columns: List<Vector<T>>): Matrix<T> {
+            val row = columns.first().size
+            val column = columns.size
+            require(columns.all { it.size == row })
+            val model = columns.first().model
+            return Matrix(row, column, model) { i, j -> columns[i][j] }
+        }
+
+        /**
+         * Creates a new matrix from a list of vectors as rows.
+         */
+        fun <T> fromRows(rows: List<Vector<T>>): Matrix<T> {
+            val row = rows.size
+            val column = rows.first().size
+            require(rows.all { it.size == column })
+            val model = rows.first().model
+            return Matrix(row, column, model) { i, j -> rows[i][j] }
+        }
+
+        /**
+         * Concatenates two matrix `A, B` to a new matrix `(A, B)`.
+         *
+         * It is required that `A` and `B` have that same row count.
+         */
+        fun <T> concatColumn(a: Matrix<T>, b: Matrix<T>): MutableMatrix<T> {
+            return MatrixImpl.concatCol(a, b, a.model)
+//            val expanded = MutableMatrix.zero(a.row, a.column + b.column, a.model)
+//            val col = a.column
+//            expanded.setAll(0, 0, a)
+//            expanded.setAll(0, col, b)
+//            return expanded
+        }
+
+        fun <T> zero(row: Int, column: Int, model: AddMonoid<T>): Matrix<T> {
+            return MatrixImpl.zero(row, column, model)
+        }
+
+        fun <T> diag(elements : List<T>, model : AddMonoid<T>): Matrix<T> {
+            val n = elements.size
+            val zero = MatrixImpl.zero(n,n, model)
+            for (i in 0 until n) {
+                zero[i,i] = elements[i]
+            }
+            return zero
+        }
+
+        fun <T> diag(model : AddMonoid<T>, vararg elements : T): Matrix<T> {
+            return diag(elements.asList(), model)
+        }
     }
 }
 
@@ -215,15 +279,27 @@ operator fun <T> RowVector<T>.times(m: Matrix<T>): RowVector<T> {
     return this.matmul(m)
 }
 
+fun Matrix<*>.joinToString() : String{
+    val builder = StringBuilder()
+    rowIndices.joinTo(builder, prefix = "[", postfix = "]", separator = "\n ") { i ->
+        colIndices.joinTo(builder, prefix = "[", postfix = "]", separator = ", ") { j ->
+            this[i, j].toString()
+        }
+        ""
+    }
+    return builder.toString()
+}
+
 
 @JvmRecord
-data class VectorAsColMatrix<T>(val v : Vector<T>) : Matrix<T>{
+data class VectorAsColMatrix<T>(val v: Vector<T>) : Matrix<T> {
     override val model: EqualPredicate<T>
         get() = v.model
     override val row: Int
         get() = v.size
     override val column: Int
         get() = 1
+
     override fun get(i: Int, j: Int): T {
         require(j == 0)
         return v[i]
@@ -231,13 +307,14 @@ data class VectorAsColMatrix<T>(val v : Vector<T>) : Matrix<T>{
 }
 
 @JvmRecord
-data class VectorAsRowMatrix<T>(val v : Vector<T>) : Matrix<T>{
+data class VectorAsRowMatrix<T>(val v: Vector<T>) : Matrix<T> {
     override val model: EqualPredicate<T>
         get() = v.model
     override val row: Int
         get() = 1
     override val column: Int
         get() = v.size
+
     override fun get(i: Int, j: Int): T {
         require(i == 0)
         return v[j]
@@ -245,23 +322,36 @@ data class VectorAsRowMatrix<T>(val v : Vector<T>) : Matrix<T>{
 }
 
 
-val <T> Vector<T>.asMatrix : Matrix<T> get() = VectorAsColMatrix(this)
-val <T> RowVector<T>.asMatrix : Matrix<T> get() = VectorAsRowMatrix(this.v)
+val <T> Vector<T>.asMatrix: Matrix<T> get() = VectorAsColMatrix(this)
+val <T> RowVector<T>.asMatrix: Matrix<T> get() = VectorAsRowMatrix(this.v)
 
-
+/**
+ * Returns a mutable copy of this matrix.
+ */
+fun <T> Matrix<T>.toMutable(): MutableMatrix<T> {
+    return MutableMatrix.copyOf(this)
+}
 
 interface MutableMatrix<T> : Matrix<T> {
     operator fun set(i: Int, j: Int, value: T)
 
-    fun setRow(i: Int, row: Vector<T>){
-        for (j in 0 ..< column){
+    fun setRow(i: Int, row: Vector<T>) {
+        for (j in 0..<column) {
             this[i, j] = row[j]
         }
     }
 
-    fun setCol(j: Int, col: Vector<T>){
-        for(i in 0 ..< row){
+    fun setCol(j: Int, col: Vector<T>) {
+        for (i in 0..<row) {
             this[i, j] = col[i]
+        }
+    }
+
+    fun setAll(row: Int, col: Int, matrix: GenMatrix<T>) {
+        for (i in 0 ..< matrix.row) {
+            for (j in 0 ..< matrix.column) {
+                this[i + row, j + col] = matrix[i, j]
+            }
         }
     }
 
@@ -278,7 +368,6 @@ interface MutableMatrix<T> : Matrix<T> {
 
     fun multiplyCol(c: Int, k: T, rowStart: Int = 0, rowEnd: Int = row)
     fun divideCol(c: Int, k: T, rowStart: Int = 0, rowEnd: Int = row)
-
 
 
     fun multiplyAddRow(r1: Int, r2: Int, k: T, colStart: Int = 0, colEnd: Int = column)
@@ -298,8 +387,26 @@ interface MutableMatrix<T> : Matrix<T> {
     fun negateInPlace()
 
     companion object {
-        operator fun <T> invoke(row: Int, column: Int, model: EqualPredicate<T>, init: (Int, Int) -> T): MutableMatrix<T> {
+        operator fun <T> invoke(
+            row: Int, column: Int, model: EqualPredicate<T>, init: (Int, Int) -> T
+        ): MutableMatrix<T> {
             return AMatrix.of(row, column, model, init)
+        }
+
+        fun <T> copyOf(matrix: Matrix<T>): MutableMatrix<T> {
+            return AMatrix.copyOf(matrix, matrix.model)
+        }
+
+        fun <T> zero(row: Int, column: Int, model: AddMonoid<T>): MutableMatrix<T> {
+            return MatrixImpl.zero(row, column, model)
+        }
+
+        fun <T> identity(n: Int, model: UnitRing<T>): MutableMatrix<T> {
+            return MatrixImpl.identity(n, model)
+        }
+
+        fun <T> concatColumn(a: Matrix<T>, b: Matrix<T>): MutableMatrix<T> {
+            TODO()
         }
     }
 }
