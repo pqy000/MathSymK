@@ -1,9 +1,11 @@
 package cn.mathsymk.linear
 
 import cn.mathsymk.structure.FiniteDimLinearSpace
+import cn.mathsymk.structure.FiniteLinearBasis
 
-
-
+interface VectorBasis<K> : FiniteLinearBasis<K, Vector<K>> {
+    val vectorLength: Int
+}
 
 interface VectorSpace<K> : FiniteDimLinearSpace<K, Vector<K>> {
     /*
@@ -29,4 +31,6 @@ interface VectorSpace<K> : FiniteDimLinearSpace<K, Vector<K>> {
      * @see contains
      */
     override fun coefficients(v: Vector<K>): List<K>
+
+    override val basis: VectorBasis<K>
 }

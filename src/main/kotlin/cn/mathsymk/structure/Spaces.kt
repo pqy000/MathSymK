@@ -25,11 +25,11 @@ interface InnerProductSpace<T, V> : LinearSpace<T, V> {
  * A metric space is composed of a set **M** and a function d: **M** × **M** -> **R**,
  * where the function d satisfies:
  * 1. Non-negative:
- *     > d(x,y) >= 0 and d(x,y) = 0 if and only if x = y
+ *      `d(x,y) >= 0` and `d(x,y) = 0` if and only if `x = y`
  * 2. Symmetry:
- *     > d(x,y) = d(y,x)
+ *      `d(x,y) = d(y,x)`
  * 3. Triangle inequality:
- *     > d(x,y) + d(y,z) >= d(x,z)
+ *     `d(x,y) + d(y,z) >= d(x,z)`
  *
  *
  * See : [Metric space](https://en.wikipedia.org/wiki/Metric_space)
@@ -46,7 +46,24 @@ interface MetricSpace<T, V> {
 }
 
 
+interface FiniteLinearBasis<K, V> {
+    val elements: List<V>
 
+    val rank: Int
+        get() = elements.size
+
+    /**
+     * Returns the coefficients of the given vector under this basis.
+     */
+    fun reduce(v : V) : List<K>
+
+    /**
+     * Returns the vector represented by the given coefficients.
+     */
+    fun produce(coefficients: List<K>): V
+
+    fun contains(v: V): Boolean
+}
 
 /**
  * Describes a linear space of finite dimension.
@@ -57,17 +74,19 @@ interface FiniteDimLinearSpace<K, V> : LinearSpace<K, V> {
      * Gets the dimension of this linear space.
      */
     val dim: Int
-        get() = basis.size
+        get() = basis.rank
 
     /**
-     * Gets a basis of this linear space.
+     * Gets the default basis of this linear space.
      */
-    val basis: List<V>
+    val basis: FiniteLinearBasis<K,V>
 
     /**
      * Gets the coefficients of the given vector under the [basis] of this linear space.
      */
-    fun coefficients(v: V): List<K>
+    fun coefficients(v: V) : List<K>{
+        return basis.reduce(v)
+    }
 
 //    /**
 //     * Determines whether the given elements can be a basis of this linear space.

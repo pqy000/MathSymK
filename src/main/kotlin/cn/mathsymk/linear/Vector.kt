@@ -69,13 +69,16 @@ interface Vector<T> : GenVector<T>, MathObject<T, EqualPredicate<T>>, VectorMode
 
     /**
      * Returns the inner (dot) product of this vector and the given vector: `⟨this, v⟩`.
+     * The result is a scalar.
      */
     infix fun inner(v: Vector<T>): T {
         return VectorImpl.inner(this, v, model as Ring<T>)
     }
 
     /**
-     * Returns the Hadamard product of this vector and the given vector: `this ⊙ v`.
+     * Returns the element-wise (Hadamard) product of this vector and the given vector: `this ⊙ v`.
+     * The result is a new vector with the same size as this vector.
+     *
      */
     infix fun odot(v: Vector<T>): Vector<T> {
         return VectorImpl.odot(this, v, model as MulSemigroup<T>)
@@ -112,17 +115,16 @@ interface Vector<T> : GenVector<T>, MathObject<T, EqualPredicate<T>>, VectorMode
          * @param size the size of the vector
          * @param model the model of the vector
          */
-        inline operator fun <T> invoke(size: Int, model: EqualPredicate<T>, init: (Int) -> T): MutableVector<T> {
+        operator fun <T> invoke(size: Int, model: EqualPredicate<T>, init: (Int) -> T): MutableVector<T> {
             require(size > 0)
-            val data = Array<Any?>(size) { k -> init(k) }
-            return AVector(data, model)
+            return AVector.of(size, model, init)
         }
 
         /**
          * Creates a new vector from a list of [data] and the given [model].
          */
         fun <T> of(data: List<T>, model: EqualPredicate<T>): MutableVector<T> {
-            return Vector(data.size, model) { k -> data[k] }
+            return AVector(data.size, model) { k -> data[k] }
         }
 
         /**
@@ -151,11 +153,12 @@ interface Vector<T> : GenVector<T>, MathObject<T, EqualPredicate<T>>, VectorMode
             return sum(vs.asList())
         }
 
+        /**
+         * Gets a unit vector with the given [length] with the [index] element being `1` and all other elements being `0`.
+         */
         fun <T> unitVector(length: Int, index: Int, model: UnitRing<T>): Vector<T> {
             require(index in 0..<length)
-            val v = zero(length, model)
-            v[index] = model.one
-            return Vector(length, model) { k -> if (k == index) model.one else model.zero }
+            return zero(length, model).also { it[index] = model.one }
         }
 
 
@@ -169,7 +172,7 @@ interface Vector<T> : GenVector<T>, MathObject<T, EqualPredicate<T>>, VectorMode
  * A wrapper class for a row vector.
  */
 @JvmRecord
-data class RowVector<T>(val v : Vector<T>) : GenVector<T>{
+data class RowVector<T>(val v: Vector<T>) : GenVector<T> {
     override val size: Int
         get() = v.size
 
@@ -195,13 +198,13 @@ data class RowVector<T>(val v : Vector<T>) : GenVector<T>{
  *
  * This method enables writing codes such as `v.T * A * v`, where `A` is a matrix.
  */
-val <T> Vector<T>.T : RowVector<T> get() = RowVector(this)
+val <T> Vector<T>.T: RowVector<T> get() = RowVector(this)
 
-fun <T> RowVector<T>.matmul(v : Vector<T>) : T {
+fun <T> RowVector<T>.matmul(v: Vector<T>): T {
     return this.v inner v
 }
 
-operator fun <T> RowVector<T>.times(v : Vector<T>) : T {
+operator fun <T> RowVector<T>.times(v: Vector<T>): T {
     return this.matmul(v)
 }
 
@@ -215,9 +218,8 @@ interface MutableVector<T> : Vector<T> {
 }
 
 
-data class AVector<T>(
-    val data: Array<Any?>,
-    override val model: EqualPredicate<T>
+data class AVector<T> internal constructor(
+    val data: Array<Any?>, override val model: EqualPredicate<T>
 ) : MutableVector<T> {
     init {
         require(data.isNotEmpty())
@@ -274,9 +276,13 @@ data class AVector<T>(
 
     companion object {
 
-        inline operator fun <T> invoke(size: Int, model: EqualPredicate<T>, init: (Int) -> T): AVector<T> {
+        internal inline operator fun <T> invoke(size: Int, model: EqualPredicate<T>, init: (Int) -> T): AVector<T> {
             val data = Array<Any?>(size) { k -> init(k) }
             return AVector(data, model)
+        }
+
+        fun <T> of(size: Int, model: EqualPredicate<T>, init: (Int) -> T): AVector<T> {
+            return AVector(size, model, init)
         }
     }
 }
@@ -300,7 +306,7 @@ object VectorImpl {
     }
 
     fun <T> constant(size: Int, value: T, model: EqualPredicate<T>): AVector<T> {
-        return AVector(Array(size) { value }, model)
+        return AVector(size, model) { value }
     }
 
     fun <T> zero(size: Int, model: AddMonoid<T>): AVector<T> {
@@ -343,7 +349,7 @@ object VectorImpl {
 
     fun <T> inner(x: GenVector<T>, y: GenVector<T>, model: Ring<T>): T {
         require(x.isSameSize(y))
-        return x.indices.fold(model.zero) { acc, i -> model.add(acc, model.multiply(x[i], y[i])) }
+        return x.indices.fold(model.zero) { acc, i -> model.eval { acc + x[i] * y[i] } }
     }
 
     fun <T> odot(x: GenVector<T>, y: GenVector<T>, model: MulSemigroup<T>): AVector<T> {
@@ -364,8 +370,6 @@ object VectorImpl {
         val n = norm(x, model)
         return apply1(x, model) { model.divide(it, n) }
     }
-
-
 }
 
 open class CanonicalVectorSpace<K>(override val vectorLength: Int, override val scalars: Field<K>) :
@@ -416,10 +420,32 @@ open class CanonicalVectorSpace<K>(override val vectorLength: Int, override val 
     }
 
 
-    override val basis: List<Vector<K>>
-        get() = (0 until vectorLength).map { Vector.unitVector(vectorLength, it, scalars) }
+    override val basis: VectorBasis<K>
+        get() = StandardVectorBasis(vectorLength, scalars)
+
 
     override fun coefficients(v: Vector<K>): List<K> {
         return v.toList()
+    }
+}
+
+/**
+ * A standard basis for a vector space, which is the set of unit vectors.
+ */
+class StandardVectorBasis<K>(override val vectorLength: Int,
+                             private val scalars: Field<K>) : VectorBasis<K> {
+    override val elements: List<Vector<K>>
+        get() = (0 until vectorLength).map { i -> Vector.unitVector(vectorLength, i, scalars) }
+
+    override fun reduce(v: Vector<K>): List<K> {
+        return v.toList()
+    }
+
+    override fun produce(coefficients: List<K>): Vector<K> {
+        return Vector.of(coefficients, scalars)
+    }
+
+    override fun contains(v: Vector<K>): Boolean {
+        return v.model == scalars && v.size == vectorLength
     }
 }
