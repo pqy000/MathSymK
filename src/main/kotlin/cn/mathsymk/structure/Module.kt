@@ -54,6 +54,7 @@ interface Module<R, V> : AddGroup<V> {
     val rZero: R
         get() = scalars.zero
 
+//    not possible to define this function because of JVM overloading rules
 //    operator fun R.times(v: V): V {
 //        return scalarMul(this, v)
 //    }

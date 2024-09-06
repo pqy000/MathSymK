@@ -67,7 +67,7 @@ class QuaternionTest {
     fun reciprocalOfQuaternion() {
         with(quaterion) {
             val q = quat(1, 2, 3, 4)
-            val result = reciprocal(q)
+            val result = q.inv()
             assertEquals(quat(1, -2, -3, -4) / 30, result)
         }
     }

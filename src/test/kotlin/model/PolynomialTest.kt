@@ -5,7 +5,6 @@ import cn.mathsymk.model.Fraction
 import cn.mathsymk.model.NumberModels
 import cn.mathsymk.model.PTerm
 import cn.mathsymk.model.Polynomial
-import cn.mathsymk.model.struct.times
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.assertThrows
 import kotlin.test.Test
@@ -327,14 +326,13 @@ class PolynomialTest {
             val g = ofI(-1, -2) // -1 - 2x
             assertValueEquals(f.toPrimitive(), f.gcd(g).toPrimitive())
         }
-
-        run {
+        with(pInt) {
             val p1 = x + 1
             val p2 = 2 * x + 1
             val p3 = x + 2
             val f1 = p1 * p2
             val f2 = p1 * p3
-            assertValueEquals(p1, f1.gcd(f2))
+            assertEquals(p1, f1.gcd(f2))
         }
     }
 
@@ -609,16 +607,4 @@ class PolynomialTest {
 //        q = Polynomial.of(Calculators.integer(), c2)
 //        assertValueEquals(q, p.reversed())
 //    }
-}
-
-fun main() {
-    val ints = NumberModels.intAsIntegers()
-    val x = Polynomial.x(ints)
-    val p1 = x + 1
-    val p2 = 2 * x + 1
-    val p3 = x + 2
-    val f1 = p1 * p2
-    val f2 = p1 * p3
-    println(f1.gcd(f2)) // x + 1
-
 }

@@ -6,7 +6,6 @@ import cn.mathsymk.function.MathOperator
 import cn.mathsymk.model.Polynomial.Companion.primitiveGCD
 import cn.mathsymk.model.struct.AlgebraModel
 import cn.mathsymk.model.struct.EuclidDomainModel
-import cn.mathsymk.model.struct.times
 import cn.mathsymk.structure.*
 import cn.mathsymk.util.DataStructureUtil
 import cn.mathsymk.util.ModelPatterns
@@ -841,8 +840,8 @@ data class Polynomial<T> internal constructor(
             var e = m - n + 1
             while (!R.isZero && R.degree >= B.degree) {
                 val S = power(model, R.degree - B.degree, R.leadCoef)
-                Q = d * Q + S
-                R = d * R - S * B
+                Q = Q * d + S
+                R = R * d - S * B
                 e -= 1
             }
             val q = model.power(d, e.toLong())
@@ -883,7 +882,7 @@ data class Polynomial<T> internal constructor(
             var e = m - n + 1
             while (!R.isZero && R.degree >= B.degree) {
                 val S = power(model, R.degree - B.degree, R.leadCoef)
-                R = d * R - S * B
+                R = R * d - S * B
                 e -= 1
             }
             val q = model.power(d, e.toLong())
@@ -929,7 +928,7 @@ data class Polynomial<T> internal constructor(
                 B = R.toPrimitive()
             }
             val d = mc.gcd(a, b)
-            return d * B
+            return B * d
         }
 
         /**
@@ -969,7 +968,7 @@ data class Polynomial<T> internal constructor(
                 g1 = A.leadCoef
                 h1 = mc.eval { h1 * ((g1 / h1) pow t) }
             }
-            return d * B.toPrimitive()
+            return B.toPrimitive() * d
         }
     }
 }
