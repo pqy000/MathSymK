@@ -171,7 +171,16 @@ interface Matrix<T> : GenMatrix<T>, MathObject<T, EqualPredicate<T>>, AlgebraMod
      *
      */
     fun subMatrix(rowStart: Int = 0, colStart: Int = 0, rowEnd: Int = row, colEnd: Int = column): Matrix<T> {
-        TODO()
+//        require(0 <= rowStart && rowEnd <= row && rowStart < rowEnd)
+//        require(0 <= colStart && colEnd <= column && colStart < colEnd)
+        return SubMatrixView(this, rowStart, colStart, rowEnd, colEnd)
+    }
+
+    /**
+     *
+     */
+    fun slice(rows : IntArray, cols : IntArray): Matrix<T> {
+        return SlicedMatrixView(this, rows, cols)
     }
 
     fun cofactor(row: Int, col: Int): Matrix<T> {
@@ -187,8 +196,9 @@ interface Matrix<T> : GenMatrix<T>, MathObject<T, EqualPredicate<T>>, AlgebraMod
     }
 
     companion object {
-
-
+         operator fun <T> invoke(row: Int, column: Int, model: EqualPredicate<T>, init: (Int, Int) -> T): Matrix<T> {
+             return AMatrix.of(row, column, model, init)
+         }
     }
 }
 
@@ -286,4 +296,10 @@ interface MutableMatrix<T> : Matrix<T> {
 
 
     fun negateInPlace()
+
+    companion object {
+        operator fun <T> invoke(row: Int, column: Int, model: EqualPredicate<T>, init: (Int, Int) -> T): MutableMatrix<T> {
+            return AMatrix.of(row, column, model, init)
+        }
+    }
 }

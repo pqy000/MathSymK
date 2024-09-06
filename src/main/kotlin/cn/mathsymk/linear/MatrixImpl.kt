@@ -4,7 +4,7 @@ import cn.mathsymk.model.struct.GenMatrix
 import cn.mathsymk.model.struct.GenVector
 import cn.mathsymk.structure.*
 
-data class AMatrix<T>(
+data class AMatrix<T> internal constructor(
     override val row: Int, override val column: Int,
     override val model: EqualPredicate<T>,
     val data: Array<Any?>
@@ -203,12 +203,16 @@ data class AMatrix<T>(
         }
 
         internal inline operator fun <T> invoke(
-            row: Int,
-            col: Int,
-            model: EqualPredicate<T>,
-            init: (Int, Int) -> T
+            row: Int, column: Int, model: EqualPredicate<T>, init: (Int, Int) -> T
         ): AMatrix<T> {
-            return of(row, col, model, init)
+            val data = Array<Any?>(row * column) { }
+            for (i in 0..<row) {
+                val pos = i * column
+                for (j in 0..<column) {
+                    data[pos + j] = init(i, j)
+                }
+            }
+            return AMatrix(row, column, model, data)
         }
 
         internal inline fun <T, N> apply2(
@@ -236,21 +240,12 @@ data class AMatrix<T>(
             if (x is AMatrix) {
                 return x.copy()
             }
-            return of(x.row, x.column, mc) { i, j -> x[i, j] }
+            return AMatrix(x.row, x.column, mc) { i, j -> x[i, j] }
         }
 
-        inline fun <T> of(row: Int, column: Int, model: EqualPredicate<T>, init: (Int, Int) -> T): AMatrix<T> {
-            val data = Array<Any?>(row * column) { }
-            for (i in 0..<row) {
-                val pos = i * column
-                for (j in 0..<column) {
-                    data[pos + j] = init(i, j)
-                }
-            }
-            return AMatrix(row, column, model, data)
+        fun <T> of(row: Int, column: Int, model: EqualPredicate<T>, init: (Int, Int) -> T): AMatrix<T> {
+            return AMatrix(row, column, model, init)
         }
-
-
     }
 }
 
@@ -313,6 +308,64 @@ open class TransposedMatrixView<T>(open val origin: Matrix<T>) : Matrix<T> {
     }
 }
 
+open class SubMatrixView<T>(
+    val origin: Matrix<T>,
+    rowStart: Int, rowEnd: Int, colStart: Int, colEnd: Int
+) : Matrix<T> {
+    init{
+        require(0 <= rowStart && rowEnd <= origin.row && rowStart < rowEnd)
+        require(0 <= colStart && colEnd <= origin.column && colStart < colEnd)
+    }
+    final override val row = rowEnd - rowStart
+    final override val column = colEnd - colStart
+    val dRow = rowStart
+    val dCol = colStart
+
+    override val model: EqualPredicate<T>
+        get() = origin.model
+    init{
+        require(dRow + row <= origin.row && dCol + column <= origin.column)
+    }
+    override fun get(i: Int, j: Int): T {
+        require(i in 0 until row && j in 0 until column)
+        return origin[i + dRow, j + dCol]
+    }
+
+    override fun subMatrix(rowStart: Int, colStart: Int, rowEnd: Int, colEnd: Int): Matrix<T> {
+        require(0 <= rowStart && rowEnd <= row && rowStart < rowEnd)
+        require(0 <= colStart && colEnd <= column && colStart < colEnd)
+        return SubMatrixView(origin, rowStart + dRow, rowEnd + dRow, colStart + dCol, colEnd + dCol)
+    }
+}
+
+
+open class SlicedMatrixView<T>(
+    val origin : Matrix<T>, val rowMap : IntArray, val colMap : IntArray
+) : Matrix<T> {
+    init{
+        require(rowMap.isNotEmpty() && colMap.isNotEmpty())
+        require(rowMap.all { it in 0 until origin.row })
+        require(colMap.all { it in 0 until origin.column })
+    }
+    override val row: Int
+        get() = rowMap.size
+    override val column: Int
+        get() = colMap.size
+    override val model: EqualPredicate<T>
+        get() = origin.model
+
+    override fun get(i: Int, j: Int): T {
+        require(i in 0 until row && j in 0 until column)
+        return origin[rowMap[i], colMap[j]]
+    }
+
+    override fun slice(rows: IntArray, cols: IntArray): Matrix<T> {
+        val newRows = IntArray(rows.size) { this.rowMap[rows[it]] }
+        val newCols = IntArray(cols.size) { this.colMap[cols[it]] }
+        return SlicedMatrixView(origin, newRows, newCols)
+    }
+}
+
 //TODO Mutable view
 
 object MatrixImpl {
@@ -357,7 +410,7 @@ object MatrixImpl {
         require(x.column == y.row) {
             "Shape mismatch in matmul: (${x.row}, ${x.column}) * (${y.row}, ${y.column})"
         }
-        return AMatrix.of(x.row, y.column, model) { i, j ->
+        return AMatrix(x.row, y.column, model) { i, j ->
             var sum = model.zero
             for (k in 0 until x.column) {
                 sum = model.eval { sum + x[i, k] * y[k, j] }
