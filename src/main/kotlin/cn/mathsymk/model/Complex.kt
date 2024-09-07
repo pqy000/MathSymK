@@ -84,15 +84,15 @@ data class Complex<T>(val a: T, val b: T) {
 
     companion object {
 
-        fun <T> asRing(model: Ring<T>): ComplexOnRing<T> {
+        fun <T> over(model: Ring<T>): ComplexOnRing<T> {
             return ComplexOnRing(model)
         }
 
-        fun <T> asUnitRing(model: UnitRing<T>): ComplexOnUnitRing<T> {
+        fun <T> over(model: UnitRing<T>): ComplexOnUnitRing<T> {
             return ComplexOnUnitRing(model)
         }
 
-        fun <T> asField(model: Field<T>): ComplexOnField<T> {
+        fun <T> over(model: Field<T>): ComplexOnField<T> {
             return ComplexOnField(model)
         }
 
@@ -110,6 +110,9 @@ open class ComplexOnRing<T>(_model: Ring<T>) : Ring<Complex<T>>, Module<T, Compl
 
     open val model: Ring<T> = _model
 
+    inline val T.i: Complex<T>
+        get() = imag(this)
+
 
     override fun isEqual(x: Complex<T>, y: Complex<T>): Boolean {
         return model.isEqual(x.a, y.a) && model.isEqual(x.b, y.b)
@@ -121,6 +124,14 @@ open class ComplexOnRing<T>(_model: Ring<T>) : Ring<Complex<T>>, Module<T, Compl
 
     fun of(a: T, b: T): Complex<T> {
         return Complex(a, b)
+    }
+
+    fun real(a: T): Complex<T> {
+        return Complex(a, model.zero)
+    }
+
+    fun imag(b: T): Complex<T> {
+        return Complex(model.zero, b)
     }
 
     override fun negate(x: Complex<T>): Complex<T> {
@@ -146,6 +157,14 @@ open class ComplexOnRing<T>(_model: Ring<T>) : Ring<Complex<T>>, Module<T, Compl
 
     override fun add(x: Complex<T>, y: Complex<T>): Complex<T> {
         return Complex(model.add(x.a, y.a), model.add(x.b, y.b))
+    }
+
+    operator fun Complex<T>.plus(y: T): Complex<T> {
+        return add(this, real(y))
+    }
+
+    operator fun T.plus(y: Complex<T>): Complex<T> {
+        return add(real(this), y)
     }
 
 
@@ -190,6 +209,9 @@ open class ComplexOnUnitRing<T>(override val model: UnitRing<T>) :
 
     override val one: Complex<T>
         get() = Complex(model.one, model.zero)
+
+    open val i: Complex<T>
+        get() = imag(model.one)
 }
 
 open class ComplexOnField<T>(override val model: Field<T>) :
@@ -231,6 +253,8 @@ open class ComplexOnField<T>(override val model: Field<T>) :
 
 open class ComplexFromReals<T>(override val reals: Reals<T>) : ComplexOnField<T>(reals), ComplexNumbers<T, Complex<T>> {
 
+    override val i: Complex<T>
+        get() = imag(reals.one)
     override val model: Reals<T>
         get() = reals
 

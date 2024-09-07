@@ -82,14 +82,14 @@ internal constructor(val nume: T, val deno: T) {
 //            return NumberModels.asField(zero(model, d), one(model, d), null)
 //        }
 
-        fun <T> asRing(model: UnitRing<T>): RFractionOnUnitRing<T> {
+        fun <T> over(model: UnitRing<T>): RFractionOnUnitRing<T> {
             return RFractionOnUnitRing(model)
         }
 
         /**
          * Returns the fraction field of the given ring.
          */
-        fun <T> asField(model: IntegralDomain<T>): RFractionOnInt<T> {
+        fun <T> over(model: IntegralDomain<T>): RFractionOnInt<T> {
             return RFractionOnInt(model)
         }
 

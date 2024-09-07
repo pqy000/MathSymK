@@ -10,10 +10,10 @@ import kotlin.test.assertTrue
 
 class RFractionTest {
     val ints = NumberModels.intAsIntegers()
-    val qInt = RFraction.asField(ints)
+    val qInt = RFraction.over(ints)
 
     val polyInt = Polynomial.over(ints)
-    val qPoly = RFraction.asField(polyInt)
+    val qPoly = RFraction.over(polyInt)
 
 
     @Test
@@ -309,7 +309,7 @@ class RFractionTest {
 fun main() {
     val ints = NumberModels.intAsIntegers()
     val polyRing = Polynomial.over(ints)
-    val qField = RFraction.asField(polyRing)
+    val qField = RFraction.over(polyRing)
     with(polyRing) { // polynomial ring over integers, Z[x]
         with(qField) { // quotient field of polynomials over integers, Z(x)
             val f1 = (1 + x) / (1 + 2.x)
