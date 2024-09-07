@@ -6,7 +6,7 @@ import kotlin.test.*
 
 class MultinomialTest {
     val intModP = NumberModels.intModP(97, cached = true)
-    val mult = Multinomial.from(intModP)
+    val mult = Multinomial.over(intModP)
 
     @Test
     fun additionOfMultinomials() {
@@ -165,7 +165,7 @@ class MultinomialTest {
             val f = "xy".m + "x^2".m + "y^2".m + "z".m
             assertEquals("x^2".m.leadTerm, f.leadTerm)
         }
-        val mult2 = Multinomial.from(intModP, Multinomial.getMonomialOrderLex(Comparator.reverseOrder()))
+        val mult2 = Multinomial.over(intModP, Multinomial.getMonomialOrderLex(Comparator.reverseOrder()))
         with(mult2) {
             // x > y > z, the power of z is compared first
             val f = "xy".m + "x^2".m + "y^2".m + "z".m

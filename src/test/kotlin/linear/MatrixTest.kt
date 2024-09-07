@@ -3,7 +3,6 @@ package linear
 import TestUtils.assertEquals
 import cn.mathsymk.linear.Matrix
 import cn.mathsymk.linear.MatrixImpl
-import cn.mathsymk.linear.joinToString
 import cn.mathsymk.linear.toMutable
 import cn.mathsymk.model.Multinomial
 import cn.mathsymk.model.NumberModels
@@ -14,7 +13,7 @@ class MatrixTest {
 
     @Test
     fun testDetGB() {
-        val mults = Multinomial.from(Z)
+        val mults = Multinomial.over(Z)
         (1..3).forEach { n ->
             val A = Matrix(n, mults) { i, j -> mults.monomial("($i$j)") } // 3x3 matrix with variables (ij)
             val detGB = MatrixImpl.detGaussBareiss(A.toMutable(), mults)

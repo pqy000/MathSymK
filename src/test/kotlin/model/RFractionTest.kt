@@ -12,7 +12,7 @@ class RFractionTest {
     val ints = NumberModels.intAsIntegers()
     val qInt = RFraction.asField(ints)
 
-    val polyInt = Polynomial.from(ints)
+    val polyInt = Polynomial.over(ints)
     val qPoly = RFraction.asField(polyInt)
 
 
@@ -308,7 +308,7 @@ class RFractionTest {
 
 fun main() {
     val ints = NumberModels.intAsIntegers()
-    val polyRing = Polynomial.from(ints)
+    val polyRing = Polynomial.over(ints)
     val qField = RFraction.asField(polyRing)
     with(polyRing) { // polynomial ring over integers, Z[x]
         with(qField) { // quotient field of polynomials over integers, Z(x)

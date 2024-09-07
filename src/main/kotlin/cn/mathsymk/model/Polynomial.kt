@@ -258,10 +258,6 @@ data class Polynomial<T> internal constructor(
         return addTerms2(model, terms, y.terms)
     }
 
-    operator fun plus(t: T): Polynomial<T> {
-        if (model.isZero(t)) return this
-        return addTerms2(model, terms, listOf(PTerm(0, t)))
-    }
 
 //    override operator fun minus(y: Polynomial<T>): Polynomial<T> {
 //        return addTerms2(model, terms, y.terms.map { PTerm(it.pow, model.negate(it.value)) })
@@ -318,9 +314,7 @@ data class Polynomial<T> internal constructor(
         }
         val c = terms.last().value
         val mc = model as UnitRing
-        if (isZero || mc.isOne(c)) {
-            return this
-        }
+        if (mc.isOne(c)) return this
         return scalarDiv(c)
     }
 
@@ -619,7 +613,7 @@ data class Polynomial<T> internal constructor(
             )
         }
 
-        private fun <T> addTerms2(model: Ring<T>, a: List<PTerm<T>>, b: List<PTerm<T>>): Polynomial<T> {
+        internal fun <T> addTerms2(model: Ring<T>, a: List<PTerm<T>>, b: List<PTerm<T>>): Polynomial<T> {
             val result = DataStructureUtil.mergeSorted2(
                 a, b,
                 comparator = Comparator.naturalOrder(),
@@ -773,37 +767,37 @@ data class Polynomial<T> internal constructor(
          */
 
         /**
-         * Returns a `Ring<Polynomial<T>>` on a `Ring<T>`.
+         * Returns a `Ring<Polynomial<T>>` over a `Ring<T>`.
          *
          * @see [Ring]
          */
-        fun <T> asRing(model: Ring<T>): PolyOnRing<T> {
-            return PolyOnRing(model)
+        fun <T> over(model: Ring<T>): PolyOverRing<T> {
+            return PolyOverRing(model)
         }
 
         /**
-         * Returns a `UnitRing<Polynomial<T>>` on a `Ring<T>`.
+         * Returns a `UnitRing<Polynomial<T>>` over a `Ring<T>`.
          *
          * @see [UnitRing]
          */
-        fun <T> asRing(model: UnitRing<T>): PolyOnUnitRing<T> {
-            return PolyOnUnitRing(model)
+        fun <T> over(model: UnitRing<T>): PolyOverUnitRing<T> {
+            return PolyOverUnitRing(model)
         }
 
         /**
          */
-        fun <T> from(model: UniqueFactorizationDomain<T>): PolyOnUFD<T> {
-            return PolyOnUFD(model)
+        fun <T> over(model: UniqueFactorizationDomain<T>): PolyOverUFD<T> {
+            return PolyOverUFD(model)
         }
 
         /**
-         * Returns a `EuclideanDomain<Polynomial<T>>` on a `Field<T>`.
+         * Returns a `EuclideanDomain<Polynomial<T>>` over a `Field<T>`.
          *
          * @see EuclideanDomain
          * @see Field
          */
-        fun <T> asRing(model: Field<T>): PolyOnField<T> {
-            return PolyOnField(model)
+        fun <T> over(model: Field<T>): PolyOverField<T> {
+            return PolyOverField(model)
         }
 
 
@@ -812,7 +806,7 @@ data class Polynomial<T> internal constructor(
          */
 
         /**
-         * Performs the pseudo division of two polynomials only on a ring.
+         * Performs the pseudo division of two polynomials only over a ring.
          * This algorithm finds `Q` and `R` such that
          * ```
          *     d^(A.degree - B.degree + 1) A = BQ + R     and     R.degree < B.degree.
@@ -852,7 +846,7 @@ data class Polynomial<T> internal constructor(
 
 
         /**
-         * Performs the pseudo division of two polynomials only on a ring.
+         * Performs the pseudo division of two polynomials only over a ring.
          * This algorithm finds `Q` and `R` such that
          * ```
          *     d^(A.degree - B.degree + 1) A = BQ + R     and     R.degree < B.degree,
@@ -892,7 +886,7 @@ data class Polynomial<T> internal constructor(
 
 
         /**
-         * Computes the GCD of two polynomials on a UFD.
+         * Computes the GCD of two polynomials over a UFD.
          *
          * It is required that the underlying model is [UniqueFactorizationDomain].
          *
@@ -932,7 +926,7 @@ data class Polynomial<T> internal constructor(
         }
 
         /**
-         * Computes the GCD of two polynomials on a UFD using sub-resultant method.
+         * Computes the GCD of two polynomials over a UFD using sub-resultant method.
          *
          * @see [primitiveGCD]
          */
@@ -973,7 +967,7 @@ data class Polynomial<T> internal constructor(
     }
 }
 
-open class PolyOnRing<T>(_model: Ring<T>) : Ring<Polynomial<T>>,
+open class PolyOverRing<T>(_model: Ring<T>) : Ring<Polynomial<T>>,
     Module<T, Polynomial<T>>,
     InclusionTo<T, Polynomial<T>> {
 
@@ -1058,7 +1052,19 @@ open class PolyOnRing<T>(_model: Ring<T>) : Ring<Polynomial<T>>,
     }
 
     operator fun T.plus(x: Polynomial<T>): Polynomial<T> {
-        return x.plus(this)
+        return add(constant(this), x)
+    }
+
+    operator fun Polynomial<T>.plus(t: T): Polynomial<T> {
+        return add(this, constant(t))
+    }
+
+    operator fun T.minus(x: Polynomial<T>): Polynomial<T> {
+        return subtract(constant(this), x)
+    }
+
+    operator fun Polynomial<T>.minus(t: T): Polynomial<T> {
+        return subtract(this, constant(t))
     }
 
     operator fun T.times(x: Polynomial<T>): Polynomial<T> {
@@ -1066,7 +1072,7 @@ open class PolyOnRing<T>(_model: Ring<T>) : Ring<Polynomial<T>>,
     }
 }
 
-open class PolyOnUnitRing<T>(_model: UnitRing<T>) : PolyOnRing<T>(_model), UnitRing<Polynomial<T>> {
+open class PolyOverUnitRing<T>(_model: UnitRing<T>) : PolyOverRing<T>(_model), UnitRing<Polynomial<T>> {
     override val model: UnitRing<T> = _model
 
     override val one: Polynomial<T> = Polynomial.one(_model)
@@ -1085,7 +1091,7 @@ open class PolyOnUnitRing<T>(_model: UnitRing<T>) : PolyOnRing<T>(_model), UnitR
 
 }
 
-open class PolyOnUFD<T>(model: UniqueFactorizationDomain<T>) : PolyOnUnitRing<T>(model),
+open class PolyOverUFD<T>(model: UniqueFactorizationDomain<T>) : PolyOverUnitRing<T>(model),
     UniqueFactorizationDomain<Polynomial<T>> {
 
     override fun gcd(a: Polynomial<T>, b: Polynomial<T>): Polynomial<T> {
@@ -1106,7 +1112,7 @@ open class PolyOnUFD<T>(model: UniqueFactorizationDomain<T>) : PolyOnUnitRing<T>
 }
 
 
-open class PolyOnField<T>(override val model: Field<T>) : PolyOnUFD<T>(model),
+open class PolyOverField<T>(override val model: Field<T>) : PolyOverUFD<T>(model),
     EuclideanDomain<Polynomial<T>>, Algebra<T, Polynomial<T>> {
 
     override val scalars: Field<T>

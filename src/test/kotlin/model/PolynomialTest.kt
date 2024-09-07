@@ -6,7 +6,6 @@ import cn.mathsymk.model.NumberModels
 import cn.mathsymk.model.PTerm
 import cn.mathsymk.model.Polynomial
 import org.junit.jupiter.api.Assertions.assertThrows
-import org.junit.jupiter.api.assertThrows
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -14,7 +13,7 @@ import kotlin.test.assertEquals
 class PolynomialTest {
     private val fractions = Fraction.asQuotient
     private val ints = NumberModels.intAsIntegers()
-    private val pInt = Polynomial.from(ints)
+    private val pInt = Polynomial.over(ints)
 
     private fun ofF(vararg cs: Int): Polynomial<Fraction> {
         return Polynomial.fromList(ints, cs.asList()).mapTo(fractions, Fraction::of)

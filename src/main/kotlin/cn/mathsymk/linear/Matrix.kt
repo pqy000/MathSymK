@@ -283,6 +283,10 @@ operator fun <T> RowVector<T>.times(m: Matrix<T>): RowVector<T> {
     return this.matmul(m)
 }
 
+//fun <K> Matrix<Complex<K>>.conjugate(): Matrix<Complex<K>> {
+//    return applyAll { it.conjugate() }
+//}
+
 
 
 

@@ -608,32 +608,32 @@ internal constructor(
         }
 
 
-        fun <T> from(
+        fun <T> over(
             model: Ring<T>,
             monomialOrder: MonomialOrder = DEFAULT_MONOMIAL_ORDER
-        ): MultinomialOnRing<T> {
-            return MultinomialOnRing(model, monomialOrder)
+        ): MultinomialOverRing<T> {
+            return MultinomialOverRing(model, monomialOrder)
         }
 
-        fun <T> from(
+        fun <T> over(
             model: UnitRing<T>,
             monomialOrder: MonomialOrder = DEFAULT_MONOMIAL_ORDER
-        ): MultinomialOnUnitRing<T> {
-            return MultinomialOnUnitRing(model, monomialOrder)
+        ): MultinomialOverUnitRing<T> {
+            return MultinomialOverUnitRing(model, monomialOrder)
         }
 
-        fun <T> from(
+        fun <T> over(
             model: Field<T>,
             monomialOrder: MonomialOrder = DEFAULT_MONOMIAL_ORDER
-        ): MultinomialOnField<T> {
-            return MultinomialOnField(model, monomialOrder)
+        ): MultinomialOverField<T> {
+            return MultinomialOverField(model, monomialOrder)
         }
 
 
     }
 }
 
-open class MultinomialOnRing<T>(protected val _model: Ring<T>, val monomialOrder: MonomialOrder) :
+open class MultinomialOverRing<T>(protected val _model: Ring<T>, val monomialOrder: MonomialOrder) :
     Ring<Multinomial<T>>, InclusionTo<T, Multinomial<T>> {
 
     open val model: Ring<T>
@@ -692,8 +692,8 @@ open class MultinomialOnRing<T>(protected val _model: Ring<T>, val monomialOrder
     }
 }
 
-open class MultinomialOnUnitRing<T>(_model: UnitRing<T>, order: MonomialOrder) :
-    MultinomialOnRing<T>(_model, order),
+open class MultinomialOverUnitRing<T>(_model: UnitRing<T>, order: MonomialOrder) :
+    MultinomialOverRing<T>(_model, order),
     UnitRing<Multinomial<T>> {
 
     override val model: UnitRing<T>
@@ -755,7 +755,7 @@ open class MultinomialOnUnitRing<T>(_model: UnitRing<T>, order: MonomialOrder) :
 
 }
 
-open class MultinomialOnField<T>(model: Field<T>, order: MonomialOrder) : MultinomialOnUnitRing<T>(model, order),
+open class MultinomialOverField<T>(model: Field<T>, order: MonomialOrder) : MultinomialOverUnitRing<T>(model, order),
     IntegralDomain<Multinomial<T>> {
 
 }
