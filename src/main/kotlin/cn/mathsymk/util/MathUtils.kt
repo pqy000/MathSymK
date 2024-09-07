@@ -597,19 +597,11 @@ object MathUtils {
     }
 
     fun product(array: LongArray): Long {
-        var r: Long = 1
-        for (l in array) {
-            r *= l
-        }
-        return r
+        return array.fold(1L,Long::times)
     }
 
     fun product(array: IntArray): Int {
-        var r = 1
-        for (l in array) {
-            r *= l
-        }
-        return r
+        return array.fold(1,Int::times)
     }
 
     fun sum(array: DoubleArray, start: Int, end: Int): Double {

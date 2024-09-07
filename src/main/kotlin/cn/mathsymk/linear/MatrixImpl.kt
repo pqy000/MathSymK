@@ -2,9 +2,6 @@ package cn.mathsymk.linear
 
 import cn.mathsymk.model.Multinomial
 import cn.mathsymk.model.NumberModels
-import cn.mathsymk.model.struct.GenMatrix
-import cn.mathsymk.model.struct.GenVector
-import cn.mathsymk.model.struct.rowIndices
 import cn.mathsymk.structure.*
 import cn.mathsymk.util.IterUtils
 import kotlin.math.min
@@ -575,7 +572,7 @@ object MatrixImpl {
 
 
     fun <T> inverse(m: GenMatrix<T>, model: Field<T>): AMatrix<T> {
-        require(m.isSquare())
+        require(m.isSquare)
         TODO()
 //        val mc = m.model
 //        if (mc is FieldCalculator) {
@@ -589,7 +586,7 @@ object MatrixImpl {
 
 
     fun <T> detSmall(m: GenMatrix<T>, model: Ring<T>): T {
-        require(m.isSquare())
+        require(m.isSquare)
         return when (m.row) {
             1 -> m[0, 0]
             2 -> model.eval {
@@ -609,7 +606,7 @@ object MatrixImpl {
      * A very time-consuming method to compute the determinant of a matrix by the definition.
      */
     fun <T> detDefinition(m: GenMatrix<T>, model: Ring<T>): T {
-        require(m.isSquare())
+        require(m.isSquare)
         var result = model.zero
         val n = m.row
         for ((idx, rev) in IterUtils.permRev(n, copy = false)) {
@@ -671,7 +668,7 @@ object MatrixImpl {
             for (i in k + 1 until n) {
                 val head = mat[i, k]
                 for (j in k + 1 until n) { // j<=k are all zero, just ignore them
-                    mat[i,j] = mc.eval {
+                    mat[i, j] = mc.eval {
                         exactDivide(p * mat[i, j] - head * mat[k, j], d)
                     }
                 }
@@ -709,6 +706,7 @@ object MatrixImpl {
 
 fun main() {
     val ints = NumberModels.intAsIntegers()
+    val A = Matrix(5, ints) { i, j -> 0 }
 //    val A = Matrix.fromRows(
 //        listOf(
 //            Vector.of(ints, 3, 1, 1, 1),
@@ -718,10 +716,11 @@ fun main() {
 //        )
 //    )
 //    val A = Matrix.diag(ints, 3, 1, 4)
-    val mult = Multinomial.from(ints)
-    val A = Matrix(4, 4, mult) { i,j ->
-        mult.monomial("($i$j)")}
-    println(A.joinToString())
-    println(MatrixImpl.detGaussBareiss(A.toMutable(), mult))
-    println(MatrixImpl.detDefinition(A, mult))
+//    val mult = Multinomial.from(ints)
+//    val A = Matrix(4, 4, mult) { i,j ->
+//        mult.monomial("($i$j)")}
+//    println(A.joinToString())
+//    println(MatrixImpl.detGaussBareiss(A.toMutable(), mult))
+//    println(MatrixImpl.detDefinition(A, mult))
+    println(A.joinToString(limit=3))
 }

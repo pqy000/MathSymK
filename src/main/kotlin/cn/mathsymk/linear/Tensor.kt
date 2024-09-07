@@ -4,8 +4,6 @@ import cn.mathsymk.IMathObject
 import cn.mathsymk.MathObject
 import cn.mathsymk.discrete.Permutation
 import cn.mathsymk.model.struct.AlgebraModel
-import cn.mathsymk.model.struct.GenTensor
-import cn.mathsymk.model.struct.Index
 import cn.mathsymk.structure.*
 import cn.mathsymk.util.IterUtils
 import cn.mathsymk.util.MathUtils
@@ -65,25 +63,12 @@ interface Tensor<T> : MathObject<T, EqualPredicate<T>>, AlgebraModel<T, Tensor<T
         return shape.contentEquals(y.shape)
     }
 
-    /**
-     * The dimension of this tensor, which is equal to the length of [shape].
-     */
-    val dim: Int
 
     /**
      * Gets the number of elements in this tensor, which is equal to the product of [shape].
      */
     override val size: Int
 
-    /**
-     * Gets a read-only-traversable sequence of the indices of this tensor.
-     * The indices iterate the last axis first.
-     *
-     * This method is generally equal to `IterUtils.prodIdxN(shape)`
-     *
-     * @see IterUtils.prodIdxN
-     */
-    val indices: Sequence<Index>
 
     /**
      * Gets an element in this tensor according to the index.
@@ -91,8 +76,6 @@ interface Tensor<T> : MathObject<T, EqualPredicate<T>>, AlgebraModel<T, Tensor<T
      * @param idx the index, it is required that `0 <= idx < shape`
      */
     override operator fun get(idx: Index): T
-
-
 
 
     /*
@@ -283,14 +266,12 @@ interface Tensor<T> : MathObject<T, EqualPredicate<T>>, AlgebraModel<T, Tensor<T
     Array-like operations:
      */
 
-    /**
-     * Gets the elements in this tensor as a sequence. The order is the same as [indices].
-     *
-     * @see flattenToList
-     */
-    override fun elementSequence(): Sequence<T> {
-        return indices.map { this.get(it) }
-    }
+//    /**
+//     * Gets the elements in this tensor as a sequence. The order is the same as [indices].
+//     *
+//     * @see flattenToList
+//     */
+//    override fun elementSequence(): Sequence<T>
 
     /**
      * Flatten this tensor to a list. The order of the elements is the same as [elementSequence].
@@ -969,85 +950,6 @@ interface MutableTensor<T> : Tensor<T> {
 
 }
 
-
-fun <T, A : Appendable> Tensor<T>.joinToL(
-    buffer: A, separators: List<CharSequence>, prefixes: List<CharSequence>, postfixes: List<CharSequence>,
-    limits: IntArray, truncated: List<CharSequence>, transform: (T) -> CharSequence
-): A {
-    val dim = this.dim
-    val shape = this.shape
-    val idx = IntArray(shape.size)
-    var level = 0
-    Outer@
-    while (true) {
-        while (idx[level] == shape[level]) {
-            buffer.append(postfixes[level])
-            idx[level] = 0
-            level--
-            if (level < 0) {
-                break@Outer
-            }
-            idx[level]++
-        }
-        if (limits[level] >= 0 && idx[level] + 1 > limits[level]) {
-            buffer.append(separators[level])
-            buffer.append(truncated[level])
-            idx[level] = shape[level] - 1
-        }
-
-
-        if (idx[level] == 0) {
-            buffer.append(prefixes[level])
-        } else {
-            buffer.append(separators[level])
-        }
-        if (level == dim - 1) {
-            buffer.append(transform(this[idx]))
-            idx[level]++
-        } else {
-            level++
-            continue
-        }
-    }
-    return buffer
-}
-
-
-fun <T, A : Appendable> Tensor<T>.joinTo(
-    buffer: A, separator: CharSequence = ", ", prefix: CharSequence = "[", postfix: CharSequence = "]",
-    limit: Int = -1, truncated: CharSequence = "...", transform: ((T) -> CharSequence)? = null
-): A {
-    val dim = this.dim
-    val seps = run {
-        val t = ArrayList<CharSequence>(dim)
-
-        val spaces = " ".repeat(prefix.length)
-        var padded = "\n\n"
-        for (i in 1 until dim - 1) {
-            padded += spaces
-            t += padded
-        }
-        if (dim > 1) {
-            t += padded.substring(1) + spaces
-        }
-        t += separator
-        t
-    }
-
-    val pres = Collections.nCopies(dim, prefix)
-    val posts = Collections.nCopies(dim, postfix)
-    val limits = IntArray(dim) { limit }
-    val truns = Collections.nCopies(dim, truncated)
-    val trans = transform ?: Any?::toString
-    return this.joinToL(buffer, seps, pres, posts, limits, truns, trans)
-}
-
-fun <T> Tensor<T>.joinToString(
-    separator: CharSequence = " ", prefix: CharSequence = "[", postfix: CharSequence = "]",
-    limit: Int = -1, truncated: CharSequence = "...", transform: ((T) -> CharSequence)? = null
-): String {
-    return this.joinTo(StringBuilder(), separator, prefix, postfix, limit, truncated, transform).toString()
-}
 
 //fun main() {
 //    val mc = Calculators.integer()

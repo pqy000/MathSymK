@@ -251,6 +251,10 @@ interface Matrix<T> : GenMatrix<T>, MathObject<T, EqualPredicate<T>>, AlgebraMod
             return MatrixImpl.zero(row, column, model)
         }
 
+        fun <T> zero(n : Int, model: AddMonoid<T>): Matrix<T> {
+            return zero(n, n, model)
+        }
+
         fun <T> diag(elements : List<T>, model : AddMonoid<T>): Matrix<T> {
             val n = elements.size
             val zero = MatrixImpl.zero(n,n, model)
@@ -279,16 +283,7 @@ operator fun <T> RowVector<T>.times(m: Matrix<T>): RowVector<T> {
     return this.matmul(m)
 }
 
-fun Matrix<*>.joinToString() : String{
-    val builder = StringBuilder()
-    rowIndices.joinTo(builder, prefix = "[", postfix = "]", separator = "\n ") { i ->
-        colIndices.joinTo(builder, prefix = "[", postfix = "]", separator = ", ") { j ->
-            this[i, j].toString()
-        }
-        ""
-    }
-    return builder.toString()
-}
+
 
 
 @JvmRecord
@@ -410,3 +405,5 @@ interface MutableMatrix<T> : Matrix<T> {
         }
     }
 }
+
+

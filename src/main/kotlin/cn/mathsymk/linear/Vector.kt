@@ -2,9 +2,7 @@ package cn.mathsymk.linear
 
 import cn.mathsymk.IMathObject
 import cn.mathsymk.MathObject
-import cn.mathsymk.model.struct.GenVector
 import cn.mathsymk.model.struct.VectorModel
-import cn.mathsymk.model.struct.indices
 import cn.mathsymk.structure.*
 import java.util.function.Function
 

@@ -1,7 +1,6 @@
 package cn.mathsymk.linear
 
 import cn.mathsymk.discrete.Permutation
-import cn.mathsymk.model.struct.Index
 import cn.mathsymk.structure.AddSemigroup
 import cn.mathsymk.util.ArraySup
 import cn.mathsymk.util.IterUtils

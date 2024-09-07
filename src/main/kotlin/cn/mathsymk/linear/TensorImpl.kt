@@ -2,8 +2,6 @@ package cn.mathsymk.linear
 
 import cn.mathsymk.AbstractMathObject
 import cn.mathsymk.linear.Tensor.Companion.checkShape
-import cn.mathsymk.model.struct.Index
-import cn.mathsymk.model.struct.shapeString
 import cn.mathsymk.numberTheory.NTFunctions
 import cn.mathsymk.structure.*
 import cn.mathsymk.util.IterUtils
@@ -40,15 +38,15 @@ abstract class AbstractTensor<T>(
     }
 
 
-    final override val dim: Int
-        get() = sh.size
+    final override val dim: Int get() = sh.size
 
 
     override val size: Int
         get() = MathUtils.product(shape)
 
 
-    override val indices: Sequence<Index> = IterUtils.prodIdxN(sh)
+//    override val indices: Sequence<Index>
+//        get() = IterUtils.prodIdxN(sh)
 
     /**
      * Checks whether `idx` is a valid index for this tensor, throws exception if necessary.
