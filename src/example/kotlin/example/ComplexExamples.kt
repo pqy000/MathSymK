@@ -2,7 +2,6 @@ package cn.mathsymk.example
 
 import cn.mathsymk.model.Complex
 import cn.mathsymk.model.ComplexD
-import cn.mathsymk.model.Fraction
 import cn.mathsymk.model.NumberModels
 
 
