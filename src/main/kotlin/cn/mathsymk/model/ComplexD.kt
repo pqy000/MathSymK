@@ -1,10 +1,11 @@
 package cn.mathsymk.model
 
 import cn.mathsymk.model.struct.FieldModel
+import cn.mathsymk.structure.ComplexNumbers
+import cn.mathsymk.structure.Reals
 import kotlin.math.atan2
 import kotlin.math.hypot
 import kotlin.math.pow
-
 
 
 /**
@@ -39,6 +40,9 @@ data class ComplexD(val re: Double, val im: Double) : FieldModel<ComplexD> {
     val mod: Double
         get() = hypot(re, im)
 
+    val modSq: Double
+        get() = re * re + im * im
+
     /**
      * Returns the modulus of this complex number as a complex number.
      *
@@ -46,9 +50,6 @@ data class ComplexD(val re: Double, val im: Double) : FieldModel<ComplexD> {
      */
     val modComplex: ComplexD
         get() = ComplexD(mod, 0.0)
-//    fun modAsC(): ComplexD {
-//        return real(mod())
-//    }
 
     /**
      * Returns `this + y`
@@ -220,10 +221,6 @@ data class ComplexD(val re: Double, val im: Double) : FieldModel<ComplexD> {
         get() = re == 0.0 && im == 0.0
 
 
-
-
-
-
 //    /**
 //     * Returns the point representing this Complex number,the calculator will be
 //     * the default Double-calculator.
@@ -243,10 +240,6 @@ data class ComplexD(val re: Double, val im: Double) : FieldModel<ComplexD> {
 //    fun toVector(mc: RealCalculator<Double>?): PVector<Double> {
 //        return PVector.valueOf(a, b, mc)
 //    }
-
-
-
-
 
 
     companion object {
@@ -402,6 +395,81 @@ data class ComplexD(val re: Double, val im: Double) : FieldModel<ComplexD> {
 }
 
 
+class ComplexDModel(val dev: Double) : ComplexNumbers<Double, ComplexD> {
+    override val reals: Reals<Double> = NumberModels.doubleAsReals(dev)
+
+    override fun contains(x: ComplexD): Boolean {
+        return true
+    }
+
+    override fun isEqual(x: ComplexD, y: ComplexD): Boolean {
+        return reals.isEqual(x.re, y.re) && reals.isEqual(x.im, y.im)
+    }
+
+    override fun of(a: Double, b: Double): ComplexD {
+        return ComplexD(a, b)
+    }
+
+    override fun re(z: ComplexD): Double {
+        return z.re
+    }
+
+    override fun im(z: ComplexD): Double {
+        return z.im
+    }
+
+    override fun ofReal(a: Double): ComplexD {
+        return ComplexD(a, 0.0)
+    }
+
+    override fun ofImag(b: Double): ComplexD {
+        return ComplexD(0.0, b)
+    }
+
+    override fun conj(z: ComplexD): ComplexD {
+        return z.conj
+    }
+
+    override fun scalarMul(k: Double, v: ComplexD): ComplexD {
+        return v * k
+    }
+
+    override fun scalarDiv(x: ComplexD, k: Double): ComplexD {
+        return x / k
+    }
+
+    override fun modSq(z: ComplexD): Double {
+        return z.modSq
+    }
+
+    override fun abs(z: ComplexD): Double {
+        return z.mod
+    }
+
+    override val one: ComplexD
+        get() = ComplexD.ONE
+
+    override val zero: ComplexD
+        get() = ComplexD.ZERO
+
+    override fun negate(x: ComplexD): ComplexD {
+        return -x
+    }
+
+
+    override fun add(x: ComplexD, y: ComplexD): ComplexD {
+        return x + y
+    }
+
+
+    override fun multiply(x: ComplexD, y: ComplexD): ComplexD {
+        return x * y
+    }
+
+    override fun reciprocal(x: ComplexD): ComplexD {
+        return x.inv()
+    }
+}
 
 /**
  * This class describes the complex result set of multiple result functions in complex
@@ -486,7 +554,6 @@ interface ComplexResult : Iterable<ComplexD> {
 //    }
 //}
 //
-
 
 
 //    private class LogResult(private val x: Double, private val arg: Double) : ComplexResult(-1) {

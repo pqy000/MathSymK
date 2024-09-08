@@ -91,7 +91,7 @@ class ComplexTest {
     fun conjugateOfComplexNumber() {
         with(complex1) {
             val a = of(1, 2)
-            val conjugate = a.conjugate
+            val conjugate = a.conj
             assertTrue { isEqual(of(1, -2), conjugate) }
         }
     }
