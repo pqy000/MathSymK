@@ -106,7 +106,6 @@ interface MulGroupModel<T : MulGroupModel<T>> : MulMonoidModel<T> {
     operator fun div(y: T): T = times(y.inv())
 
     override fun pow(n: Long): T {
-
         if (n < 0) {
             return inv().pow(n)
         }
