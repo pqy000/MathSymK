@@ -170,7 +170,8 @@ interface ComplexNumbers<R, C> : Field<C>, Algebra<R, C>,
     }
 
     override fun tan(x: C): C {
-        throw UnsupportedOperationException("Not yet implemented")
+        val ix = multiply(i, x)
+        return sin(x) / cos(x)
     }
 
     override fun cot(x: C): C {

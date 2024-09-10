@@ -2,6 +2,7 @@ package cn.mathsymk.example
 
 import cn.mathsymk.model.Complex
 import cn.mathsymk.model.ComplexD
+import cn.mathsymk.model.ComplexD.Companion.exp
 import cn.mathsymk.model.NumberModels
 
 
@@ -10,6 +11,10 @@ fun basicDoubleComplex(){
     val z2 = ComplexD(3.0, 4.0)
     println(listOf(z1 + z2, z1 - z2, z1 * z2, z1 / z2)) // (4.0, 6.0), (-2.0, -2.0), (-5.0, 10.0), (0.44, 0.08)
     println(listOf(z2.mod,z2.arg)) // 5.0, 0.93
+    val π = Math.PI
+    val i = ComplexD.I
+    println(String.format("%.2s",exp(i * π))) // -1.0
+
 }
 
 fun variousDoubleModels(){
@@ -34,5 +39,5 @@ fun variousDoubleModels(){
 }
 
 fun main() {
-    variousDoubleModels()
+    basicDoubleComplex()
 }

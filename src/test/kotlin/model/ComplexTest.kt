@@ -100,7 +100,7 @@ class ComplexTest {
     fun modulusOfComplexNumber() {
         with(complex1) {
             val a = of(3, 4)
-            val modulus = a.modSquared
+            val modulus = a.modSq
             assertEquals(25, modulus)
         }
     }

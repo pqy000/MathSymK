@@ -4,6 +4,7 @@ import cn.mathsymk.model.struct.FieldModel
 import cn.mathsymk.structure.ComplexNumbers
 import cn.mathsymk.structure.Reals
 import cn.mathsymk.util.ModelPatterns
+import java.util.*
 import kotlin.math.*
 
 
@@ -13,7 +14,7 @@ import kotlin.math.*
  * @author lyc
  */
 @JvmRecord
-data class ComplexD(val re: Double, val im: Double) : FieldModel<ComplexD> {
+data class ComplexD(val re: Double, val im: Double) : FieldModel<ComplexD>,Formattable {
     // re-written at 2024/8/29 16:57
 
     override fun toString(): String {
@@ -22,6 +23,10 @@ data class ComplexD(val re: Double, val im: Double) : FieldModel<ComplexD> {
         } else {
             "$re+${im}i"
         }
+    }
+
+    override fun formatTo(formatter: Formatter, flags: Int, width: Int, precision: Int) {
+        formatter.format("%.${precision}f%+.${precision}fi", re, im)
     }
 
 
@@ -68,6 +73,10 @@ data class ComplexD(val re: Double, val im: Double) : FieldModel<ComplexD> {
         return ComplexD(re + y.re, im + y.im)
     }
 
+    operator fun plus(d: Double): ComplexD {
+        return ComplexD(re + d, im)
+    }
+
     /**
      * Returns `-this`
      *
@@ -110,12 +119,10 @@ data class ComplexD(val re: Double, val im: Double) : FieldModel<ComplexD> {
      * @throws ArithmeticException if z = 0
      */
     override fun div(y: ComplexD): ComplexD {
-        val d = y.re * y.re + y.im * y.im
-        var an = re * y.re + im * y.im
-        var bn = im * y.re - re * y.im
-        an /= d
-        bn /= d
-        return ComplexD(an, bn)
+        val r2 = y.re * y.re + y.im * y.im
+        val a = (re * y.re + im * y.im)/r2
+        val b = (im * y.re - re * y.im)/r2
+        return ComplexD(a, b)
     }
 
     operator fun div(d: Double): ComplexD {
@@ -147,16 +154,6 @@ data class ComplexD(val re: Double, val im: Double) : FieldModel<ComplexD> {
         return ModelPatterns.binaryProduce(n, this,ComplexD::times)
     }
 
-    /**
-     * Returns `x<sup>y</sup> = e<sup>ln(x)*y</sup>`, where `x` is the complex number of
-     * `this`.
-     *
-     * @param y a complex number
-     */
-    fun pow(y: ComplexD): ComplexD {
-        return exp(y * ln(this))
-    }
-
 
     /**
      * Returns one of the square roots of this complex number.
@@ -177,14 +174,24 @@ data class ComplexD(val re: Double, val im: Double) : FieldModel<ComplexD> {
         return modArg(m, arg)
     }
 
-    /**
-     * Returns
-     */
     fun pow(f: Fraction): ComplexD {
-        val fd = f.toDouble()
-        val arg = arg * fd
-        val m = exp(ln(mod) * fd)
+        return pow(f.toDouble())
+    }
+
+
+    fun pow(p : Double) : ComplexD{
+        val arg = arg * p
+        val m = mod.pow(p)
         return modArg(m, arg)
+    }
+
+    /**
+     * Returns `x^y = exp(y * ln(x))`, where `ln(x)` is chosen to be the principal value of the natural logarithm.
+     *
+     * @param y a complex number
+     */
+    fun pow(y: ComplexD): ComplexD {
+        return exp(y * ln(this))
     }
 
 
@@ -238,6 +245,10 @@ data class ComplexD(val re: Double, val im: Double) : FieldModel<ComplexD> {
             return ComplexD(0.0, b)
         }
 
+        private fun iz(z: ComplexD): ComplexD {
+            return ComplexD(-z.im, z.re)
+        }
+
 
         /**
          * Returns `z = r * e^(i*theta) = r * (cos(theta) + i*sin(theta))`.
@@ -260,13 +271,24 @@ data class ComplexD(val re: Double, val im: Double) : FieldModel<ComplexD> {
             return modArg(m, z.im)
         }
 
-
-
         /**
          * Returns the result of `exp(it) = cos(t) + i*sin(t)`.
          */
         fun expIt(t: Double): ComplexD {
             return ComplexD(cos(t), sin(t))
+        }
+
+        /**
+         * Returns `base^pow = exp(pow * ln(base))`, where `ln(base)` is chosen to be the principal value of the natural logarithm.
+         *
+         */
+        fun exp(base: ComplexD, pow: ComplexD): ComplexD {
+            return base.pow(pow)
+        }
+
+
+        fun exp(base : Double, pow: ComplexD): ComplexD {
+            return exp(pow * ln(base))
         }
 
         /**
@@ -296,13 +318,15 @@ data class ComplexD(val re: Double, val im: Double) : FieldModel<ComplexD> {
         /**
          * Returns `sin(z)`:
          *
-         *     sin(z) = [exp(iz) - exp(-iz)] / 2
+         *     sin(z) = [exp(iz) - exp(-iz)] / (2i)
          *
          * @param z in
          */
         fun sin(z: ComplexD): ComplexD {
-            val iz = ComplexD(-z.im, z.re)
-            return (exp(iz) - exp(-iz)) / 2.0
+            // use the formula sin(z) = (e^(iz) - e^(-iz)) / (2i)
+            val iz = iz(z)
+            val t = exp(iz) - exp(-iz)
+            return ComplexD(t.im/ 2.0, -t.re/ 2.0)
         }
 
         /**
@@ -319,7 +343,7 @@ data class ComplexD(val re: Double, val im: Double) : FieldModel<ComplexD> {
         /**
          * Returns `tan(z)`:
          *
-         *    tan(z) = sin(z)/cos(z) = [exp(iz) - exp(-iz)]/[exp(iz) + exp(-iz)]
+         *    tan(z) = sin(z)/cos(z) = [exp(iz) - exp(-iz)]/[exp(iz) + exp(-iz)] / i
          *
          * @param z a complex
          * @return tan(z)
@@ -328,7 +352,20 @@ data class ComplexD(val re: Double, val im: Double) : FieldModel<ComplexD> {
             val iz = ComplexD(-z.im, z.re)
             val ez = exp(iz)
             val e_z = exp(-iz)
-            return (ez - e_z) / (ez + e_z)
+            // = i [exp(-iz) - exp(iz)]/[exp(iz) + exp(-iz)]
+            return iz((e_z - ez) / (ez + e_z))
+        }
+
+        /**
+         * Returns `cot(z)`:
+         *
+         *    cot(z) = cos(z)/sin(z) = i[exp(iz) + exp(-iz)]/[exp(iz) - exp(-iz)]
+         */
+        fun cot(z: ComplexD): ComplexD {
+            val iz = ComplexD(-z.im, z.re)
+            val ez = exp(iz)
+            val e_z = exp(-iz)
+            return iz((ez + e_z) / (ez - e_z))
         }
 
         /**
@@ -341,6 +378,10 @@ data class ComplexD(val re: Double, val im: Double) : FieldModel<ComplexD> {
             val x = ln(z.mod)
             val arg = z.arg
             return ComplexD(x, arg)
+        }
+
+        fun log(base: ComplexD, x: ComplexD): ComplexD {
+            return ln(x) / ln(base)
         }
 
 
@@ -361,7 +402,6 @@ data class ComplexD(val re: Double, val im: Double) : FieldModel<ComplexD> {
 //         * @return the results.
 //         */
 //        fun logarithm(z: ComplexD): ComplexResult {
-//            TODO()
 ////            val main = ln(z)
 ////            return LogResult(main.re, main.im)
 //        }
@@ -375,256 +415,134 @@ data class ComplexD(val re: Double, val im: Double) : FieldModel<ComplexD> {
 }
 
 
-//class ComplexDModel(val dev: Double) : ComplexNumbers<Double, ComplexD> {
-//    override val reals: Reals<Double> = NumberModels.doubleAsReals(dev)
-//
-//    override fun contains(x: ComplexD): Boolean {
-//        return true
-//    }
-//
-//    override fun isEqual(x: ComplexD, y: ComplexD): Boolean {
-//        return reals.isEqual(x.re, y.re) && reals.isEqual(x.im, y.im)
-//    }
-//
-//    override fun of(a: Double, b: Double): ComplexD {
-//        return ComplexD(a, b)
-//    }
-//
-//    override fun re(z: ComplexD): Double {
-//        return z.re
-//    }
-//
-//    override fun im(z: ComplexD): Double {
-//        return z.im
-//    }
-//
-//    override fun ofReal(a: Double): ComplexD {
-//        return ComplexD(a, 0.0)
-//    }
-//
-//    override fun ofImag(b: Double): ComplexD {
-//        return ComplexD(0.0, b)
-//    }
-//
-//    override fun conj(z: ComplexD): ComplexD {
-//        return z.conj
-//    }
-//
-//    override fun scalarMul(k: Double, v: ComplexD): ComplexD {
-//        return v * k
-//    }
-//
-//    override fun scalarDiv(x: ComplexD, k: Double): ComplexD {
-//        return x / k
-//    }
-//
-//    override fun modSq(z: ComplexD): Double {
-//        return z.modSq
-//    }
-//
-//    override fun abs(z: ComplexD): Double {
-//        return z.mod
-//    }
-//
-//    override val one: ComplexD
-//        get() = ComplexD.ONE
-//
-//    override val zero: ComplexD
-//        get() = ComplexD.ZERO
-//
-//    override fun negate(x: ComplexD): ComplexD {
-//        return -x
-//    }
-//
-//
-//    override fun add(x: ComplexD, y: ComplexD): ComplexD {
-//        return x + y
-//    }
-//
-//
-//    override fun multiply(x: ComplexD, y: ComplexD): ComplexD {
-//        return x * y
-//    }
-//
-//    override fun reciprocal(x: ComplexD): ComplexD {
-//        return x.inv()
-//    }
-//
-//    override fun sqrt(x: ComplexD): ComplexD {
-//        return x.sqrt()
-//    }
-//
-//    override fun nroot(x: ComplexD, n: Long): ComplexD {
-//        return super.nroot(x, n)
-//    }
-//
-//    override fun exp(base: ComplexD, pow: ComplexD): ComplexD {
-//        return super.exp(base, pow)
-//    }
-//
-//    override fun exp(x: ComplexD): ComplexD {
-//        return super.exp(x)
-//    }
-//
-//    override fun log(base: ComplexD, x: ComplexD): ComplexD {
-//        return super.log(base, x)
-//    }
-//
-//    override fun ln(x: ComplexD): ComplexD {
-//        return super.ln(x)
-//    }
-//
-//    override fun sin(x: ComplexD): ComplexD {
-//        return super.sin(x)
-//    }
-//
-//    override fun cos(x: ComplexD): ComplexD {
-//        return super.cos(x)
-//    }
-//
-//    override fun tan(x: ComplexD): ComplexD {
-//        return super.tan(x)
-//    }
-//
-//    override fun cot(x: ComplexD): ComplexD {
-//        return super.cot(x)
-//    }
-//
-//    override fun arcsin(x: ComplexD): ComplexD {
-//        return super.arcsin(x)
-//    }
-//
-//    override fun arccos(x: ComplexD): ComplexD {
-//        return super.arccos(x)
-//    }
-//
-//    override fun arctan(x: ComplexD): ComplexD {
-//        return super.arctan(x)
-//    }
-//
-//    override fun arctan2(y: ComplexD, x: ComplexD): ComplexD {
-//        return super.arctan2(y, x)
-//    }
-//}
-//
-///**
-// * This class describes the complex result set of multiple result functions in complex
-// * calculation such as root() or so on.
-// *
-// *
-// * In the implement of this class,usually,the results will only be calculated when
-// * they are required,and they are not saved,so if the result is required for multiple times,
-// * extra temptation is recommended.
-// *
-// * @author lyc
-// */
-//interface ComplexResult : Iterable<ComplexD> {
-//    //TODO
-//    /**
-//     * Returns the main value of this result.
-//     *
-//     * @return a complex number
-//     */
-//    val mainValue: ComplexD
-//
-////    /**
-////     * Returns the number of complexes in this result set,if the
-////     * number of results is infinite,this method should return `-1`
-////     *
-////     * @return the number of results,or `-1`
-////     */
-////    fun number(): Long {
-////        return size
-////    }
-////
-////    open val isInfinite: Boolean
-////        /**
-////         * Returns `true` if the number of result.
-////         */
-////        get() = size == -1L
-//
-//
-//}
+class ComplexDModel(dev: Double) : ComplexNumbers<Double, ComplexD> {
+    override val reals: Reals<Double> = NumberModels.doubleAsReals(dev)
 
-//private class RootResult(size: Long, private val m: Double, private val arg: Double) : ComplexResult(size) {
-//    override fun iterator(): Iterator<ComplexD> {
-//        return object : Iterator<ComplexD> {
-//            private var index: Long = 0
-//
-//            override fun next(): ComplexD {
-//                return modArg(m, ((index++) * TWO_PI + arg) / size)
-//            }
-//
-//            override fun hasNext(): Boolean {
-//                return index < size
-//            }
-//        }
-//    }
-//
-//    override fun mainValue(): ComplexD {
-//        return modArg(m, arg / size)
-//    }
-//
-//    override val isInfinite: Boolean
-//        get() = false
-//
-//    override fun contains(z: ComplexD): Boolean {
-//        if (z.mod == m) {
-//            //we use two-divide method
-//            val arg = z.arg
-//            var downer: Long = 0
-//            var upper = size - 1
-//            while (downer <= upper) {
-//                val t = (downer + upper) / 2
-//                val arg0 = (arg + t * TWO_PI) / size
-//                if (arg0 == arg) {
-//                    return true
-//                } else if (arg0 < arg) {
-//                    downer = t + 1
-//                } else {
-//                    upper = t - 1
-//                }
-//            }
-//        }
-//        return false
-//    }
-//}
-//
+    override fun contains(x: ComplexD): Boolean {
+        return true
+    }
+
+    override fun isEqual(x: ComplexD, y: ComplexD): Boolean {
+        return reals.isEqual(x.re, y.re) && reals.isEqual(x.im, y.im)
+    }
+
+    override fun of(a: Double, b: Double): ComplexD {
+        return ComplexD(a, b)
+    }
+
+    override fun re(z: ComplexD): Double {
+        return z.re
+    }
+
+    override fun im(z: ComplexD): Double {
+        return z.im
+    }
+
+    override fun ofReal(a: Double): ComplexD {
+        return ComplexD(a, 0.0)
+    }
+
+    override fun ofImag(b: Double): ComplexD {
+        return ComplexD(0.0, b)
+    }
+
+    override fun conj(z: ComplexD): ComplexD {
+        return z.conj
+    }
+
+    override fun scalarMul(k: Double, v: ComplexD): ComplexD {
+        return v * k
+    }
+
+    override fun scalarDiv(x: ComplexD, k: Double): ComplexD {
+        return x / k
+    }
+
+    override fun modSq(z: ComplexD): Double {
+        return z.modSq
+    }
+
+    override fun abs(z: ComplexD): Double {
+        return z.mod
+    }
+
+    override val one: ComplexD
+        get() = ComplexD.ONE
+
+    override val zero: ComplexD
+        get() = ComplexD.ZERO
+
+    override fun negate(x: ComplexD): ComplexD {
+        return -x
+    }
 
 
-//    private class LogResult(private val x: Double, private val arg: Double) : ComplexResult(-1) {
-//        override fun iterator(): Iterator<ComplexD> {
-//            return object : Iterator<ComplexD> {
-//                var index: Long = 0
-//
-//                override fun hasNext(): Boolean {
-//                    return true
-//                }
-//
-//                override fun next(): ComplexD {
-//                    return ComplexD(x, arg + TWO_PI * index++)
-//                }
-//            }
-//        }
-//
-//        override fun mainValue(): ComplexD {
-//            return ComplexD(x, arg)
-//        }
-//
-//        override val isInfinite: Boolean
-//            get() = true
-//
-//        override fun contains(z: ComplexD): Boolean {
-//            if (z.re == x) {
-//                var b = z.im
-//                if (b < 0) {
-//                    b = -b
-//                }
-//                while (b > 0) {
-//                    b -= TWO_PI
-//                }
-//                return b == 0.0
-//            }
-//            return false
-//        }
-//    }
+    override fun add(x: ComplexD, y: ComplexD): ComplexD {
+        return x + y
+    }
+
+
+    override fun multiply(x: ComplexD, y: ComplexD): ComplexD {
+        return x * y
+    }
+
+    override fun reciprocal(x: ComplexD): ComplexD {
+        return x.inv()
+    }
+
+    override fun sqrt(x: ComplexD): ComplexD {
+        return x.sqrt()
+    }
+
+    override fun nroot(x: ComplexD, n: Long): ComplexD {
+        return x.root(n)
+    }
+
+    override fun exp(base: ComplexD, pow: ComplexD): ComplexD {
+        return base.pow(pow)
+    }
+
+    override fun exp(x: ComplexD): ComplexD {
+        return ComplexD.exp(x)
+    }
+
+    override fun log(base: ComplexD, x: ComplexD): ComplexD {
+        return ComplexD.log(base, x)
+    }
+
+    override fun ln(x: ComplexD): ComplexD {
+        return ComplexD.ln(x)
+    }
+
+    override fun sin(x: ComplexD): ComplexD {
+        return ComplexD.sin(x)
+    }
+
+    override fun cos(x: ComplexD): ComplexD {
+        return ComplexD.cos(x)
+    }
+
+    override fun tan(x: ComplexD): ComplexD {
+        return ComplexD.tan(x)
+    }
+
+    override fun cot(x: ComplexD): ComplexD {
+        return ComplexD.cot(x)
+    }
+
+    override fun arcsin(x: ComplexD): ComplexD {
+        return super.arcsin(x)
+    }
+
+    override fun arccos(x: ComplexD): ComplexD {
+        return super.arccos(x)
+    }
+
+    override fun arctan(x: ComplexD): ComplexD {
+        return super.arctan(x)
+    }
+
+    override fun arctan2(y: ComplexD, x: ComplexD): ComplexD {
+        return arctan(y / x)
+    }
+}
