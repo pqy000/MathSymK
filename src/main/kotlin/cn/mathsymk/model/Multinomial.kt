@@ -1,6 +1,6 @@
 package cn.mathsymk.model
 
-import cn.mathsymk.IMathObject
+import cn.mathsymk.ValueEquatable
 import cn.mathsymk.structure.*
 import cn.mathsymk.util.DataStructureUtil
 import java.util.*
@@ -322,7 +322,7 @@ internal constructor(
      */
 
 
-    override fun valueEquals(obj: IMathObject<T>): Boolean {
+    override fun valueEquals(obj: ValueEquatable<T>): Boolean {
         if (obj !is Multinomial<T>) {
             return false
         }
@@ -338,13 +338,13 @@ internal constructor(
         return true
     }
 
-    override fun <N> mapTo(newCalculator: EqualPredicate<N>, mapper: Function<T, N>): Multinomial<N> {
-        require(newCalculator is Ring)
+    override fun <S> mapTo(newModel: EqualPredicate<S>, mapping: Function<T, S>): Multinomial<S> {
+        require(newModel is Ring)
         val newTerms = terms.mapNotNullTo(ArrayList(terms.size)) { t ->
-            val c = mapper.apply(t.c)
-            if (newCalculator.isZero(c)) null else Term(c, t.key)
+            val c = mapping.apply(t.c)
+            if (newModel.isZero(c)) null else Term(c, t.key)
         }
-        return Multinomial(newCalculator, newTerms, termOrder)
+        return Multinomial(newModel, newTerms, termOrder)
     }
 
     /*

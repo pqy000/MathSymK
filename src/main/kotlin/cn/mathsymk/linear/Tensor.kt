@@ -1,7 +1,7 @@
 package cn.mathsymk.linear
 
-import cn.mathsymk.IMathObject
-import cn.mathsymk.MathObject
+import cn.mathsymk.ValueEquatable
+import cn.mathsymk.ModeledMathObject
 import cn.mathsymk.discrete.Permutation
 import cn.mathsymk.model.struct.AlgebraModel
 import cn.mathsymk.structure.*
@@ -40,7 +40,7 @@ import java.util.function.Function
  *
  * Note: this implementation is not intentioned for fast numeric computation.
  */
-interface Tensor<T> : MathObject<T, EqualPredicate<T>>, AlgebraModel<T, Tensor<T>>, GenTensor<T> {
+interface Tensor<T> : ModeledMathObject<T, EqualPredicate<T>>, AlgebraModel<T, Tensor<T>>, GenTensor<T> {
     //Created by lyc at 2021-04-06 22:12
 
     /**
@@ -444,11 +444,11 @@ interface Tensor<T> : MathObject<T, EqualPredicate<T>>, AlgebraModel<T, Tensor<T
     Math object
      */
 
-    override fun <N> mapTo(newCalculator: EqualPredicate<N>, mapper: Function<T, N>): Tensor<N> {
-        return ATensor.buildFromSequence(newCalculator, shape, elementSequence().map { mapper.apply(it) })
+    override fun <N> mapTo(newModel: EqualPredicate<N>, mapping: Function<T, N>): Tensor<N> {
+        return ATensor.buildFromSequence(newModel, shape, elementSequence().map { mapping.apply(it) })
     }
 
-    override fun valueEquals(obj: IMathObject<T>): Boolean {
+    override fun valueEquals(obj: ValueEquatable<T>): Boolean {
         if (obj !is Tensor) {
             return false
         }
@@ -943,8 +943,8 @@ interface MutableTensor<T> : Tensor<T> {
         return ATensor.copyOf(this)
     }
 
-    override fun <N> mapTo(newCalculator: EqualPredicate<N>, mapper: Function<T, N>): MutableTensor<N> {
-        return ATensor.buildFromSequence(newCalculator, shape, elementSequence().map { mapper.apply(it) })
+    override fun <N> mapTo(newModel: EqualPredicate<N>, mapping: Function<T, N>): MutableTensor<N> {
+        return ATensor.buildFromSequence(newModel, shape, elementSequence().map { mapping.apply(it) })
     }
 
 

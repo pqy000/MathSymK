@@ -1,12 +1,12 @@
 package cn.mathsymk.linear
 
-import cn.mathsymk.IMathObject
-import cn.mathsymk.MathObject
+import cn.mathsymk.ValueEquatable
+import cn.mathsymk.ModeledMathObject
 import cn.mathsymk.model.struct.*
 import cn.mathsymk.structure.*
 import java.util.function.Function
 
-interface Matrix<T> : GenMatrix<T>, MathObject<T, EqualPredicate<T>>, AlgebraModel<T, Matrix<T>> {
+interface Matrix<T> : GenMatrix<T>, ModeledMathObject<T, EqualPredicate<T>>, AlgebraModel<T, Matrix<T>> {
 
     /*
     Matrix
@@ -36,12 +36,12 @@ interface Matrix<T> : GenMatrix<T>, MathObject<T, EqualPredicate<T>>, AlgebraMod
     MathObject
      */
 
-    override fun <N> mapTo(newCalculator: EqualPredicate<N>, mapper: Function<T, N>): Matrix<N> {
-        return MatrixImpl.apply1(this, newCalculator, mapper::apply)
+    override fun <S> mapTo(newModel: EqualPredicate<S>, mapping: Function<T, S>): Matrix<S> {
+        return MatrixImpl.apply1(this, newModel, mapping::apply)
     }
 
 
-    override fun valueEquals(obj: IMathObject<T>): Boolean {
+    override fun valueEquals(obj: ValueEquatable<T>): Boolean {
         if (obj !is Matrix) return false
         if (row != obj.row || column != obj.column) return false
         return rowIndices.all { r -> colIndices.all { c -> model.isEqual(this[r, c], obj[r, c]) } }

@@ -1,7 +1,7 @@
 package cn.mathsymk.model
 
-import cn.mathsymk.IMathObject
-import cn.mathsymk.MathObject
+import cn.mathsymk.ValueEquatable
+import cn.mathsymk.ModeledMathObject
 import cn.mathsymk.function.MathOperator
 import cn.mathsymk.model.Polynomial.Companion.primitiveGCD
 import cn.mathsymk.model.struct.AlgebraModel
@@ -36,7 +36,7 @@ data class Polynomial<T> internal constructor(
      * A list of terms of this polynomial.
      */
     val terms: List<PTerm<T>>
-) : MathObject<T, Ring<T>>,
+) : ModeledMathObject<T, Ring<T>>,
     AlgebraModel<T, Polynomial<T>>, EuclidDomainModel<Polynomial<T>>,
     MathOperator<T> {
 
@@ -142,7 +142,7 @@ data class Polynomial<T> internal constructor(
         }
     }
 
-    override fun valueEquals(obj: IMathObject<T>): Boolean {
+    override fun valueEquals(obj: ValueEquatable<T>): Boolean {
         if (obj !is Polynomial<T>) {
             return false
         }
@@ -157,9 +157,8 @@ data class Polynomial<T> internal constructor(
         return true
     }
 
-    override fun <N> mapTo(newCalculator: EqualPredicate<N>, mapper: Function<T, N>): Polynomial<N> {
-        val newModel = newCalculator as Ring<N>
-        return mapTermsPossiblyZero(terms, newModel) { mapper.apply(it) }
+    override fun <N> mapTo(newModel: EqualPredicate<N>, mapping: Function<T, N>): Polynomial<N> {
+        return mapTermsPossiblyZero(terms, newModel as Ring<N>) { mapping.apply(it) }
     }
 
 

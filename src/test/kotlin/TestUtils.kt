@@ -1,4 +1,4 @@
-import cn.mathsymk.IMathObject
+import cn.mathsymk.ValueEquatable
 import cn.mathsymk.structure.EqualPredicate
 import kotlin.test.asserter
 
@@ -7,7 +7,7 @@ import kotlin.test.asserter
  * 2017-12-10 20:36
  */
 object TestUtils {
-    fun <T> assertValueEquals(expected: IMathObject<T>, actual: IMathObject<T>) {
+    fun <T> assertValueEquals(expected: ValueEquatable<T>, actual: ValueEquatable<T>) {
         asserter.assertTrue({
             "Expected <$expected>, actual <$actual>"
         }, expected.valueEquals(actual))

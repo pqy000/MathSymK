@@ -1,7 +1,7 @@
 package cn.mathsymk.linear
 
-import cn.mathsymk.IMathObject
-import cn.mathsymk.MathObject
+import cn.mathsymk.ValueEquatable
+import cn.mathsymk.ModeledMathObject
 import cn.mathsymk.model.struct.VectorModel
 import cn.mathsymk.structure.*
 import java.util.function.Function
@@ -14,7 +14,7 @@ import java.util.function.Function
  *
  * @author Ezrnest
  */
-interface Vector<T> : GenVector<T>, MathObject<T, EqualPredicate<T>>, VectorModel<T, Vector<T>> {
+interface Vector<T> : GenVector<T>, ModeledMathObject<T, EqualPredicate<T>>, VectorModel<T, Vector<T>> {
     /*
     Created by Ezrnest at 2024/09/04 15:33
      */
@@ -23,14 +23,14 @@ interface Vector<T> : GenVector<T>, MathObject<T, EqualPredicate<T>>, VectorMode
         return VectorImpl.apply1(this, model, f)
     }
 
-    override fun valueEquals(obj: IMathObject<T>): Boolean {
+    override fun valueEquals(obj: ValueEquatable<T>): Boolean {
         if (obj !is Vector) return false
         if (size != obj.size) return false
         return indices.all { model.isEqual(this[it], obj[it]) }
     }
 
-    override fun <N> mapTo(newCalculator: EqualPredicate<N>, mapper: Function<T, N>): Vector<N> {
-        return VectorImpl.apply1(this, newCalculator, mapper::apply)
+    override fun <N> mapTo(newModel: EqualPredicate<N>, mapping: Function<T, N>): Vector<N> {
+        return VectorImpl.apply1(this, newModel, mapping::apply)
     }
 
 

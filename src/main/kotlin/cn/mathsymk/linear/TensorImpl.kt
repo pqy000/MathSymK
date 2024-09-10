@@ -334,11 +334,11 @@ internal constructor(mc: EqualPredicate<T>, shape: IntArray, val data: Array<Any
     }
 
     @Suppress("UNCHECKED_CAST")
-    override fun <N> mapTo(newCalculator: EqualPredicate<N>, mapper: Function<T, N>): ATensor<N> {
+    override fun <S> mapTo(newModel: EqualPredicate<S>, mapping: Function<T, S>): ATensor<S> {
         val ndata = Array<Any?>(size) { i ->
-            mapper.apply(data[i] as T)
+            mapping.apply(data[i] as T)
         }
-        return ATensor(newCalculator, sh, ndata)
+        return ATensor(newModel, sh, ndata)
     }
 
 

@@ -7,49 +7,39 @@ import cn.mathsymk.structure.EqualPredicate
 import java.util.function.Function
 
 
-/**
- * @author liyicheng
- * 2018-03-05 20:25
- */
-interface CalculatorHolder<T, S : EqualPredicate<T>> {
-
-    /**
-     * Return the calculator used by this object.
-     *
-     * @return a calculator
-     */
-    val model: S
-
-}
-
-
-interface IMathObject<T> {
-
+///**
+// * @author liyicheng
+// * 2018-03-05 20:25
+// */
+//interface CalculatorHolder<T, S : EqualPredicate<T>> {
+//
 //    /**
-//     * Returns a String representing this object, the [NumberFormatter] should
-//     * be used whenever a number is presented.
-//     * @param nf a number formatter
-//     * @return
-//     * @see NumberFormatter
+//     * Return the calculator used by this object.
+//     *
+//     * @return a calculator
 //     */
-//    fun toString(nf: NumberFormatter<T>): String
-
-    infix fun valueEquals(obj: IMathObject<T>): Boolean
-}
+//    val model: S
+//
+//}
 
 /**
- * Describes a (computational) math object which holds a [model] for its data.
- * The model provides the operations for the math object.
- * For example, we can have polynomials with different coefficients in `Double` or in `Fraction`, which have different models.
+ * Describes a generic object that can be compared by value.
  *
- * @author liyicheng
  */
-interface MathObject<T, S : EqualPredicate<T>> : CalculatorHolder<T, S>, IMathObject<T> {
+interface ValueEquatable<T> {
+
+
+
+    infix fun valueEquals(obj: ValueEquatable<T>): Boolean
+}
+
+
+interface ModeledMathObject<T, M : EqualPredicate<T>> : ValueEquatable<T> {
 
     /**
      * Gets the model of this math object.
      */
-    override val model: S
+    val model: M
 
 
 //    /**
@@ -61,15 +51,20 @@ interface MathObject<T, S : EqualPredicate<T>> : CalculatorHolder<T, S>, IMathOb
 //    override fun toString(): String
 
     /**
-     * Maps this math object to use a new model.
+     * Maps this modeled object to a new one with a different model `newModel`, using the given [mapping] function.
      *
-     * @param newCalculator a calculator that is of the same type as `S` but with generic parameter `N`.
+     * **Remark**: Ideally, `M` should be a higher kinded type `M<T>` and `newModel` should be `M<S>`, but Kotlin does not support higher kinded types,
+     * so we have to use a workaround with a super class `EqualPredicate<S>`.
+     * Users should ensure that `newModel` is of the type `M<S>`.
+     *
+     *
+     * @param newModel a new model with the generic parameter `S`, must be of the same type as `M` (while not enforced by the function signature).
+     * @param mapping a function that maps the values of type `T` to new ones of type `S`.
+     * It is the user's responsibility to ensure that the mapping is correct.
      */
-    fun <N> mapTo(newCalculator: EqualPredicate<N>, mapper: Function<T, N>): MathObject<N, *>
+    fun <S> mapTo(newModel: EqualPredicate<S>, mapping: Function<T, S>): ModeledMathObject<S, *>
 
 }
 
 
-abstract class AbstractMathObject<T, S : EqualPredicate<T>>(override val model: S) : MathObject<T, S> {
-
-}
+abstract class AbstractMathObject<T, M : EqualPredicate<T>>(final override val model: M) : ModeledMathObject<T, M>
