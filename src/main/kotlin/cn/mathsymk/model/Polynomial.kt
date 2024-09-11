@@ -170,28 +170,7 @@ data class Polynomial<T> internal constructor(
      * Apply this polynomial to a value `x` and returns the result.
      */
     override fun apply(x: T): T {
-        if (terms.isEmpty()) {
-            return model.zero
-        }
-        var term = terms.last()
-        var power = term.pow
-        var result = term.value
-        var pos = terms.lastIndex
-        while (--pos >= 0) {
-            term = terms[pos]
-            val pDiff = power - term.pow
-            result = if (pDiff == 1) {
-                model.eval { result * x }
-            } else {
-                model.eval { result * x.pow(pDiff.toLong()) }
-            }
-            result = model.add(result, term.value)
-            power = term.pow
-        }
-        if (power > 0) {
-            result = model.eval { result * x.pow(power.toLong()) }
-        }
-        return result
+        return compute(this, x, model::zero, { it }, model::add, model::multiply, model::power)
     }
 
 //    fun apply(x : Module<T>)
@@ -698,19 +677,20 @@ data class Polynomial<T> internal constructor(
 
         /**
          * Creates a polynomial from a list of coefficients.
-         * The index of the coefficient corresponds to the power of `x`.
+         * The index of the coefficient corresponds to the power of `x`:
+         *
+         *     cs[i] * x^i
          *
          * For example, the list `[1, 2, 3]` corresponds to the polynomial `1 + 2x + 3x^2`.
          *
          * @return a polynomial with the specified coefficients.
          */
         @JvmStatic
-        fun <T> fromList(model: Ring<T>, coefficients: List<T>): Polynomial<T> {
-            val terms = coefficients.mapIndexedNotNull { index, value ->
-                if (model.isZero(value)) {
-                    null
-                } else {
-                    PTerm(index, value)
+        fun <T> fromList(model: Ring<T>, cs: List<T>): Polynomial<T> {
+            val terms = ArrayList<PTerm<T>>(cs.size)
+            for ((index, value) in cs.withIndex()) {
+                if (!model.isZero(value)) {
+                    terms.add(PTerm(index, value))
                 }
             }
             return Polynomial(model, terms)
@@ -760,6 +740,39 @@ data class Polynomial<T> internal constructor(
             return sum(model, polys.asList())
         }
 
+        private inline fun <T, M> compute(
+            p: Polynomial<T>, x: M,
+            zero: () -> M, inclusion: (T) -> M,
+            add: (M, M) -> M, multiply: (M, M) -> M, pow: (M, Long) -> M,
+        ): M {
+            if (p.terms.isEmpty()) {
+                return zero()
+            }
+            val terms = p.terms
+            var term = terms.last()
+            var power = term.pow
+            var result = inclusion(term.value)
+            var pos = terms.lastIndex
+            while (--pos >= 0) {
+                term = terms[pos]
+                val pDiff = power - term.pow
+                result = if (pDiff == 1) {
+                    multiply(result, x)
+                } else {
+                    multiply(result, pow(x, pDiff.toLong()))
+                }
+                result = add(result, inclusion(term.value))
+                power = term.pow
+            }
+            if (power > 0) {
+                result = multiply(result, pow(x, power.toLong()))
+            }
+            return result
+        }
+
+        fun <T, M> compute(p: Polynomial<T>, x: M, model: UnitRingModule<T, M>): M {
+            return compute(p, x, model::zero, model::fromScalar, model::add, model::multiply, model::power)
+        }
 
         /*
         Number models
@@ -1112,7 +1125,7 @@ open class PolyOverUFD<T>(model: UniqueFactorizationDomain<T>) : PolyOverUnitRin
 
 
 open class PolyOverField<T>(override val model: Field<T>) : PolyOverUFD<T>(model),
-    EuclideanDomain<Polynomial<T>>, Algebra<T, Polynomial<T>> {
+    EuclideanDomain<Polynomial<T>>, UnitAlgebra<T, Polynomial<T>> {
 
     override val scalars: Field<T>
         get() = model

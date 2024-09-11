@@ -124,7 +124,9 @@ interface GenMatrix<T> : GenTuple<T> {
      */
     val column: Int
 
-
+    /**
+     * The total count of elements in this matrix, which is equal to `row * column`.
+     */
     override val size: Int
         get() = row * column
 

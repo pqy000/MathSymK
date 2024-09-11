@@ -60,6 +60,21 @@ interface Module<R, V> : AddGroup<V> {
 //    }
 }
 
+interface RingModule<R, V> : Module<R, V>, Ring<V> {
+    /*
+    Rewritten at 2024/8/25 19:12
+     */
+
+}
+
+interface UnitRingModule<R, V> : RingModule<R, V>, UnitRing<V> {
+    /*
+    Rewritten at 2024/8/25 19:12
+     */
+    fun fromScalar(r: R): V {
+        return scalarMul(r, one)
+    }
+}
 
 /**
  * A linear space is a module over a field.
@@ -110,9 +125,24 @@ interface LinearSpace<K , V> : Module<K, V> {
  * Created at 2018/11/29 18:46
  * @author  liyicheng
  */
-interface Algebra<K,V> : LinearSpace<K,V>, Ring<V> {
+interface Algebra<K,V> : LinearSpace<K,V>, RingModule<K,V> {
     /*
     Rewritten at 2024/8/25
      */
+
+}
+
+/**
+ * Describes an algebra with a unit ring.
+ *
+ *
+ * Created at 2024/9/11
+ * @author  liyicheng
+ */
+interface UnitAlgebra<K,V> : Algebra<K,V>, UnitRingModule<K,V> {
+    /*
+    Rewritten at 2024/9/11
+     */
+
 
 }

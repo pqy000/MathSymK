@@ -6,11 +6,13 @@ import cn.mathsymk.model.struct.*
 import cn.mathsymk.structure.*
 import java.util.function.Function
 
-interface Matrix<T> : GenMatrix<T>, ModeledMathObject<T, EqualPredicate<T>>, AlgebraModel<T, Matrix<T>> {
+interface Matrix<T> : GenMatrix<T>, ModeledMathObject<T, EqualPredicate<T>>,
+    AlgebraModel<T, Matrix<T>>, MulGroupModel<Matrix<T>> {
 
     /*
     Matrix
      */
+
 
     fun rowAt(rowIdx: Int): Vector<T> {
         return Vector(column, model) { colIdx -> this[rowIdx, colIdx] }
@@ -113,9 +115,17 @@ interface Matrix<T> : GenMatrix<T>, ModeledMathObject<T, EqualPredicate<T>>, Alg
         return this.matmul(v)
     }
 
+    override val isInvertible: Boolean
+        get() {
+            return MatrixImpl.isInvertible(this, model as UnitRing)
+        }
+
+    override fun inv(): Matrix<T> {
+        return MatrixImpl.inverse(this, model as UnitRing)
+    }
 
     fun det(): T {
-        TODO()
+        return MatrixImpl.det(this, model as Ring)
     }
 
     fun rank(): Int {
@@ -130,34 +140,34 @@ interface Matrix<T> : GenMatrix<T>, ModeledMathObject<T, EqualPredicate<T>>, Alg
      * @return `tr(this)`
      */
     fun trace(): T {
-        TODO()
+        return MatrixImpl.trace(this, model as AddSemigroup<T>)
     }
 
     fun diag(): Vector<T> {
-        TODO()
+        require(isSquare)
+        return Vector(row, model) { i -> this[i, i] }
     }
 
     /**
      * Returns the sum of all elements in this matrix.
      */
     fun sumAll(): T {
-        val model = model as AddSemigroup
-        return elementSequence().reduce { acc, t -> model.add(acc, t) }
+        return MatrixImpl.sumAll(this, model as AddSemigroup<T>)
     }
 
+    /**
+     * Returns a transposed view of this matrix.
+     */
     fun transpose(): Matrix<T> {
         return TransposedMatrixView(this)
     }
 
+    /**
+     * Returns a transposed view of this matrix.
+     */
     val T: Matrix<T>
         get() = transpose()
 
-    /**
-     * Returns the factor of this matrix as an immutable view.
-     */
-    fun factor(rows: IntArray, cols: IntArray): Matrix<T> {
-        TODO()
-    }
 
     /**
      * Gets a sub-matrix in this matrix as a view.
@@ -171,26 +181,47 @@ interface Matrix<T> : GenMatrix<T>, ModeledMathObject<T, EqualPredicate<T>>, Alg
     fun subMatrix(rowStart: Int = 0, colStart: Int = 0, rowEnd: Int = row, colEnd: Int = column): Matrix<T> {
 //        require(0 <= rowStart && rowEnd <= row && rowStart < rowEnd)
 //        require(0 <= colStart && colEnd <= column && colStart < colEnd)
+        // checked in SubMatrixView
         return SubMatrixView(this, rowStart, colStart, rowEnd, colEnd)
     }
 
     /**
-     *
+     * Returns a sliced matrix view of this matrix with the given row and column indices.
      */
     fun slice(rows: IntArray, cols: IntArray): Matrix<T> {
         return SlicedMatrixView(this, rows, cols)
     }
 
-    fun cofactor(row: Int, col: Int): Matrix<T> {
-        return cofactor(intArrayOf(row), intArrayOf(col))
+    /**
+     * Returns the minor of this matrix at the position `(i, j)`,
+     * namely the sub-matrix obtained by deleting the `i`-th row and `j`-th column.
+     */
+    fun minor(i: Int, j: Int): Matrix<T> {
+        val rows = IntArray(this.row - 1) { t -> if (t < i) t else t + 1 }
+        val cols = IntArray(this.column - 1) { t -> if (t < j) t else t + 1 }
+        return slice(rows, cols)
     }
 
-    fun cofactor(rows: IntArray, cols: IntArray): Matrix<T> {
-        TODO()
+    fun minor(rows : IntArray, cols : IntArray): Matrix<T> {
+        val remRows = remainingIndices(row, rows)
+        val remCols = remainingIndices(column, cols)
+        return slice(remRows, remCols)
+    }
+
+    /**
+     * Returns the cofactor of this matrix at the position `(i, j)`.
+     * The cofactor is the determinant of the minor matrix at `(i, j)` with a sign determined by `(-1)^(i+j)`.
+     *
+     *     C(i, j) = (-1)^(i+j) * det(minor(i, j))
+     */
+    fun cofactor(i: Int, j: Int): T {
+        val t = minor(i, j).det()
+        val model = model as Ring
+        return if ((i + j) % 2 == 0) t else model.negate(t)
     }
 
     fun adjugate(): Matrix<T> {
-        TODO()
+        return MatrixImpl.adjugate(this, model as Ring)
     }
 
     companion object {
@@ -198,8 +229,13 @@ interface Matrix<T> : GenMatrix<T>, ModeledMathObject<T, EqualPredicate<T>>, Alg
             return AMatrix.of(row, column, model, init)
         }
 
-        operator fun <T> invoke(n : Int, model: EqualPredicate<T>, init: (Int, Int) -> T): Matrix<T> {
+        operator fun <T> invoke(n: Int, model: EqualPredicate<T>, init: (Int, Int) -> T): Matrix<T> {
             return invoke(n, n, model, init)
+        }
+
+        fun <T> of(row: Int, col: Int, model: EqualPredicate<T>, vararg elements: T): Matrix<T> {
+            require(row * col == elements.size)
+            return AMatrix.of(row, col, model, *elements)
         }
 
         fun <T> product(vararg matrices: Matrix<T>): Matrix<T> {
@@ -240,32 +276,81 @@ interface Matrix<T> : GenMatrix<T>, ModeledMathObject<T, EqualPredicate<T>>, Alg
          */
         fun <T> concatColumn(a: Matrix<T>, b: Matrix<T>): MutableMatrix<T> {
             return MatrixImpl.concatCol(a, b, a.model)
-//            val expanded = MutableMatrix.zero(a.row, a.column + b.column, a.model)
-//            val col = a.column
-//            expanded.setAll(0, 0, a)
-//            expanded.setAll(0, col, b)
-//            return expanded
         }
 
         fun <T> zero(row: Int, column: Int, model: AddMonoid<T>): Matrix<T> {
             return MatrixImpl.zero(row, column, model)
         }
 
-        fun <T> zero(n : Int, model: AddMonoid<T>): Matrix<T> {
+        fun <T> zero(n: Int, model: AddMonoid<T>): Matrix<T> {
             return zero(n, n, model)
         }
 
-        fun <T> diag(elements : List<T>, model : AddMonoid<T>): Matrix<T> {
+        fun <T> diag(elements: List<T>, model: AddMonoid<T>): Matrix<T> {
             val n = elements.size
-            val zero = MatrixImpl.zero(n,n, model)
+            val zero = MatrixImpl.zero(n, n, model)
             for (i in 0 until n) {
-                zero[i,i] = elements[i]
+                zero[i, i] = elements[i]
             }
             return zero
         }
 
-        fun <T> diag(model : AddMonoid<T>, vararg elements : T): Matrix<T> {
+        fun <T> diag(model: AddMonoid<T>, vararg elements: T): Matrix<T> {
             return diag(elements.asList(), model)
+        }
+
+        fun <T> identity(n: Int, model: UnitRing<T>): Matrix<T> {
+            return MatrixImpl.identity(n, model)
+        }
+
+
+        private fun remainingIndices(n: Int, indices: IntArray): IntArray {
+            val set = indices.toMutableSet()
+            return (0 until n).filter { it !in set }.toIntArray()
+        }
+
+        /**
+         * Gets the model of `n × n` matrices over the given model.
+         */
+        fun <T> over(n : Int, model : UnitRing<T>): UnitRingModule<T, Matrix<T>> {
+            return object : UnitRingModule<T, Matrix<T>> {
+                override val scalars: UnitRing<T>
+                    get() = model
+
+                override fun fromScalar(r: T): Matrix<T> {
+                    return Matrix.identity(n, model) * r
+                }
+
+                override fun scalarMul(k: T, v: Matrix<T>): Matrix<T> {
+                    return v * k
+                }
+
+                override fun isEqual(x: Matrix<T>, y: Matrix<T>): Boolean {
+                    return x.valueEquals(y)
+                }
+
+                override fun negate(x: Matrix<T>): Matrix<T> {
+                    return -x
+                }
+
+                override val zero: Matrix<T>
+                    get() = zero(n, model)
+
+                override fun contains(x: Matrix<T>): Boolean {
+                    return x.row == n && x.column == n
+                }
+
+                override fun add(x: Matrix<T>, y: Matrix<T>): Matrix<T> {
+                    return x + y
+                }
+
+                override fun multiply(x: Matrix<T>, y: Matrix<T>): Matrix<T> {
+                    return x matmul y
+                }
+
+                override val one: Matrix<T>
+                    get() = identity(n, model)
+            }
         }
     }
 }
@@ -286,8 +371,6 @@ operator fun <T> RowVector<T>.times(m: Matrix<T>): RowVector<T> {
 //fun <K> Matrix<Complex<K>>.conjugate(): Matrix<Complex<K>> {
 //    return applyAll { it.conjugate() }
 //}
-
-
 
 
 @JvmRecord
@@ -347,8 +430,8 @@ interface MutableMatrix<T> : Matrix<T> {
     }
 
     fun setAll(row: Int, col: Int, matrix: GenMatrix<T>) {
-        for (i in 0 ..< matrix.row) {
-            for (j in 0 ..< matrix.column) {
+        for (i in 0..<matrix.row) {
+            for (j in 0..<matrix.column) {
                 this[i + row, j + col] = matrix[i, j]
             }
         }
@@ -356,20 +439,68 @@ interface MutableMatrix<T> : Matrix<T> {
 
     fun copy(): MutableMatrix<T>
 
+    operator fun timesAssign(k: T) {
+        val model = model as MulSemigroup
+        transform { _, _, t -> model.multiply(t, k) }
+    }
+
+    operator fun divAssign(k: T) {
+        val model = model as UnitRing
+        transform { _, _, t -> model.exactDivide(t, k) }
+    }
+
+    /**
+     * Swaps the rows `r1` and `r2` with the given column range `[colStart, colEnd)`.
+     */
     fun swapRow(r1: Int, r2: Int, colStart: Int = 0, colEnd: Int = column)
+
+    /**
+     * Swaps the columns `c1` and `c2` with the given row range `[rowStart, rowEnd)`.
+     */
     fun swapCol(c1: Int, c2: Int, rowStart: Int = 0, rowEnd: Int = row)
 
+    /**
+     * Negates the row `r` with the given column range `[colStart, colEnd)`.
+     */
     fun negateRow(r: Int, colStart: Int = 0, colEnd: Int = column)
+
+    /**
+     * Negates the column `c` with the given row range `[rowStart, rowEnd)`.
+     */
     fun negateCol(c: Int, rowStart: Int = 0, rowEnd: Int = row)
 
+    /**
+     * Multiplies the row `r` by `k` with the given column range `[colStart, colEnd)`.
+     */
     fun multiplyRow(r: Int, k: T, colStart: Int = 0, colEnd: Int = column)
+
+    /**
+     * Divides the row `r` by `k` with the given column range `[colStart, colEnd)`.
+     */
     fun divideRow(r: Int, k: T, colStart: Int = 0, colEnd: Int = column)
 
+    /**
+     * Multiplies the column `c` by `k` with the given row range `[rowStart, rowEnd)`.
+     */
     fun multiplyCol(c: Int, k: T, rowStart: Int = 0, rowEnd: Int = row)
+
+    /**
+     * Divides the column `c` by `k` with the given row range `[rowStart, rowEnd)`.
+     */
     fun divideCol(c: Int, k: T, rowStart: Int = 0, rowEnd: Int = row)
 
-
+    /**
+     * Adds the row `r1` multiplied by `k` to the row `r2` with the given column range `[colStart, colEnd)`:
+     *
+     *    this[r2,j] = this[r2,j] + k * this[r1,j]     for j in [colStart, colEnd)
+     */
     fun multiplyAddRow(r1: Int, r2: Int, k: T, colStart: Int = 0, colEnd: Int = column)
+
+    /**
+     * Adds the column `c1` multiplied by `k` to the column `c2` with the given row range `[rowStart, rowEnd)`:
+     *
+     *    this[i,c2] = this[i,c2] + k * this[i,c1]     for i in [rowStart, rowEnd)
+     */
     fun multiplyAddCol(c1: Int, c2: Int, k: T, rowStart: Int = 0, rowEnd: Int = row)
 
     /**
@@ -405,7 +536,15 @@ interface MutableMatrix<T> : Matrix<T> {
         }
 
         fun <T> concatColumn(a: Matrix<T>, b: Matrix<T>): MutableMatrix<T> {
-            TODO()
+            return MatrixImpl.concatCol(a, b, a.model)
+        }
+    }
+}
+
+inline fun <T> MutableMatrix<T>.transform(f: (Int, Int, T) -> T) {
+    for (i in 0 until row) {
+        for (j in 0 until column) {
+            this[i, j] = f(i, j, this[i, j])
         }
     }
 }

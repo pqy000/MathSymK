@@ -132,6 +132,10 @@ interface Vector<T> : GenVector<T>, ModeledMathObject<T, EqualPredicate<T>>, Vec
             return of(data.asList(), model)
         }
 
+        fun <T> of(model: EqualPredicate<T>, data: GenVector<T>): MutableVector<T> {
+            return of(data.toList(), model)
+        }
+
         fun <T> zero(size: Int, model: AddMonoid<T>): MutableVector<T> {
             return VectorImpl.zero(size, model)
         }
@@ -163,6 +167,8 @@ interface Vector<T> : GenVector<T>, ModeledMathObject<T, EqualPredicate<T>>, Vec
         fun <T> space(field: Field<T>, length: Int): CanonicalVectorSpace<T> {
             return CanonicalVectorSpace(length, field)
         }
+
+
     }
 }
 
@@ -213,8 +219,65 @@ interface MutableVector<T> : Vector<T> {
     fun copy(): MutableVector<T> {
         return VectorImpl.copyOf(this)
     }
+
+    operator fun plusAssign(y: Vector<T>) {
+        val model = model as AddSemigroup<T>
+        for (i in indices) {
+            this[i] = model.add(this[i], y[i])
+        }
+    }
+
+    operator fun minusAssign(y: Vector<T>) {
+        val model = model as AddGroup<T>
+        for (i in indices) {
+            this[i] = model.subtract(this[i], y[i])
+        }
+    }
+
+    operator fun timesAssign(k: T) {
+        val model = model as MulSemigroup<T>
+        for (i in indices) {
+            this[i] = model.multiply(this[i], k)
+        }
+    }
+
+    operator fun divAssign(k: T) {
+        val model = model as MulGroup<T>
+        for (i in indices) {
+            this[i] = model.divide(this[i], k)
+        }
+    }
+
+    /**
+     * Performs `x += k * y` in place.
+     */
+    fun plusAssignTimes(k: T, y: Vector<T>) {
+        val model = model as Ring<T>
+        val x = this
+        for (i in indices) {
+            x[i] = model.eval { x[i] + k * y[i] }
+        }
+    }
+
+    /**
+     * Performs `x -= k * y` in place.
+     */
+    fun minusAssignTimes(k: T, y: Vector<T>) {
+        val model = model as Ring<T>
+        val x = this
+        for (i in indices) {
+            x[i] = model.eval { x[i] - k * y[i] }
+        }
+    }
+
+
 }
 
+inline fun <T> MutableVector<T>.transform(f: (T) -> T) {
+    for (i in indices) {
+        this[i] = f(this[i])
+    }
+}
 
 data class AVector<T> internal constructor(
     val data: Array<Any?>, override val model: EqualPredicate<T>
@@ -300,7 +363,11 @@ object VectorImpl {
     }
 
     fun <T> copyOf(x: Vector<T>): AVector<T> {
-        return apply1(x, x.model) { it }
+        return copyOf(x, x.model)
+    }
+
+    fun <T> copyOf(x: GenVector<T>, model: EqualPredicate<T>): AVector<T> {
+        return apply1(x, model) { it }
     }
 
     fun <T> constant(size: Int, value: T, model: EqualPredicate<T>): AVector<T> {
@@ -430,8 +497,10 @@ open class CanonicalVectorSpace<K>(override val vectorLength: Int, override val 
 /**
  * A standard basis for a vector space, which is the set of unit vectors.
  */
-class StandardVectorBasis<K>(override val vectorLength: Int,
-                             private val scalars: Field<K>) : VectorBasis<K> {
+class StandardVectorBasis<K>(
+    override val vectorLength: Int,
+    private val scalars: Field<K>
+) : VectorBasis<K> {
     override val elements: List<Vector<K>>
         get() = (0 until vectorLength).map { i -> Vector.unitVector(vectorLength, i, scalars) }
 

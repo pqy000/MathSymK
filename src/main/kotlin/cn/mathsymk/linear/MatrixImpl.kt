@@ -1,22 +1,25 @@
 package cn.mathsymk.linear
 
-import cn.mathsymk.model.Multinomial
 import cn.mathsymk.model.NumberModels
+import cn.mathsymk.model.Polynomial
 import cn.mathsymk.structure.*
 import cn.mathsymk.util.IterUtils
+import kotlin.collections.ArrayList
 import kotlin.math.min
 
-@Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
 data class AMatrix<T> internal constructor(
     override val row: Int, override val column: Int,
     override val model: EqualPredicate<T>,
-    val data: Array<Any?>
+    val data: Array<Any?>,
 ) : MutableMatrix<T> {
 
     init {
         require(row * column == data.size)
         require(data.isNotEmpty())
     }
+
+    override val size: Int
+        get() = data.size
 
     private fun checkIndex(i: Int, j: Int) {
         require(i in 0 until row && j in 0 until column)
@@ -75,13 +78,28 @@ data class AMatrix<T> internal constructor(
         row.data.copyInto(data, toPos(i, 0))
     }
 
+    private inline fun inPlaceApply1(f: (T) -> T) {
+        for (i in data.indices) {
+            @Suppress("UNCHECKED_CAST")
+            data[i] = f(data[i] as T)
+        }
+    }
+
 
     override fun negateInPlace() {
         val mc = model as AddGroup
-        for (i in data.indices) {
-            @Suppress("UNCHECKED_CAST")
-            data[i] = mc.negate(data[i] as T)
-        }
+        inPlaceApply1 { mc.negate(it) }
+    }
+
+
+    override fun timesAssign(k: T) {
+        val model = model as MulSemigroup
+        inPlaceApply1 { model.multiply(k, it) }
+    }
+
+    override fun divAssign(k: T) {
+        val model = model as UnitRing
+        inPlaceApply1 { model.exactDivide(it, k) }
     }
 
 
@@ -220,7 +238,7 @@ data class AMatrix<T> internal constructor(
 
 
         internal inline operator fun <T> invoke(
-            row: Int, column: Int, model: EqualPredicate<T>, init: (Int, Int) -> T
+            row: Int, column: Int, model: EqualPredicate<T>, init: (Int, Int) -> T,
         ): AMatrix<T> {
             val data = Array<Any?>(row * column) { }
             for (i in 0..<row) {
@@ -233,7 +251,7 @@ data class AMatrix<T> internal constructor(
         }
 
         internal inline fun <T, N> apply2(
-            x: AMatrix<T>, y: AMatrix<T>, model: EqualPredicate<N>, f: (T, T) -> N
+            x: AMatrix<T>, y: AMatrix<T>, model: EqualPredicate<N>, f: (T, T) -> N,
         ): AMatrix<N> {
 //            require(x.shapeMatches(y))
             val d1 = x.data
@@ -261,6 +279,12 @@ data class AMatrix<T> internal constructor(
 
         fun <T> of(row: Int, column: Int, model: EqualPredicate<T>, init: (Int, Int) -> T): AMatrix<T> {
             return AMatrix(row, column, model, init)
+        }
+
+        fun <T> of(row: Int, col: Int, model: EqualPredicate<T>, vararg data: T): AMatrix<T> {
+            require(row * col == data.size)
+            val dataCopy = Array<Any?>(data.size) { data[it] }
+            return AMatrix(row, col, model, dataCopy)
         }
     }
 }
@@ -326,7 +350,7 @@ open class TransposedMatrixView<T>(open val origin: Matrix<T>) : Matrix<T> {
 
 open class SubMatrixView<T>(
     val origin: Matrix<T>,
-    rowStart: Int, rowEnd: Int, colStart: Int, colEnd: Int
+    rowStart: Int, rowEnd: Int, colStart: Int, colEnd: Int,
 ) : Matrix<T> {
     init {
         require(0 <= rowStart && rowEnd <= origin.row && rowStart < rowEnd)
@@ -359,7 +383,7 @@ open class SubMatrixView<T>(
 
 
 open class SlicedMatrixView<T>(
-    val origin: Matrix<T>, val rowMap: IntArray, val colMap: IntArray
+    val origin: Matrix<T>, val rowMap: IntArray, val colMap: IntArray,
 ) : Matrix<T> {
     init {
         require(rowMap.isNotEmpty() && colMap.isNotEmpty())
@@ -388,12 +412,17 @@ open class SlicedMatrixView<T>(
 
 //TODO Mutable view
 
+/**
+ * Provides Matrix-related functionalities.
+ *
+ * Most of the methods in this object accept [GenMatrix]'s as inputs and a `model` should be provided to specify the operations.
+ */
 object MatrixImpl {
 
 
     internal inline fun <T, N> apply2(
         x: GenMatrix<T>, y: GenMatrix<T>,
-        model: EqualPredicate<N>, f: (T, T) -> N
+        model: EqualPredicate<N>, f: (T, T) -> N,
     ): AMatrix<N> {
         require(x.shapeMatches(y))
         if (x is AMatrix && y is AMatrix) {
@@ -505,85 +534,154 @@ object MatrixImpl {
         return A
     }
 
-
-    /**
-     *
-     * @return a list of strictly increasing pivots of the column. The size of it is equal to the rank of the matrix.
-     */
-    internal fun <T> toUpperTriangle(M: MutableMatrix<T>, model: Field<T>, column: Int = M.column): List<Int> {
-        //Created by lyc at 2021-04-29
-        val row = M.row
-        var i = 0
-        val pivots = ArrayList<Int>(min(M.row, column))
-        /*
-        j = pivots[i] then M[i,j] is the first non-zero element in that row
-         */
-        for (j in 0 until column) {
-            if (i >= row) break
-            var f: T? = null
-            for (i2 in i until row) {
-                if (model.isZero(M[i2, j])) continue
-
-                f = M[i2, j]
-                if (i2 != i) {
-                    M.swapRow(i2, i)
-                }
-                break
-            }
-            if (f == null) continue
-            //not found
-
-            for (i2 in (i + 1) until row) {
-                if (model.isZero(M[i2, j])) continue
-                val k = model.eval { -M[i2, j] / f }
-                M[i2, j] = model.zero
-                M.multiplyAddRow(i, i2, k, j + 1)
-            }
-            pivots += j
-            i++
+    fun <T> concatCol(a: GenMatrix<T>, b: GenMatrix<T>, model: EqualPredicate<T>): AMatrix<T> {
+        require(a.row == b.row)
+        return AMatrix(a.row, a.column + b.column, model) { i, j ->
+            if (j < a.column) a[i, j] else b[i, j - a.column]
         }
-        return pivots
-    }
-
-    /**
-     *
-     * @return a list of strictly increasing pivots of the column. The size of it is equal to the rank of the matrix.
-     */
-    internal fun <T> toEchelon(M: MutableMatrix<T>, mc: Field<T>, column: Int = M.column): List<Int> {
-        //Created by lyc at 2021-04-29
-        val pivots = toUpperTriangle(M, mc, column)
-        for (i in pivots.lastIndex downTo 0) {
-            val j = pivots[i]
-            if (!mc.isOne(M[i, j])) {
-                M.divideRow(i, M[i, j], j + 1)
-                M[i, j] = mc.one
-            }
-            for (k in (i - 1) downTo 0) {
-                if (mc.isZero(M[k, j])) {
-                    continue
-                }
-                val q = mc.eval { -M[k, j] }
-                M.multiplyAddRow(i, k, q, j + 1)
-                M[k, j] = mc.zero
-            }
-        }
-        return pivots
     }
 
 
-    fun <T> inverse(m: GenMatrix<T>, model: Field<T>): AMatrix<T> {
+//    fun <T> minor(A: Matrix<T>, rows: IntArray, cols: IntArray): Matrix<T> {
+//        val remRows = remainingIndices(A.row, rows)
+//        val remCols = remainingIndices(A.column, cols)
+//        return A.slice(remRows, remCols)
+//    }
+
+
+    private fun <T> colVectors(A: GenMatrix<T>, model: EqualPredicate<T>): List<Vector<T>> {
+        return A.colIndices.map { j ->
+            AVector(A.row, model) { i -> A[i, j] }
+        }
+    }
+
+    /*
+    Statistics
+     */
+    fun <T> trace(A: GenMatrix<T>, model: AddSemigroup<T>): T {
+        require(A.isSquare)
+        var res = A[0, 0]
+        for (i in 1 until A.row) {
+            res = model.add(res, A[i, i])
+        }
+        return res
+    }
+
+    fun <T> diag(A: GenMatrix<T>, model: EqualPredicate<T>): AVector<T> {
+        require(A.isSquare)
+        return AVector(A.row, model) { i -> A[i, i] }
+    }
+
+    fun <T> sumAll(A: GenMatrix<T>, model: AddSemigroup<T>): T {
+        return A.elementSequence().reduce(model::add)
+    }
+
+    /*
+    Inverse
+     */
+
+    /**
+     * Computes the 'inverse' of the given matrix over a unit ring. This method simply compute the adjugate matrix and
+     * divide it with the determinant (so it is time-consuming).
+     *
+     * This method can be used to compute the modular inverse of a matrix on `Z/Zn`, where n is not necessarily a prime.
+     */
+    fun <T> inverseInRing(M: GenMatrix<T>, model: UnitRing<T>): AMatrix<T> {
+        val det = det(M, model)
+        if (!model.isUnit(det)) throw ArithmeticException("The determinant is not invertible")
+        val adj = adjugate(M, model)
+        adj /= det
+        return adj
+    }
+
+    fun <T> inverseInField(m: GenMatrix<T>, model: Field<T>): AMatrix<T> {
+        val n = m.row
+        val expanded = zero(n, 2 * n, model)
+        expanded.setAll(0, 0, m)
+        for (i in 0 until n) {
+            expanded[i, i + n] = model.one
+        }
+        val pivots = toEchelon(expanded, model, column = n)
+        if (pivots.size != n) {
+            throw ArithmeticException("The matrix is not invertible")
+        }
+        return AMatrix.copyOf(expanded.subMatrix(0, n, n, 2 * n), model)
+    }
+
+//    /**
+//     * Computes the inverse of the matrix on an Euclidean domain.
+//     *
+//     * It is required that the calculator of `M` is an instance of EUDCalculator.
+//     */
+//    fun <T> inverseInEUD(M: GenMatrix<T>, mc: EuclideanDomain<T>): Matrix<T> {
+//        //TODO check correctness
+//        M.requireSquare()
+//        val n = M.column
+//
+//        val A = zero(n, 2 * n, mc)
+//        A.setAll(0, 0, M)
+//        for (i in 0 until n) {
+//            A[i, i + n] = mc.one
+//        }
+////        Printer.printMatrix(A)
+//        // to upper triangle
+//        for (j in 0 until n) {
+//            var i = j
+//            while (mc.isZero(A[i, j]) && i < n) {
+//                i++
+//            }
+//            if (i == n) throw ArithmeticException("The matrix is not invertible")
+//            if (i != j) A.swapRow(i, j)
+//
+//            i++
+//            outer@
+//            while (true) {
+//                val p = A[j, j]
+//                while (i < n) {
+//                    // gcd
+//                    val (q, r) = mc.divideAndRemainder(A[i, j], p)
+//                    A.multiplyAddRow(j, i, mc.negate(q), j)
+////                    Printer.printMatrix(A)
+//                    if (mc.isZero(r)) {
+//                        i++
+//                        continue
+//                    }
+//                    A.swapRow(j, i, j)
+//                    continue@outer
+//                }
+//                if (!mc.isUnit(p)) {
+//                    throw ArithmeticException("The matrix is not invertible")
+//                }
+//                A[j, j] = mc.one
+//                A.divideRow(j, p, j + 1)
+//                break
+//            }
+//
+//        }
+//
+//        for (j1 in (n - 1) downTo 1) {
+//            for (j2 in 0 until j1) {
+//                val k = mc.negate(A[j2, j1])
+//                A.multiplyAddRow(j1, j2, k, j1)
+//            }
+//        }
+//        return A.subMatrix(0, n, A.row, A.column)
+//    }
+
+
+    fun <T> inverse(m: GenMatrix<T>, model: UnitRing<T>): AMatrix<T> {
         require(m.isSquare)
-        TODO()
-//        val mc = m.model
-//        if (mc is FieldCalculator) {
-//            return inverseInField(m)
-//        }
-//        if (mc is EUDCalculator) {
-//            return MatrixUtils.inverseInEUD(m)
-//        }
-//        return MatrixUtils.inverseInRing(m)
+        when (model) {
+            is Field -> return inverseInField(m, model)
+            // TODO: implement inverse of matrix in other models
+            else -> throw UnsupportedOperationException("The inverse of a matrix is not supported for the given model: $model")
+        }
     }
 
+    fun <T> isInvertible(m: GenMatrix<T>, model: UnitRing<T>): Boolean {
+        require(m.isSquare)
+        return model.isUnit(det(m, model))
+    }
 
     fun <T> detSmall(m: GenMatrix<T>, model: Ring<T>): T {
         require(m.isSquare)
@@ -623,7 +721,7 @@ object MatrixImpl {
         return result
     }
 
-    fun <T> detGaussBareiss(mat: MutableMatrix<T>, mc: UnitRing<T>): T {
+    fun <T> detGaussBareiss(matrix: GenMatrix<T>, mc: UnitRing<T>): T {
         // Created by lyc at 2020-03-05 19:18
         // Reimplemented by lyc at 2024-09-06
         /*
@@ -654,10 +752,11 @@ object MatrixImpl {
         Finally, we should divide the final det by m[k,k] for all k < n-1.
         Since det is the product of diagonal elements, we can just leave those m[k,k] and return m[n-1,n-1].
          */
+        val mat = AMatrix.copyOf(matrix, mc)
         val n: Int = mat.row
         var d = mc.one // the denominator that we store
         var positive = true
-        for (k in 0 until n) {
+        for (k in 0..<n) {
             //locate the top-left element used for elimination first, it must be non-zero
             if (mc.isZero(mat[k, k])) {
                 val r = (k + 1..<n).firstOrNull { i -> !mc.isZero(mat[i, k]) } ?: return mc.zero
@@ -665,9 +764,9 @@ object MatrixImpl {
                 positive = !positive
             }
             val p: T = mat[k, k]
-            for (i in k + 1 until n) {
+            for (i in k + 1..<n) {
                 val head = mat[i, k]
-                for (j in k + 1 until n) { // j<=k are all zero, just ignore them
+                for (j in k + 1..<n) { // j<=k are all zero, just ignore them
                     mat[i, j] = mc.eval {
                         exactDivide(p * mat[i, j] - head * mat[k, j], d)
                     }
@@ -682,31 +781,505 @@ object MatrixImpl {
         }
     }
 
-    /**
-     * Computes the 'inverse' of the given matrix over a unit ring. This method simply compute the adjugate matrix and
-     * divide it with the determinant (so it is time-consuming).
-     *
-     * This method can be used to compute the modular inverse of a matrix on `Z/Zn`, where n is not necessarily a prime.
-     */
-    fun <T> inverseInRing(M: Matrix<T>, model: UnitRing<T>): Matrix<T> {
-        val det = M.det()
-        if (!model.isUnit(det)) throw ArithmeticException("The determinant is not invertible")
-        val adj = M.adjugate()
-        return adj / det
+    fun <T> det(mat: GenMatrix<T>, mc: Ring<T>): T {
+        require(mat.isSquare)
+        if (mat.row <= 3) return detSmall(mat, mc)
+        if (mc is UnitRing) {
+            return detGaussBareiss(mat, mc)
+        }
+        return detDefinition(mat, mc)
     }
 
-    fun <T> concatCol(a: GenMatrix<T>, b: GenMatrix<T>, model: EqualPredicate<T>): AMatrix<T> {
-        require(a.row == b.row)
-        return AMatrix(a.row, a.column + b.column, model) { i, j ->
-            if (j < a.column) a[i, j] else b[i, j - a.column]
+    fun <T> adjugateAndCharPoly(matrix: GenMatrix<T>, mc: UnitRing<T>): Pair<AMatrix<T>, Polynomial<T>> {
+        /*
+        Reference: A course in computational algebraic number theory, Algorithm 2.2.7
+
+         */
+        val M = AMatrix.copyOf(matrix, mc)
+        val n = M.row
+        var C = identity(n, mc)
+        val aList = ArrayList<T>(n + 1)
+        aList += mc.one
+        for (k in 1..<n) {
+            C = matmul(M, C, mc)
+            val ak = mc.eval { exactDivide(-C.trace(), of(k.toLong())) }
+            for (j in 0..<n) {
+                mc.eval { C[j, j] += ak }
+            }
+            aList += ak
         }
+        aList += mc.eval { -exactDivide((M * C).trace(), of(n.toLong())) }
+        val p = Polynomial.fromList(mc, aList.asReversed())
+        if (n % 2 == 0) {
+            C.negateInPlace()
+        }
+        return C to p
+    }
+
+    /**
+     * Gets the characteristic polynomial of the given matrix, which is defined as `det(xI - A)`.
+     */
+    fun <T> charPoly(matrix: GenMatrix<T>, mc: UnitRing<T>): Polynomial<T> {
+        return adjugateAndCharPoly(matrix, mc).second
+    }
+
+
+    fun <T> adjugateDefinition(matrix: GenMatrix<T>, mc: Ring<T>): AMatrix<T> {
+        require(matrix.isSquare)
+        val n = matrix.row
+        val A = AMatrix.copyOf(matrix, mc)
+        val adj = AMatrix(n, n, mc) { i, j -> A.cofactor(i, j) }
+        return adj
+    }
+
+    fun <T> adjugate(matrix: GenMatrix<T>, mc: Ring<T>): AMatrix<T> {
+        if (mc is UnitRing) {
+            return adjugateAndCharPoly(matrix, mc).first
+        }
+        return adjugateDefinition(matrix, mc)
+    }
+
+
+    /*
+    Decomposition
+     */
+    private fun <T> decompQR0(A: GenMatrix<T>, mc: Reals<T>): Pair<Matrix<T>, MutableMatrix<T>> {
+        //Re-written by lyc at 2021-04-30 13:00
+        A.requireSquare()
+        val vs = colVectors(A, mc)
+        val R = zero(A.row, A.column, mc)
+        val ws = ArrayList<MutableVector<T>>(A.row)
+        val Q = zero(A.row, A.column, mc)
+        for (i in 0 until A.row) {
+            val u: MutableVector<T> = VectorImpl.copyOf(vs[i], mc)
+            for (j in 0 until i) {
+                val k = u.inner(ws[j])
+                u.minusAssignTimes(k, ws[j])
+                R[j, i] = k
+            }
+            if (!u.isZero) {
+                val length = u.norm()
+                R[i, i] = length
+                u.divAssign(length)
+            }
+            ws += u
+        }
+//        val Q = Matrix.fromColumns(ws)
+        return Q to R
+    }
+
+
+    /**
+     * Returns the QR-decomposition of a square matrix `A = QR`, where `Q` is an orthogonal matrix and `R` is an
+     * upper-triangle matrix. If this matrix is invertible, there is only one decomposition.
+     *
+     * @return `(Q, R)` as a pair
+     */
+    fun <T> decompQR(A: GenMatrix<T>, model: Reals<T>): Pair<Matrix<T>, Matrix<T>> {
+        return decompQR0(A, model)
+    }
+
+    /**
+     * Returns the QR-decomposition of a square matrix `A = KAN`, where `K` is an orthogonal matrix, `D` diagonal and
+     * `R` upper-triangle matrix.
+     * If this matrix is invertible, there is only one decomposition.
+     *
+     * @return `(K,A,N)` as a triple
+     */
+    fun <T> decompKAN(A: GenMatrix<T>, model: Reals<T>): Triple<Matrix<T>, Vector<T>, Matrix<T>> {
+        //Created by lyc at 2021-05-11 20:25
+        val (Q, R) = decompQR0(A, model)
+        val d = R.diag()
+        val one = model.one
+        for (i in 0 until R.row) {
+            R[i, i] = one
+            R.divideRow(i, d[i], i + 1)
+        }
+        return Triple(Q, d, R)
+    }
+
+    private fun <T> checkSymmetric(A: GenMatrix<T>, mc: EqualPredicate<T>) {
+        A.requireSquare()
+        for (i in 0..<A.row) {
+            for (j in 0..<i) {
+                require(mc.isEqual(A[i, j], A[j, i])) { "Not symmetric!" }
+            }
+        }
+    }
+
+
+    /**
+     * Computes the LU decomposition of the given matrix `A` , returns a pair of matrices `(L,U)` such that
+     * `A = LU`, `P` is a permutation matrix, `L` is a lower triangular matrix with 1 as diagonal elements, and
+     * `U` is an upper triangular matrix.
+     *
+     * It is required that the matrix is invertible.
+     *
+     * **Note**: This method is not designed for numerical computation.
+     *
+     * @return
+     */
+    fun <T> decompLU(m: GenMatrix<T>, mc: Field<T>): Pair<Matrix<T>, Matrix<T>> {
+        require(m.isSquare) {
+            "The matrix must be square!"
+        }
+        val n = m.row
+        val upper = AMatrix.copyOf(m, mc)
+        val lower = zero(n, n, mc)
+        for (k in 0 until m.row) {
+            lower[k, k] = mc.one
+            for (i in (k + 1) until m.row) {
+                val lambda = mc.eval {
+                    upper[i, k] / upper[k, k]
+                }
+                lower[i, k] = lambda
+                upper[i, k] = mc.zero
+                upper.multiplyAddRow(k, i, mc.negate(lambda), k + 1)
+            }
+        }
+        return lower to upper
+    }
+
+    /**
+     * Decomposes a symmetric semi-positive definite matrix `A = L L^T`, where
+     * `L` is a lower triangular matrix.
+     *
+     * @return a lower triangular matrix `L`.
+     */
+    fun <T> decompCholesky(A: GenMatrix<T>, mc: Reals<T>): Matrix<T> {
+        require(A.isSquare) {
+            "The matrix must be square!"
+        }
+        val n = A.row
+
+        val L = zero(n, n, mc)
+        for (j in 0 until n) {
+            var t = A[j, j]
+            for (k in 0 until j) {
+                t = mc.eval { t - L[j, k] * L[j, k] }
+            }
+            t = mc.sqrt(t)
+            L[j, j] = t
+            // l_{jj} = sqrt(a_{jj} - sum(0,j-1, l_{jk}^2))
+
+            for (i in (j + 1) until n) {
+                var a = A[i, j]
+                for (k in 0 until j) {
+                    a = mc.eval { a - L[i, k] * L[j, k] }
+                }
+                a = mc.eval { a / t }
+                L[i, j] = a
+                // l_{ij} = (a_{ij} - sum(0,j-1,l_{il}l_{jl}))/l_{jj}
+            }
+        }
+        return L
+    }
+
+    /**
+     * Decomposes a symmetric matrix `A = L D L^T`, where
+     * `L` is a lower triangular matrix and `D` is a diagonal matrix.
+     *
+     * @return `(L, diag(D))`, where `L` is a lower triangular matrix, `diag(D)` is a vector of diagonal elements
+     * of `D`.
+     */
+    fun <T> decompCholeskyD(A: GenMatrix<T>, mc: Field<T>): Pair<Matrix<T>, Vector<T>> {
+        require(A.isSquare) {
+            "The matrix must be square!"
+        }
+        val n = A.row
+
+        val L = zero(n, n, mc)
+        val d = ArrayList<T>(n)
+
+        for (j in 0 until n) {
+            var t = A[j, j]
+            for (k in 0 until j) {
+                t = mc.eval { t - L[j, k] * L[j, k] * d[k] }
+            }
+            d += t
+            // d_j = a_{jj} - sum(0,j-1, l_{jk}^2)
+            L[j, j] = mc.one
+            // l_{jj} = a_{jj} - sum(0,j-1, l_{jk}^2)
+
+            for (i in (j + 1) until n) {
+                var a = A[i, j]
+                for (k in 0 until j) {
+                    a = mc.eval { a - L[i, k] * L[j, k] * d[k] }
+                }
+                L[i, j] = mc.eval { a / t }
+                // l_{ij} = (a_{ij} - sum(0,j-1,d_k * l_{ik}l_{jk}))
+            }
+        }
+        return L to Vector.of(d, mc)
+    }
+
+
+    /*
+    Normal forms
+     */
+
+
+    /**
+     *
+     * @return a list of strictly increasing pivots of the column. The size of it is equal to the rank of the matrix.
+     */
+    fun <T> toUpperTriangle(M: MutableMatrix<T>, model: Field<T>, column: Int = M.column): List<Int> {
+        //Created by lyc at 2021-04-29
+        val row = M.row
+        var i = 0
+        val pivots = ArrayList<Int>(min(M.row, column))
+        /*
+        j = pivots[i] then M[i,j] is the first non-zero element in that row
+         */
+        for (j in 0 until column) {
+            if (i >= row) break
+            var f: T? = null
+            for (i2 in i until row) {
+                if (model.isZero(M[i2, j])) continue
+
+                f = M[i2, j]
+                if (i2 != i) {
+                    M.swapRow(i2, i)
+                }
+                break
+            }
+            if (f == null) continue
+            //not found
+
+            for (i2 in (i + 1) until row) {
+                if (model.isZero(M[i2, j])) continue
+                val k = model.eval { -M[i2, j] / f }
+                M[i2, j] = model.zero
+                M.multiplyAddRow(i, i2, k, j + 1)
+            }
+            pivots += j
+            i++
+        }
+        return pivots
+    }
+
+    /**
+     *
+     * @return a list of strictly increasing pivots of the column. The size of it is equal to the rank of the matrix.
+     */
+    fun <T> toEchelon(M: MutableMatrix<T>, mc: Field<T>, column: Int = M.column): List<Int> {
+        //Created by lyc at 2021-04-29
+        val pivots = toUpperTriangle(M, mc, column)
+        for (i in pivots.lastIndex downTo 0) {
+            val j = pivots[i]
+            if (!mc.isOne(M[i, j])) {
+                M.divideRow(i, M[i, j], j + 1)
+                M[i, j] = mc.one
+            }
+            for (k in (i - 1) downTo 0) {
+                if (mc.isZero(M[k, j])) {
+                    continue
+                }
+                val q = mc.eval { -M[k, j] }
+                M.multiplyAddRow(i, k, q, j + 1)
+                M[k, j] = mc.zero
+            }
+        }
+        return pivots
+    }
+
+    internal fun <T> toUpperEUD0(M: MutableMatrix<T>, mc: EuclideanDomain<T>, column: Int = M.column): List<Int> {
+        val row = M.row
+        var i = 0
+        val pivots = ArrayList<Int>(min(M.row, column))
+        for (j in 0 until column) {
+            if (i >= row) {
+                break
+            }
+            var found = false
+            for (i2 in i until row) {
+                if (mc.isZero(M[i2, j])) {
+                    continue
+                }
+                found = true
+                if (i2 != i) {
+                    M.swapRow(i2, i)
+                }
+                break
+            }
+            if (!found) {
+                //not found
+                continue
+            }
+            for (i2 in (i + 1) until row) {
+                if (mc.isZero(M[i2, j])) {
+                    continue
+                }
+                val a = M[i, j]
+                val b = M[i2, j]
+                val (d, u, v) = mc.gcdUVMin(a, b)
+                // uni-modular transform
+                val a1 = mc.exactDivide(a, d)
+                val b1 = mc.exactDivide(b, d)
+                M.transformRows(i, i2, u, v, mc.negate(b1), a1, j)
+            }
+            pivots += j
+            i++
+        }
+        return pivots
+    }
+
+    internal fun <T> toEchelonEUD0(M: MutableMatrix<T>, mc: EuclideanDomain<T>, column: Int = M.column): List<Int> {
+        val pivots = toUpperEUD0(M, mc, column)
+        for (i in pivots.lastIndex downTo 0) {
+            val j = pivots[i]
+            val d = M[i, j]
+            for (k in (i - 1) downTo 0) {
+                if (mc.isZero(M[k, j])) {
+                    continue
+                }
+                val q = mc.eval { -divideToInteger(M[k, j], d) }
+                M.multiplyAddRow(i, k, q, j)
+            }
+        }
+        return pivots
+    }
+
+    internal fun <T> toHermitForm0(M: MutableMatrix<T>, mc: Integers<T>, column: Int = M.column): List<Int> {
+        val pivots = toUpperEUD0(M, mc, column)
+        for (i in pivots.lastIndex downTo 0) {
+            val j = pivots[i]
+            if (mc.isNegative(M[i, j])) {
+                M.negateRow(i)
+            }
+            val d = M[i, j]
+            for (k in (i - 1) downTo 0) {
+                if (mc.isZero(M[k, j])) {
+                    continue
+                }
+                var q = mc.eval { -divideToInteger(M[k, j], d) }
+                if (mc.isNegative(M[k, j])) {
+                    q = mc.increase(q)
+                }
+                M.multiplyAddRow(i, k, q, j)
+            }
+        }
+        return pivots
+    }
+
+    /**
+     * Returns the congruence diagonal normal form `J` of matrix `A` and the corresponding transformation `P`,
+     * which satisfies
+     *
+     *     P.T * A * P = J
+     *
+     * @return `(J, P)`.
+     */
+    fun <T> toCongDiagonalForm(A: GenMatrix<T>, mc: Field<T>): Pair<Matrix<T>, Matrix<T>> {
+        checkSymmetric(A, mc)
+        //Re-written by lyc at 2021-04-30 13:00
+        val n = A.row
+        val x = zero(2 * n, n, mc)
+        x.setAll(0, 0, A)
+        val one = mc.one
+        for (i in 0 until n) {
+            x[i + n, i] = one
+        }
+        var pos = 0
+        while (pos < n) {
+            if (mc.isZero(x[pos, pos])) {
+                var pi = -1
+                var pj = -1
+                SEARCH@ for (i in pos until n) {
+                    for (j in pos..i) {
+                        if (!mc.isZero(x[j, j])) {
+                            pi = i
+                            pj = j
+                            break@SEARCH
+                        }
+                    }
+                }
+                if (pj < 0) {
+                    break
+                }
+                if (pj != pos) {
+                    x.multiplyAddRow(pj, pos, one)
+                    x.multiplyAddCol(pj, pos, one)
+                }
+                x.multiplyAddRow(pi, pos, one)
+                x.multiplyAddCol(pi, pos, one)
+
+            }
+            for (i in pos + 1 until n) {
+                if (mc.isZero(x[pos, i])) {
+                    continue
+                }
+                val k = mc.negate(mc.divide(x[pos, i], x[pos, pos]))
+                x.multiplyAddRow(pos, i, k)
+                x.multiplyAddCol(pos, i, k)
+            }
+            pos++
+        }
+        val m1 = x.subMatrix(0, 0, n, n)
+        val m2 = x.subMatrix(n, 0, 2 * n, n)
+        return m1 to m2
+    }
+
+
+    fun <T> toHessenberg(matrix: GenMatrix<T>, mc: Field<T>): Matrix<T> {
+        require(matrix.isSquare)
+        val H = AMatrix.copyOf(matrix, mc)
+        val n = matrix.row
+
+        for (m in 0 until (n - 1)) {
+            println(H)
+            var i0 = m + 2
+            while (i0 < n) {
+                if (!mc.isZero(H[i0, m])) {
+                    break
+                }
+                i0++
+            }
+            if (i0 >= n) {
+                continue
+            }
+            if (!mc.isZero(H[m + 1, m])) {
+                i0 = m + 1
+            }
+//            val t = H[i, m]
+            if (i0 > m + 1) {
+                H.swapRow(i0, m + 1, m)
+                H.swapCol(i0, m + 1)
+            }
+            val t = H[m + 1, m]
+            for (i in (m + 2) until n) {
+                if (mc.isZero(H[i, m])) {
+                    continue
+                }
+                val u = mc.eval { H[i, m] / t }
+                H.multiplyAddRow(m + 1, i, mc.negate(u), m)
+                H[i, m] = mc.zero
+                H.multiplyAddCol(i, m + 1, mc.reciprocal(u))
+            }
+        }
+        return H
+
     }
 }
 
 
 fun main() {
     val ints = NumberModels.intAsIntegers()
-    val A = Matrix(5, ints) { i, j -> 0 }
+    val A = Matrix.identity(3, ints)
+//    val A = Matrix.of(2,2, ints,
+//        1, 2, 3, 4
+//    )
+    println(A.joinToString())
+    val (adj, p) = MatrixImpl.adjugateAndCharPoly(A, ints)
+    println(adj.joinToString())
+    println(p)
+    println(Polynomial.compute(p, A, Matrix.over(A.row, ints)))
+    for (k in 0..<A.row) {
+//        with(Polynomial.over(ints)){
+//            p
+//        }
+        println((A[k, k]))
+    }
 //    val A = Matrix.fromRows(
 //        listOf(
 //            Vector.of(ints, 3, 1, 1, 1),
@@ -722,5 +1295,5 @@ fun main() {
 //    println(A.joinToString())
 //    println(MatrixImpl.detGaussBareiss(A.toMutable(), mult))
 //    println(MatrixImpl.detDefinition(A, mult))
-    println(A.joinToString(limit=3))
+//    println(A.joinToString(limit = 3))
 }

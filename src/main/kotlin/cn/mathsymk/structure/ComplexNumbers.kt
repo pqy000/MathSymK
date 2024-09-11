@@ -44,7 +44,7 @@ import cn.mathsymk.model.Fraction
 /**
  * Describes the complex numbers ℂ of type [C], associated with the real numbers [R].
  */
-interface ComplexNumbers<R, C> : Field<C>, Algebra<R, C>,
+interface ComplexNumbers<R, C> : Field<C>, UnitAlgebra<R, C>,
     ProvideElementaryFunctions<C> {
 
 
