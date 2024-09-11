@@ -1,14 +1,17 @@
 package model
 
 import cn.mathsymk.model.Fraction
+import cn.mathsymk.model.NumberModels
 import cn.mathsymk.model.toFrac
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
+import kotlin.system.measureTimeMillis
+import kotlin.test.assertEquals
 
 class FractionTest {
 
     @Test
-    fun testCreate(){
+    fun testCreate() {
         val a = Fraction.of(0, 1)
         assertEquals(Fraction.ZERO, a)
         val b = Fraction.of(3, -4)
@@ -17,7 +20,7 @@ class FractionTest {
     }
 
     @Test
-    fun testLongIntToFrac(){
+    fun testLongIntToFrac() {
         val a = 3L.toFrac()
         val b = 2.toFrac()
         assertEquals(Fraction.of(3), a)
@@ -61,8 +64,6 @@ class FractionTest {
         val f = Fraction.of(1, 2)
         assertEquals("1/2", f.toString())
     }
-
-
 
 
     @Test
@@ -190,7 +191,7 @@ class FractionTest {
     }
 
     @Test
-    fun squared(){
+    fun squared() {
         val f = Fraction.of(3, 4)
         val result = f.squared()
         assertEquals(Fraction.of(9, 16), result)
@@ -319,8 +320,8 @@ class FractionTest {
     }
 
     @Test
-    fun divideToInteger(){
-        run{
+    fun divideToInteger() {
+        run {
             val f1 = Fraction.of(7, 3)
             val f2 = Fraction.of(2, 3)
             val result = f1.divideToInteger(f2)
@@ -361,34 +362,6 @@ class FractionTest {
         }
     }
 
-//    @Test
-//    fun remainderScenarios() {
-//        run {
-//            val f1 = Fraction.of(7, 3)
-//            val f2 = Fraction.of(2, 3)
-//            val result = f1.remainder(f2)
-//            assertEquals(Fraction.of(1, 3), result)
-//        }
-//        run {
-//            val f1 = Fraction.of(7, 3)
-//            val f2 = Fraction.of(1, 2)
-//            val result = f1.remainder(f2)
-//            assertEquals(Fraction.of(1, 3), result)
-//        }
-//        run {
-//            val f1 = Fraction.of(0, 1)
-//            val f2 = Fraction.of(1, 3)
-//            val result = f1.remainder(f2)
-//            assertEquals(Fraction.ZERO, result)
-//        }
-//        run {
-//            val f1 = Fraction.of(1, 2)
-//            val f2 = Fraction.of(0, 1)
-//            assertThrows(ArithmeticException::class.java) {
-//                f1.remainder(f2)
-//            }
-//        }
-//    }
 
     @Test
     fun toStringWithBracketScenarios() {
@@ -428,5 +401,63 @@ class FractionTest {
             val f = Fraction.of(0)
             assertEquals("0", f.toLatexString())
         }
+    }
+
+    @Test
+    fun testSum() {
+        run {
+            val f1 = Fraction.of(1, 2)
+            val f2 = Fraction.of(1, 3)
+            val f3 = Fraction.of(1, 6)
+            val result = Fraction.sum(f1, f2, f3)
+            assertEquals(Fraction.of(1), result)
+        }
+    }
+
+    @Test
+    fun testOverflow() {
+        run {
+            val a = Fraction.of(Long.MAX_VALUE, 1)
+            val b = Fraction.of(Long.MAX_VALUE, 1)
+            assertThrows(ArithmeticException::class.java) {
+                a + b
+            }
+        }
+
+        run {
+            val a = Fraction.of(Long.MAX_VALUE, 1)
+            val b = Fraction.of(2, 1)
+            assertThrows(ArithmeticException::class.java) {
+                a * b
+            }
+        }
+        run {
+            val a = Fraction.of(Long.MAX_VALUE, 1)
+            val b = Fraction.of(1, Long.MAX_VALUE)
+            assertThrows(ArithmeticException::class.java) {
+                a / b
+            }
+        }
+        run {
+            val a = Fraction.of(Long.MAX_VALUE, 1)
+            assertThrows(ArithmeticException::class.java) {
+                a.pow(2)
+            }
+        }
+
+        run {
+            val a = Fraction.of(7, Long.MAX_VALUE)
+            val b = Fraction.of(11, Long.MAX_VALUE)
+            assertEquals(Fraction.of(18, Long.MAX_VALUE), a + b)
+        }
+
+        run {
+            val a = Fraction.of(7, Long.MAX_VALUE)
+            val b = Fraction.of(11, Long.MAX_VALUE - 1)
+            assertThrows(ArithmeticException::class.java) {
+                a + b
+            }
+        }
+
     }
 }

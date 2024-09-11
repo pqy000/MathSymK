@@ -102,7 +102,7 @@ object NTFunctions {
 
     /**
      * Computes the greatest common divisor of two numbers and a pair of number `(u,v)` such that
-     * <pre>ua+vb=gcd(a,b)</pre>
+     * `ua+vb = gcd(a,b)`.
      *
      *
      * The result `gcd(a,b)` will always be positive.
@@ -113,7 +113,7 @@ object NTFunctions {
     @JvmStatic
     fun gcdUV(a: Int, b: Int): IntArray {
         val result = gcdUV0(
-            abs(a), abs(b)
+            Math.absExact(a), Math.absExact(b)
         )
         //deal with negative values
         if (a < 0) {
@@ -393,6 +393,21 @@ object NTFunctions {
      * @param m a positive integer
      */
     @JvmStatic
+    fun mod(a: Long, m: Int): Int {
+        var re = a % m
+        if (re < 0) {
+            re += m
+        }
+        return re.toInt()
+    }
+
+    /**
+     * Returns a non-negative integer of `a mod m`, it is required that
+     * `m` is positive.
+     *
+     * @param m a positive integer
+     */
+    @JvmStatic
     fun mod(a: Long, m: Long): Long {
         var re = a % m
         if (re < 0) {
@@ -453,24 +468,8 @@ object NTFunctions {
      * @return `(a^n) % mod`
      */
     @JvmStatic
-    @Suppress("NAME_SHADOWING")
     fun powMod(a: Int, n: Int, mod: Int): Int {
-        var a = a
-        var n = n
-        a = mod(a, mod)
-        if (a == 0 || a == 1) {
-            return a
-        }
-        var ans: Long = 1 // prevent overflow
-        a %= mod
-        while (n > 0) {
-            if ((n and 1) == 1) {
-                ans = (a * ans) % mod
-            }
-            a = (a * a) % mod
-            n = n shr 1
-        }
-        return ans.toInt()
+        return powMod(a,n.toLong(),mod)
     }
 
     /**
@@ -491,7 +490,22 @@ object NTFunctions {
      */
     @JvmStatic
     fun powMod(a: Int, n: Long, mod: Int): Int {
-        return powMod(a.toLong(), n, mod.toLong()).toInt()
+        var a1 = a
+        var n1 = n
+        a1 = mod(a1, mod)
+        if (a1 == 0 || a1 == 1) {
+            return a1
+        }
+        var res: Long = 1 // prevent overflow
+        a1 %= mod
+        while (n1 > 0) {
+            if ((n1 and 1L) == 1L) {
+                res = (a1 * res) % mod
+            }
+            a1 = (a1 * a1) % mod
+            n1 = n1 shr 1
+        }
+        return res.toInt()
     }
 
 

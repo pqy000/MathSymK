@@ -1,5 +1,6 @@
 package model
 
+import cn.mathsymk.model.IntModN
 import cn.mathsymk.model.NumberModels
 import org.junit.jupiter.api.assertThrows
 import kotlin.test.Test
@@ -65,6 +66,27 @@ class NumberModelsTest {
             val f1 = bfrac(1,2)
             val f2 = bfrac(1,3)
             assertEquals(bfrac(5,6), f1 + f2)
+        }
+    }
+
+    @Test
+    fun testIntModN(){
+        with(NumberModels.intModN(97)){
+            assertEquals(3, add(1,2))
+            assertEquals(96, subtract(1,2))
+            assertEquals(2, multiply(1,2))
+        }
+        with(NumberModels.intModN(Int.MAX_VALUE)){
+            assertEquals(3, add(1,2))
+            assertEquals(Int.MAX_VALUE - 1, subtract(1,2))
+            assertEquals(2, multiply(1,2))
+            assertEquals(9,add(Int.MAX_VALUE-1,10))
+        }
+        with(NumberModels.intModN( Int.MAX_VALUE / 2 - 1)){
+            val n = Int.MAX_VALUE / 2L - 1
+            assertEquals(3, add(1,2))
+            assertEquals(46341L * 46341 % n, multiply(46341, 46341).toLong())
+            assertEquals(46340L * 46340 % n, multiply(46340, 46340).toLong())
         }
     }
 }

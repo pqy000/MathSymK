@@ -119,23 +119,22 @@ object MathUtils {
      * @throws ArithmeticException if `p < 0` or `p==0 && n==0`.
      */
     fun pow(n: Long, p: Int): Long {
-        var n = n
-        var p = p
-        if (p < 0) {
-            throw ArithmeticException("Negative power: $p")
-        } else if (p == 0) {
+        require(p >= 0) { "power=$p should be non-negative!" }
+        if (p == 0) {
             if (n == 0L) {
                 ExceptionUtil.zeroExponent()
             }
             return 1L
         }
+        var n1 = n
+        var p1 = p
         var re = 1L
-        while (p > 0) {
-            if ((p and 1) != 0) {
-                re *= n
+        while (p1 > 0) {
+            if ((p1 and 1) != 0) {
+                re *= n1
             }
-            n *= n
-            p = p shr 1
+            n1 *= n1
+            p1 = p1 shr 1
         }
         return re
     }
@@ -148,18 +147,14 @@ object MathUtils {
      * @return n ^ p
      * @throws ArithmeticException if `p < 0` or `p==0&&n==0` or the result overflows a long
      */
-    fun powerExact(n: Long, p: Int): Long {
+    fun powExact(n: Long, p: Int): Long {
+        require(p >= 0) { "power=$p should be non-negative!" }
+        if (p == 0) {
+            if (n == 0L) throw ArithmeticException("0^0")
+            return 1L
+        }
         var n = n
         var p = p
-        if (p < 0) {
-            throw ArithmeticException("Cannot calculate as integer")
-        } else if (p == 0) {
-            if (n == 0L) {
-                throw ArithmeticException("0^0")
-            } else {
-                return 1
-            }
-        }
         var re = 1L
         while (p > 0) {
             if ((p and 1) != 0) {
@@ -597,11 +592,11 @@ object MathUtils {
     }
 
     fun product(array: LongArray): Long {
-        return array.fold(1L,Long::times)
+        return array.fold(1L, Long::times)
     }
 
     fun product(array: IntArray): Int {
-        return array.fold(1,Int::times)
+        return array.fold(1, Int::times)
     }
 
     fun sum(array: DoubleArray, start: Int, end: Int): Double {

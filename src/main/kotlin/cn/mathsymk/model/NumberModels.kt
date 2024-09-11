@@ -76,19 +76,19 @@ object IntAsIntegers : Integers<Int> {
     }
 
     override fun add(x: Int, y: Int): Int {
-        return x + y
+        return Math.addExact(x, y)
     }
 
     override fun negate(x: Int): Int {
-        return -x
+        return Math.negateExact(x)
     }
 
     override fun subtract(x: Int, y: Int): Int {
-        return x - y
+        return Math.subtractExact(x, y)
     }
 
     override fun multiply(x: Int, y: Int): Int {
-        return x * y
+        return Math.multiplyExact(x, y)
     }
 
     override fun asBigInteger(x: Int): BigInteger {
@@ -160,19 +160,19 @@ object LongAsIntegers : Integers<Long> {
     }
 
     override fun add(x: Long, y: Long): Long {
-        return x + y
+        return Math.addExact(x, y)
     }
 
     override fun negate(x: Long): Long {
-        return -x
+        return Math.negateExact(x)
     }
 
     override fun subtract(x: Long, y: Long): Long {
-        return x - y
+        return Math.subtractExact(x, y)
     }
 
     override fun multiply(x: Long, y: Long): Long {
-        return x * y
+        return Math.multiplyExact(x, y)
     }
 
     override fun asBigInteger(x: Long): BigInteger {
@@ -605,6 +605,10 @@ object BigFractionAsQuotient : RFractionOnInt<BigInteger>(BigIntegerAsIntegers),
 
     fun bfrac(n: Long, d: Long): BigFraction {
         return frac(n.toBigInteger(), d.toBigInteger())
+    }
+
+    fun bfrac(n: BigInteger, d: BigInteger): BigFraction {
+        return frac(n, d)
     }
 
     val Int.bfrac: BigFraction

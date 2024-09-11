@@ -2,6 +2,7 @@ package cn.mathsymk.model
 
 import cn.mathsymk.numberTheory.NTFunctions
 import cn.mathsymk.structure.*
+import kotlin.math.sqrt
 
 
 /**
@@ -24,6 +25,10 @@ open class IntModN(val n: Int) : OrderedRing<Int>, CommutativeRing<Int>, UnitRin
         return NTFunctions.mod(x, n)
     }
 
+    protected fun mod(x: Long): Int {
+        return NTFunctions.mod(x, n)
+    }
+
     override val zero: Int
         get() = 0
 
@@ -43,28 +48,49 @@ open class IntModN(val n: Int) : OrderedRing<Int>, CommutativeRing<Int>, UnitRin
     }
 
     override fun negate(x: Int): Int {
-        return mod(-x)
+        return mod(Math.negateExact(x))
     }
+
 
     override fun add(x: Int, y: Int): Int {
-        return mod(x + y)
+        val x1 = x % n
+        val y1 = y % n
+        if (n <= Int.MAX_VALUE / 2) {
+            // no overflow
+            return mod(x1 + y1)
+        }
+        return mod(x1.toLong() + y1.toLong())
     }
 
+    override fun subtract(x: Int, y: Int): Int {
+        val x1 = x % n
+        val y1 = y % n
+        if (n <= Int.MAX_VALUE / 2) {
+            // no overflow
+            return mod(x1 - y1)
+        }
+        return mod(x1.toLong() - y1.toLong())
+    }
+
+
     override fun multiply(x: Int, y: Int): Int {
-        return mod(x * y)
+        val x1 = x % n
+        val y1 = y % n
+        if (n <= 46341) {
+            // no overflow
+            return mod(x1 * y1)
+        }
+        return mod(x1.toLong() * y1.toLong())
     }
 
     override fun compare(o1: Int, o2: Int): Int {
         return mod(o1).compareTo(mod(o2))
     }
 
-    override fun subtract(x: Int, y: Int): Int {
-        return mod(x - y)
-    }
 
     override fun multiplyLong(x: Int, n: Long): Int {
-        val n1 = NTFunctions.mod(n, this.n.toLong()).toInt()
-        return mod(x * n1)
+        val n1 = NTFunctions.mod(n, this.n)
+        return multiply(x, n1)
     }
 
     override fun power(x: Int, n: Long): Int {
@@ -88,7 +114,7 @@ open class IntModP(p: Int) : IntModN(p), Field<Int> {
         get() = n.toLong()
 
     override fun reciprocal(x: Int): Int {
-        if(mod(x) == 0) throw ArithmeticException("Division by zero")
+        if (mod(x) == 0) throw ArithmeticException("Division by zero")
         return NTFunctions.modInverse(x, n)
     }
 
@@ -110,13 +136,13 @@ internal class IntModPCached(p: Int) : IntModP(p) {
             val q = p / x
             val r = p % x
             if (r == 0) throw ArithmeticException("p=$p is not a prime number")
-            invTable[x] = NTFunctions.mod(p - invTable[r] * q, p)
+            invTable[x] = NTFunctions.mod(p.toLong() - invTable[r].toLong() * q, p)
         }
     }
 
     override fun reciprocal(x: Int): Int {
         val m = mod(x)
-        if(m == 0) throw ArithmeticException("Division by zero")
+        if (m == 0) throw ArithmeticException("Division by zero")
         return invTable[mod(x)]
     }
 
@@ -194,3 +220,14 @@ class QuotientField<T>(val domain: EuclideanDomain<T>, val p: T) : Field<T> {
 
 }
 
+//fun main() {
+////    println(sqrt(Int.MAX_VALUE.toDouble()))
+////    println(46340 * -46340)
+////    println(46341 * 46341)
+//    val model = IntModN(Int.MAX_VALUE / 2 - 1)
+////    println(model.add(Int.MAX_VALUE-1,-10))
+//    println(model.multiply(46341, 46341))
+//    println(model.multiply(46340, 46340))
+//    println(46341L * 46341 % (Int.MAX_VALUE / 2 - 1))
+//    println(46340L * 46340 % (Int.MAX_VALUE / 2 - 1))
+//}

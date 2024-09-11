@@ -10,6 +10,9 @@ import cn.mathsymk.util.ArraySup
 import cn.mathsymk.util.MathUtils
 
 import java.io.Serializable
+import java.lang.Math.multiplyExact
+import java.lang.Math.addExact
+import java.lang.Math.subtractExact
 import java.util.regex.Pattern
 import kotlin.math.*
 
@@ -36,7 +39,7 @@ data class Fraction internal constructor(
      * Gets the denominator of this Fraction, it is a positive integer.
      * @return denominator
      */
-    val deno: Long
+    val deno: Long,
 ) : FieldModel<Fraction>, Comparable<Fraction>, Serializable {
 
     /**
@@ -108,11 +111,7 @@ data class Fraction internal constructor(
      * Returns the absolute value of this fraction.
      */
     fun abs(): Fraction {
-        return if (isNegative) {
-            -this
-        } else {
-            this
-        }
+        return if (isPositive) this else -this
     }
 
     /**
@@ -125,7 +124,7 @@ data class Fraction internal constructor(
 
         //to prevent potential overflow,simplify num and den
         val dAn = gcdReduce(n, deno)
-        val nNum = dAn[0] * nume
+        val nNum = multiplyExact(dAn[0], nume)
         //new numerator
         return Fraction(nNum, dAn[1])
     }
@@ -143,7 +142,7 @@ data class Fraction internal constructor(
 
         //to prevent potential overflow, simplify num and den
         val nAn = gcdReduce(nume, n)
-        val nDen = nAn[1] * deno
+        val nDen = multiplyExact(nAn[1], deno)
         //new numerator
         return Fraction(nAn[0], nDen)
     }
@@ -155,7 +154,7 @@ data class Fraction internal constructor(
         return if (this.isZero) {
             ZERO
         } else {
-            Fraction(-nume, deno)
+            Fraction(Math.negateExact(nume), deno)
         }
     }
 
@@ -185,12 +184,9 @@ data class Fraction internal constructor(
             return ZERO
         }
 
-        val n1D2 = gcdReduce(this.nume, y.deno)
-        val n2D1 = gcdReduce(y.nume, this.deno)
-        return Fraction(
-            n1D2[0] * n2D1[0],
-            n1D2[1] * n2D1[1]
-        )
+        val (n1, d2) = gcdReduce(this.nume, y.deno)
+        val (n2, d1) = gcdReduce(y.nume, this.deno)
+        return Fraction(multiplyExact(n1, n2), multiplyExact(d1, d2))
     }
 
     /**
@@ -206,19 +202,16 @@ data class Fraction internal constructor(
             return ZERO
         }
         //exchange y's numerator and denominator .
-        val n1D2 = gcdReduce(this.nume, y.nume)
-        val n2D1 = gcdReduce(y.deno, this.deno)
-        return adjustSign(
-            n1D2[0] * n2D1[0],
-            n1D2[1] * n2D1[1]
-        )
+        val (n1, d2) = gcdReduce(this.nume, y.nume)
+        val (n2, d1) = gcdReduce(y.deno, this.deno)
+        return adjustSign(multiplyExact(n1, n2), multiplyExact(d1, d2))
     }
 
     /**
      * Returns `this + num`.
      */
     operator fun plus(num: Long): Fraction {
-        val nNum = nume + num * deno
+        val nNum = addExact(nume, multiplyExact(num, deno))
         if (nNum == 0L) {
             return ZERO
         }
@@ -230,7 +223,7 @@ data class Fraction internal constructor(
      * Returns `this - num`.
      */
     operator fun minus(num: Long): Fraction {
-        val nNum = nume - num * deno
+        val nNum = subtractExact(nume, multiplyExact(num, deno))
         if (nNum == 0L) {
             return ZERO
         }
@@ -247,8 +240,9 @@ data class Fraction internal constructor(
         val gcd = NTFunctions.gcd(deno, y.deno)
         val b1 = deno / gcd
         val d1 = y.deno / gcd
-        val lcm = b1 * y.deno
-        val num = this.nume * d1 + y.nume * b1
+        val lcm = multiplyExact(b1, y.deno) // b1 * y.deno
+//        val num = this.nume * d1 + y.nume * b1
+        val num = addExact(multiplyExact(this.nume, d1), multiplyExact(y.nume, b1))
         return of(num, lcm)
     }
 
@@ -264,8 +258,10 @@ data class Fraction internal constructor(
         val gcd = NTFunctions.gcd(deno, y.deno)
         val b1 = deno / gcd
         val d1 = y.deno / gcd
-        val lcm = b1 * y.deno
-        val num = this.nume * d1 - y.nume * b1
+//        val lcm = b1 * y.deno
+//        val num = this.nume * d1 - y.nume * b1
+        val lcm = multiplyExact(b1, y.deno)
+        val num = subtractExact(multiplyExact(this.nume, d1), multiplyExact(y.nume, b1))
         return of(num, lcm)
     }
 
@@ -299,8 +295,8 @@ data class Fraction internal constructor(
             return ONE
         }
         val p = abs(n)
-        val nume: Long = MathUtils.pow(nume, p)
-        val deno: Long = MathUtils.pow(deno, p)
+        val nume: Long = MathUtils.powExact(nume, p)
+        val deno: Long = MathUtils.powExact(deno, p)
         return if (n > 0) {
             Fraction(nume, deno)
         } else {
@@ -308,81 +304,13 @@ data class Fraction internal constructor(
         }
     }
 
-//    /**
-//     * Returns `this^exp`, where `p` can be a fraction.
-//     *
-//     * If
-//     * the method will calculate the n-th root of `this`,but this method will
-//     * only return the positive root if there are two roots.
-//     *
-//     *
-//     * This method will throw ArithmeticException if such
-//     * operation cannot be done in Fraction.
-//     * @param exp an exponent
-//     * @return the result of `this^exp`
-//     */
-//    fun exp(exp: Fraction): Fraction {
-//
-//        if (exp.isZero) {
-//            if (this.isZero) {
-//                ExceptionUtil.zeroExponent()
-//            }
-//            return ONE
-//
-//        }
-//        if (this.isZero) {
-//            return ZERO
-//        }
-//        if (this.deno == 1L) {
-//            // +- 1
-//            if (nume == 1L) {
-//                return ONE
-//            }
-//            if (nume == -1L) {
-//                if (exp.deno % 2 == 0L) {
-//                    ExceptionUtil.sqrtForNegative()
-//                }
-//                return NEGATIVE_ONE
-//            }
-//        }
-//        if (this.isNegative) {
-//            if (exp.deno % 2 == 0L)
-//                ExceptionUtil.sqrtForNegative()
-//        }
-//        //we first check whether the Fraction b has a denominator
-//        if (exp.nume > Integer.MAX_VALUE || exp.deno > Integer.MAX_VALUE) {
-//            throw ArithmeticException("Too big in exp")
-//        }
-//        val bn = exp.nume.toInt().absoluteValue
-//        val bd = exp.deno.toInt()
-//
-//        //try it
-//        var an = this.nume.absoluteValue
-//        var ad = this.deno
-//
-//        an = MathUtils.rootN(an, bd)
-//        ad = MathUtils.rootN(ad, bd)
-//        if (an == -1L || ad == -1L) {
-//            throw ArithmeticException("Cannot Find Root")
-//        }
-//        if (this.isNegative) {
-//            an = -an
-//        }
-//        an = MathUtils.pow(an, bn)
-//        ad = MathUtils.pow(ad, bn)
-//        return if (exp.isNegative) {
-//            adjustSign(ad, an)
-//        } else {
-//            adjustSign(an, ad)
-//        }
-//    }
 
     /**
      * Returns the square of this fraction, which is equivalent to `this * this`.
      * @return `this^2`
      */
     fun squared(): Fraction {
-        return if (isZero) ZERO else Fraction(nume * nume, deno * deno)
+        return if (isZero) ZERO else Fraction(multiplyExact(nume, nume), multiplyExact(deno, deno))
     }
 
 
@@ -391,7 +319,7 @@ data class Fraction internal constructor(
      * less than or equal to this fraction.
      */
     fun floor(): Long {
-        return Math.floorDiv(nume, deno)
+        return Math.floorDivExact(nume, deno)
     }
 
     /**
@@ -403,7 +331,7 @@ data class Fraction internal constructor(
         if (isInteger) {
             return nume
         }
-        return Math.ceilDiv(nume, deno)
+        return Math.ceilDivExact(nume, deno)
     }
 
     /**
@@ -496,7 +424,11 @@ data class Fraction internal constructor(
      *
      */
     override fun compareTo(other: Fraction): Int {
-        val diff = nume * other.deno - other.nume * deno
+//        val diff = nume * other.deno - other.nume * deno
+        val gcd = NTFunctions.gcd(deno, other.deno)
+        val b1 = deno / gcd
+        val d1 = other.deno / gcd
+        val diff = subtractExact(multiplyExact(this.nume, d1), multiplyExact(other.nume, b1))
         return diff.sign
     }
 
@@ -540,7 +472,7 @@ data class Fraction internal constructor(
 
         private fun adjustSign(num: Long, den: Long): Fraction {
             return if (den < 0) {
-                Fraction(-num, -den)
+                Fraction(Math.negateExact(num), Math.negateExact(den))
             } else {
                 Fraction(num, den)
             }
@@ -584,7 +516,7 @@ data class Fraction internal constructor(
         private val maxPrecision = log10(java.lang.Long.MAX_VALUE.toDouble()).toInt() - 1
 
         /**
-         * Return a fraction that is closet to the value of `d` but is small than `d`,
+         * Return a fraction that is closet to the value of `d` but is smaller than `d`,
          * the returned fraction's both numerator and denominator are smaller than
          * 10<sup>`precision`</sup>.
          * @param d a number
@@ -595,13 +527,12 @@ data class Fraction internal constructor(
             if (precision <= 0 || precision > maxPrecision) {
                 throw IllegalArgumentException("Bad precision:$precision")
             }
-            if (d == 0.0) {
-                return ZERO
-            }
+            if (d == 0.0) return ZERO
+
             var d1 = d.absoluteValue
-            val deno = MathUtils.pow(10L, precision - 1)
+            val deno = MathUtils.powExact(10L, precision - 1)
             //		deno*= 10L;
-            while (d1 < deno.toDouble()) {
+            while (d1 < deno) {
                 d1 *= 10.0
             }
             val nume = d1.toLong()
@@ -706,7 +637,8 @@ data class Fraction internal constructor(
 
             index1--
             while (index1 > -1) {
-                val nn = array[index1] * nume + deno
+//                val nn = array[index1] * nume + deno
+                val nn = addExact(multiplyExact(array[index1], nume), deno)
                 val nd = nume
                 nume = nn
                 deno = nd
@@ -740,8 +672,10 @@ data class Fraction internal constructor(
             val result = ArrayList<Fraction>(length)
             result += Fraction(b1, c1)
             for (i in 1 until length) {
-                val b2 = array[i] * b1 + b0
-                val c2 = array[i] * c1 + c0
+//                val b2 = array[i] * b1 + b0
+//                val c2 = array[i] * c1 + c0
+                val b2 = addExact(multiplyExact(array[i], b1), b0)
+                val c2 = addExact(multiplyExact(array[i], c1), c0)
                 result += Fraction(b2, c2)
                 b0 = b1
                 b1 = b2
@@ -783,8 +717,9 @@ data class Fraction internal constructor(
                 val n1 = m.group(1).toLong()
                 val n2 = m.group(2)
                 val digits = n2.length
-                val deno = MathUtils.pow(10L, digits)
-                val nume = n1 * deno + n2.toLong()
+                val deno = MathUtils.powExact(10L, digits)
+//                val nume = n1 * deno + n2.toLong()
+                val nume = addExact(multiplyExact(n1, deno), n2.toLong())
                 return of(nume, deno)
             }
 
@@ -801,7 +736,8 @@ data class Fraction internal constructor(
          */
         @JvmStatic
         fun compareFraction(f: Fraction, n: Long): Int {
-            return java.lang.Long.signum(f.nume - f.deno * n)
+//            return java.lang.Long.signum(f.nume - f.deno * n)
+            return f.nume.compareTo(multiplyExact(f.deno, n))
         }
 
         /**
@@ -812,8 +748,7 @@ data class Fraction internal constructor(
          */
         @JvmStatic
         fun compareFraction(f: Fraction, n: Double): Int {
-            val d = f.toDouble() - n
-            return if (d < 0) -1 else if (d == 0.0) 0 else 1
+            return f.toDouble().compareTo(n)
         }
 
         /**
@@ -825,11 +760,8 @@ data class Fraction internal constructor(
                 return ZERO
             }
             return of(
-                if (signum > 0) {
-                    numerator
-                } else {
-                    -numerator
-                }, denominator
+                if (signum > 0) numerator else Math.negateExact(numerator),
+                denominator
             )
         }
 
@@ -856,10 +788,11 @@ data class Fraction internal constructor(
                 denos[index] = f.deno
             }
 
-            val lcm = NTFunctions.lcm()
+            val lcm = NTFunctions.lcm(*denos)
             var sum = 0L
             for (i in 0 until size) {
-                sum += numes[i] * (lcm / denos[i])
+//                sum += numes[i] * (lcm / denos[i])
+                sum = addExact(sum, multiplyExact(numes[i], lcm / denos[i]))
             }
             return of(sum, lcm)
         }
@@ -921,8 +854,6 @@ object FractionAsQuotient : Quotients<Fraction> {
     fun frac(n: Long, d: Long): Fraction = Fraction.of(n, d)
 
     fun frac(n: Int, d: Int): Fraction = Fraction.of(n.toLong(), d.toLong())
-
-
 
 
     override fun contains(x: Fraction): Boolean {
