@@ -15,8 +15,8 @@ repositories {
 }
 
 sourceSets {
-    create("example") {
-        kotlin.srcDir("src/example/kotlin")
+    create("samples") {
+        kotlin.srcDir("src/samples/kotlin")
         compileClasspath += sourceSets["main"].output
         runtimeClasspath += sourceSets["main"].output
     }
@@ -24,7 +24,7 @@ sourceSets {
 
 dependencies {
     testImplementation(kotlin("test"))
-    "exampleImplementation"(sourceSets["main"].output)
+    "samplesImplementation"(sourceSets["main"].output)
 }
 
 tasks.test {
