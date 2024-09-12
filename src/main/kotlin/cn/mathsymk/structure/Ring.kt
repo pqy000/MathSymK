@@ -68,6 +68,10 @@ interface UnitRing<T> : Ring<T>, MulMonoid<T> {
     }
 }
 
+fun <T> UnitRing<T>.exactDivide(a: T, n: Long): T {
+    return exactDivide(a, of(n))
+}
+
 interface CommutativeRing<T> : Ring<T>{
     override val isCommutative: Boolean
         get() = true

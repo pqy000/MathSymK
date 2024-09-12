@@ -38,6 +38,7 @@ object MathSymbols {
     const val FOR_ALL = "∀"
 
     const val ELEMENT_OF = "∈"
+    const val NOT_ELEMENT_OF = "∉"
     const val CONTAINS = "∋"
     const val SUBSET_LEFT = "⊂"
     const val SUBSET_RIGHT = "⊃"

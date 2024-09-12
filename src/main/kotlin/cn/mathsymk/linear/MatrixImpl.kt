@@ -4,6 +4,7 @@ import cn.mathsymk.model.NumberModels
 import cn.mathsymk.model.Polynomial
 import cn.mathsymk.structure.*
 import cn.mathsymk.util.IterUtils
+import cn.mathsymk.util.MathUtils
 import kotlin.collections.ArrayList
 import kotlin.math.min
 
@@ -229,6 +230,10 @@ data class AMatrix<T> internal constructor(
         return result
     }
 
+    override fun toString(): String {
+        return this.joinToString()
+    }
+
     companion object {
 
         internal inline fun <T> ofFlatten(row: Int, col: Int, model: EqualPredicate<T>, init: (Int) -> T): AMatrix<T> {
@@ -447,7 +452,7 @@ object MatrixImpl {
         return apply2(x, y, model, model::add)
     }
 
-    fun <T> negate(x: Matrix<T>, model: AddGroup<T>): Matrix<T> {
+    fun <T> negate(x: GenMatrix<T>, model: AddGroup<T>): AMatrix<T> {
         return apply1(x, model, model::negate)
     }
 
@@ -538,6 +543,12 @@ object MatrixImpl {
         require(a.row == b.row)
         return AMatrix(a.row, a.column + b.column, model) { i, j ->
             if (j < a.column) a[i, j] else b[i, j - a.column]
+        }
+    }
+
+    fun <T> addDiagonal(m: MutableMatrix<T>, a: T, model: AddSemigroup<T>) {
+        for (i in 0..<min(m.row, m.column)) {
+            m[i, i] = model.add(m[i, i], a)
         }
     }
 
@@ -795,7 +806,7 @@ object MatrixImpl {
         Reference: A course in computational algebraic number theory, Algorithm 2.2.7
 
          */
-        val M = AMatrix.copyOf(matrix, mc)
+        val M = matrix
         val n = M.row
         var C = identity(n, mc)
         val aList = ArrayList<T>(n + 1)
@@ -808,7 +819,7 @@ object MatrixImpl {
             }
             aList += ak
         }
-        aList += mc.eval { -exactDivide((M * C).trace(), of(n.toLong())) }
+        aList += mc.eval { -exactDivide(matmul(M,C,mc).trace(), of(n.toLong())) }
         val p = Polynomial.fromList(mc, aList.asReversed())
         if (n % 2 == 0) {
             C.negateInPlace()
@@ -820,7 +831,49 @@ object MatrixImpl {
      * Gets the characteristic polynomial of the given matrix, which is defined as `det(xI - A)`.
      */
     fun <T> charPoly(matrix: GenMatrix<T>, mc: UnitRing<T>): Polynomial<T> {
-        return adjugateAndCharPoly(matrix, mc).second
+        /*
+        Written by Ezrnest at 2024/9/12
+        f(x) = det(xI - A) = \sum a_r x^r = \prod (x - λ_i)
+        a_n = 1, a_{n-1} = -\sum_{i=1}^n λ_i, a_{n-2} = \sum_{i<j} λ_i λ_j, ...
+        a_{n-k} = (-1)^k \sum_{i_1 < i_2 < ... < i_k} λ_{i_1} λ_{i_2} ... λ_{i_k}.
+        Let us denote by α a multi-index with distinct elements and λ^α = λ_{α_1} λ_{α_2} ... λ_{α_k}.
+        Then a_{n-k} = (-1)^k \sum_{|α| = k} λ^α.
+        We recall the fact: Tr(A) = \sum λ_i,  Tr(g(A)) = \sum g(λ_i).
+        We aim to obtain matrices A_k = g_k(A) with
+            λ_i(A_k) = (-1)^k \sum_{|α| = k, i ∈ α} λ^α, => Tr(A_k) = k a_{n-k} (since |α| = k and each 'i' appears k times)
+        Let us deduce the recursive formula for A_k: A_1 = -A
+        λ_i(A_{k+1}) = (-1)^{k+1} \sum_{|α| = k+1, i ∈ α} λ^α = (-1)^{k+1} \sum_{|α| = k, i ∉ α} λ^α λ_i
+                     = (-1)^{k+1} (\sum_{|α| = k} λ^α - \sum_{|α| = k, i ∈ α} λ^α) λ_i
+                     = (- a_{n-k} + λ_i(A_k)) λ_i
+        Therefore, we have the recursive formula:
+            A_{k+1} = (A_k - a_{n-k} I) A, a_{n-k} = Tr(A_k) / k
+            g_{k+1}(x) = (-a_{n-k} + g_k(x)) x
+        Now, the recursive formula of g_k actually shows that g_{k+1} = -(a_{n-k} + a_{n-k+1} x + ... + a_n x^{n-k}) x
+
+        Now, for the adjugate A^*, we have A^* A = det(A) I, while f(A) = a_0 + a_1 A + ... + a_n A^n = 0, a_0 = (-1)^n det(A)
+        so A (a_1 + a_2 A + ... + a_n A^{n-1}) = (-1)^{n+1} det(A) I, namely
+        A^* = (-1)^{n+1} (a_1 + a_2 A + ... + a_n A^{n-1}) = (-1)^n (-a_1 + g_{n-1}(x))
+        In comparison with the recursive formula of g_k, we find that
+
+         */
+        require(matrix.isSquare)
+        val n = matrix.row
+        val A = matrix
+        val aList = ArrayList<T>(n + 1) // a list of coefficients in reverse order
+        aList += mc.one // a_n = 1
+        var Ak = negate(A, mc)
+        var k = 1
+        while (true) {
+            val tr = trace(Ak, mc)
+            val ak = mc.exactDivide(tr, k.toLong())
+            aList += ak
+            if (k == n) break
+            addDiagonal(Ak, mc.negate(ak), mc)
+            Ak = matmul(Ak, A, mc)
+            println(Ak)
+            k++
+        }
+        return Polynomial.fromList(mc, aList.asReversed())
     }
 
 
@@ -1264,22 +1317,34 @@ object MatrixImpl {
 
 
 fun main() {
-    val ints = NumberModels.intAsIntegers()
-    val A = Matrix.identity(3, ints)
+    val Z = NumberModels.intAsIntegers()
+//    val A = Matrix.identity(3, ints)
 //    val A = Matrix.of(2,2, ints,
 //        1, 2, 3, 4
 //    )
+    val A = Matrix(3, Z) { i, j -> i + j }
     println(A.joinToString())
-    val (adj, p) = MatrixImpl.adjugateAndCharPoly(A, ints)
+    val (adj, p) = MatrixImpl.adjugateAndCharPoly(A, Z)
+    println("Adjugate:")
     println(adj.joinToString())
+    println("Char poly:")
     println(p)
-    println(Polynomial.compute(p, A, Matrix.over(A.row, ints)))
-    for (k in 0..<A.row) {
-//        with(Polynomial.over(ints)){
-//            p
-//        }
-        println((A[k, k]))
+    println(MatrixImpl.charPoly(A, Z))
+    val polyZ = Polynomial.over(Z)
+    with(polyZ) {
+        val I = Matrix.identity(A.row,polyZ)
+        (I * x - A.mapTo(polyZ,polyZ::constant)).det().also { println(it) }
     }
+//    println(Polynomial.compute(p, A, Matrix.over(A.row, ints)).joinToString())
+    (1..A.row).map { k ->
+        var res = Z.zero
+        for (rows in IterUtils.comb(A.row, k, false)) {
+//            println(rows.joinToString())
+            val major = A.slice(rows, rows).det()
+            res += major
+        }
+        res * MathUtils.pow(-1, k)
+    }.also { println(it) }
 //    val A = Matrix.fromRows(
 //        listOf(
 //            Vector.of(ints, 3, 1, 1, 1),
