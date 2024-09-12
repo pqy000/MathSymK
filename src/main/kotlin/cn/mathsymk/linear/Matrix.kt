@@ -286,7 +286,7 @@ interface Matrix<T> : GenMatrix<T>, ModeledMathObject<T, EqualPredicate<T>>,
             return zero(n, n, model)
         }
 
-        fun <T> diag(elements: List<T>, model: AddMonoid<T>): Matrix<T> {
+        fun <T> diag(model: AddMonoid<T>, elements: List<T>): Matrix<T> {
             val n = elements.size
             val zero = MatrixImpl.zero(n, n, model)
             for (i in 0 until n) {
@@ -296,7 +296,15 @@ interface Matrix<T> : GenMatrix<T>, ModeledMathObject<T, EqualPredicate<T>>,
         }
 
         fun <T> diag(model: AddMonoid<T>, vararg elements: T): Matrix<T> {
-            return diag(elements.asList(), model)
+            return diag(model, elements.asList())
+        }
+
+        fun <T> scalar(n : Int, model : AddMonoid<T>, k : T): Matrix<T> {
+            val mat = MatrixImpl.zero(n, n, model)
+            for (i in 0..<n) {
+                mat[i,i] = k
+            }
+            return mat
         }
 
         fun <T> identity(n: Int, model: UnitRing<T>): Matrix<T> {
