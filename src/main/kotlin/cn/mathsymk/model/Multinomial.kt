@@ -351,12 +351,18 @@ internal constructor(
     Term-wise operations
      */
 
-    override fun keyMultiply(k1: TermChs, k2: TermChs): TermChs {
-        return TermChs.multiplyChars(k1, k2, termOrder.chOrder)
+//    override fun keyMultiply(k1: TermChs, k2: TermChs): TermChs {
+//        return TermChs.multiplyChars(k1, k2, termOrder.chOrder)
+//    }
+    override fun termMultiply(t1: Term<T, TermChs>, t2: Term<T, TermChs>): Term<T, TermChs>? {
+        val c = model.multiply(t1.c, t2.c)
+        if(model.isZero(c)) return null
+        val chs = TermChs.multiplyChars(t1.key, t2.key, termOrder.chOrder)
+        return Term(c, chs)
     }
 
     private fun times(t: MTerm<T>): Multinomial<T> {
-        return mapTermsPossiblyZero { MTerm(model.multiply(t.c, it.c), keyMultiply(t.key, it.key)) }
+        return mapTermsPossiblyZero { termMultiply(it, t) }
     }
 
     /*

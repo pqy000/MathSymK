@@ -85,9 +85,9 @@ abstract class AbstractMultinomial<T, K, C : Comparator<K>, R : AbstractMultinom
         return fromTerms(newTerms)
     }
 
-    protected inline fun mapTermsPossiblyZero(transform: (Term<T, K>) -> Term<T, K>): R {
+    protected inline fun mapTermsPossiblyZero(transform: (Term<T, K>) -> Term<T, K>?): R {
         val newTerms = terms.mapNotNullTo(ArrayList(terms.size)) { t ->
-            transform(t).takeUnless { model.isZero(it.c) }
+            transform(t)?.takeUnless { model.isZero(it.c) }
         }
         return fromTerms(newTerms)
     }
@@ -124,11 +124,8 @@ abstract class AbstractMultinomial<T, K, C : Comparator<K>, R : AbstractMultinom
     }
 
 
-    protected abstract fun keyMultiply(k1: K, k2: K): K
 
-    protected fun multiply2Term(t1: Term<T, K>, t2: Term<T, K>): Term<T, K> {
-        return Term(model.multiply(t1.c, t2.c), keyMultiply(t1.key, t2.key))
-    }
+    protected abstract fun termMultiply(t1: Term<T, K>, t2: Term<T, K>): Term<T, K>?
 
     override fun plus(y: R): R {
         return addTermList2(terms, y.terms)
@@ -150,10 +147,8 @@ abstract class AbstractMultinomial<T, K, C : Comparator<K>, R : AbstractMultinom
         val result = ArrayList<Term<T, K>>(a.size * b.size)
         for (ai in a) {
             for (bj in b) {
-                val v = model.multiply(ai.c, bj.c)
-                if (model.isZero(v)) continue
-                val newKey = keyMultiply(ai.key, bj.key)
-                result.add(Term(v, newKey))
+                val t = termMultiply(ai, bj) ?: continue
+                result.add(t)
             }
         }
         val merged = mergeTerms(model, comparatorTerm, result)
