@@ -4,12 +4,18 @@ import TestUtils.assertEquals
 import TestUtils.assertValueEquals
 import cn.mathsymk.linear.Matrix
 import cn.mathsymk.linear.MatrixImpl
+import cn.mathsymk.linear.MatrixUtils.charPoly
 import cn.mathsymk.linear.toMutable
 import cn.mathsymk.model.Multinomial
 import cn.mathsymk.model.NumberModels
+import cn.mathsymk.model.Polynomial
+import cn.mathsymk.util.IterUtils
+import cn.mathsymk.util.MathUtils
+import cn.mathsymk.util.pow
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class MatrixTest {
     val Z = NumberModels.intAsIntegers()
@@ -85,4 +91,45 @@ class MatrixTest {
         assertThrows<IllegalArgumentException> { nonSquare.inv() }
     }
 
+    @Test
+    fun testMatrixCharPoly() {
+        val ℤ = NumberModels.intAsIntegers()
+        val n = 4
+        val A = Matrix(n, ℤ) { i, j -> i + 2 * j }
+        val p = A.charPoly() // the characteristic polynomial of A, p(λ) = det(λI - A)
+        ℤ.assertEquals(A.trace(), -p[n - 1])
+        ℤ.assertEquals(A.det(), (-1).pow(n) * p[0])
+
+        // another way to compute the characteristic polynomial
+        // sum of all principal minors of A
+        run {
+            val coef = (0..n).map { k ->
+                if (k == n) return@map ℤ.one
+                var res = ℤ.zero
+                for (rows in IterUtils.comb(A.row, n - k, false)) {
+                    val major = A.slice(rows, rows).det()
+                    res += major
+                }
+                res * MathUtils.powOfMinusOne(k)
+            }
+            val p2 = Polynomial.fromList(ℤ, coef)
+            assertValueEquals(p, p2)
+        }
+
+        val matOverZ = Matrix.over(n, ℤ)
+        assertTrue(p.substitute(A, matOverZ).isZero) // p(A) = 0, a matrix of zeros
+    }
+
+    @Test
+    fun testDet() {
+        val mult = Multinomial.over(Z)
+        val A = Matrix(3, 3, mult) { i, j ->
+            mult.monomial("($i$j)")
+        }
+        val det3 = MatrixImpl.detSmall(A, mult)
+        val detGB = MatrixImpl.detGaussBareiss(A, mult)
+        val detDef = MatrixImpl.detDefinition(A, mult)
+        mult.assertEquals(det3, detGB)
+        mult.assertEquals(det3, detDef)
+    }
 }

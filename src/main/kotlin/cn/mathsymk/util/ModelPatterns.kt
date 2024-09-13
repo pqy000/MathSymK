@@ -1,5 +1,7 @@
 package cn.mathsymk.util
 
+import java.util.ArrayList
+import java.util.Collections
 import java.util.function.*
 import java.util.function.Function
 
@@ -196,7 +198,7 @@ object ModelPatterns {
      * @param multiply computes the 'multiplication' formally
      */
     @JvmStatic
-    inline fun <T> binaryProduce(pow: Long, start: T, x: T, multiply: (T,T)->T): T {
+    inline fun <T> binaryProduce(pow: Long, start: T, x: T, multiply: (T, T) -> T): T {
         require(pow >= 0) { "p>0 is required, given $pow" }
         if (pow == 0L) {
             return start
@@ -450,28 +452,26 @@ object ModelPatterns {
      * @param toModel        a function to covert a real object to an abstract model for computing time cost
      * @param modelTimeCost  a function to compute the time cost of a model
      */
-    @Suppress("UNCHECKED_CAST")
     fun <T, R> reduceDP(
         startInclusive: Int, endExclusive: Int, get: IntFunction<T>,
         operation: BinaryOperator<T>,
         toModel: Function<T, R>,
-        modelOperation: BinaryOperator<R?>,
-        modelTimeCost: ToIntBiFunction<R?, R?>
+        modelOperation: BinaryOperator<R>,
+        modelTimeCost: ToIntBiFunction<R, R>
     ): T {
         //dynamic programming
         val size = endExclusive - startInclusive
-        require(size > 0) { "startInclusive>=endExclusive" }
-        if (size == 1) {
-            return get.apply(startInclusive)
-        } else if (size == 2) {
-            return operation.apply(get.apply(startInclusive), get.apply(startInclusive + 1))
-        }
+        require(size > 0) { "startInclusive >= endExclusive" }
+        if (size == 1) return get.apply(startInclusive)
+        if (size == 2) return operation.apply(get.apply(startInclusive), get.apply(startInclusive + 1))
 
-        val models = Array(size) { arrayOfNulls<Any>(size) } as Array<Array<R?>> //TODO
+        val models = Array(size) {
+            ArrayList<R?>(size).also { it.addAll(Collections.nCopies(size, null)) }
+        }
         for (i in 0 until size) {
             models[i][i] = toModel.apply(get.apply(i))
         }
-        val partitions = computeTimeCost<R?>(size, models, modelOperation, modelTimeCost)
+        val partitions = computeTimeCost(size, models, modelOperation, modelTimeCost)
         return recurReduce(partitions, 0, size - 1, get, operation)
     }
 
@@ -479,7 +479,7 @@ object ModelPatterns {
      * Computes the time cost and returns an array contains the best partition.
      */
     private fun <R> computeTimeCost(
-        size: Int, models: Array<Array<R>>,
+        size: Int, models: Array<ArrayList<R?>>,
         modelOp: BinaryOperator<R>, timeCost: ToIntBiFunction<R, R>
     ): Array<IntArray> {
         val partitions = Array(size) { IntArray(size) }
@@ -496,8 +496,8 @@ object ModelPatterns {
                 var minSplit = 0
                 var minModel: R? = null
                 for (r in 0 until d) {
-                    val modelLeft = models[i][i + r]
-                    val modelRight = models[i + r + 1][j]
+                    val modelLeft = models[i][i + r] !!
+                    val modelRight = models[i + r + 1][j] !!
                     val cost: Int = timeCost.applyAsInt(modelLeft, modelRight) + costs[i][i + r] + costs[i + r + 1][j]
                     if (minModel == null || cost < minCost) {
                         val combined: R = modelOp.apply(modelLeft, modelRight)
@@ -524,6 +524,7 @@ object ModelPatterns {
         get: IntFunction<T>,
         combine: BinaryOperator<T>
     ): T {
+        // TODO: rewrite this method to avoid recursion
         if (startInclusive == endInclusive) {
             return get.apply(startInclusive)
         }
@@ -531,8 +532,8 @@ object ModelPatterns {
             return combine.apply(get.apply(startInclusive), get.apply(endInclusive))
         }
         val split = partitions[startInclusive][endInclusive]
-        val left = recurReduce<T>(partitions, startInclusive, startInclusive + split, get, combine)
-        val right = recurReduce<T>(partitions, startInclusive + split + 1, endInclusive, get, combine)
+        val left = recurReduce(partitions, startInclusive, startInclusive + split, get, combine)
+        val right = recurReduce(partitions, startInclusive + split + 1, endInclusive, get, combine)
         return combine.apply(left, right)
     }
 

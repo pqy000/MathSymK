@@ -96,20 +96,6 @@ object MathUtils {
         return sqrt * sqrt == n
     }
 
-    //    /**
-    //     * Power using binary reduce.
-    //     */
-    //    private static long powerF(long n, int p) {
-    //        long re = 1L;
-    //        while (p > 0) {
-    //            if ((p & 1) != 0) {
-    //                re *= n;
-    //            }
-    //            n *= n;
-    //            p >>= 1;
-    //        }
-    //        return re;
-    //    }
     /**
      * Return the value of `n^p`.
      *
@@ -122,6 +108,35 @@ object MathUtils {
         require(p >= 0) { "power=$p should be non-negative!" }
         if (p == 0) {
             if (n == 0L) {
+                ExceptionUtil.zeroExponent()
+            }
+            return 1L
+        }
+        var n1 = n
+        var p1 = p
+        var re = 1L
+        while (p1 > 0) {
+            if ((p1 and 1) != 0) {
+                re *= n1
+            }
+            n1 *= n1
+            p1 = p1 shr 1
+        }
+        return re
+    }
+
+    /**
+     * Return the value of `n^p`.
+     *
+     * @param n a number
+     * @param p a non-negative integer
+     * @return `n^p`.
+     * @throws ArithmeticException if `p < 0` or `p==0 && n==0`.
+     */
+    fun pow(n: Int, p: Int): Long {
+        require(p >= 0) { "power=$p should be non-negative!" }
+        if (p == 0) {
+            if (n == 0) {
                 ExceptionUtil.zeroExponent()
             }
             return 1L
@@ -165,6 +180,8 @@ object MathUtils {
         }
         return re
     }
+
+
 
 
     /**
@@ -650,4 +667,9 @@ object MathUtils {
         return result
     }
 
+}
+
+
+infix fun Int.pow(p: Int): Int {
+    return MathUtils.pow(this, p).toInt()
 }

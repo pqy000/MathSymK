@@ -124,10 +124,21 @@ interface Matrix<T> : GenMatrix<T>, ModeledMathObject<T, EqualPredicate<T>>,
         return MatrixImpl.inverse(this, model as UnitRing)
     }
 
+    /**
+     * Computes the determinant of this matrix.
+     *
+     * The determinant is defined as:
+     *
+     *     det(A) = \sum_{σ ∈ S_n} (-1)^σ \prod_{i=1}^n A_{i, σ(i)}.
+     *
+     */
     fun det(): T {
         return MatrixImpl.det(this, model as Ring)
     }
 
+    /**
+     * Computes the rank of this matrix.
+     */
     fun rank(): Int {
         TODO()
     }
@@ -137,12 +148,14 @@ interface Matrix<T> : GenMatrix<T>, ModeledMathObject<T, EqualPredicate<T>>,
      *
      * It is required that this matrix is square.
      *
-     * @return `tr(this)`
      */
     fun trace(): T {
         return MatrixImpl.trace(this, model as AddSemigroup<T>)
     }
 
+    /**
+     * Gets the diagonal of this matrix as a vector.
+     */
     fun diag(): Vector<T> {
         require(isSquare)
         return Vector(row, model) { i -> this[i, i] }
@@ -202,7 +215,7 @@ interface Matrix<T> : GenMatrix<T>, ModeledMathObject<T, EqualPredicate<T>>,
         return slice(rows, cols)
     }
 
-    fun minor(rows : IntArray, cols : IntArray): Matrix<T> {
+    fun minor(rows: IntArray, cols: IntArray): Matrix<T> {
         val remRows = remainingIndices(row, rows)
         val remCols = remainingIndices(column, cols)
         return slice(remRows, remCols)
@@ -220,9 +233,17 @@ interface Matrix<T> : GenMatrix<T>, ModeledMathObject<T, EqualPredicate<T>>,
         return if ((i + j) % 2 == 0) t else model.negate(t)
     }
 
+    /**
+     * Returns the adjugate of this matrix, which is defined as the transpose of the matrix of cofactors:
+     *
+     *    adj(A) = (C(i, j))_{i,j}^T
+     *
+     * If `A` is invertible, then `A * adjugate(A) = det(A) * I`.
+     */
     fun adjugate(): Matrix<T> {
         return MatrixImpl.adjugate(this, model as Ring)
     }
+
 
     companion object {
         operator fun <T> invoke(row: Int, column: Int, model: EqualPredicate<T>, init: (Int, Int) -> T): Matrix<T> {
@@ -243,8 +264,7 @@ interface Matrix<T> : GenMatrix<T>, ModeledMathObject<T, EqualPredicate<T>>,
         }
 
         fun <T> product(matrices: List<Matrix<T>>): Matrix<T> {
-            return matrices.reduce { acc, matrix -> acc.matmul(matrix) }
-            // TODO optimize
+            return MatrixImpl.product(matrices, matrices.first().model as Ring)
         }
 
         /**
@@ -299,10 +319,10 @@ interface Matrix<T> : GenMatrix<T>, ModeledMathObject<T, EqualPredicate<T>>,
             return diag(model, elements.asList())
         }
 
-        fun <T> scalar(n : Int, model : AddMonoid<T>, k : T): Matrix<T> {
+        fun <T> scalar(n: Int, model: AddMonoid<T>, k: T): Matrix<T> {
             val mat = MatrixImpl.zero(n, n, model)
             for (i in 0..<n) {
-                mat[i,i] = k
+                mat[i, i] = k
             }
             return mat
         }
@@ -320,46 +340,25 @@ interface Matrix<T> : GenMatrix<T>, ModeledMathObject<T, EqualPredicate<T>>,
         /**
          * Gets the model of `n × n` matrices over the given model.
          */
-        fun <T> over(n : Int, model : UnitRing<T>): UnitRingModule<T, Matrix<T>> {
-            return object : UnitRingModule<T, Matrix<T>> {
-                override val scalars: UnitRing<T>
-                    get() = model
-
-                override fun fromScalar(r: T): Matrix<T> {
-                    return Matrix.identity(n, model) * r
-                }
-
-                override fun scalarMul(k: T, v: Matrix<T>): Matrix<T> {
-                    return v * k
-                }
-
-                override fun isEqual(x: Matrix<T>, y: Matrix<T>): Boolean {
-                    return x.valueEquals(y)
-                }
-
-                override fun negate(x: Matrix<T>): Matrix<T> {
-                    return -x
-                }
-
-                override val zero: Matrix<T>
-                    get() = zero(n, model)
-
-                override fun contains(x: Matrix<T>): Boolean {
-                    return x.row == n && x.column == n
-                }
-
-                override fun add(x: Matrix<T>, y: Matrix<T>): Matrix<T> {
-                    return x + y
-                }
-
-                override fun multiply(x: Matrix<T>, y: Matrix<T>): Matrix<T> {
-                    return x matmul y
-                }
-
-                override val one: Matrix<T>
-                    get() = identity(n, model)
-            }
+        fun <T> over(n: Int, model: UnitRing<T>): UnitRingModule<T, Matrix<T>> {
+            return SqMatOverURing(n, model)
         }
+
+        /**
+         * Gets the model of `n × n` matrices over the given field.
+         */
+        fun <T> over(n: Int, model: Field<T>): SqMatOverField<T> {
+            return SqMatOverField(n, model)
+        }
+
+        /**
+         * Gets the model of general linear group `GL(n)`.
+         */
+        fun <T> generalLinear(n: Int, model: UnitRing<T>): GeneralLinearGroup<T> {
+            return GeneralLinearGroup(n, model)
+        }
+
+
     }
 }
 
@@ -447,6 +446,11 @@ interface MutableMatrix<T> : Matrix<T> {
 
     fun copy(): MutableMatrix<T>
 
+    operator fun plusAssign(y: Matrix<T>) {
+        val model = model as AddSemigroup
+        transform { i, j, t -> model.add(t, y[i, j]) }
+    }
+
     operator fun timesAssign(k: T) {
         val model = model as MulSemigroup
         transform { _, _, t -> model.multiply(t, k) }
@@ -521,7 +525,6 @@ interface MutableMatrix<T> : Matrix<T> {
         colStart: Int = 0, colEnd: Int = column
     )
 
-
     fun negateInPlace()
 
     companion object {
@@ -557,4 +560,145 @@ inline fun <T> MutableMatrix<T>.transform(f: (Int, Int, T) -> T) {
     }
 }
 
+open class MatOverModel<T>(val row: Int, val col: Int, open val model: EqualPredicate<T>) {
+    fun mat(init: (Int, Int) -> T): Matrix<T> {
+        return Matrix(row, col, model, init)
+    }
 
+    fun mat(vararg elements: T): Matrix<T> {
+        return Matrix.of(row, col, model, *elements)
+    }
+}
+
+
+open class MatOverAGroup<T>(row: Int, col: Int, override val scalars: Ring<T>) : MatOverModel<T>(row, col, scalars),
+    Module<T, Matrix<T>> {
+    override fun contains(x: Matrix<T>): Boolean {
+        return x.row == row && x.column == col
+    }
+
+    override fun isEqual(x: Matrix<T>, y: Matrix<T>): Boolean {
+        require(x in this && y in this)
+        return MatrixImpl.isEqual(x, y, scalars)
+    }
+
+    override fun scalarMul(k: T, v: Matrix<T>): Matrix<T> {
+        require(v in this)
+        return MatrixImpl.multiply(v, k, scalars)
+    }
+
+    override val zero: Matrix<T>
+        get() = Matrix.zero(row, col, scalars)
+
+    override fun isZero(x: Matrix<T>): Boolean {
+        require(x in this)
+        return MatrixImpl.isZero(x, scalars)
+    }
+
+    override fun negate(x: Matrix<T>): Matrix<T> {
+        require(x in this)
+        return MatrixImpl.negate(x, scalars)
+    }
+
+    override fun add(x: Matrix<T>, y: Matrix<T>): Matrix<T> {
+        require(x in this && y in this)
+        return MatrixImpl.add(x, y, scalars)
+    }
+
+    override fun subtract(x: Matrix<T>, y: Matrix<T>): Matrix<T> {
+        require(x in this && y in this)
+        return MatrixImpl.subtract(x, y, scalars)
+    }
+
+    override fun multiplyLong(x: Matrix<T>, n: Long): Matrix<T> {
+        require(x in this)
+        return MatrixImpl.multiplyLong(x, n, scalars)
+    }
+}
+
+
+open class SqMatOverURing<T>(n: Int, override val scalars: UnitRing<T>) :
+    MatOverAGroup<T>(n, n, scalars),
+    UnitRingModule<T, Matrix<T>> {
+
+    inline val n: Int get() = row
+
+    override fun contains(x: Matrix<T>): Boolean {
+        return x.row == n && x.column == n
+    }
+
+    override val one: Matrix<T>
+        get() = Matrix.identity(n, scalars)
+
+    override fun multiply(x: Matrix<T>, y: Matrix<T>): Matrix<T> {
+        require(x in this && y in this)
+        return MatrixImpl.matmul(x, y, scalars)
+    }
+
+    override fun fromScalar(r: T): Matrix<T> {
+        return Matrix.scalar(n, scalars, r)
+    }
+
+    override fun product(ps: List<Matrix<T>>): Matrix<T> {
+        if (ps.isEmpty()) return one
+        require(ps.all { it in this })
+        return MatrixImpl.product(ps, scalars)
+    }
+
+    override fun sum(elements: List<Matrix<T>>): Matrix<T> {
+        require(elements.all { it in this })
+        return MatrixImpl.sum(elements, scalars)
+    }
+
+    override fun isUnit(x: Matrix<T>): Boolean {
+        return scalars.isUnit(x.det())
+    }
+
+    fun isInvertible(x: Matrix<T>): Boolean {
+        return MatrixImpl.isInvertible(x, scalars)
+    }
+
+    fun inverse(x: Matrix<T>): Matrix<T> {
+        return MatrixImpl.inverse(x, scalars)
+    }
+}
+
+open class SqMatOverField<T>(n: Int, override val scalars: Field<T>) :
+    SqMatOverURing<T>(n, scalars), Algebra<T, Matrix<T>> {
+    override fun scalarDiv(x: Matrix<T>, k: T): Matrix<T> {
+        require(x in this)
+        return MatrixImpl.divide(x, k, scalars)
+    }
+
+
+}
+
+open class GeneralLinearGroup<T>(val n: Int, override val model: UnitRing<T>) :
+    MatOverModel<T>(n, n, model), MulGroup<Matrix<T>> {
+    override fun contains(x: Matrix<T>): Boolean {
+        return x.row == n && x.column == n && MatrixImpl.isInvertible(x, model)
+    }
+
+    override fun isEqual(x: Matrix<T>, y: Matrix<T>): Boolean {
+        require(x in this && y in this)
+        return MatrixImpl.isEqual(x, y, model)
+    }
+
+    override fun multiply(x: Matrix<T>, y: Matrix<T>): Matrix<T> {
+        require(x in this && y in this)
+        return MatrixImpl.matmul(x, y, model)
+    }
+
+    override fun reciprocal(x: Matrix<T>): Matrix<T> {
+        return MatrixImpl.inverse(x, model)
+    }
+
+    override val one: Matrix<T>
+        get() = Matrix.identity(n, model)
+
+    override fun product(ps: List<Matrix<T>>): Matrix<T> {
+        if (ps.isEmpty()) return one
+        require(ps.all { it in this })
+        return MatrixImpl.product(ps, model)
+    }
+}
