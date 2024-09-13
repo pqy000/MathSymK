@@ -134,11 +134,11 @@ data class Polynomial<T> internal constructor(
         return format("x")
     }
 
-    fun format(ch: String): String {
+    fun format(ch: String, bracket : Boolean = false): String {
         if (isZero) return "0"
         val isOne = AbstractMultinomial.isOneFromModel(model)
         val isNegativeAndAbs = AbstractMultinomial.isNegativeAndAbsFromModel(model)
-        val transform = Any?::toString
+        val transform = if(bracket) { t : T -> "($t)" } else { t : T -> t.toString() }
         return stringOf(this, ch, isOne, isNegativeAndAbs, transform)
     }
 
@@ -563,7 +563,7 @@ data class Polynomial<T> internal constructor(
                     if (isOne(v)) {
                         sb.append(ch)
                     } else {
-                        sb.append(v).append("*").append(ch)
+                        sb.append(valueString).append("*").append(ch)
                     }
                     if (pow != 1) {
                         sb.append("^").append(pow)
