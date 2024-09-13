@@ -108,6 +108,9 @@ data class Polynomial<T> internal constructor(
 //    val constantTerm: PTerm<T>
 //        get() = terms.firstOrNull() ?: PTerm(0, model.zero)
 
+    /**
+     * Gets the coefficient of the constant term of this polynomial.
+     */
     val constantCoef: T
         get() = terms.firstOrNull()?.value ?: model.zero
 
@@ -128,18 +131,15 @@ data class Polynomial<T> internal constructor(
      */
 
     override fun toString(): String {
-        if (isZero) {
-            return "0"
-        }
-        return terms.reversed().joinToString(" + ") { (index, value) ->
-            if (index == 0) {
-                value.toString()
-            } else if (index == 1) {
-                "$value*x"
-            } else {
-                "$value*x^$index"
-            }
-        }
+        return format("x")
+    }
+
+    fun format(ch: String): String {
+        if (isZero) return "0"
+        val isOne = AbstractMultinomial.isOneFromModel(model)
+        val isNegativeAndAbs = AbstractMultinomial.isNegativeAndAbsFromModel(model)
+        val transform = Any?::toString
+        return stringOf(this, ch, isOne, isNegativeAndAbs, transform)
     }
 
     override fun valueEquals(obj: ValueEquatable<T>): Boolean {
@@ -170,7 +170,11 @@ data class Polynomial<T> internal constructor(
      * Apply this polynomial to a value `x` and returns the result.
      */
     override fun apply(x: T): T {
-        return compute(this, x, model::zero, { it }, model::add, model::multiply, model::power)
+        return computeGeneral(this, x, model::zero, { it }, model::add, model::multiply, model::power)
+    }
+
+    fun <M> substitute(x: M, model: UnitRingModule<T, M>): M {
+        return compute(this, x, model)
     }
 
 //    fun apply(x : Module<T>)
@@ -528,6 +532,47 @@ data class Polynomial<T> internal constructor(
 
 
     companion object {
+
+
+        private fun <T> stringOf(
+            p: Polynomial<T>, ch: String,
+            isOne: (T) -> Boolean, isNegativeAndAbs: (T) -> Pair<Boolean, T>,
+            transform: (T) -> String,
+            highOrderFirst: Boolean = true
+        ): String {
+            if (p.isZero) return "0"
+            val terms = if (highOrderFirst) p.terms.asReversed() else p.terms
+            val sb = StringBuilder()
+            for (element in terms) {
+                val (isNeg, v) = isNegativeAndAbs(element.value)
+                if (sb.isEmpty()) {
+                    if (isNeg) sb.append("-")
+                } else {
+                    if (isNeg) {
+                        sb.append(" - ")
+                    } else {
+                        sb.append(" + ")
+                    }
+                }
+
+                val valueString = transform(v)
+                val pow = element.pow
+                if (pow == 0) {
+                    sb.append(valueString)
+                } else {
+                    if (isOne(v)) {
+                        sb.append(ch)
+                    } else {
+                        sb.append(v).append("*").append(ch)
+                    }
+                    if (pow != 1) {
+                        sb.append("^").append(pow)
+                    }
+                }
+            }
+            return sb.toString()
+        }
+
         private inline fun <T, R> mapTermsPossiblyZeroT(
             terms: List<PTerm<T>>,
             model: Ring<R>,
@@ -740,7 +785,7 @@ data class Polynomial<T> internal constructor(
             return sum(model, polys.asList())
         }
 
-        private inline fun <T, M> compute(
+        private inline fun <T, M> computeGeneral(
             p: Polynomial<T>, x: M,
             zero: () -> M, inclusion: (T) -> M,
             add: (M, M) -> M, multiply: (M, M) -> M, pow: (M, Long) -> M,
@@ -771,7 +816,7 @@ data class Polynomial<T> internal constructor(
         }
 
         fun <T, M> compute(p: Polynomial<T>, x: M, model: UnitRingModule<T, M>): M {
-            return compute(p, x, model::zero, model::fromScalar, model::add, model::multiply, model::power)
+            return computeGeneral(p, x, model::zero, model::fromScalar, model::add, model::multiply, model::power)
         }
 
         /*
@@ -1101,6 +1146,9 @@ open class PolyOverUnitRing<T>(_model: UnitRing<T>) : PolyOverRing<T>(_model), U
     val x4: Polynomial<T>
         get() = Polynomial.power(model, 4, model.one)
 
+    override fun exactDivide(a: Polynomial<T>, b: Polynomial<T>): Polynomial<T> {
+        return a.exactDivide(b)
+    }
 }
 
 open class PolyOverUFD<T>(model: UniqueFactorizationDomain<T>) : PolyOverUnitRing<T>(model),
@@ -1161,3 +1209,8 @@ open class PolyOverField<T>(override val model: Field<T>) : PolyOverUFD<T>(model
 }
 
 
+fun main() {
+    val Z = NumberModels.intAsIntegers()
+    val p = Polynomial.of(Z, -1, 2, 3, -5)
+    println(p)
+}

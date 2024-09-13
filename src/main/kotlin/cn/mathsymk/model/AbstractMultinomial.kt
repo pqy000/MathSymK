@@ -2,14 +2,16 @@ package cn.mathsymk.model
 
 import cn.mathsymk.AbstractMathObject
 import cn.mathsymk.model.struct.AlgebraModel
+import cn.mathsymk.structure.EqualPredicate
+import cn.mathsymk.structure.OrderedRing
 import cn.mathsymk.structure.Ring
 import cn.mathsymk.structure.UnitRing
 import cn.mathsymk.util.DataStructureUtil
 
 @JvmRecord
-data class Term<T, K>(val c: T, val key: K){
+data class Term<T, K>(val c: T, val key: K) {
     override fun toString(): String {
-        return "$c$key"
+        return "$c*$key"
     }
 }
 
@@ -47,9 +49,10 @@ abstract class AbstractMultinomial<T, K, C : Comparator<K>, R : AbstractMultinom
     /*
     Math object
      */
+
     override fun toString(): String {
         if (terms.isEmpty()) return "0"
-        return terms.joinToString(" + ") { it.toString() }
+        return terms.joinToString(" + ")
     }
 
     override fun equals(other: Any?): Boolean {
@@ -124,7 +127,6 @@ abstract class AbstractMultinomial<T, K, C : Comparator<K>, R : AbstractMultinom
     }
 
 
-
     protected abstract fun termMultiply(t1: Term<T, K>, t2: Term<T, K>): Term<T, K>?
 
     override fun plus(y: R): R {
@@ -193,6 +195,53 @@ abstract class AbstractMultinomial<T, K, C : Comparator<K>, R : AbstractMultinom
                 { terms -> addMultiTerms(model, terms, tempList) })
         }
 
+
+        fun <T, K> stringOf(
+            terms: List<Term<T, K>>, isOne: (T) -> Boolean,
+            isNegativeAndAbs: (T) -> Pair<Boolean, T>,
+            valueToString: (T) -> String, keyToString: (K) -> String
+        ): String {
+            if (terms.isEmpty()) return "0"
+            val sb = StringBuilder()
+            for (element in terms) {
+                val (c, k) = element
+                val (isNeg, v) = isNegativeAndAbs(c)
+                if(sb.isEmpty()) {
+                    if (isNeg) sb.append("-")
+                }else{
+                    if (isNeg) {
+                        sb.append(" - ")
+                    } else {
+                        sb.append(" + ")
+                    }
+                }
+
+                val valueString = valueToString(v)
+                val keyString = keyToString(k)
+
+                if (keyString.isEmpty()) {
+                    sb.append(valueString)
+                } else {
+                    if (isOne(v)) {
+                        sb.append(keyString)
+                    } else {
+                        sb.append(v).append("*").append(keyString)
+                    }
+                }
+            }
+            return sb.toString()
+        }
+
+        internal fun <T> isOneFromModel(model: EqualPredicate<T>): (T) -> Boolean {
+            if (model is UnitRing) {
+                return model::isOne
+            }
+            return { false }
+        }
+
+        internal fun <T> isNegativeAndAbsFromModel(model: Ring<T>): (T) -> Pair<Boolean, T> {
+            return if (model is OrderedRing) { t: T -> model.isNegative(t) to model.abs(t) } else { t: T -> false to t }
+        }
     }
 
 }

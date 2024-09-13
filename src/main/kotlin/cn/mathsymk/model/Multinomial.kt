@@ -321,6 +321,12 @@ internal constructor(
     Math object
      */
 
+    override fun toString(): String {
+        val keyToString = TermChs::toString
+        val valueToString = Any?::toString
+        return stringOf(this.terms, isOneFromModel(model), isNegativeAndAbsFromModel(model), valueToString, keyToString)
+    }
+
 
     override fun valueEquals(obj: ValueEquatable<T>): Boolean {
         if (obj !is Multinomial<T>) {
@@ -351,12 +357,12 @@ internal constructor(
     Term-wise operations
      */
 
-//    override fun keyMultiply(k1: TermChs, k2: TermChs): TermChs {
+    //    override fun keyMultiply(k1: TermChs, k2: TermChs): TermChs {
 //        return TermChs.multiplyChars(k1, k2, termOrder.chOrder)
 //    }
     override fun termMultiply(t1: Term<T, TermChs>, t2: Term<T, TermChs>): Term<T, TermChs>? {
         val c = model.multiply(t1.c, t2.c)
-        if(model.isZero(c)) return null
+        if (model.isZero(c)) return null
         val chs = TermChs.multiplyChars(t1.key, t2.key, termOrder.chOrder)
         return Term(c, chs)
     }
@@ -751,8 +757,8 @@ open class MultinomialOverUnitRing<T>(_model: UnitRing<T>, order: MonomialOrder)
     }
 
     override fun exactDivide(a: Multinomial<T>, b: Multinomial<T>): Multinomial<T> {
-        val (q,r) = a.divideAndRemainder(b)
-        if(!r.isZero){
+        val (q, r) = a.divideAndRemainder(b)
+        if (!r.isZero) {
             throw ArithmeticException("The division is not exact.")
         }
         return q
