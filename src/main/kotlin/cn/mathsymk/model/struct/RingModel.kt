@@ -1,6 +1,7 @@
 package cn.mathsymk.model.struct
 
 import cn.mathsymk.structure.EuclideanDomain
+import cn.mathsymk.structure.EuclideanDomain.GcdFullResult
 import cn.mathsymk.util.exceptions.ExceptionUtil
 
 
@@ -24,11 +25,12 @@ interface DivisionRingModel<T : DivisionRingModel<T>> : RingModel<T>, MulGroupMo
 
 
 /**
- * Describes the number model that can be elements of a Euclid ring.
+ * Describes the number model that can form a Euclidean domain.
  *
  *
  * Created at 2018/12/8 17:15
  * @author  liyicheng
+ * @see EuclideanDomain
  */
 interface EuclidDomainModel<T : EuclidDomainModel<T>> : RingModel<T> {
 
@@ -127,6 +129,14 @@ interface EuclidDomainModel<T : EuclidDomainModel<T>> : RingModel<T> {
             return EuclideanDomain.gcdUVExtendedEuclid(a, b, zero, one,
                 isZero = EuclidDomainModel<T>::isZero, subtract = { x, y -> x - y }, multiply = { x, y -> x * y },
                 EuclidDomainModel<T>::divideAndRemainder, EuclidDomainModel<T>::divideToInteger
+            )
+        }
+
+        fun <T : EuclidDomainModel<T>> gcdExtendedForModel(a: T, b: T, zero: T, one: T): GcdFullResult<T> {
+            return EuclideanDomain.gcdUVExtendedEuclidFull(a, b, zero, one,
+                isZero = EuclidDomainModel<T>::isZero,
+                subtract = { x, y -> x - y }, multiply = { x, y -> x * y }, add = { x, y -> x + y },
+                divideAndRemainder = EuclidDomainModel<T>::divideAndRemainder
             )
         }
     }

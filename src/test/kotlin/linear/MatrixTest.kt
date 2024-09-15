@@ -4,11 +4,13 @@ import TestUtils.assertEquals
 import TestUtils.assertValueEquals
 import cn.mathsymk.linear.Matrix
 import cn.mathsymk.linear.MatrixImpl
+import cn.mathsymk.linear.MatrixUtils
 import cn.mathsymk.linear.MatrixUtils.charPoly
 import cn.mathsymk.linear.toMutable
 import cn.mathsymk.model.Multinomial
 import cn.mathsymk.model.NumberModels
 import cn.mathsymk.model.Polynomial
+import cn.mathsymk.numberTheory.NTFunctions
 import cn.mathsymk.util.IterUtils
 import cn.mathsymk.util.MathUtils
 import cn.mathsymk.util.pow
@@ -131,5 +133,40 @@ class MatrixTest {
         val detDef = MatrixImpl.detDefinition(A, mult)
         mult.assertEquals(det3, detGB)
         mult.assertEquals(det3, detDef)
+    }
+
+    @Test
+    fun testInvariantFactorsOverIntegers() {
+        // 3x3 matrix over integers
+        val n = 3
+        val A = Matrix(n, Z) { i, j -> (i + 1) * (j + 2) } // example integer matrix
+        val factors = MatrixImpl.invariantFactors(A, Z)
+        // the accumulated product of the invariant factors
+        val accProd = factors.scan(1) { acc, factor -> acc * factor }.drop(1)
+        // compute the gcd of the minors of the matrix
+//        for(k in 1..n) {
+//            val minors = IterUtils.comb(A.row, k, false).map { A.slice(it, it).det().toLong() }.toList()
+//            val gcd = NTFunctions.gcd(*minors.toLongArray())
+//            assertEquals(gcd, factors[k - 1])
+//        }
+        val gcds = mutableListOf<Int>()
+        for (k in 1..n) {
+            val minors = IterUtils.comb(A.row, k, false).map { A.slice(it, it).det().toLong() }.toList()
+            val gcd = NTFunctions.gcd(*minors.toLongArray()).toInt()
+            if(gcd == 0){
+                break
+            }
+            gcds.add(gcd)
+        }
+        assertEquals(accProd, gcds)
+//        val minors1 = IterUtils.comb(A.row, 1, false).map { A.slice(it, it).det().toLong() }.toList()
+//        val minors2 = IterUtils.comb(A.row, 2, false).map { A.slice(it, it).det().toLong() }.toList()
+//        println(NTFunctions.gcd(*minors1.toLongArray()))
+//        println(NTFunctions.gcd(*minors2.toLongArray()))
+//        println(A.det()) // determinant of the matrix
+//        val actualFactors = MatrixImpl.invariantFactors(A,Z)
+//        println(actualFactors)
+        // Check if the computed invariant factors are as expected
+//        assertEquals(expectedFactors, actualFactors)
     }
 }

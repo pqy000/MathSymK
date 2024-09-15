@@ -137,10 +137,23 @@ interface EuclideanDomain<T> : UniqueFactorizationDomain<T> {
         return gcdUVExtendedEuclid(
             a, b, zero, one,
             this::isZero,
-            this::subtract,
-            this::multiply,
-            this::divideAndRemainder,
-            this::divideToInteger
+            this::subtract, this::multiply,
+            this::divideAndRemainder, this::divideToInteger
+        )
+    }
+
+    /**
+     * Returns the greatest common divisor `gcd` of two numbers `a, b`, the divisors `ad = a / gcd` and `bd = b / gcd`,
+     * and a pair of numbers `(u, v)` such that `ua + vb = gcd`.
+     *
+     * @return a [GcdFullResult] containing `gcd`, `u`, `v`, `ad = a / gcd`, and `bd = b / gcd`.
+     */
+    fun gcdExtendedFull(a: T, b: T): GcdFullResult<T> {
+        return gcdUVExtendedEuclidFull(
+            a, b, zero, one,
+            this::isZero,
+            this::add, this::subtract, this::multiply,
+            this::divideAndRemainder
         )
     }
 
@@ -260,6 +273,7 @@ interface EuclideanDomain<T> : UniqueFactorizationDomain<T> {
 
     companion object {
 
+
         /**
          * A default implementation of `gcdUV` using the extended Euclid's algorithm.
          *
@@ -322,6 +336,64 @@ interface EuclideanDomain<T> : UniqueFactorizationDomain<T> {
 
 
         /**
+         * A default implementation of `gcdExtended` using the extended Euclid's algorithm tracing the full result.
+         *
+         * @return `GcdFullResult(gcd(a,b), u, v, ad, bd)`
+         * @see [EuclideanDomain.gcdUV]
+         * @see GcdFullResult
+         */
+        inline fun <T> gcdUVExtendedEuclidFull(
+            a: T, b: T, zero: T, one: T, isZero: (T) -> Boolean,
+            add: (T, T) -> T,
+            subtract: (T, T) -> T, multiply: (T, T) -> T,
+            divideAndRemainder: (T, T) -> Pair<T, T>,
+        ): GcdFullResult<T> {
+            /*
+            We refer to the explanation in gcdUVExtendedEuclid, and we want to record the ad and bd.
+            Recall that we define a sequence d_0 = a, d_1 = b, d_2, d_3 ... as the remainders in Euclid's algorithm,
+            Let us introduce p_i = d_i / g, where g = gcd(a,b), then we have
+                p_0 = a/g, p_1 = b/g, p_2, p_3 ...
+            From d_i = q_i * d_{i+1} + d_{i+2}, we have
+                p_i = q_i * p_{i+1} + p_{i+2}
+            and when the algorithm terminates, we have p_n = 0, p_{n-1} = 1.
+            Therefore, by tracing the sequence q_i, we can calculate the sequence p_i.
+
+             */
+
+            //trivial cases
+            if (isZero(a)) return GcdFullResult(b, zero, one, zero, one)
+            if (isZero(b)) return GcdFullResult(a, one, zero, one, zero)
+
+            var d0 = a
+            var d1 = b
+            var u0: T = one
+            var u1: T = zero
+            var v0: T = zero
+            var v1: T = one
+            val qList = mutableListOf<T>()
+            while (!isZero(d1)) {
+                val (q, d2) = divideAndRemainder(d0, d1)
+                qList += q
+                d0 = d1
+                d1 = d2
+                val u2 = subtract(u0, multiply(q, u1))
+                u0 = u1
+                u1 = u2
+                val v2 = subtract(v0, multiply(q, v1))
+                v0 = v1
+                v1 = v2
+            }
+            var pn = zero
+            var pn1 = one
+            for (qi in qList.reversed()) {
+                val pn2 = add(multiply(qi, pn1), pn)
+                pn = pn1
+                pn1 = pn2
+            }
+            return GcdFullResult(d0, u0, v0, pn1, pn)
+        }
+
+        /**
          * A default implementation of `gcd` using the Euclidean algorithm:
          * ```
          * while (b != 0){
@@ -353,6 +425,15 @@ interface EuclideanDomain<T> : UniqueFactorizationDomain<T> {
             return QuotientField(domain, prime)
         }
     }
+
+    /**
+     * Describes a full result of the extended Euclid's algorithm:
+     *
+     *    gcd(a,b) = u*a + v*b
+     *    ad = a/gcd, bd = b/gcd
+     */
+    @JvmRecord
+    data class GcdFullResult<T>(val gcd: T, val u: T, val v: T, val ad: T, val bd: T)
 }
 
 /**
@@ -666,14 +747,14 @@ interface Integers<T> : EuclideanDomain<T>, OrderedRing<T> {
     }
 
 
-    fun of(n : Int) : T{
+    fun of(n: Int): T {
         return of(n.toLong())
     }
 
-    val Int.v : T
+    val Int.v: T
         get() = of(this)
 
-    val Long.v : T
+    val Long.v: T
         get() = of(this)
 }
 

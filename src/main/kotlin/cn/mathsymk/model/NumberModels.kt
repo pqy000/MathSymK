@@ -118,6 +118,14 @@ object IntAsIntegers : Integers<Int> {
     override fun gcd(a: Int, b: Int): Int {
         return NTFunctions.gcd(a, b)
     }
+    override fun gcdUV(a: Int, b: Int): Triple<Int, Int, Int> {
+        return NTFunctions.gcdUV(a, b).let { Triple(it[0], it[1], it[2]) }
+    }
+
+    override fun gcdExtendedFull(a: Int, b: Int): EuclideanDomain.GcdFullResult<Int> {
+        val (g, u, v) = NTFunctions.gcdUV(a, b)
+        return EuclideanDomain.GcdFullResult(g, u, v, a / g, b / g)
+    }
 
     override fun deg(a: Int, b: Int): Int {
         return NTFunctions.deg(a, b)
@@ -141,9 +149,7 @@ object IntAsIntegers : Integers<Int> {
         return NTFunctions.modInverse(a, p)
     }
 
-    override fun gcdUV(a: Int, b: Int): Triple<Int, Int, Int> {
-        return NTFunctions.gcdUV(a, b).let { Triple(it[0], it[1], it[2]) }
-    }
+
 }
 
 object LongAsIntegers : Integers<Long> {

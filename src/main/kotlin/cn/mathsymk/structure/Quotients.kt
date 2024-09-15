@@ -16,13 +16,13 @@ interface Quotients<T> : OrderedField<T> {
     /**
      * Returns the number value corresponding to the integer.
      */
-    val Int.v : T
+    val Int.asQ : T
         get() = of(this.toLong())
 
     /**
      * Returns the number value corresponding to the integer.
      */
-    val Long.v : T
+    val Long.asQ : T
         get() = of(this)
 
 

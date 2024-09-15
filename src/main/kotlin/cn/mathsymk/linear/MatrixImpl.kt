@@ -4,7 +4,6 @@ import cn.mathsymk.model.NumberModels
 import cn.mathsymk.model.Polynomial
 import cn.mathsymk.structure.*
 import cn.mathsymk.util.IterUtils
-import cn.mathsymk.util.MathUtils
 import cn.mathsymk.util.ModelPatterns
 import kotlin.collections.ArrayList
 import kotlin.math.min
@@ -1316,6 +1315,127 @@ object MatrixImpl {
     }
 
     /**
+     * Transforms the matrix `M` over a Euclidean domain to its Smith Normal Form.
+     * The Smith Normal Form is a diagonal matrix where the diagonal entries `d_i` satisfy:
+     * * `d_i | d_{i+1}` for all `i`;
+     * * `d_i` is unique up to multiplication by a unit.
+     * * `d_i` is the greatest common divisor of all `i x i` minors of `M`.
+     *
+     *
+     * The entries `d_i` are the invariant factors of the matrix.
+     *
+     * @param A The matrix to be transformed
+     */
+    fun <T> toSmithForm(A: GenMatrix<T>, mc: EuclideanDomain<T>): AMatrix<T> {
+        val M = AMatrix.copyOf(A, mc)
+        toSmithForm0(M, mc)
+        return M
+    }
+
+    /**
+     * Computes the **non-zero** invariant factors of the given matrix `A` over a Euclidean domain.
+     *
+     * The `i`-th invariant factors are the greatest common divisors of all `i x i` minors of the matrix.
+     */
+    fun <T> invariantFactors(A: GenMatrix<T>, mc: EuclideanDomain<T>): List<T> {
+        return toSmithForm0(AMatrix.copyOf(A, mc), mc)
+    }
+
+    /**
+     * Transforms the given matrix `M` over a Euclidean domain to its Smith Normal Form.
+     * Returns a list of invariant factors (non-zero diagonal entries).
+     *
+     * @param M The matrix to be transformed (must implement `MutableMatrix<T>`).
+     * @param mc The Euclidean domain calculator for the matrix entries.
+     * @return List of invariant factors (non-zero diagonal entries) of the Smith Normal Form.
+     */
+    internal fun <T> toSmithForm0(M: MutableMatrix<T>, mc: EuclideanDomain<T>): List<T> {
+        val rows = M.row
+        val cols = M.column
+        val invariants = mutableListOf<T>()
+
+        var currentRow = 0
+        var currentCol = 0
+
+        // Iterate over the matrix to reduce it to Smith Normal Form
+        while (currentRow < rows && currentCol < cols) {
+            // Make the current diagonal element non-zero if possible
+            if (mc.isZero(M[currentRow, currentCol])) {
+                if (!findAndSwapNonZeroElement(M, mc, currentRow, currentCol)) {
+                    currentCol++
+                    continue
+                }
+            }
+
+            // Perform row and column reduction to make other elements in the current row and column zero
+            reduceRowAndCol(M, mc, currentRow, currentCol)
+
+            // Save the current diagonal element (invariant factor) if it's non-zero
+            invariants.add(M[currentRow, currentCol])
+
+            // Move to the next diagonal element
+            currentRow++
+            currentCol++
+            //TODO fix the algorithm
+        }
+
+        return invariants
+    }
+
+    /**
+     * Finds a non-zero element in the matrix starting from position [row, col] and swaps rows/columns
+     * to bring it to the [row, col] position.
+     *
+     * @param M The matrix being processed.
+     * @param mc The Euclidean domain calculator for performing operations on the matrix entries.
+     * @param row The starting row index.
+     * @param col The starting column index.
+     * @return `true` if a non-zero element was found and swapped, `false` otherwise.
+     */
+    private fun <T> findAndSwapNonZeroElement(M: MutableMatrix<T>, mc: EuclideanDomain<T>, row: Int, col: Int): Boolean {
+        for (i in row until M.row) {
+            if (!mc.isZero(M[i, col])) {
+                if (i != row) M.swapRow(i, row)
+                return true
+            }
+        }
+        return false
+    }
+
+    /**
+     * Reduces the current row and column, making all elements except the diagonal element at [row, col] zero.
+     *
+     * @param M The matrix being reduced.
+     * @param mc The Euclidean domain calculator for performing operations on the matrix entries.
+     * @param row The current row index.
+     * @param col The current column index.
+     */
+    private fun <T> reduceRowAndCol(M: MutableMatrix<T>, mc: EuclideanDomain<T>, row: Int, col: Int) {
+        val diagElement = M[row, col]
+
+        // Zero out all elements below the diagonal in the current column
+        for (i in (row + 1) until M.row) {
+            val element = M[i, col]
+            if (!mc.isZero(element)) {
+                val (q, r) = mc.divideAndRemainder(element, diagElement)
+                M.multiplyAddRow(row, i, mc.negate(q), col)
+                M[i, col] = r // Ensure the element is exactly zero if the remainder is zero
+            }
+        }
+
+        // Zero out all elements to the right of the diagonal in the current row
+        for (j in (col + 1) until M.column) {
+            val element = M[row, j]
+            if (!mc.isZero(element)) {
+                val (q, r) = mc.divideAndRemainder(element, diagElement)
+                M.multiplyAddCol(col, j, mc.negate(q), row)
+                M[row, j] = r // Ensure the element is exactly zero if the remainder is zero
+            }
+        }
+    }
+
+
+    /**
      * Returns the congruence diagonal normal form `J` of matrix `A` and the corresponding transformation `P`,
      * which satisfies
      *
@@ -1420,6 +1540,8 @@ object MatrixImpl {
 
 fun main() {
     val Z = NumberModels.intAsIntegers()
+    val A = Matrix.diag(Z, 6,4,2)
+    println(MatrixImpl.invariantFactors(A, Z))
 //    val A = Matrix.identity(3, ints)
 //    val A = Matrix.of(2,2, ints,
 //        1, 2, 3, 4
