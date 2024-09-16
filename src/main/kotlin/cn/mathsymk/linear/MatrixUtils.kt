@@ -1,6 +1,5 @@
 package cn.mathsymk.linear
 
-import cn.mathsymk.linear.MatrixUtils.decompQR
 import cn.mathsymk.model.Polynomial
 import cn.mathsymk.structure.*
 
@@ -172,11 +171,40 @@ object MatrixUtils {
      *
      * For example, the Smith normal form of matrix `[[1 2 3][4 5 6][7 8 9]]` can be
      * `diag(1,3,0)`
+     *
+     * The method [Matrix.invariantFactors] might be more useful if you only need the invariant factors.
+     *
+     * @see [Matrix.invariantFactors]
      */
     fun <T> Matrix<T>.toSmithForm(): Matrix<T> {
         //Created by lyc at 2020-03-10 14:54
-        TODO()
-//        return MatrixImpl.toSmithForm(this, this.model as EuclideanDomain<T>)
+        return MatrixImpl.toSmithForm(this, this.model as EuclideanDomain<T>)
+    }
+
+    /**
+     * Returns the list of non-zero invariant factors of this matrix in order.
+     *
+     * To introduce invariant factors, we first define the determinantal divisors `d_k` of a matrix `A` as the greatest common divisor of all `k × k` minors of `A`.
+     * For example, the first determinantal divisors is the gcd of all elements of the matrix,
+     * while the `n`-th  determinantal divisors is just the determinant of the matrix.
+     * It is easy to see that `d_1 | d_2 | ... | d_n`.
+     *
+     * Then, the **invariant factors** `α_k` of a matrix `A` are defined by `α_k = d_k / d_{k-1}`, where we take `d_0 = 1`,
+     * and take `α_k = 0` if `d_k = 0`.
+     *
+     * The invariant factors have the following properties:
+     * * They are unique up to multiplication by units.
+     * * `α_{r+1} = α_{r+2} = ... = α_n = 0`, where `r` is the rank of the matrix.
+     * * `α_1 | α_2 | ... | α_r`.
+     *
+     *
+     * It is required that the `model` of this matrix is an [EuclideanDomain].
+     *
+     * @return the list of non-zero invariant factors `a_1, a_2, ..., a_r`
+     *
+     */
+    fun <T> Matrix<T>.invariantFactors(): List<T> {
+        return MatrixImpl.invariantFactors(this, this.model as EuclideanDomain<T>)
     }
 
     /**

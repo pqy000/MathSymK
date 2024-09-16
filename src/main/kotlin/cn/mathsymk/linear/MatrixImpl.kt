@@ -1,14 +1,10 @@
 package cn.mathsymk.linear
 
-import cn.mathsymk.model.NumberModels
 import cn.mathsymk.model.Polynomial
-import cn.mathsymk.numberTheory.NTFunctions
 import cn.mathsymk.structure.*
 import cn.mathsymk.util.IterUtils
 import cn.mathsymk.util.ModelPatterns
-import kotlin.collections.ArrayList
 import kotlin.math.min
-import kotlin.random.Random
 
 data class AMatrix<T> internal constructor(
     override val row: Int, override val column: Int,
@@ -1307,8 +1303,12 @@ object MatrixImpl {
      * @param A The matrix to be transformed
      */
     fun <T> toSmithForm(A: GenMatrix<T>, mc: EuclideanDomain<T>): AMatrix<T> {
-        val M = AMatrix.copyOf(A, mc)
-        toSmithForm0(M, mc)
+        val factors = invariantFactors(A, mc)
+        // build a diagonal matrix
+        val M = zero(A.row, A.column, mc)
+        for (i in factors.indices) {
+            M[i, i] = factors[i]
+        }
         return M
     }
 
@@ -1349,7 +1349,7 @@ object MatrixImpl {
             // now we have to reduce the rest of the elements with i >= r, j > c
             for (i in r..<rows) {
                 for (j in (c + 1)..<cols) {
-                    val (g, u, v) = mc.gcdUV(M[r, c], M[i, j])
+                    val (g, _, v) = mc.gcdUV(M[r, c], M[i, j])
                     if (mc.isZero(v)) continue // M[r,c] | M[i,j], continue
                     // make a gcd at M[r,j] by row and col trans
                     // then swap col c and j
@@ -1510,30 +1510,15 @@ object MatrixImpl {
         val n = matrix.row
 
         for (m in 0 until (n - 1)) {
-            println(H)
-            var i0 = m + 2
-            while (i0 < n) {
-                if (!mc.isZero(H[i0, m])) {
-                    break
-                }
-                i0++
-            }
-            if (i0 >= n) {
-                continue
-            }
-            if (!mc.isZero(H[m + 1, m])) {
-                i0 = m + 1
-            }
-//            val t = H[i, m]
-            if (i0 > m + 1) {
+            val i0 = (m + 2 until n).firstOrNull { !mc.isZero(H[it, m]) } ?: continue
+            if (mc.isZero(H[m + 1, m])) {
                 H.swapRow(i0, m + 1, m)
                 H.swapCol(i0, m + 1)
             }
+
             val t = H[m + 1, m]
             for (i in (m + 2) until n) {
-                if (mc.isZero(H[i, m])) {
-                    continue
-                }
+                if (mc.isZero(H[i, m])) continue
                 val u = mc.eval { H[i, m] / t }
                 H.multiplyAddRow(m + 1, i, mc.negate(u), m)
                 H[i, m] = mc.zero
@@ -1548,51 +1533,30 @@ object MatrixImpl {
 }
 
 
-fun main() {
-    val Z = NumberModels.intAsIntegers()
-    val n = 4
-    val rng = Random(11)
-    val A = Matrix(n, Z) { i, j ->
-        rng.nextInt(10)
-    }
-    println(A)
-    println("Computing the invariant factors")
-    val invFactors = MatrixImpl.invariantFactors(A, Z)
-    println(invFactors)
-    val accProd = invFactors.scan(1) { acc, factor -> acc * factor }.drop(1)
-    println(accProd)
-    val gcds = mutableListOf<Int>()
-    for (k in 1..n) {
-        val rows = IterUtils.comb(A.row, k, false)
-        val cols = IterUtils.comb(A.column, k, false)
-        val minors = IterUtils.prod2(rows, cols).map { A.slice(it.first, it.second).det() }.toList().toIntArray()
-        val gcd = NTFunctions.gcd(*minors)
-        if (gcd == 0) {
-            break
-        }
-        gcds.add(gcd)
-    }
-    println(gcds)
-//    val A = Matrix.identity(3, ints)
-//    val A = Matrix.of(2,2, ints,
-//        1, 2, 3, 4
-//    )
-//    println(Polynomial.compute(p, A, Matrix.over(A.row, ints)).joinToString())
-//    val A = Matrix.fromRows(
-//        listOf(
-//            Vector.of(ints, 3, 1, 1, 1),
-//            Vector.of(ints, 1, 1, 1, 2),
-//            Vector.of(ints, 2, 1, 3, 3),
-//            Vector.of(ints, 4, 1, 1, 4)
-//        )
-//    )
-//    val A = Matrix.diag(ints, 3, 1, 4)
-//    val mult = Multinomial.from(ints)
-//    val A = Matrix(4, 4, mult) { i,j ->
-//        mult.monomial("($i$j)")}
-//    println(A.joinToString())
-//    println(MatrixImpl.detGaussBareiss(A.toMutable(), mult))
-//    println(MatrixImpl.detDefinition(A, mult))
-//    println(A.joinToString(limit = 3))
-}
+//fun main() {
+//    val Z = NumberModels.intAsIntegers()
+//    val n = 4
+//    val rng = Random(11)
+//    val A = Matrix(n, Z) { i, j ->
+//        rng.nextInt(10)
+//    }
+//    println(A)
+//    println("Computing the invariant factors")
+//    val invFactors = MatrixImpl.invariantFactors(A, Z)
+//    println(invFactors)
+//    val accProd = invFactors.scan(1) { acc, factor -> acc * factor }.drop(1)
+//    println(accProd)
+//    val gcds = mutableListOf<Int>()
+//    for (k in 1..n) {
+//        val rows = IterUtils.comb(A.row, k, false)
+//        val cols = IterUtils.comb(A.column, k, false)
+//        val minors = IterUtils.prod2(rows, cols).map { A.slice(it.first, it.second).det() }.toList().toIntArray()
+//        val gcd = NTFunctions.gcd(*minors)
+//        if (gcd == 0) {
+//            break
+//        }
+//        gcds.add(gcd)
+//    }
+//    println(gcds)
+//}
 

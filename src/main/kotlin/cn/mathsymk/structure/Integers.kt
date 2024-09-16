@@ -54,7 +54,7 @@ interface UniqueFactorizationDomain<T> : IntegralDomain<T> {
  * The fundamental operation is [divideAndRemainder].
  *
  *
- * For example, integers and polynomials on a field are both `EuclideanDomain`,
+ * For example, integers and polynomials over a field are both `EuclideanDomain`,
  *
  * See [EuclideanDomain](https://mathworld.wolfram.com/EuclideanDomain.html) for more information.
  */
