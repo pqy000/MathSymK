@@ -16,6 +16,7 @@ import cn.mathsymk.util.MathUtils
 import cn.mathsymk.util.pow
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import kotlin.random.Random
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
@@ -138,35 +139,28 @@ class MatrixTest {
     @Test
     fun testInvariantFactorsOverIntegers() {
         // 3x3 matrix over integers
-        val n = 3
-        val A = Matrix(n, Z) { i, j -> (i + 1) * (j + 2) } // example integer matrix
-        val factors = MatrixImpl.invariantFactors(A, Z)
-        // the accumulated product of the invariant factors
-        val accProd = factors.scan(1) { acc, factor -> acc * factor }.drop(1)
-        // compute the gcd of the minors of the matrix
-//        for(k in 1..n) {
-//            val minors = IterUtils.comb(A.row, k, false).map { A.slice(it, it).det().toLong() }.toList()
-//            val gcd = NTFunctions.gcd(*minors.toLongArray())
-//            assertEquals(gcd, factors[k - 1])
-//        }
-        val gcds = mutableListOf<Int>()
-        for (k in 1..n) {
-            val minors = IterUtils.comb(A.row, k, false).map { A.slice(it, it).det().toLong() }.toList()
-            val gcd = NTFunctions.gcd(*minors.toLongArray()).toInt()
-            if(gcd == 0){
-                break
+        val Z = NumberModels.intAsIntegers()
+        val n = 4
+//    val A = Matrix(n, Z) { i, j -> (i + 1) * (j + 2) }
+        for(seed in 10..12){
+            val rng = Random(seed)
+            val A = Matrix(n, Z) { i, j ->
+                rng.nextInt(10)
             }
-            gcds.add(gcd)
+            val invFactors = MatrixImpl.invariantFactors(A, Z)
+            val accProd = invFactors.scan(1) { acc, factor -> acc * factor }.drop(1)
+            val gcds = mutableListOf<Int>()
+            for (k in 1..n) {
+                val rows = IterUtils.comb(A.row, k, false)
+                val cols = IterUtils.comb(A.column, k, false)
+                val minors = IterUtils.prod2(rows, cols).map { A.slice(it.first, it.second).det() }.toList().toIntArray()
+                val gcd = NTFunctions.gcd(*minors)
+                if (gcd == 0) {
+                    break
+                }
+                gcds.add(gcd)
+            }
+            assertEquals(gcds, accProd)
         }
-        assertEquals(gcds,  accProd)
-//        val minors1 = IterUtils.comb(A.row, 1, false).map { A.slice(it, it).det().toLong() }.toList()
-//        val minors2 = IterUtils.comb(A.row, 2, false).map { A.slice(it, it).det().toLong() }.toList()
-//        println(NTFunctions.gcd(*minors1.toLongArray()))
-//        println(NTFunctions.gcd(*minors2.toLongArray()))
-//        println(A.det()) // determinant of the matrix
-//        val actualFactors = MatrixImpl.invariantFactors(A,Z)
-//        println(actualFactors)
-        // Check if the computed invariant factors are as expected
-//        assertEquals(expectedFactors, actualFactors)
     }
 }

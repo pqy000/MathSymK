@@ -1,5 +1,6 @@
 package cn.mathsymk.numberTheory
 
+import cn.mathsymk.structure.EuclideanDomain
 import java.math.BigInteger
 import java.util.*
 import kotlin.math.abs
@@ -50,6 +51,65 @@ object NTFunctions {
         }
         return abs(n1)
     }
+
+
+    private inline fun <T, R> gcdUV0Template(
+        a: T, b: T,
+        zero: T, one: T,
+        isZero: (T) -> Boolean,
+        div: (T, T) -> T, rem: (T, T) -> T,
+        sub: (T, T) -> T, multiply: (T, T) -> T,
+        buildRes: (T, T, T) -> R,
+    ): R {
+        //Re-implemented by lyc at 2020-03-03 15:57
+        // use a template to avoid duplicate code for int and long
+        /*
+        Euclid's Extended Algorithms:
+        Refer to Henri Cohen 'A course in computational algebraic number theory' Algorithm 1.3.6
+         */
+        if (isZero(b)) {
+            return buildRes(a, one, zero)
+        }
+        /*
+        Explanation of the algorithm:
+        we want to maintain the following equation while computing the gcd using the Euclid's algorithm
+        let d0=a, d1=b, d2, d3 ... be the sequence of remainders in Euclid's algorithm,
+        then we have
+            a*1 + b*0 = d0
+            a*0 + b*1 = d1
+        let
+            u0 = 1, v0 = 0
+            u1 = 0, v1 = 1
+        then we want to build a sequence of u_i, v_i such that
+            a*u_i + b*v_i = d_i,
+        when we find the d_n = gcd(a,b), the corresponding u_n and v_n is what we want.
+        We have:
+            d_i = q_i * d_{i+1} + d_{i+2}        (by Euclid's algorithm
+        so
+            a*u_i + b*v_i = q_i * (a*u_{i+1} + b*v_{i+1}) + (a*u_{i+2} + b*v_{i+2})
+            u_i - q_i * u_{i+1} = u_{i+2}
+            v_i - q_i * v_{i+1} = v_{i+2}
+        but it is only necessary for us to record u_i, since v_i can be calculated from the equation
+            a*u_i + b*v_i = d_i
+         */
+        var d0 = a
+        var d1 = b
+        var u0 = one
+        var u1 = zero
+        while (!isZero(d1)) {
+            val q = div(d0, d1)
+            val d2 = rem(d0, d1)
+            d0 = d1
+            d1 = d2
+            val u2 = sub(u0, multiply(q, u1))
+            u0 = u1
+            u1 = u2
+        }
+//        val v = (d0 - a * u0) / b
+        val v = div(sub(d0, multiply(a, u0)), b)
+        return buildRes(d0, u0, v)
+    }
+
 
     @JvmStatic
     fun gcdUV0(a: Int, b: Int): IntArray {
@@ -112,10 +172,11 @@ object NTFunctions {
      */
     @JvmStatic
     fun gcdUV(a: Int, b: Int): IntArray {
-        val result = gcdUV0(
-            Math.absExact(a), Math.absExact(b)
+        val result = gcdUV0Template(
+            Math.absExact(a), Math.absExact(b), 0, 1,
+            { it == 0 }, Int::div, Int::rem, Int::minus, Int::times,
+            { a, b, c -> intArrayOf(a, b, c) }
         )
-        //deal with negative values
         if (a < 0) {
             result[1] = -result[1]
         }
@@ -163,35 +224,6 @@ object NTFunctions {
     }
 
 
-    @JvmStatic
-    fun gcdUV0(a: Long, b: Long): LongArray {
-        //Re-implemented by lyc at 2020-03-03 16:42
-        /*
-        Euclid's Extended Algorithms:
-        Refer to Henri Cohen 'A course in computational algebraic number theory' Algorithm 1.3.6
-         */
-        if (b == 0L) {
-            return longArrayOf(a, 1, 0)
-        }
-        /*
-        See the explanation above in the int version of the same algorithm
-         */
-        var d0 = a
-        var d1 = b
-        var u0: Long = 1
-        var u1: Long = 0
-        while (d1 > 0) {
-            val q = d0 / d1
-            val d2 = d0 % d1
-            d0 = d1
-            d1 = d2
-            val u2 = u0 - q * u1
-            u0 = u1
-            u1 = u2
-        }
-        val v = (d0 - a * u0) / b
-        return longArrayOf(d0, u0, v)
-    }
 
     /**
      * Computes the greatest common divisor of two numbers and a pair of number (u,v) such that
@@ -205,8 +237,10 @@ object NTFunctions {
      */
     @JvmStatic
     fun gcdUV(a: Long, b: Long): LongArray {
-        val result: LongArray = gcdUV0(
-            abs(a), abs(b)
+        val result: LongArray = gcdUV0Template(
+            Math.abs(a), Math.abs(b), 0L, 1L,
+            { it == 0L }, Long::div, Long::rem, Long::minus, Long::times,
+            { x, y, z -> longArrayOf(x, y, z) }
         )
         //deal with negative values
         if (a < 0) {
@@ -259,14 +293,19 @@ object NTFunctions {
      */
     @JvmStatic
     fun gcd(vararg ls: Long): Long {
-        if (ls.size < 2) {
-            return ls[0]
-        }
-        var gcd = gcd(ls[0], ls[1])
-        for (i in 2 until ls.size) {
-            gcd = gcd(gcd, ls[i])
-        }
-        return gcd
+        return ls.reduce(::gcd)
+//        if (ls.size < 2) {
+//            return ls[0]
+//        }
+//        var gcd = gcd(ls[0], ls[1])
+//        for (i in 2 until ls.size) {
+//            gcd = gcd(gcd, ls[i])
+//        }
+//        return gcd
+    }
+
+    fun gcd(vararg ls: Int): Int {
+        return ls.reduce(::gcd)
     }
 
 
@@ -278,14 +317,7 @@ object NTFunctions {
      */
     @JvmStatic
     fun lcm(vararg ls: Long): Long {
-        if (ls.size < 2) {
-            return ls[0]
-        }
-        var lcm = ls[0]
-        for (i in 1 until ls.size) {
-            lcm = lcm(lcm, ls[i])
-        }
-        return lcm
+        return ls.reduce(::lcm)
     }
 
     /**
@@ -469,7 +501,7 @@ object NTFunctions {
      */
     @JvmStatic
     fun powMod(a: Int, n: Int, mod: Int): Int {
-        return powMod(a,n.toLong(),mod)
+        return powMod(a, n.toLong(), mod)
     }
 
     /**

@@ -8,6 +8,7 @@ import cn.mathsymk.util.IterUtils
 import cn.mathsymk.util.ModelPatterns
 import kotlin.collections.ArrayList
 import kotlin.math.min
+import kotlin.random.Random
 
 data class AMatrix<T> internal constructor(
     override val row: Int, override val column: Int,
@@ -1333,19 +1334,17 @@ object MatrixImpl {
         val cols = M.column
         val invariants = mutableListOf<T>()
         var c = 0
+
         for (r in 0..<rows) {
-            println(M)
-            if (reduceByRowEUD(M, mc, r, c) == 0) {
+            if (c < cols && reduceByRowEUD(M, mc, r, c) == 0) {
                 // the elements in the column are all zero, move to the next column
                 c++
-                if (c >= cols) break // all columns are reduced
             }
+            if (c >= cols) break // all columns are reduced
             // M[r,c] is non-zero and the elements below it are all zero
             while (reduceByColEUD(M, mc, r, c, zeroed = true) == 2) {
                 // the column is changed, so we have to reduce the by row again
-                println(M)
                 reduceByRowEUD(M, mc, r, c)
-                println(M)
             }
             // now we have to reduce the rest of the elements with i >= r, j > c
             for (i in r..<rows) {
@@ -1355,18 +1354,18 @@ object MatrixImpl {
                     // make a gcd at M[r,j] by row and col trans
                     // then swap col c and j
                     M.multiplyAddRow(i, r, v, j + 1)
-                    M[r, j] = g // col trans can be omitted since elements below M[r,c] are all zero
-                    M.swapCol(c, j, r)
+                    // col trans can be omitted since elements below M[r,c] are all zero
+                    M.swapCol(c, j, r + 1)
+                    M[r, j] = mc.negate(M[r, c]) // negate so det is not changed by swapping
+                    M[r, c] = g
                     // clean up the elements in the column c and row r
                     do {
-                        println(M)
                         reduceByRowEUD(M, mc, r, c)
-                        println(M)
                     } while (reduceByColEUD(M, mc, r, c, zeroed = true) == 2)
                 }
             }
             invariants += M[r, c]
-            println(M)
+            c++
         }
 
         return invariants
@@ -1380,7 +1379,8 @@ object MatrixImpl {
         M: MutableMatrix<T>, mc: EuclideanDomain<T>, r: Int, c: Int, zeroed: Boolean = false, colStart: Int = c + 1
     ): Int {
         return templateReduceInEUD(
-            mc, M.row, r, c, zeroed, mc.zero, colStart, M::get, M::set, M::swapRow, M::multiplyAddRow, M::transformRows
+            mc, M.row, r, c, zeroed, mc.zero, colStart, M::get, M::set,
+            M::swapRow, M::multiplyAddRow, M::multiplyRow, M::transformRows
         )
     }
 
@@ -1392,7 +1392,7 @@ object MatrixImpl {
             mc, M.column, c, r, zeroed, mc.zero, rowStart,
             mGet = { i, j -> M[j, i] },
             mSet = { i, j, v -> M[j, i] = v },
-            M::swapCol, M::multiplyAddCol, M::transformCols
+            M::swapCol, M::multiplyAddCol, M::multiplyCol, M::transformCols
         )
     }
 
@@ -1402,7 +1402,7 @@ object MatrixImpl {
         zeroed0: Boolean, zero: T, colStart: Int,
         mGet: (Int, Int) -> T, mSet: (Int, Int, T) -> Unit,
         mSwapRow: (Int, Int, Int) -> Unit,
-        mMultiplyAddRow: (Int, Int, T, Int) -> Unit,
+        mMulAddRow: (Int, Int, T, Int) -> Unit, mMulRow: (Int, T, Int) -> Unit,
         mTransformRows: (Int, Int, T, T, T, T, Int) -> Unit
     ): Int {
         val rStart = (r until rowEnd).firstOrNull { !mc.isZero(mGet(it, c)) } ?: return 0
@@ -1418,18 +1418,19 @@ object MatrixImpl {
             val h = mGet(r, c)
             val (gcd, u, v, hd, bd) = mc.gcdExtendedFull(h, b)
             // uh + vb = gcd(h, b)
-            // uni-modular transform: [u, v; -b/d, a/d], det = (au - bv)/d = 1
+            // uni-modular transform: [u, v; -b/d, h/d], det = (au - bv)/d = 1
             // M[r] = u M[r] + v M[i] = gcd(a,b), M[r,c] = gcd
             // M[i] = -b/d M[r] + a/d M[i], M[i,c] = 0
             if (mc.isZero(v)) {
                 // h | b, so u = 1, v = 0, hd = 1, bd = b/d = b/h
                 // just to optimize the computation: M[i] = M[i] - b/h M[r], while M[r] is not changed
                 if (!zeroed) {
-                    mMultiplyAddRow(r, i, bd, colStart)
+                    mMulAddRow(r, i, mc.negate(bd), colStart)
                 }
             } else {
                 if (zeroed) {
-                    mMultiplyAddRow(i, r, v, colStart)
+                    mMulAddRow(i, r, v, colStart) // M[r] = u M[r] + v M[i] = v M[i]
+                    mMulRow(i, hd, colStart) // M[i] = hd M[i] - bd M[r] = hd M[i]
                 } else {
                     mTransformRows(r, i, u, v, mc.negate(bd), hd, colStart)
                 }
@@ -1549,20 +1550,29 @@ object MatrixImpl {
 
 fun main() {
     val Z = NumberModels.intAsIntegers()
-    val n = 3
-    val A = Matrix(n, Z) { i, j -> (i + 1) * (j + 2) }
-    println(MatrixImpl.invariantFactors(A, Z))
+    val n = 4
+    val rng = Random(11)
+    val A = Matrix(n, Z) { i, j ->
+        rng.nextInt(10)
+    }
+    println(A)
+    println("Computing the invariant factors")
+    val invFactors = MatrixImpl.invariantFactors(A, Z)
+    println(invFactors)
+    val accProd = invFactors.scan(1) { acc, factor -> acc * factor }.drop(1)
+    println(accProd)
     val gcds = mutableListOf<Int>()
     for (k in 1..n) {
-        val minors = IterUtils.comb(A.row, k, false).map { A.slice(it, it).det().toLong() }.toList()
-        val gcd = NTFunctions.gcd(*minors.toLongArray()).toInt()
+        val rows = IterUtils.comb(A.row, k, false)
+        val cols = IterUtils.comb(A.column, k, false)
+        val minors = IterUtils.prod2(rows, cols).map { A.slice(it.first, it.second).det() }.toList().toIntArray()
+        val gcd = NTFunctions.gcd(*minors)
         if (gcd == 0) {
             break
         }
         gcds.add(gcd)
     }
-    println(A.det())
-//    println(gcds)
+    println(gcds)
 //    val A = Matrix.identity(3, ints)
 //    val A = Matrix.of(2,2, ints,
 //        1, 2, 3, 4

@@ -1,13 +1,16 @@
 package cn.mathsymk.samples
 
 import cn.mathsymk.linear.Matrix
+import cn.mathsymk.linear.MatrixImpl
 import cn.mathsymk.linear.MatrixUtils.charPoly
 import cn.mathsymk.model.Multinomial
 import cn.mathsymk.model.NumberModels
 import cn.mathsymk.model.Polynomial
+import cn.mathsymk.numberTheory.NTFunctions
 import cn.mathsymk.structure.eval
 import cn.mathsymk.util.IterUtils
 import cn.mathsymk.util.MathUtils
+import kotlin.random.Random
 
 fun computingDeterminants() {
     val ℤ = NumberModels.intAsIntegers()
@@ -93,7 +96,38 @@ fun matrixCharacteristicPolynomialsComplexExample() {
 
 }
 
+fun computeInvariantFactors(){
+    val Z = NumberModels.intAsIntegers()
+    val n = 5
+    val rng = Random(11)
+    val A = Matrix(n, Z) { i, j ->
+        rng.nextInt(10) //
+    }
+    println("The matrix A:")
+    println(A)
+    val invFactors = MatrixImpl.invariantFactors(A, Z)
+    println("Computing the invariant factors")
+    println(invFactors)
+    val accProd = invFactors.scan(1) { acc, factor -> acc * factor }.drop(1)
+    println("The accumulated product of the invariant factors:")
+    println(accProd)
+    val detFactors = mutableListOf<Int>()
+    for (k in 1..n) {
+        val rows = IterUtils.comb(A.row, k, false)
+        val cols = IterUtils.comb(A.column, k, false)
+        val minors = IterUtils.prod2(rows, cols).map { A.slice(it.first, it.second).det() }.toList().toIntArray()
+        val gcd = NTFunctions.gcd(*minors)
+        if (gcd == 0) {
+            break
+        }
+        detFactors.add(gcd)
+    }
+    println("The determinant factors: (should be the same as the acc. prod. of invariant factors)")
+    println(detFactors)
+
+}
+
 
 fun main() {
-    matrixCharacteristicPolynomials()
+    computeInvariantFactors()
 }

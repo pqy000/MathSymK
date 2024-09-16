@@ -228,10 +228,15 @@ object IterUtils {
      * Returns the cartesian product of two iterables as a sequence of pairs.
      */
     fun <T, S> prod2(it1: Iterable<T>, it2: Iterable<S>): Sequence<Pair<T, S>> {
-        val s1 = it1.asSequence()
-        val s2 = it2.asSequence()
-        return s1.flatMap { a ->
-            s2.map { b -> a to b }
+        return prod2(it1.asSequence(), it2.asSequence())
+    }
+
+    /**
+     * Returns the cartesian product of two iterables as a sequence of pairs.
+     */
+    fun <T, S> prod2(seq1: Sequence<T>, seq2: Sequence<S>): Sequence<Pair<T, S>> {
+        return seq1.flatMap { a ->
+            seq2.map { b -> a to b }
         }
     }
 
