@@ -1198,14 +1198,13 @@ open class PolyOverField<T>(override val model: Field<T>) : PolyOverUFD<T>(model
         return a.gcd(b)
     }
 
-    override fun isExactDivide(a: Polynomial<T>, b: Polynomial<T>): Boolean {
-        return a.divideAndRemainder(b).second.isZero
-    }
-
     override fun exactDivide(a: Polynomial<T>, b: Polynomial<T>): Polynomial<T> {
         return a.exactDivide(b)
     }
 
+    override fun isExactDivide(a: Polynomial<T>, b: Polynomial<T>): Boolean {
+        return super<PolyOverUFD>.isExactDivide(a, b)
+    }
 }
 
 

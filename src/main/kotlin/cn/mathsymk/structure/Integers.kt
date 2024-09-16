@@ -34,11 +34,14 @@ interface UniqueFactorizationDomain<T> : IntegralDomain<T> {
      * Returns the result of exact division `a/b`, throws an `ArithmeticException` if it is not exact division.
      *
      * @throws ArithmeticException if `a` is not exactly divisible by `b`, or `b` is zero.
+     * @see isExactDivide
      */
     override fun exactDivide(a: T, b: T): T
 
     /**
-     * Determines whether `x` exactly divides `y`.
+     * Determines whether the division `a/b` is exact, namely `a = qb` for some `q`.
+     *
+     * @throws ArithmeticException if `b` is zero.
      */
     fun isExactDivide(a: T, b: T): Boolean
 
@@ -107,6 +110,13 @@ interface EuclideanDomain<T> : UniqueFactorizationDomain<T> {
         return q
     }
 
+    /**
+     * Determines whether the division `a/b` is exact, namely `a = qb` for some `q`.
+     *
+     * This method is equivalent to `isZero(remainder(a, b))`.
+     *
+     * @throws ArithmeticException if `b` is zero.
+     */
     override fun isExactDivide(a: T, b: T): Boolean {
         return isZero(remainder(a, b))
     }
@@ -598,22 +608,6 @@ interface Integers<T> : EuclideanDomain<T>, OrderedRing<T> {
         return Pair(quotient, reminder)
     }
 
-    /**
-     * Determines whether `a` can be divided by `b` exactly,
-     * namely `mod(a,b)==0`.
-     *
-     *
-     * The default implement of this method is `isZero(mod(a,b))`.
-     *
-     *
-     * @param a dividend
-     * @param b divisor, a non-zero number
-     * @return `mod(a,b)==0`
-     * @throws [ArithmeticException] if `b == 0`.
-     */
-    override fun isExactDivide(a: T, b: T): Boolean {
-        return isZero(mod(a, b))
-    }
 
     /**
      * Determines whether the number is an odd number, namely `mod(x,2)!=0`.

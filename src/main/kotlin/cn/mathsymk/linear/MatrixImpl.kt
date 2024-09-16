@@ -2,6 +2,7 @@ package cn.mathsymk.linear
 
 import cn.mathsymk.model.NumberModels
 import cn.mathsymk.model.Polynomial
+import cn.mathsymk.numberTheory.NTFunctions
 import cn.mathsymk.structure.*
 import cn.mathsymk.util.IterUtils
 import cn.mathsymk.util.ModelPatterns
@@ -108,6 +109,7 @@ data class AMatrix<T> internal constructor(
 
 
     override fun swapRow(r1: Int, r2: Int, colStart: Int, colEnd: Int) {
+        require(r1 in 0 until row && r2 in 0 until row)
         val s1 = toPos(r1, 0)
         val s2 = toPos(r2, 0)
         for (l in colStart until colEnd) {
@@ -119,6 +121,7 @@ data class AMatrix<T> internal constructor(
 
 
     override fun swapCol(c1: Int, c2: Int, rowStart: Int, rowEnd: Int) {
+        require(c1 in 0 until column && c2 in 0 until column)
         var l = toPos(rowStart, 0)
         for (r in rowStart until rowEnd) {
             val t = data[l + c1]
@@ -129,6 +132,7 @@ data class AMatrix<T> internal constructor(
     }
 
     override fun multiplyRow(r: Int, k: T, colStart: Int, colEnd: Int) {
+        require(r in 0 until row)
         val d = toPos(r, 0)
         val mc = model as MulSemigroup
         for (l in colStart until colEnd) {
@@ -138,6 +142,7 @@ data class AMatrix<T> internal constructor(
     }
 
     override fun divideRow(r: Int, k: T, colStart: Int, colEnd: Int) {
+        require(r in 0 until row)
         val d = toPos(r, 0)
         val mc = model as UnitRing
         for (l in colStart until colEnd) {
@@ -147,6 +152,7 @@ data class AMatrix<T> internal constructor(
     }
 
     override fun multiplyCol(c: Int, k: T, rowStart: Int, rowEnd: Int) {
+        require(c in 0 until column)
         val mc = model as MulSemigroup
         for (r in rowStart until rowEnd) {
             val pos = toPos(r, c)
@@ -156,6 +162,7 @@ data class AMatrix<T> internal constructor(
     }
 
     override fun divideCol(c: Int, k: T, rowStart: Int, rowEnd: Int) {
+        require(c in 0 until column)
         val mc = model as UnitRing
         for (r in rowStart until rowEnd) {
             val pos = toPos(r, c)
@@ -165,6 +172,7 @@ data class AMatrix<T> internal constructor(
     }
 
     override fun negateRow(r: Int, colStart: Int, colEnd: Int) {
+        require(r in 0 until row)
         val mc = model as AddGroup
         val d = toPos(r, 0)
         for (l in colStart until colEnd) {
@@ -175,6 +183,7 @@ data class AMatrix<T> internal constructor(
 
 
     override fun negateCol(c: Int, rowStart: Int, rowEnd: Int) {
+        require(c in 0 until column)
         val mc = model as AddGroup
         for (r in rowStart until rowEnd) {
             val pos = toPos(r, c)
@@ -185,6 +194,7 @@ data class AMatrix<T> internal constructor(
 
     @Suppress("UNCHECKED_CAST")
     override fun multiplyAddRow(r1: Int, r2: Int, k: T, colStart: Int, colEnd: Int) {
+        require(r1 in 0..<row && r2 in 0..<row)
         val s1 = toPos(r1, 0)
         val s2 = toPos(r2, 0)
         val mc = model as Ring
@@ -195,8 +205,9 @@ data class AMatrix<T> internal constructor(
 
     @Suppress("UNCHECKED_CAST")
     override fun multiplyAddCol(c1: Int, c2: Int, k: T, rowStart: Int, rowEnd: Int) {
+        require(c1 in 0..<column && c2 in 0..<column)
         val mc = model as Ring
-        for (r in rowStart until rowEnd) {
+        for (r in rowStart..<rowEnd) {
             val l = toPos(r, 0)
             data[l + c2] = mc.eval { (data[l + c2] as T) + k * (data[l + c1] as T) }
         }
@@ -204,11 +215,12 @@ data class AMatrix<T> internal constructor(
 
     @Suppress("UNCHECKED_CAST")
     override fun transformRows(r1: Int, r2: Int, a11: T, a12: T, a21: T, a22: T, colStart: Int, colEnd: Int) {
+        require(r1 in 0..<row && r2 in 0..<row)
+        require(colStart in 0..colEnd && colEnd <= column)
         val s1 = toPos(r1, 0)
         val s2 = toPos(r2, 0)
-        val model = model as Ring
-        model.eval {
-            for (l in colStart until colEnd) {
+        with(model as Ring) {
+            for (l in colStart..<colEnd) {
                 val x = data[s1 + l] as T
                 val y = data[s2 + l] as T
                 data[s1 + l] = a11 * x + a12 * y
@@ -217,6 +229,20 @@ data class AMatrix<T> internal constructor(
         }
     }
 
+    @Suppress("UNCHECKED_CAST")
+    override fun transformCols(c1: Int, c2: Int, a11: T, a12: T, a21: T, a22: T, rowStart: Int, rowEnd: Int) {
+        with(model as Ring) {
+            for (r in rowStart until rowEnd) {
+                val pos0 = toPos(r, 0)
+                val pos1 = pos0 + c1
+                val pos2 = pos0 + c2
+                val x = data[pos1] as T
+                val y = data[pos2] as T
+                data[pos1] = a11 * x + a12 * y
+                data[pos2] = a21 * x + a22 * y
+            }
+        }
+    }
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -1168,34 +1194,27 @@ object MatrixImpl {
     fun <T> toUpperTriangle(M: MutableMatrix<T>, model: Field<T>, column: Int = M.column): List<Int> {
         //Created by lyc at 2021-04-29
         val row = M.row
-        var i = 0
+        var r = 0
         val pivots = ArrayList<Int>(min(M.row, column))
+        val zero = model.zero
         /*
-        j = pivots[i] then M[i,j] is the first non-zero element in that row
+        c = pivots[r] then M[r,c] is the first non-zero element in that row
          */
-        for (j in 0 until column) {
-            if (i >= row) break
-            var f: T? = null
-            for (i2 in i until row) {
-                if (model.isZero(M[i2, j])) continue
-
-                f = M[i2, j]
-                if (i2 != i) {
-                    M.swapRow(i2, i)
-                }
-                break
+        for (c in 0 until column) {
+            if (r >= row) break
+            val rStart = (r..<row).firstOrNull { !model.isZero(M[it, c]) } ?: continue
+            if (rStart != r) {
+                M.swapRow(r, rStart)
             }
-            if (f == null) continue
-            //not found
-
-            for (i2 in (i + 1) until row) {
-                if (model.isZero(M[i2, j])) continue
-                val k = model.eval { -M[i2, j] / f }
-                M[i2, j] = model.zero
-                M.multiplyAddRow(i, i2, k, j + 1)
+            val f = M[r, c]
+            for (i in (rStart + 1)..<row) {
+                if (model.isZero(M[i, c])) continue
+                val k = model.eval { -M[i, c] / f }
+                M[i, c] = zero
+                M.multiplyAddRow(r, i, k, c + 1)
             }
-            pivots += j
-            i++
+            pivots += c
+            r++
         }
         return pivots
     }
@@ -1225,62 +1244,22 @@ object MatrixImpl {
         return pivots
     }
 
+    /**
+     * Transforms the given matrix `M` over a Euclidean domain to an upper triangular form.
+     */
     internal fun <T> toUpperEUD0(M: MutableMatrix<T>, mc: EuclideanDomain<T>, column: Int = M.column): List<Int> {
         val row = M.row
-        var i = 0
+        var r = 0
         val pivots = ArrayList<Int>(min(M.row, column))
-        for (j in 0 until column) {
-            if (i >= row) {
-                break
-            }
-            var found = false
-            for (i2 in i until row) {
-                if (mc.isZero(M[i2, j])) {
-                    continue
-                }
-                found = true
-                if (i2 != i) {
-                    M.swapRow(i2, i)
-                }
-                break
-            }
-            if (!found) {
-                //not found
-                continue
-            }
-            for (i2 in (i + 1) until row) {
-                if (mc.isZero(M[i2, j])) {
-                    continue
-                }
-                val a = M[i, j]
-                val b = M[i2, j]
-                val (d, u, v) = mc.gcdUVMin(a, b)
-                // uni-modular transform
-                val a1 = mc.exactDivide(a, d)
-                val b1 = mc.exactDivide(b, d)
-                M.transformRows(i, i2, u, v, mc.negate(b1), a1, j)
-            }
-            pivots += j
-            i++
+        for (c in 0 until column) {
+            if (r >= row) break
+            if (reduceByRowEUD(M, mc, r, c) == 0) continue
+            pivots += c
+            r++
         }
         return pivots
     }
 
-    internal fun <T> toEchelonEUD0(M: MutableMatrix<T>, mc: EuclideanDomain<T>, column: Int = M.column): List<Int> {
-        val pivots = toUpperEUD0(M, mc, column)
-        for (i in pivots.lastIndex downTo 0) {
-            val j = pivots[i]
-            val d = M[i, j]
-            for (k in (i - 1) downTo 0) {
-                if (mc.isZero(M[k, j])) {
-                    continue
-                }
-                val q = mc.eval { -divideToInteger(M[k, j], d) }
-                M.multiplyAddRow(i, k, q, j)
-            }
-        }
-        return pivots
-    }
 
     internal fun <T> toHermitForm0(M: MutableMatrix<T>, mc: Integers<T>, column: Int = M.column): List<Int> {
         val pivots = toUpperEUD0(M, mc, column)
@@ -1310,7 +1289,7 @@ object MatrixImpl {
      */
     fun <T> toHermitForm(A: GenMatrix<T>, mc: Integers<T>): Matrix<T> {
         val M = AMatrix.copyOf(A, mc)
-        toHermitForm0(M,mc)
+        toHermitForm0(M, mc)
         return M
     }
 
@@ -1353,85 +1332,115 @@ object MatrixImpl {
         val rows = M.row
         val cols = M.column
         val invariants = mutableListOf<T>()
-
-        var currentRow = 0
-        var currentCol = 0
-
-        // Iterate over the matrix to reduce it to Smith Normal Form
-        while (currentRow < rows && currentCol < cols) {
-            // Make the current diagonal element non-zero if possible
-            if (mc.isZero(M[currentRow, currentCol])) {
-                if (!findAndSwapNonZeroElement(M, mc, currentRow, currentCol)) {
-                    currentCol++
-                    continue
+        var c = 0
+        for (r in 0..<rows) {
+            println(M)
+            if (reduceByRowEUD(M, mc, r, c) == 0) {
+                // the elements in the column are all zero, move to the next column
+                c++
+                if (c >= cols) break // all columns are reduced
+            }
+            // M[r,c] is non-zero and the elements below it are all zero
+            while (reduceByColEUD(M, mc, r, c, zeroed = true) == 2) {
+                // the column is changed, so we have to reduce the by row again
+                println(M)
+                reduceByRowEUD(M, mc, r, c)
+                println(M)
+            }
+            // now we have to reduce the rest of the elements with i >= r, j > c
+            for (i in r..<rows) {
+                for (j in (c + 1)..<cols) {
+                    val (g, u, v) = mc.gcdUV(M[r, c], M[i, j])
+                    if (mc.isZero(v)) continue // M[r,c] | M[i,j], continue
+                    // make a gcd at M[r,j] by row and col trans
+                    // then swap col c and j
+                    M.multiplyAddRow(i, r, v, j + 1)
+                    M[r, j] = g // col trans can be omitted since elements below M[r,c] are all zero
+                    M.swapCol(c, j, r)
+                    // clean up the elements in the column c and row r
+                    do {
+                        println(M)
+                        reduceByRowEUD(M, mc, r, c)
+                        println(M)
+                    } while (reduceByColEUD(M, mc, r, c, zeroed = true) == 2)
                 }
             }
-
-            // Perform row and column reduction to make other elements in the current row and column zero
-            reduceRowAndCol(M, mc, currentRow, currentCol)
-
-            // Save the current diagonal element (invariant factor) if it's non-zero
-            invariants.add(M[currentRow, currentCol])
-
-            // Move to the next diagonal element
-            currentRow++
-            currentCol++
-            //TODO fix the algorithm
+            invariants += M[r, c]
+            println(M)
         }
 
         return invariants
     }
 
     /**
-     * Finds a non-zero element in the matrix starting from position [row, col] and swaps rows/columns
-     * to bring it to the [row, col] position.
      *
-     * @param M The matrix being processed.
-     * @param mc The Euclidean domain calculator for performing operations on the matrix entries.
-     * @param row The starting row index.
-     * @param col The starting column index.
-     * @return `true` if a non-zero element was found and swapped, `false` otherwise.
+     * @return 0 if the row is all zero, 1 if any row is reduced, 2 if the original row is changed.
      */
-    private fun <T> findAndSwapNonZeroElement(M: MutableMatrix<T>, mc: EuclideanDomain<T>, row: Int, col: Int): Boolean {
-        for (i in row until M.row) {
-            if (!mc.isZero(M[i, col])) {
-                if (i != row) M.swapRow(i, row)
-                return true
-            }
-        }
-        return false
+    private fun <T> reduceByRowEUD(
+        M: MutableMatrix<T>, mc: EuclideanDomain<T>, r: Int, c: Int, zeroed: Boolean = false, colStart: Int = c + 1
+    ): Int {
+        return templateReduceInEUD(
+            mc, M.row, r, c, zeroed, mc.zero, colStart, M::get, M::set, M::swapRow, M::multiplyAddRow, M::transformRows
+        )
     }
 
-    /**
-     * Reduces the current row and column, making all elements except the diagonal element at [row, col] zero.
-     *
-     * @param M The matrix being reduced.
-     * @param mc The Euclidean domain calculator for performing operations on the matrix entries.
-     * @param row The current row index.
-     * @param col The current column index.
-     */
-    private fun <T> reduceRowAndCol(M: MutableMatrix<T>, mc: EuclideanDomain<T>, row: Int, col: Int) {
-        val diagElement = M[row, col]
 
-        // Zero out all elements below the diagonal in the current column
-        for (i in (row + 1) until M.row) {
-            val element = M[i, col]
-            if (!mc.isZero(element)) {
-                val (q, r) = mc.divideAndRemainder(element, diagElement)
-                M.multiplyAddRow(row, i, mc.negate(q), col)
-                M[i, col] = r // Ensure the element is exactly zero if the remainder is zero
-            }
-        }
+    private fun <T> reduceByColEUD(
+        M: MutableMatrix<T>, mc: EuclideanDomain<T>, r: Int, c: Int, zeroed: Boolean = false, rowStart: Int = r + 1
+    ): Int {
+        return templateReduceInEUD(
+            mc, M.column, c, r, zeroed, mc.zero, rowStart,
+            mGet = { i, j -> M[j, i] },
+            mSet = { i, j, v -> M[j, i] = v },
+            M::swapCol, M::multiplyAddCol, M::transformCols
+        )
+    }
 
-        // Zero out all elements to the right of the diagonal in the current row
-        for (j in (col + 1) until M.column) {
-            val element = M[row, j]
-            if (!mc.isZero(element)) {
-                val (q, r) = mc.divideAndRemainder(element, diagElement)
-                M.multiplyAddCol(col, j, mc.negate(q), row)
-                M[row, j] = r // Ensure the element is exactly zero if the remainder is zero
-            }
+    private inline fun <T> templateReduceInEUD(
+        mc: EuclideanDomain<T>,
+        rowEnd: Int, r: Int, c: Int,
+        zeroed0: Boolean, zero: T, colStart: Int,
+        mGet: (Int, Int) -> T, mSet: (Int, Int, T) -> Unit,
+        mSwapRow: (Int, Int, Int) -> Unit,
+        mMultiplyAddRow: (Int, Int, T, Int) -> Unit,
+        mTransformRows: (Int, Int, T, T, T, T, Int) -> Unit
+    ): Int {
+        val rStart = (r until rowEnd).firstOrNull { !mc.isZero(mGet(it, c)) } ?: return 0
+        if (rStart != r) {
+            mSwapRow(r, rStart, c)
         }
+        // the rows in (r, rStart] are all zero
+        var res = 1
+        var zeroed = zeroed0
+        for (i in (rStart + 1) until rowEnd) {
+            val b = mGet(i, c)
+            if (mc.isZero(b)) continue
+            val h = mGet(r, c)
+            val (gcd, u, v, hd, bd) = mc.gcdExtendedFull(h, b)
+            // uh + vb = gcd(h, b)
+            // uni-modular transform: [u, v; -b/d, a/d], det = (au - bv)/d = 1
+            // M[r] = u M[r] + v M[i] = gcd(a,b), M[r,c] = gcd
+            // M[i] = -b/d M[r] + a/d M[i], M[i,c] = 0
+            if (mc.isZero(v)) {
+                // h | b, so u = 1, v = 0, hd = 1, bd = b/d = b/h
+                // just to optimize the computation: M[i] = M[i] - b/h M[r], while M[r] is not changed
+                if (!zeroed) {
+                    mMultiplyAddRow(r, i, bd, colStart)
+                }
+            } else {
+                if (zeroed) {
+                    mMultiplyAddRow(i, r, v, colStart)
+                } else {
+                    mTransformRows(r, i, u, v, mc.negate(bd), hd, colStart)
+                }
+                res = 2
+                zeroed = false
+            }
+            mSet(r, c, gcd)
+            mSet(i, c, zero)
+
+        }
+        return res
     }
 
 
@@ -1540,8 +1549,20 @@ object MatrixImpl {
 
 fun main() {
     val Z = NumberModels.intAsIntegers()
-    val A = Matrix.diag(Z, 6,4,2)
+    val n = 3
+    val A = Matrix(n, Z) { i, j -> (i + 1) * (j + 2) }
     println(MatrixImpl.invariantFactors(A, Z))
+    val gcds = mutableListOf<Int>()
+    for (k in 1..n) {
+        val minors = IterUtils.comb(A.row, k, false).map { A.slice(it, it).det().toLong() }.toList()
+        val gcd = NTFunctions.gcd(*minors.toLongArray()).toInt()
+        if (gcd == 0) {
+            break
+        }
+        gcds.add(gcd)
+    }
+    println(A.det())
+//    println(gcds)
 //    val A = Matrix.identity(3, ints)
 //    val A = Matrix.of(2,2, ints,
 //        1, 2, 3, 4

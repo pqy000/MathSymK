@@ -158,7 +158,7 @@ class MatrixTest {
             }
             gcds.add(gcd)
         }
-        assertEquals(accProd, gcds)
+        assertEquals(gcds,  accProd)
 //        val minors1 = IterUtils.comb(A.row, 1, false).map { A.slice(it, it).det().toLong() }.toList()
 //        val minors2 = IterUtils.comb(A.row, 2, false).map { A.slice(it, it).det().toLong() }.toList()
 //        println(NTFunctions.gcd(*minors1.toLongArray()))

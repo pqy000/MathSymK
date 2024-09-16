@@ -525,6 +525,22 @@ interface MutableMatrix<T> : Matrix<T> {
         colStart: Int = 0, colEnd: Int = column
     )
 
+    fun transformCols(
+        c1: Int, c2: Int, a11: T, a12: T, a21: T, a22: T,
+        rowStart: Int = 0, rowEnd: Int = row
+    ) {
+        val model = model as Ring
+        val A = this
+        for (i in rowStart until rowEnd) {
+            val v1 = A[i, c1]
+            val v2 = A[i, c2]
+            with(model) {
+                A[i, c1] = a11 * v1 + a12 * v2
+                A[i, c2] = a21 * v1 + a22 * v2
+            }
+        }
+    }
+
     fun negateInPlace()
 
     companion object {

@@ -344,9 +344,6 @@ object BigIntegerAsIntegers : Integers<BigInteger> {
         return res[0] to res[1]
     }
 
-    override fun isExactDivide(a: BigInteger, b: BigInteger): Boolean {
-        return a.remainder(b) == BigInteger.ZERO
-    }
 
     override fun of(n: Long): BigInteger {
         return BigInteger.valueOf(n)
