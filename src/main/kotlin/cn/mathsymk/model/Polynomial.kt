@@ -3,6 +3,8 @@ package cn.mathsymk.model
 import cn.mathsymk.ValueEquatable
 import cn.mathsymk.ModeledMathObject
 import cn.mathsymk.function.MathOperator
+import cn.mathsymk.linear.Matrix
+import cn.mathsymk.linear.MutableMatrix
 import cn.mathsymk.model.Polynomial.Companion.primitiveGCD
 import cn.mathsymk.model.struct.AlgebraModel
 import cn.mathsymk.model.struct.EuclidDomainModel
@@ -134,11 +136,11 @@ data class Polynomial<T> internal constructor(
         return format("x")
     }
 
-    fun format(ch: String, bracket : Boolean = false): String {
+    fun format(ch: String, bracket: Boolean = false): String {
         if (isZero) return "0"
         val isOne = AbstractMultinomial.isOneFromModel(model)
         val isNegativeAndAbs = AbstractMultinomial.isNegativeAndAbsFromModel(model)
-        val transform = if(bracket) { t : T -> "($t)" } else { t : T -> t.toString() }
+        val transform = if (bracket) { t: T -> "($t)" } else { t: T -> t.toString() }
         return stringOf(this, ch, isOne, isNegativeAndAbs, transform)
     }
 
@@ -335,31 +337,7 @@ data class Polynomial<T> internal constructor(
      * - The [model] is a [UniqueFactorizationDomain] and every division is exact.
      */
     override fun divideAndRemainder(y: Polynomial<T>): Pair<Polynomial<T>, Polynomial<T>> {
-        if (y.isZero) {
-            throw ArithmeticException("Division by zero")
-        }
-        require(model is UnitRing<T>) { "The model must support `exactDivide`" }
-        if (isZero) {
-            return this to this
-        }
-        var remainder = this
-        val quotientTerms = mutableListOf<PTerm<T>>()
-
-        val leadTermY = y.leadTerm
-        while (!remainder.isZero && remainder.degree >= y.degree) {
-            val leadTermR = remainder.leadTerm
-            val q = model.exactDivide(leadTermR.value, leadTermY.value)
-            val leadPowQuotient = leadTermR.pow - leadTermY.pow
-            val quotientTerm = PTerm(leadPowQuotient, q)
-            quotientTerms.add(quotientTerm)
-
-            val subtrahend = y.mapTermsNonZeroT { PTerm(it.pow + leadPowQuotient, model.multiply(it.value, q)) }
-
-            remainder -= subtrahend
-        }
-
-        val quotient = Polynomial(model, quotientTerms.reversed())
-        return quotient to remainder
+        return divideAndRemainder(this, y, model as UnitRing)
     }
 
 
@@ -451,29 +429,43 @@ data class Polynomial<T> internal constructor(
         return scalarDiv(cont())
     }
 
-//    /**
-//     * Returns the sylvester matrix of this and g. It is required that `this` and
-//     * `g` must not be zero at the same time.
-//     * <pre>R(this,g)</pre>
-//     *
-//     * @param g another polynomial
-//     * @return a square matrix whose size is `this.degree + g.degree`.
-//     */
-//    fun sylvesterMatrix(g: Polynomial<T>): Matrix<T> {
-//        return sylvesterDet(this, g)
-//    }
-//
-//    /**
-//     * Returns the determinant of the sylvester matrix of this and g. It is required that `this` and
-//     * `g` must not be zero at the same time.
-//     * <pre>|R(this,g)|</pre>
-//     *
-//     * @param g another polynomial
-//     * @return the determinant of the sylvester matrix
-//     */
-//    fun sylvesterDet(g: Polynomial<T>): T {
-//        return sylvesterMatrix(g).det()
-//    }
+    /**
+     * Returns the sylvester matrix of this and g.
+     * It is required that `this` and `g` must not be zero at the same time.
+     *
+     * Let `this` be `a_n x^n + a_{n-1} x^{n-1} + ... + a_1 x + a_0` and `g` be `b_m x^m + b_{m-1} x^{m-1} + ... + b_1 x + b_0`.
+     * Then, the sylvester matrix of `this` and `g` is a square matrix whose size is `n + m`:
+     *
+     *     [ a_n a_{n-1} ... a_1 a_0 0       ... 0   ]
+     *     [ 0   a_n     ... a_2 a_1 a_0     ... 0   ]
+     *     ...
+     *     [ 0   0       ...     a_m a_{m-1} ... a_0 ] (the m-th row)
+     *     [ b_m b_{m-1} ... b_1 b_0 0       ... 0   ]
+     *     [ 0   b_m     ... b_2 b_1 b_0     ... 0   ]
+     *     ...
+     *     [ 0   0       ... 0   b_n b_{n-1} ... b_0 ] (the (m+n)-th row)
+     *
+     *
+     * @param g another polynomial
+     * @return a square matrix whose size is `this.degree + g.degree`.
+     */
+    fun sylvesterMatrix(g: Polynomial<T>): Matrix<T> {
+        require(degree >= 0 || g.degree >= 0) { "Both polynomials are zero." }
+        val n = degree
+        val m = g.degree
+        val M = MutableMatrix.zero(n + m, model)
+        for (t in terms) {
+            for (i in 0 until m) {
+                M[i, n - t.pow + i] = t.value
+            }
+        }
+        for (t in g.terms) {
+            for (i in 0 until n) {
+                M[m + i, m - t.pow + i] = t.value
+            }
+        }
+        return M
+    }
 
 
     /**
@@ -497,37 +489,7 @@ data class Polynomial<T> internal constructor(
      * @return the resultant of this polynomial and `y`.
      */
     fun resultant(y: Polynomial<T>): T {
-        // 结式
-        require(model is Field<T>) { "The model is not a field." }
-
-        // If either polynomial is zero, the resultant is zero
-        if (this.isZero || y.isZero) {
-            return model.zero
-        }
-//
-        // Compute the GCD of the two polynomials
-        val gcd = gcd(y)
-
-        // If the GCD is not a constant polynomial, the resultant is zero
-        if (gcd.degree > 0) {
-            return model.zero
-        }
-        TODO()
-//
-//        // Otherwise, compute the resultant using the properties of polynomials
-//        // (this is simplified for a field)
-//        val n = y.degree
-//        val m = this.degree
-//
-//        val leadingCoeffThis = this.leadTerm().value
-//        val leadingCoeffY = y.leadTerm().value
-//
-//        // Compute (-1)^(m*n) * leadingCoeffThis^n * leadingCoeffY^m
-//        val sign = if ((m * n) % 2 == 0) model.one else model.negate(model.one)
-//        val resultant = model.eval {
-//            sign * leadingCoeffThis.pow(m.toLong()) * leadingCoeffY.pow(n.toLong())
-//        }
-//        return resultant
+        return Companion.resultant(this, y, model as Field<T>)
     }
 
 
@@ -819,6 +781,8 @@ data class Polynomial<T> internal constructor(
             return computeGeneral(p, x, model::zero, model::fromScalar, model::add, model::multiply, model::power)
         }
 
+
+
         /*
         Number models
          */
@@ -861,6 +825,32 @@ data class Polynomial<T> internal constructor(
         /*
         Methods for number theory
          */
+
+
+        internal fun <T> divideAndRemainder(
+            x: Polynomial<T>, y: Polynomial<T>, model: UnitRing<T>
+        ): Pair<Polynomial<T>, Polynomial<T>> {
+            if (y.isZero) throw ArithmeticException("Division by zero")
+            if (x.isZero) {
+                return x to x
+            }
+            var remainder = x
+            val quotientTerms = mutableListOf<PTerm<T>>()
+
+            val leadTermY = y.leadTerm
+            while (!remainder.isZero && remainder.degree >= y.degree) {
+                val leadTermR = remainder.leadTerm
+                val q = model.exactDivide(leadTermR.value, leadTermY.value)
+                val leadPowQuotient = leadTermR.pow - leadTermY.pow
+                val quotientTerm = PTerm(leadPowQuotient, q)
+                quotientTerms.add(quotientTerm)
+                val subtrahend = y.mapTermsNonZeroT { PTerm(it.pow + leadPowQuotient, model.multiply(it.value, q)) }
+                remainder -= subtrahend
+            }
+
+            val quotient = Polynomial(model, quotientTerms.reversed())
+            return quotient to remainder
+        }
 
         /**
          * Performs the pseudo division of two polynomials only over a ring.
@@ -1021,6 +1011,68 @@ data class Polynomial<T> internal constructor(
             }
             return B.toPrimitive() * d
         }
+
+        /**
+         * Computes the resultant of two polynomials f and g over a Field<T>.
+         *
+         * @param f The first polynomial.
+         * @param g The second polynomial.
+         * @param model The underlying field over which the polynomials are defined.
+         * @return The resultant of polynomials f and g.
+         */
+        fun <T> resultant(f: Polynomial<T>, g: Polynomial<T>, model: Field<T>): T {
+            /*
+            Refer to Ex 3.6.11 of 'A Course in Computational Algebraic Number Theory', Henri Cohen
+             */
+            // Check if either polynomial is zero
+            if (f.isZero || g.isZero) {
+                return model.zero
+            }
+
+            var h = f
+            var s = g
+            var res = model.one
+
+            while (s.degree > 0) {
+                // Compute the remainder r of h divided by s
+                val (_, r) = h.divideAndRemainder(s)
+
+                val degH = h.degree
+                val degS = s.degree
+                val degR = if (r.isZero) -1 else r.degree
+
+                val pow = degH - degR
+                val lcS = s.leadCoef
+
+                // Compute (-1)^(deg(h) * deg(s))
+                val degProduct = degH * degS
+                val sign = if (degProduct % 2 == 0) model.one else model.negate(model.one)
+
+                // Compute LC(s)^(deg(h) - deg(r))
+                val lcSPow = model.power(lcS, pow.toLong())
+
+                // Update the resultant
+                res = model.multiply(model.multiply(sign, lcSPow), res)
+
+                // Update h and s for the next iteration
+                h = s
+                s = r
+            }
+
+            // After the loop, check if h or s is zero
+            if (h.isZero || s.isZero) {
+                res = model.zero
+            } else if (h.degree > 0) {
+                // Multiply res by LC(s)^(deg(h))
+                val lcS = s.leadCoef
+                val degH = h.degree
+                val lcSPow = model.power(lcS, degH.toLong())
+                res = model.multiply(lcSPow, res)
+            }
+
+            return res
+        }
+
     }
 }
 
@@ -1209,7 +1261,9 @@ open class PolyOverField<T>(override val model: Field<T>) : PolyOverUFD<T>(model
 
 
 fun main() {
-    val Z = NumberModels.intAsIntegers()
-    val p = Polynomial.of(Z, -1, 2, 3, -5)
-    println(p)
+//    val Z = NumberModels.intModP(97)
+//    val p = Polynomial.of(Z, -1, 2, 3, -6)
+//    val q = Polynomial.of(Z, 1, 2, 3)
+//    println(p.sylvesterMatrix(q).det())
+//    println(Polynomial.resultant(p, q, Z))
 }

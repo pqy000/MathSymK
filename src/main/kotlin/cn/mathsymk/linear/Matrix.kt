@@ -558,6 +558,10 @@ interface MutableMatrix<T> : Matrix<T> {
             return MatrixImpl.zero(row, column, model)
         }
 
+        fun <T> zero(n : Int, model: AddMonoid<T>): MutableMatrix<T> {
+            return zero(n, n, model)
+        }
+
         fun <T> identity(n: Int, model: UnitRing<T>): MutableMatrix<T> {
             return MatrixImpl.identity(n, model)
         }

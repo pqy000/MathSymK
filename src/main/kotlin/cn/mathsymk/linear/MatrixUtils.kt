@@ -184,9 +184,10 @@ object MatrixUtils {
     /**
      * Returns the list of non-zero invariant factors of this matrix in order.
      *
-     * To introduce invariant factors, we first define the determinantal divisors `d_k` of a matrix `A` as the greatest common divisor of all `k × k` minors of `A`.
-     * For example, the first determinantal divisors is the gcd of all elements of the matrix,
-     * while the `n`-th  determinantal divisors is just the determinant of the matrix.
+     * To introduce invariant factors, we first define the determinantal divisors `d_k` of a matrix `A`
+     * as the greatest common divisor of all `k × k` minors of `A`.
+     * For example, the first determinant divisors is the gcd of all elements of the matrix,
+     * while the `n`-th  determinant divisors is just the determinant of the matrix.
      * It is easy to see that `d_1 | d_2 | ... | d_n`.
      *
      * Then, the **invariant factors** `α_k` of a matrix `A` are defined by `α_k = d_k / d_{k-1}`, where we take `d_0 = 1`,
@@ -205,6 +206,24 @@ object MatrixUtils {
      */
     fun <T> Matrix<T>.invariantFactors(): List<T> {
         return MatrixImpl.invariantFactors(this, this.model as EuclideanDomain<T>)
+    }
+
+    /**
+     * Returns the list of non-zero determinant divisors of this matrix.
+     *
+     * The `k`-th determinant divisor of a matrix `A` is the greatest common divisor of all `k × k` minors of `A`.
+     * For example, the first determinant divisor is the gcd of all elements of the matrix,
+     * while the `n`-th determinant divisor is just the determinant of the matrix.
+     *
+     * The determinant divisors have the following properties:
+     * * They are unique up to multiplication by units.
+     * * Let `r` be the rank of the matrix. Then `d_k = 0` for `k > r`.
+     * * `d_1 | d_2 | ... | d_n`, while the quotient `α_k = d_k / d_{k-1}` is referred to as the `k`-th invariant factor.
+     *
+     * @return the list of non-zero determinant divisors `d_1, d_2, ..., d_r`
+     */
+    fun <T> Matrix<T>.detDivisors(): List<T> {
+        return MatrixImpl.detDivisors(this, this.model as EuclideanDomain<T>)
     }
 
     /**

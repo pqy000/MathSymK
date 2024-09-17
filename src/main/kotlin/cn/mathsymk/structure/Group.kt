@@ -343,6 +343,10 @@ interface MulSemigroup<T> : EqualPredicate<T> {
 
 }
 
+fun <T> MulSemigroup<T>.power(x: T, n: Int): T {
+    return power(x, n.toLong())
+}
+
 
 /**
  * A monoid model providing [one], the identity element, for an multiplicative semigroup calculator.

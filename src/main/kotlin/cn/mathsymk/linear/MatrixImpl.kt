@@ -1321,6 +1321,19 @@ object MatrixImpl {
         return toSmithForm0(AMatrix.copyOf(A, mc), mc)
     }
 
+
+    fun <T> detDivisors(A: GenMatrix<T>, mc: EuclideanDomain<T>): List<T>{
+        val invFactors = invariantFactors(A, mc)
+        // d_k = a_k * a_{k-1} * ... * a_1
+        val result = ArrayList<T>(invFactors.size)
+        var d = mc.one
+        for (i in invFactors.indices) {
+            d = mc.multiply(d, invFactors[i])
+            result += d
+        }
+        return result
+    }
+
     /**
      * Transforms the given matrix `M` over a Euclidean domain to its Smith Normal Form.
      * Returns a list of invariant factors (non-zero diagonal entries).
