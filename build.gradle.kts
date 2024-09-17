@@ -8,8 +8,11 @@ group = "io.github.ezrnest"
 version = "0.0.1"
 
 repositories {
-    maven {
+    maven{
         url = uri("https://maven.aliyun.com/repository/public/")
+    }
+    maven {
+        url = uri("https://plugins.gradle.org/m2/")
     }
     mavenCentral()
 }
@@ -79,11 +82,11 @@ publishing {
     }
 }
 
-signing {
-    useInMemoryPgpKeys(
-        project.findProperty("signing.key") as String?,
-        project.findProperty("signing.password") as String?
-    )
-    sign(publishing.publications["mavenJava"])
-}
+//signing {
+//    useInMemoryPgpKeys(
+//        project.findProperty("signing.key") as String?,
+//        project.findProperty("signing.password") as String?
+//    )
+//    sign(publishing.publications["mavenJava"])
+//}
 
