@@ -1111,8 +1111,8 @@ open class PolyOverRing<T>(_model: Ring<T>) : Ring<Polynomial<T>>,
         return v.times(k)
     }
 
-    fun poly(vararg coef: T): Polynomial<T> {
-        return Polynomial.of(model, *coef)
+    fun poly(vararg coefficients: T): Polynomial<T> {
+        return Polynomial.of(model, *coefficients)
     }
 
     fun constant(c: T): Polynomial<T> {
@@ -1260,10 +1260,10 @@ open class PolyOverField<T>(override val model: Field<T>) : PolyOverUFD<T>(model
 }
 
 
-fun main() {
-//    val Z = NumberModels.intModP(97)
-//    val p = Polynomial.of(Z, -1, 2, 3, -6)
-//    val q = Polynomial.of(Z, 1, 2, 3)
-//    println(p.sylvesterMatrix(q).det())
-//    println(Polynomial.resultant(p, q, Z))
-}
+//fun main() {
+////    val Z = NumberModels.intModP(97)
+////    val p = Polynomial.of(Z, -1, 2, 3, -6)
+////    val q = Polynomial.of(Z, 1, 2, 3)
+////    println(p.sylvesterMatrix(q).det())
+////    println(Polynomial.resultant(p, q, Z))
+//}

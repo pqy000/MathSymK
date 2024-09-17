@@ -2,6 +2,7 @@ package cn.mathsymk.linear
 
 import cn.mathsymk.ValueEquatable
 import cn.mathsymk.ModeledMathObject
+import cn.mathsymk.model.Complex
 import cn.mathsymk.model.struct.*
 import cn.mathsymk.structure.*
 import java.util.function.Function
@@ -140,7 +141,7 @@ interface Matrix<T> : GenMatrix<T>, ModeledMathObject<T, EqualPredicate<T>>,
      * Computes the rank of this matrix.
      */
     fun rank(): Int {
-        TODO()
+        return MatrixImpl.rank(this, model as Field)
     }
 
     /**
@@ -221,28 +222,6 @@ interface Matrix<T> : GenMatrix<T>, ModeledMathObject<T, EqualPredicate<T>>,
         return slice(remRows, remCols)
     }
 
-    /**
-     * Returns the cofactor of this matrix at the position `(i, j)`.
-     * The cofactor is the determinant of the minor matrix at `(i, j)` with a sign determined by `(-1)^(i+j)`.
-     *
-     *     C(i, j) = (-1)^(i+j) * det(minor(i, j))
-     */
-    fun cofactor(i: Int, j: Int): T {
-        val t = minor(i, j).det()
-        val model = model as Ring
-        return if ((i + j) % 2 == 0) t else model.negate(t)
-    }
-
-    /**
-     * Returns the adjugate of this matrix, which is defined as the transpose of the matrix of cofactors:
-     *
-     *    adj(A) = (C(i, j))_{i,j}^T
-     *
-     * If `A` is invertible, then `A * adjugate(A) = det(A) * I`.
-     */
-    fun adjugate(): Matrix<T> {
-        return MatrixImpl.adjugate(this, model as Ring)
-    }
 
 
     companion object {
@@ -376,8 +355,28 @@ operator fun <T> RowVector<T>.times(m: Matrix<T>): RowVector<T> {
 }
 
 //fun <K> Matrix<Complex<K>>.conjugate(): Matrix<Complex<K>> {
-//    return applyAll { it.conjugate() }
+//    val model = model as ComplexNumbers<*,Complex<K>>
+//    return applyAll(model::conj)
 //}
+
+/**
+ * Returns the transpose conjugate of this matrix.
+ *
+ * It is required that this matrix is a matrix of complex numbers with a model of [ComplexNumbers].
+ */
+fun <K> Matrix<Complex<K>>.transposeConjugate(): Matrix<Complex<K>> {
+    val model = model as ComplexNumbers<*,Complex<K>>
+    return TransposedMatrixView(this).applyAll(model::conj)
+}
+
+/**
+ * The same as [transposeConjugate].
+ *
+ * @see transposeConjugate
+ */
+val <K> Matrix<Complex<K>>.H: Matrix<Complex<K>> get() = transposeConjugate()
+
+
 
 
 @JvmRecord

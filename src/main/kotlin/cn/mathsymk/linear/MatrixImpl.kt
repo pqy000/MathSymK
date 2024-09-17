@@ -1,5 +1,6 @@
 package cn.mathsymk.linear
 
+import cn.mathsymk.linear.MatrixUtils.cofactor
 import cn.mathsymk.model.Polynomial
 import cn.mathsymk.structure.*
 import cn.mathsymk.util.IterUtils
@@ -692,6 +693,11 @@ object MatrixImpl {
     /*
     Inverse
      */
+
+    fun <T> rank(A: GenMatrix<T>, model: Field<T>): Int {
+        val pivots = toEchelon(AMatrix.copyOf(A, model),model)
+        return pivots.size
+    }
 
     /**
      * Computes the 'inverse' of the given matrix over a unit ring. This method simply compute the adjugate matrix and
@@ -1392,7 +1398,7 @@ object MatrixImpl {
         M: MutableMatrix<T>, mc: EuclideanDomain<T>, r: Int, c: Int, zeroed: Boolean = false, colStart: Int = c + 1
     ): Int {
         return templateReduceInEUD(
-            mc, M.row, r, c, zeroed, mc.zero, colStart, M::get, M::set,
+            mc, M.row, r, c, zeroed, colStart, M::get, M::set,
             M::swapRow, M::multiplyAddRow, M::multiplyRow, M::transformRows
         )
     }
@@ -1402,7 +1408,7 @@ object MatrixImpl {
         M: MutableMatrix<T>, mc: EuclideanDomain<T>, r: Int, c: Int, zeroed: Boolean = false, rowStart: Int = r + 1
     ): Int {
         return templateReduceInEUD(
-            mc, M.column, c, r, zeroed, mc.zero, rowStart,
+            mc, M.column, c, r, zeroed, rowStart,
             mGet = { i, j -> M[j, i] },
             mSet = { i, j, v -> M[j, i] = v },
             M::swapCol, M::multiplyAddCol, M::multiplyCol, M::transformCols
@@ -1412,7 +1418,7 @@ object MatrixImpl {
     private inline fun <T> templateReduceInEUD(
         mc: EuclideanDomain<T>,
         rowEnd: Int, r: Int, c: Int,
-        zeroed0: Boolean, zero: T, colStart: Int,
+        zeroed0: Boolean, colStart: Int,
         mGet: (Int, Int) -> T, mSet: (Int, Int, T) -> Unit,
         mSwapRow: (Int, Int, Int) -> Unit,
         mMulAddRow: (Int, Int, T, Int) -> Unit, mMulRow: (Int, T, Int) -> Unit,
@@ -1451,7 +1457,7 @@ object MatrixImpl {
                 zeroed = false
             }
             mSet(r, c, gcd)
-            mSet(i, c, zero)
+            mSet(i, c, mc.zero)
 
         }
         return res

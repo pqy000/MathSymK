@@ -3,7 +3,13 @@ package cn.mathsymk.linear
 import cn.mathsymk.model.Polynomial
 import cn.mathsymk.structure.*
 
+/**
+ * Provides extra matrix functionalities.
+ */
 object MatrixUtils {
+
+
+
 
     /**
      * Returns the characteristic polynomial of the given square matrix.
@@ -100,7 +106,7 @@ object MatrixUtils {
         return MatrixImpl.decompKAN(this, this.model as Reals<T>)
     }
     /**
-     * Returns the (row) echelon form of this matrix.
+     * Returns the (row) echelon form of this matrix and the indices of the pivot columns.
      *
      * The row echelon form of a matrix is a matrix in which
      * * all zero rows are at the bottom of the matrix;
@@ -115,14 +121,17 @@ object MatrixUtils {
      *    [0 0 0 1]
      *    [0 0 0 0]
      *
+     * Here, the pivot columns are `0, 2, 3`.
      *
      *
      * It is required that the `model` of this matrix is a [Field].
+     *
+     * @return a pair of `(E, pivots)`, where `E` is the echelon form and `pivots` is the list of pivot columns.
      */
-    fun <T> Matrix<T>.toEchelonForm() : Matrix<T> {
+    fun <T> Matrix<T>.toEchelonForm() : Pair<Matrix<T>, List<Int>> {
         val m = MutableMatrix.copyOf(this)
-        MatrixImpl.toEchelon(m, this.model as Field<T>)
-        return m
+        val pivots = MatrixImpl.toEchelon(m, this.model as Field<T>)
+        return m to pivots
     }
 
     /**
@@ -180,6 +189,30 @@ object MatrixUtils {
         //Created by lyc at 2020-03-10 14:54
         return MatrixImpl.toSmithForm(this, this.model as EuclideanDomain<T>)
     }
+
+    /**
+     * Returns the cofactor of this matrix at the position `(i, j)`.
+     * The cofactor is the determinant of the minor matrix at `(i, j)` with a sign determined by `(-1)^(i+j)`.
+     *
+     *     C(i, j) = (-1)^(i+j) * det(minor(i, j))
+     */
+    fun <T> Matrix<T>.cofactor(i: Int, j: Int): T {
+        val t = minor(i, j).det()
+        val model = model as Ring
+        return if ((i + j) % 2 == 0) t else model.negate(t)
+    }
+
+    /**
+     * Returns the adjugate of this matrix, which is defined as the transpose of the matrix of cofactors:
+     *
+     *    adj(A) = (C(i, j))_{i,j}^T
+     *
+     * If `A` is invertible, then `A * adjugate(A) = det(A) * I`.
+     */
+    fun <T> Matrix<T>.adjugate(): Matrix<T> {
+        return MatrixImpl.adjugate(this, model as Ring)
+    }
+
 
     /**
      * Returns the list of non-zero invariant factors of this matrix in order.
