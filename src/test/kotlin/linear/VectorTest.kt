@@ -68,9 +68,9 @@ class VectorTest {
         }
 
         with(vectors3) {
-            val vector = vec(3.0, 4.0)
+            val vector = vec(3.0, 4.0,.0)
             val result = vector.unitize()
-            assertEquals(vec(0.6, 0.8), result)
+            assertEquals(vec(0.6, 0.8,0.0), result)
         }
     }
 

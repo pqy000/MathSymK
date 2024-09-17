@@ -286,7 +286,7 @@ class RFractionTest {
             with(qPoly) {
                 val f = (x + 1).f
                 val result = f.pow(2)
-                assertEquals(frac(1.p + 2 * x + x2, 1.p + x), result)
+                assertEquals(frac(1.p + 2 * x + x2, 1.p), result)
             }
             with(qPoly) {
                 val f = (x + 1).f
