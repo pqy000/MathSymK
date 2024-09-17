@@ -1,8 +1,8 @@
 package model
 
-import cn.mathsymk.model.Complex
-import cn.mathsymk.model.Fraction
-import cn.mathsymk.model.NumberModels
+import io.github.ezrnest.model.Complex
+import io.github.ezrnest.model.Fraction
+import io.github.ezrnest.model.NumberModels
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import kotlin.test.assertEquals

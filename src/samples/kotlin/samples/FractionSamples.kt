@@ -1,9 +1,9 @@
-package cn.mathsymk.example
+package samples
 
-import cn.mathsymk.model.Fraction
-import cn.mathsymk.model.NumberModels
-import cn.mathsymk.model.Polynomial
-import cn.mathsymk.model.RFraction
+import io.github.ezrnest.model.Fraction
+import io.github.ezrnest.model.NumberModels
+import io.github.ezrnest.model.Polynomial
+import io.github.ezrnest.model.RFraction
 
 fun basicFraction() {
     val a = Fraction.of(1, 2)

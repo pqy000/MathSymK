@@ -1,7 +1,7 @@
-package cn.mathsymk.example
+package samples
 
-import cn.mathsymk.model.NumberModels
-import cn.mathsymk.model.Polynomial
+import io.github.ezrnest.model.NumberModels
+import io.github.ezrnest.model.Polynomial
 
 //object PolynomialExamples{
 //

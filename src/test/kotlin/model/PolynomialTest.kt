@@ -1,10 +1,10 @@
 package model
 
 import TestUtils.assertValueEquals
-import cn.mathsymk.model.Fraction
-import cn.mathsymk.model.NumberModels
-import cn.mathsymk.model.PTerm
-import cn.mathsymk.model.Polynomial
+import io.github.ezrnest.model.Fraction
+import io.github.ezrnest.model.NumberModels
+import io.github.ezrnest.model.PTerm
+import io.github.ezrnest.model.Polynomial
 import org.junit.jupiter.api.Assertions.assertThrows
 import kotlin.test.Test
 import kotlin.test.assertEquals

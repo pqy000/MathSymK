@@ -1,8 +1,8 @@
 package discrete
 
-import cn.mathsymk.discrete.CombUtils
-import cn.mathsymk.discrete.Permutation
-import cn.mathsymk.util.ArraySup
+import io.github.ezrnest.discrete.CombUtils
+import io.github.ezrnest.discrete.Permutation
+import io.github.ezrnest.util.ArraySup
 import java.util.*
 import kotlin.test.Test
 import kotlin.test.assertEquals

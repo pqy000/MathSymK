@@ -1,7 +1,7 @@
 package model
 
-import cn.mathsymk.model.NumberModels
-import cn.mathsymk.model.Polynomial
+import io.github.ezrnest.model.NumberModels
+import io.github.ezrnest.model.Polynomial
 import org.junit.jupiter.api.assertThrows
 import kotlin.test.Test
 import kotlin.test.assertEquals

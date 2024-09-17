@@ -1,8 +1,8 @@
 package model
 
-import cn.mathsymk.model.NumberModels
-import cn.mathsymk.model.Polynomial
-import cn.mathsymk.model.RFraction
+import io.github.ezrnest.model.NumberModels
+import io.github.ezrnest.model.Polynomial
+import io.github.ezrnest.model.RFraction
 import org.junit.jupiter.api.Assertions.assertThrows
 import kotlin.test.Test
 import kotlin.test.assertEquals

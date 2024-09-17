@@ -1,9 +1,9 @@
-package cn.mathsymk.example
+package samples
 
-import cn.mathsymk.model.Complex
-import cn.mathsymk.model.ComplexD
-import cn.mathsymk.model.ComplexD.Companion.exp
-import cn.mathsymk.model.NumberModels
+import io.github.ezrnest.model.Complex
+import io.github.ezrnest.model.ComplexD
+import io.github.ezrnest.model.ComplexD.Companion.exp
+import io.github.ezrnest.model.NumberModels
 
 
 fun basicDoubleComplex(){

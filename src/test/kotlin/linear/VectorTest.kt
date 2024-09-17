@@ -1,11 +1,11 @@
 package linear
 
 import TestUtils.assertEquals
-import cn.mathsymk.linear.T
-import cn.mathsymk.linear.Vector
-import cn.mathsymk.linear.times
-import cn.mathsymk.model.NumberModels
-import cn.mathsymk.structure.Field
+import io.github.ezrnest.linear.T
+import io.github.ezrnest.linear.Vector
+import io.github.ezrnest.linear.times
+import io.github.ezrnest.model.NumberModels
+import io.github.ezrnest.structure.Field
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue

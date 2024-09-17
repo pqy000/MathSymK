@@ -1,16 +1,16 @@
 package model
 
-import cn.mathsymk.model.ComplexD
-import cn.mathsymk.model.ComplexD.Companion.ONE
-import cn.mathsymk.model.ComplexD.Companion.cos
-import cn.mathsymk.model.ComplexD.Companion.cosh
-import cn.mathsymk.model.ComplexD.Companion.cot
-import cn.mathsymk.model.ComplexD.Companion.exp
-import cn.mathsymk.model.ComplexD.Companion.ln
-import cn.mathsymk.model.ComplexD.Companion.sin
-import cn.mathsymk.model.ComplexD.Companion.sinh
-import cn.mathsymk.model.ComplexD.Companion.tan
-import cn.mathsymk.model.Fraction
+import io.github.ezrnest.model.ComplexD
+import io.github.ezrnest.model.ComplexD.Companion.ONE
+import io.github.ezrnest.model.ComplexD.Companion.cos
+import io.github.ezrnest.model.ComplexD.Companion.cosh
+import io.github.ezrnest.model.ComplexD.Companion.cot
+import io.github.ezrnest.model.ComplexD.Companion.exp
+import io.github.ezrnest.model.ComplexD.Companion.ln
+import io.github.ezrnest.model.ComplexD.Companion.sin
+import io.github.ezrnest.model.ComplexD.Companion.sinh
+import io.github.ezrnest.model.ComplexD.Companion.tan
+import io.github.ezrnest.model.Fraction
 import kotlin.math.abs
 import kotlin.test.*
 

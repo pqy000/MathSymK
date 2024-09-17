@@ -1,8 +1,8 @@
 package model
 
 import TestUtils.assertEquals
-import cn.mathsymk.model.NumberModels
-import cn.mathsymk.model.Quaternion
+import io.github.ezrnest.model.NumberModels
+import io.github.ezrnest.model.Quaternion
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue

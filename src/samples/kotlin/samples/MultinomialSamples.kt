@@ -1,7 +1,7 @@
-package cn.mathsymk.samples
+package samples
 
-import cn.mathsymk.model.Multinomial
-import cn.mathsymk.model.NumberModels
+import io.github.ezrnest.model.Multinomial
+import io.github.ezrnest.model.NumberModels
 
 
 fun buildMultinomial(){

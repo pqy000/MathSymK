@@ -1,8 +1,8 @@
 package model
 
-import cn.mathsymk.model.Fraction
-import cn.mathsymk.model.NumberModels
-import cn.mathsymk.model.toFrac
+import io.github.ezrnest.model.Fraction
+import io.github.ezrnest.model.NumberModels
+import io.github.ezrnest.model.toFrac
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import kotlin.system.measureTimeMillis

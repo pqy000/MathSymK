@@ -1,15 +1,15 @@
-package cn.mathsymk.samples
+package samples
 
-import cn.mathsymk.linear.Matrix
-import cn.mathsymk.linear.MatrixImpl
-import cn.mathsymk.linear.MatrixUtils.charPoly
-import cn.mathsymk.model.Multinomial
-import cn.mathsymk.model.NumberModels
-import cn.mathsymk.model.Polynomial
-import cn.mathsymk.numberTheory.NTFunctions
-import cn.mathsymk.structure.eval
-import cn.mathsymk.util.IterUtils
-import cn.mathsymk.util.MathUtils
+import io.github.ezrnest.linear.Matrix
+import io.github.ezrnest.linear.MatrixImpl
+import io.github.ezrnest.linear.MatrixUtils.charPoly
+import io.github.ezrnest.model.Multinomial
+import io.github.ezrnest.model.NumberModels
+import io.github.ezrnest.model.Polynomial
+import io.github.ezrnest.numberTheory.NTFunctions
+import io.github.ezrnest.structure.eval
+import io.github.ezrnest.util.IterUtils
+import io.github.ezrnest.util.MathUtils
 import kotlin.random.Random
 
 fun computingDeterminants() {

@@ -1,10 +1,10 @@
 package model
 
 import TestUtils.assertValueEquals
-import cn.mathsymk.linear.Tensor
-import cn.mathsymk.model.*
-import cn.mathsymk.linear.TensorImpl
-import cn.mathsymk.linear.get
+import io.github.ezrnest.linear.Tensor
+import io.github.ezrnest.model.*
+import io.github.ezrnest.linear.TensorImpl
+import io.github.ezrnest.linear.get
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
