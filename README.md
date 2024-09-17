@@ -1,3 +1,6 @@
+
+[![](https://jitpack.io/v/ezrnest/mathsymk.svg)](https://jitpack.io/#ezrnest/mathsymk)
+
 This project aims to provide a modern and easy-to-use symbolic Math library in Kotlin.
 We aim to cover a wide range of topics in mathematics, including but not limited to:
 * algebraic structures
@@ -28,11 +31,44 @@ Currently, it includes
 
 # Installation
 
-Since this project is still under heavy development, it is not published to any repository yet.
-Please clone the project and build it locally.
-A first release version will be published in the near future.
+Currently, we provide the library through JitPack.
+To use this library, you need to add the following to your build file.
+
+#### Gradle (Kotlin DSL):
+* Add the following to your root `build.gradle.kts` file at the end of the repositories section:
+
+```kotlin
+maven { url = uri("https://jitpack.io") }
+```
+* Add the dependency to your module's `build.gradle.kts` file:
+
+```kotlin
+implementation("com.github.ezrnest:mathsymk:0.0.1")
+```
+#### Maven:
+* Add the following to your `pom.xml` file:
+
+```xml
+<repositories>
+    <repository>
+        <id>jitpack.io</id>
+        <url>https://jitpack.io</url>
+    </repository>
+</repositories>
+```
+* Add the dependency:
+
+```xml
+<dependency>
+    <groupId>com.github.ezrnest</groupId>
+    <artifactId>mathsymk</artifactId>
+    <version>0.0.1</version>
+</dependency>
+```
 
 # Quick Start
+
+We provide a few examples to demonstrate the usage of this library.
 
 #### Fraction
 ```kotlin
