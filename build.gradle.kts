@@ -8,7 +8,7 @@ group = "io.github.ezrnest"
 version = "0.0.1"
 
 repositories {
-    maven{
+    maven {
         url = uri("https://maven.aliyun.com/repository/public/")
     }
     mavenCentral()
@@ -33,6 +33,9 @@ tasks.test {
 }
 
 java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(21))
+    }
     withJavadocJar()
     withSourcesJar()
 }
