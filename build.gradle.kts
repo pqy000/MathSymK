@@ -11,10 +11,8 @@ repositories {
     maven{
         url = uri("https://maven.aliyun.com/repository/public/")
     }
-    maven {
-        url = uri("https://plugins.gradle.org/m2/")
-    }
     mavenCentral()
+    maven { url = uri("https://jitpack.io") }
 }
 
 sourceSets {
@@ -75,8 +73,8 @@ publishing {
             name = "OSSRH"
             url = uri("https://oss.sonatype.org/service/local/staging/deploy/maven2/")
             credentials {
-                username = project.findProperty("ossrhToken") as String? ?: ""
-                password = ""
+//                username = project.findProperty("ossrhToken") as String? ?: ""
+//                password = ""
             }
         }
     }
