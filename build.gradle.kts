@@ -40,6 +40,13 @@ java {
     withSourcesJar()
 }
 
+kotlin {
+    compilerOptions{
+        freeCompilerArgs.add("-Xjvm-default=all")
+    }
+}
+
+
 publishing {
     publications {
         create<MavenPublication>("mavenJava") {
