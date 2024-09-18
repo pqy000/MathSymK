@@ -43,7 +43,7 @@ maven { url = uri("https://jitpack.io") }
 * Add the dependency to your module's `build.gradle.kts` file:
 
 ```kotlin
-implementation("com.github.ezrnest:mathsymk:0.0.1")
+implementation("com.github.ezrnest:mathsymk:v0.0.1")
 ```
 #### Maven:
 * Add the following to your `pom.xml` file:
@@ -62,7 +62,7 @@ implementation("com.github.ezrnest:mathsymk:0.0.1")
 <dependency>
     <groupId>com.github.ezrnest</groupId>
     <artifactId>mathsymk</artifactId>
-    <version>0.0.1</version>
+    <version>v0.0.1</version>
 </dependency>
 ```
 
