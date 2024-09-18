@@ -5,6 +5,8 @@ import io.github.ezrnest.structure.*
 
 /**
  * Provides extra matrix functionalities.
+ *
+ * Most of them are provided as extension functions.
  */
 object MatrixUtils {
 

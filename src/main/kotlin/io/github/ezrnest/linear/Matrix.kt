@@ -7,6 +7,19 @@ import io.github.ezrnest.model.struct.*
 import io.github.ezrnest.structure.*
 import java.util.function.Function
 
+/**
+ * Represents a mathematical matrix of elements of type [T].
+ *
+ * This interface defines the basic operations that can be performed on matrices, such as addition, multiplication,
+ * scalar operations, and determinant computation.
+ *
+ *
+ * For additional operations, see extension functions in [MatrixUtils].
+ *
+ * @param T the type of the elements in the matrix, which must belong to a ring or a field.
+ * @see MatrixUtils
+ * @see Vector
+ */
 interface Matrix<T> : GenMatrix<T>, ModeledMathObject<T, EqualPredicate<T>>,
     AlgebraModel<T, Matrix<T>>, MulGroupModel<Matrix<T>> {
 
@@ -14,23 +27,38 @@ interface Matrix<T> : GenMatrix<T>, ModeledMathObject<T, EqualPredicate<T>>,
     Matrix
      */
 
-
+    /**
+     * Gets the row at the given index as a vector.
+     */
     fun rowAt(rowIdx: Int): Vector<T> {
         return Vector(column, model) { colIdx -> this[rowIdx, colIdx] }
     }
 
+    /**
+     * Gets the column at the given index as a vector.
+     */
     fun colAt(colIdx: Int): Vector<T> {
         return Vector(row, model) { rowIdx -> this[rowIdx, colIdx] }
     }
 
+    /**
+     * Returns a list of row vectors.
+     */
     fun rowVectors(): List<Vector<T>> {
         return rowIndices.map { rowAt(it) }
     }
 
+    /**
+     * Returns a list of column vectors.
+     */
     fun colVectors(): List<Vector<T>> {
         return colIndices.map { colAt(it) }
     }
 
+
+    /**
+     * Applies the given function to all elements in this matrix and returns a new matrix.
+     */
     override fun applyAll(f: (T) -> T): Matrix<T> {
         return MatrixImpl.apply1(this, model, f)
     }
@@ -107,20 +135,39 @@ interface Matrix<T> : GenMatrix<T>, ModeledMathObject<T, EqualPredicate<T>>,
         return this.matmul(y)
     }
 
-
+    /**
+     * Returns the matrix product of this matrix and the given column vector as a column vector.
+     *
+     * Let `v = A * x`, then `v[i ] = sum(k; A[i, k] * x[k ])` for all `i`.
+     */
     infix fun matmul(v: Vector<T>): Vector<T> {
         return MatrixImpl.matmul(this, v, model as Ring)
     }
 
+    /**
+     * An operator function for [matmul].
+     */
     operator fun times(v: Vector<T>): Vector<T> {
         return this.matmul(v)
     }
 
+    /**
+     * Determines if this matrix is invertible.
+     *
+     * It is required that this matrix is square and the [model] is a unit ring.
+     */
     override val isInvertible: Boolean
         get() {
             return MatrixImpl.isInvertible(this, model as UnitRing)
         }
 
+    /**
+     * Computes the inverse of this matrix.
+     *
+     * It is required that this matrix is square and the [model] is a unit ring.
+     *
+     * @throws ArithmeticException if this matrix is not invertible.
+     */
     override fun inv(): Matrix<T> {
         return MatrixImpl.inverse(this, model as UnitRing)
     }
@@ -130,8 +177,9 @@ interface Matrix<T> : GenMatrix<T>, ModeledMathObject<T, EqualPredicate<T>>,
      *
      * The determinant is defined as:
      *
-     *     det(A) = \sum_{σ ∈ S_n} (-1)^σ \prod_{i=1}^n A_{i, σ(i)}.
+     *     det(A) = \sum_{σ ∈ S_n} sign(σ) \prod_{i=1}^n A_{i, σ(i)},
      *
+     * where `S_n` is the symmetric group of degree `n`.
      */
     fun det(): T {
         return MatrixImpl.det(this, model as Ring)
@@ -139,6 +187,10 @@ interface Matrix<T> : GenMatrix<T>, ModeledMathObject<T, EqualPredicate<T>>,
 
     /**
      * Computes the rank of this matrix.
+     *
+     * The rank of a matrix is the maximum number of linearly independent rows or columns in the matrix.
+     *
+     * It is required that this matrix is a matrix of elements in a field.
      */
     fun rank(): Int {
         return MatrixImpl.rank(this, model as Field)
@@ -225,25 +277,36 @@ interface Matrix<T> : GenMatrix<T>, ModeledMathObject<T, EqualPredicate<T>>,
 
 
     companion object {
+        /**
+         * Creates a new matrix `A` with the given row and column count, the model and the initializer function [init],
+         * such that `A[i, j] = init(i, j)`.
+         */
         operator fun <T> invoke(row: Int, column: Int, model: EqualPredicate<T>, init: (Int, Int) -> T): Matrix<T> {
             return AMatrix.of(row, column, model, init)
         }
 
+        /**
+         * Creates a new square matrix `A` with row and column count being `n`, the model and the initializer function [init],
+         * such that `A[i, j] = init(i, j)`.
+         */
         operator fun <T> invoke(n: Int, model: EqualPredicate<T>, init: (Int, Int) -> T): Matrix<T> {
             return invoke(n, n, model, init)
         }
 
+        /**
+         * Creates a new matrix `A` with the given row and column count, the model and the flattened elements
+         * in row-major order.
+         *
+         * For example, `of(2, 3, model, 1, 2, 3, 4, 5, 6)` creates a matrix:
+         * ```
+         * 1 2 3
+         * 4 5 6
+         * ```
+         *
+         */
         fun <T> of(row: Int, col: Int, model: EqualPredicate<T>, vararg elements: T): Matrix<T> {
             require(row * col == elements.size)
             return AMatrix.of(row, col, model, *elements)
-        }
-
-        fun <T> product(vararg matrices: Matrix<T>): Matrix<T> {
-            return product(matrices.asList())
-        }
-
-        fun <T> product(matrices: List<Matrix<T>>): Matrix<T> {
-            return MatrixImpl.product(matrices, matrices.first().model as Ring)
         }
 
         /**
@@ -269,22 +332,23 @@ interface Matrix<T> : GenMatrix<T>, ModeledMathObject<T, EqualPredicate<T>>,
         }
 
         /**
-         * Concatenates two matrix `A, B` to a new matrix `(A, B)`.
-         *
-         * It is required that `A` and `B` have that same row count.
+         * Creates a zero matrix.
          */
-        fun <T> concatColumn(a: Matrix<T>, b: Matrix<T>): MutableMatrix<T> {
-            return MatrixImpl.concatCol(a, b, a.model)
-        }
-
         fun <T> zero(row: Int, column: Int, model: AddMonoid<T>): Matrix<T> {
             return MatrixImpl.zero(row, column, model)
         }
 
+        /**
+         * Creates a zero square matrix.
+         */
         fun <T> zero(n: Int, model: AddMonoid<T>): Matrix<T> {
             return zero(n, n, model)
         }
 
+        /**
+         * Creates a diagonal matrix with the given diagonal elements.
+         * The elements off the diagonal are zero.
+         */
         fun <T> diag(model: AddMonoid<T>, elements: List<T>): Matrix<T> {
             val n = elements.size
             val zero = MatrixImpl.zero(n, n, model)
@@ -294,20 +358,35 @@ interface Matrix<T> : GenMatrix<T>, ModeledMathObject<T, EqualPredicate<T>>,
             return zero
         }
 
+        /**
+         * Creates a diagonal matrix with the given diagonal elements.
+         * The elements off the diagonal are zero.
+         */
         fun <T> diag(model: AddMonoid<T>, vararg elements: T): Matrix<T> {
             return diag(model, elements.asList())
         }
 
+        /**
+         * Creates a scalar matrix with the given scalar `k`, namely a diagonal matrix with all diagonal elements being `k`.
+         */
         fun <T> scalar(n: Int, model: AddMonoid<T>, k: T): Matrix<T> {
-            val mat = MatrixImpl.zero(n, n, model)
-            for (i in 0..<n) {
-                mat[i, i] = k
-            }
-            return mat
+            return MatrixImpl.scalar(n, model, k)
         }
 
+        /**
+         * Creates an identity matrix with the given size `n`.
+         */
         fun <T> identity(n: Int, model: UnitRing<T>): Matrix<T> {
             return MatrixImpl.identity(n, model)
+        }
+
+        /**
+         * Concatenates two matrix `A, B` to a new matrix `(A, B)`.
+         *
+         * It is required that `A` and `B` have that same row count.
+         */
+        fun <T> concatColumn(a: Matrix<T>, b: Matrix<T>): Matrix<T> {
+            return MatrixImpl.concatCol(a, b, a.model)
         }
 
 
@@ -317,9 +396,21 @@ interface Matrix<T> : GenMatrix<T>, ModeledMathObject<T, EqualPredicate<T>>,
         }
 
         /**
+         * Computes the product of the given matrices.
+         */
+        fun <T> product(vararg matrices: Matrix<T>): Matrix<T> {
+            return product(matrices.asList())
+        }
+
+        fun <T> product(matrices: List<Matrix<T>>): Matrix<T> {
+            return MatrixImpl.product(matrices, matrices.first().model as Ring)
+        }
+
+
+        /**
          * Gets the model of `n × n` matrices over the given model.
          */
-        fun <T> over(n: Int, model: UnitRing<T>): UnitRingModule<T, Matrix<T>> {
+        fun <T> over(n: Int, model: UnitRing<T>): SqMatOverURing<T> {
             return SqMatOverURing(n, model)
         }
 

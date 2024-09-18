@@ -635,9 +635,13 @@ object MatrixImpl {
     }
 
     fun <T> identity(n: Int, model: UnitRing<T>): AMatrix<T> {
+        return scalar(n, model, model.one)
+    }
+
+    fun <T> scalar(n : Int, model : AddMonoid<T>, k : T) : AMatrix<T>{
         val A = zero(n, n, model)
         for (i in 0 until n) {
-            A[i, i] = model.one
+            A[i, i] = k
         }
         return A
     }

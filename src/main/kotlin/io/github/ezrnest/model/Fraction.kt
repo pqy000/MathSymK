@@ -19,11 +19,13 @@ import kotlin.math.*
 
 /**
  * This class represents a fraction, which is a number that can be expressed as the quotient of two integers.
- * The class provides basic arithmetic operations for fractions.
  *
  * A fraction is composed of two co-prime integers [nume] and the [deno].
  * The sign of the numerator represents the sign of this fraction and
  * the denominator is always positive.
+ *
+ * The class provides basic arithmetic operations for fractions, such as addition, subtraction, multiplication, and division.
+ * All the computation results are exact and `ArithmeticException` will be thrown if overflow occurs.
  *
  *
  * @author lyc
@@ -811,33 +813,22 @@ data class Fraction internal constructor(
 
 
         /**
-         * Get the calculator of the class Fraction, the calculator ignores overflow.
+         * Gets the model for Fraction, which is a subclass of [Quotients].
          *
-         * The calculator does not have any constant values.
-         * @return a fraction calculator
+         *
          */
         @JvmStatic
-        val asQuotient: FractionAsQuotient
-            get() = FractionAsQuotient
-//
-//        /**
-//         * Get the Simplifier of the class Fraction,this simplifier will take the input numbers
-//         * as coefficient of a equation and multiply or divide them with a factor that makes them
-//         * all become integer values.The first fraction will be ensure to be positive.
-//         *
-//         * This simplifier will ignore overflows.
-//         * @return a simplifier
-//         */
-//        @JvmStatic
-//        val fractionSimplifier: Simplifier<Fraction> = FractionSimplifier()
+        val asQuotient: FractionAsQuotients
+            get() = FractionAsQuotients
+
     }
 
 }
 
 /**
- * A calculator for the class Fraction.
+ * A model for fractions, which is a subclass of [Quotients].
  */
-object FractionAsQuotient : Quotients<Fraction> {
+object FractionAsQuotients : Quotients<Fraction> {
     override fun isEqual(x: Fraction, y: Fraction): Boolean {
         return x == y
     }
@@ -897,55 +888,3 @@ fun Int.toFrac(): Fraction = Fraction.of(this.toLong())
 operator fun Long.times(f: Fraction): Fraction = f * this
 
 
-//    internal class FractionSimplifier internal constructor() : Simplifier<Fraction> {
-//
-//        override fun simplify(numbers: List<Fraction>): List<Fraction> {
-//            //first find the GCD of numerator and LCM of denominator.
-//            val len = numbers.size
-//            val numes = LongArray(len)
-//            val denos = LongArray(len)
-//            var i = 0
-//            val it = numbers.listIterator()
-//            while (it.hasNext()) {
-//                val f = it.next()
-//                numes[i] = f.nume
-//                denos[i] = f.deno
-//                i++
-//            }
-//            val gcd = MathUtils.gcd(*numes)
-//            val lcm = MathUtils.lcm(*denos)
-//            //			Printer.print(lcm);
-//            i = 0
-//            while (i < len) {
-//                numes[i] = numes[i] / gcd * (lcm / denos[i])
-//                i++
-//            }
-//            //denos are all set to one.
-//            val list = ArrayList<Fraction>(len)
-//            i = 0
-//            while (i < len) {
-//                list.add(adjustSign(numes[i], 1L))
-//                i++
-//            }
-//            return list
-//        }
-//
-//    }
-
-//fun main(args: Array<String>) {
-////    val f1 = Fraction.valueOf(-4, 3)
-////    println(f1.floor())
-////    println(f1.ceil())
-//    val t = Math.sqrt(1.7)
-//    for(len in 1 .. 5){
-//        val frac = Fraction.bestApproximate(t, conFraLenBound = len)
-//        println(frac)
-//        val diff = Math.abs(t-frac.toDouble())
-//        for(f in NaiveNumberTheory.fareySequence(frac.denominator-1)){
-//            if(Math.abs(f.toDouble()-(t-Math.floor(t)))<diff){
-//                println("! $f")
-//            }
-//        }
-//    }
-//
-//}

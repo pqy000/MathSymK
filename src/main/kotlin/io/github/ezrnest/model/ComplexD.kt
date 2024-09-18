@@ -416,7 +416,7 @@ data class ComplexD(val re: Double, val im: Double) : FieldModel<ComplexD>,Forma
 
 
 class ComplexDModel(dev: Double) : ComplexNumbers<Double, ComplexD> {
-    override val reals: Reals<Double> = NumberModels.doubleAsReals(dev)
+    override val reals: Reals<Double> = NumberModels.doubles(dev)
 
     override fun contains(x: ComplexD): Boolean {
         return true

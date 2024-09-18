@@ -18,7 +18,7 @@ fun basicDoubleComplex(){
 }
 
 fun variousDoubleModels(){
-    val Z = NumberModels.intAsIntegers()
+    val Z = NumberModels.integers()
     val GaussianInt = Complex.over(Z)
     with(GaussianInt){
         val z1 = 1 + 2.i

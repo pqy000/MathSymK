@@ -10,7 +10,7 @@ class NumberModelsTest {
 
     @Test
     fun testDoubleAsReals() {
-        val real = NumberModels.doubleAsReals()
+        val real = NumberModels.doubles()
         assert(real.contains(1.0))
         assertEquals(0.0, real.zero)
         assertEquals(2.0, real.add(1.0, 1.0))
@@ -21,7 +21,7 @@ class NumberModelsTest {
 
     @Test
     fun testIntAsIntegers() {
-        val int = NumberModels.intAsIntegers()
+        val int = NumberModels.integers()
         assert(int.contains(1))
         assertEquals(0, int.zero)
         assertEquals(2, int.add(1, 1))
@@ -38,7 +38,7 @@ class NumberModelsTest {
 
     @Test
     fun testGCD() {
-        val int = NumberModels.intAsIntegers()
+        val int = NumberModels.integers()
         with(int) {
             val (a, b) = 12 to 30
             val (g, u, v) = int.gcdUV(a, b)
@@ -89,7 +89,7 @@ class NumberModelsTest {
 
     @Test
     fun testBigInteger() {
-        with(NumberModels.bigIntegerAsIntegers()) {
+        with(NumberModels.bigIntegers()) {
             assertEquals(0.toBigInteger(), zero)
             assertEquals(2.toBigInteger(), add(1.toBigInteger(), 1.toBigInteger()))
             assertEquals((-1).toBigInteger(), negate(1.toBigInteger()))

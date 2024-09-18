@@ -12,7 +12,7 @@ import kotlin.test.assertEquals
 
 class PolynomialTest {
     private val fractions = Fraction.asQuotient
-    private val ints = NumberModels.intAsIntegers()
+    private val ints = NumberModels.integers()
     private val pInt = Polynomial.over(ints)
 
     private fun ofF(vararg cs: Int): Polynomial<Fraction> {

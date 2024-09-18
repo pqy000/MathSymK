@@ -107,7 +107,7 @@ with(polyZ) {
 #### Fraction Field
 ```kotlin
 // First example: fractions over integers, just as plain fractions
-val Z = NumberModels.intAsIntegers()
+val Z = NumberModels.integers()
 with(RFraction.over(Z)) {
     val f1 = frac(3, 4)
     val f2 = frac(1, 2)
@@ -134,7 +134,7 @@ with(polyF) {
 
 #### Complex over Various Models
 ```kotlin
-val Z = NumberModels.intAsIntegers()
+val Z = NumberModels.integers()
 val GaussianInt = Complex.over(Z)
 with(GaussianInt){
     val z1 = 1 + 2.i
@@ -143,9 +143,9 @@ with(GaussianInt){
 }
 
 val Q = NumberModels.fractions()
-val complex2 = Complex.over(Q) // Complex numbers with rational components
+val complexR = Complex.over(Q) // Complex numbers with rational components
 with(Q){
-    with(complex2) {
+    with(complexR) {
         val z1 = frac(1, 2) + frac(1, 3).i
         val z2 = frac(1, 4) + frac(1, 5).i
         println(listOf(z1 + z2, z1 - z2, z1 * z2)) 
@@ -186,3 +186,9 @@ Currently, this project will be migrated and redesigned from my other math lib [
 I am very glad to receive any feedback or suggestions.
 Please feel free to open an issue or pull request.
 Any contribution is welcome.
+
+## Roadmap
+- [ ] Linear algebra related
+- [ ] Preliminary implementation of symbolic calculation
+- [ ] Implement more algebraic structures
+- [ ] Symbolic differentiation and integration

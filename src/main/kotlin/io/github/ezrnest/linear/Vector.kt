@@ -8,11 +8,15 @@ import java.util.function.Function
 
 
 /**
- * Describes a vector
+ * Describes a mathematical vector of type `T`.
+ *
+ * This interface provides basic operations for vectors, such as addition, subtraction, scalar multiplication, and inner product.
+ *
  *
  * By default, all the vectors are treated as column vectors.
  *
  * @author Ezrnest
+ * @see Matrix
  */
 interface Vector<T> : GenVector<T>, ModeledMathObject<T, EqualPredicate<T>>, VectorModel<T, Vector<T>> {
     /*

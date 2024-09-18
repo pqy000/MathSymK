@@ -20,6 +20,15 @@ interface UniqueFactorizationDomain<T> : IntegralDomain<T> {
 
     /**
      * Returns the greatest common divisor of [a] and [b].
+     *
+     * It is satisfied that:
+     * * `gcd(a,b)` divides both `a` and `b`;
+     * * `gcd(a,b) = gcd(b,a)`;
+     * * the result is unique up to multiplication by a unit.
+     *
+     * Special cases:
+     * * `gcd(0,0) = 0`
+     * * `gcd(a,0) = a` (up to a unit)
      */
     fun gcd(a: T, b: T): T
 
@@ -29,6 +38,19 @@ interface UniqueFactorizationDomain<T> : IntegralDomain<T> {
     fun isCoprime(a: T, b: T): Boolean {
         return isUnit(gcd(a, b))
     }
+
+    /**
+     * Returns the least common multiple of [a] and [b].
+     *
+     *
+     * Special cases:
+     * * `lcm(0,0) = 0`
+     * * `lcm(a,0) = 0`
+     */
+    fun lcm(a: T, b: T): T{
+        return exactDivide(multiply(a, b), gcd(a, b))
+    }
+
 
     /**
      * Returns the result of exact division `a/b`, throws an `ArithmeticException` if it is not exact division.
@@ -121,12 +143,8 @@ interface EuclideanDomain<T> : UniqueFactorizationDomain<T> {
         return isZero(remainder(a, b))
     }
 
-    /**
-     * Returns the greatest common divisor of [a] and [b].
-     *
-     * The default implementation uses Euclidean algorithm.
-     */
     override fun gcd(a: T, b: T): T {
+        // default implementation based on Euclid's algorithm
         return gcdEuclid(a, b, this::isZero, this::remainder)
     }
 
@@ -447,11 +465,20 @@ interface EuclideanDomain<T> : UniqueFactorizationDomain<T> {
 }
 
 /**
- * IntCalculator represents a common supertype for all calculator that deal with integers(int, long, BigInteger...),
- * which provides more methods related to integers.
+ * Describes the ring of integers, ℤ, with the model type T.
+ *
+ * The integers form:
+ * * a [group][Group] under addition;
+ * * a [monoid][Monoid] under multiplication;
+ * * a [ring with unity][UnitRing] under addition and multiplication.
+ *
+ * Moreover, the ring of integers is further a Euclidean domain, meaning that it supports the
+ * [divideAndRemainder][EuclideanDomain.divideAndRemainder] operation.
  *
  *
- *
+ * @see EuclideanDomain
+ * @see UnitRing
+ * @see io.github.ezrnest.model.NumberModels
  * @author liyicheng 2017-09-09 20:33
  */
 interface Integers<T> : EuclideanDomain<T>, OrderedRing<T> {
@@ -460,19 +487,15 @@ interface Integers<T> : EuclideanDomain<T>, OrderedRing<T> {
      */
     override val one: T
 
-
-    // methods that is often used as a number theory calculator.
     /**
-     * Returns `x+1`.
+     * Returns the integer `0` of type T.
+     */
+    override val zero: T
+
+
+    /**
+     * Returns `x+1 = add(x, one)`.
      *
-     *
-     * This method is added for convenience. The default implement is
-     *
-     * <pre>
-     * return add(x, getOne());
-    </pre> *
-     *
-     * @param x a number
      * @return `x+1`
      */
     fun increase(x: T): T {
@@ -480,14 +503,7 @@ interface Integers<T> : EuclideanDomain<T>, OrderedRing<T> {
     }
 
     /**
-     * Returns `x-1`.
-     *
-     *
-     * This method is added for convenience. The default implement is
-     *
-     * <pre>
-     * return subtract(x, getOne());
-    </pre> *
+     * Returns `x-1 = subtract(x, one)`.
      *
      * @param x a number
      * @return `x-1`
@@ -496,21 +512,10 @@ interface Integers<T> : EuclideanDomain<T>, OrderedRing<T> {
         return subtract(x, one)
     }
 
-    //////////////////////////////////////////////////////////////////
-    // Separate line for methods
-    //////////////////////////////////////////////////////////////////
-    //    /**
-    //     * Determines whether the number is an integer. An integer must always be a
-    //     * quotient. The constant values {@link #getOne()} and {@link #getZero()}
-    //     * must be an integer.
-    //     * <p>
-    //     * For example, {@code 1} is an integer while {@code 1.1} is not.
-    //     *
-    //     * @param x a number
-    //     * @return {@code true} if the number is an integer, otherwise
-    //     * {@code false}.
-    //     */
-    //    boolean isInteger(T x);
+
+    val Long.v: T
+        get() = of(this)
+
     /**
      * Converts a value of type T to long, throws [UnsupportedOperationException] if
      * this cannot be done.
@@ -525,19 +530,6 @@ interface Integers<T> : EuclideanDomain<T>, OrderedRing<T> {
      */
     fun asBigInteger(x: T): BigInteger
 
-    //    /**
-    //     * Determines whether the number is a quotient, which can be represented by
-    //     * a quotient {@code p/q} where {@code p} and {@code q} has no common
-    //     * factor.
-    //     * <p>
-    //     * For example, {@code 1}, {@code 2/3} are quotients, while {@code sqr(2)}
-    //     * is not.
-    //     *
-    //     * @param x a number
-    //     * @return {@code true} if the number is a quotient, otherwise
-    //     * {@code false}.
-    //     */
-    //    boolean isQuotient(T x);
     /**
      * Returns `a mod b`, a *non-negative* number as the result.
      *
@@ -570,9 +562,6 @@ interface Integers<T> : EuclideanDomain<T>, OrderedRing<T> {
      * @see mod
      */
     override fun remainder(a: T, b: T): T {
-//        if (isZero(b)) {
-//            throw ArithmeticException("Divide by zero: $a % $b")
-//        }
         val m = mod(abs(a), abs(b))
         if (isZero(m)) return m
         return if (isNegative(a)) m - b else m
@@ -623,55 +612,34 @@ interface Integers<T> : EuclideanDomain<T>, OrderedRing<T> {
      * @return `true` if it is an even number, otherwise `false`.
      */
     fun isEven(x: T): Boolean {
-        val two = increase(one)
+        val two = of(2)
         return isZero(mod(x, two))
     }
 
     /**
-     * Returns `gcd(|a|,|b|)`, the positive maximal common factor of the two numbers.
-     * Returns `0` if `a==0 && b==0`, and returns another
-     * non-zero number if either of them is `0`. Whether the two number is
-     * negative is ignored. This method is implemented with Euclidean algorithm by default.
+     * Returns `gcd(a, b)`, the positive greatest common divisor of `a` and `b`.
      *
+     * Special cases:
+     * * `gcd(0,0) = 0`
+     * * `gcd(a,0) = |a|`
      *
      * For example, `gcd(3,5)=1`, `gcd(12,30)=6`.
      *
-     * @return `gcd(|a|,|b|)`
      */
     override fun gcd(a: T, b: T): T {
-        var x = a
-        var y = b
-        x = abs(x)
-        y = abs(y)
-        var t: T
-        while (!isZero(y)) {
-            t = y
-            y = mod(x, y)
-            x = t
-        }
-        return x
+        return abs(super.gcd(a, b))
     }
 
 
     /**
-     * Returns `lcm(|a|,|b|)`, the positive least common multiple.
-     * If either of the two numbers is 0, then 0 will be return.
-     *
+     * Returns the positive least common multiple of the two numbers `a` and `b`.
+     * If either of the two numbers is `0`, then `0` will be return.
      *
      * For example, `lcm(3,5)=15`, `lcm(12,30)=60`.
      *
-     * @return `lcm(|a|,|b|)`.
      */
-    fun lcm(a: T, b: T): T {
-        var x = a
-        var y = b
-        if (isZero(x) || isZero(y)) {
-            return zero
-        }
-        x = abs(x)
-        y = abs(y)
-        val gcd = gcd(x, y)
-        return multiply(exactDivide(x, gcd), y)
+    override fun lcm(a: T, b: T): T {
+        return abs(super.lcm(a, b))
     }
 
     /**
@@ -740,16 +708,6 @@ interface Integers<T> : EuclideanDomain<T>, OrderedRing<T> {
         return ans
     }
 
-
-    fun of(n: Int): T {
-        return of(n.toLong())
-    }
-
-    val Int.v: T
-        get() = of(this)
-
-    val Long.v: T
-        get() = of(this)
 }
 
 

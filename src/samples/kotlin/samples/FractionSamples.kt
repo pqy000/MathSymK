@@ -16,7 +16,7 @@ fun basicFraction() {
 
 fun fractionsOverVariousModels() {
     // First example: fractions over integers, just as plain fractions
-    val Z = NumberModels.intAsIntegers()
+    val Z = NumberModels.integers()
     with(RFraction.over(Z)) {
         val f1 = frac(3, 4)
         val f2 = frac(1, 2)

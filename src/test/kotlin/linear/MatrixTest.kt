@@ -4,7 +4,6 @@ import TestUtils.assertEquals
 import TestUtils.assertValueEquals
 import io.github.ezrnest.linear.Matrix
 import io.github.ezrnest.linear.MatrixImpl
-import io.github.ezrnest.linear.MatrixUtils
 import io.github.ezrnest.linear.MatrixUtils.charPoly
 import io.github.ezrnest.linear.toMutable
 import io.github.ezrnest.model.Multinomial
@@ -21,7 +20,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class MatrixTest {
-    val Z = NumberModels.intAsIntegers()
+    val Z = NumberModels.integers()
     val Zmod7 = NumberModels.intModP(7)
 
     @Test
@@ -96,7 +95,7 @@ class MatrixTest {
 
     @Test
     fun testMatrixCharPoly() {
-        val ℤ = NumberModels.intAsIntegers()
+        val ℤ = NumberModels.integers()
         val n = 4
         val A = Matrix(n, ℤ) { i, j -> i + 2 * j }
         val p = A.charPoly() // the characteristic polynomial of A, p(λ) = det(λI - A)
@@ -139,7 +138,7 @@ class MatrixTest {
     @Test
     fun testInvariantFactorsOverIntegers() {
         // 3x3 matrix over integers
-        val Z = NumberModels.intAsIntegers()
+        val Z = NumberModels.integers()
         val n = 4
 //    val A = Matrix(n, Z) { i, j -> (i + 1) * (j + 2) }
         for(seed in 10..12){

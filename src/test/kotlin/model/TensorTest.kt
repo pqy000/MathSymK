@@ -12,7 +12,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class TensorTest {
-    val mc = NumberModels.intAsIntegers()
+    val mc = NumberModels.integers()
 
     @Test
     fun testAdd() {

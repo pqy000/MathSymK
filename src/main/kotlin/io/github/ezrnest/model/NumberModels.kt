@@ -458,8 +458,8 @@ class DoubleAsReals(
         return kotlin.math.asin(x)
     }
 
-    override fun exp(a: Double, b: Double): Double {
-        return a.pow(b)
+    override fun exp(base: Double, pow: Double): Double {
+        return base.pow(pow)
     }
 
     override fun log(base: Double, x: Double): Double {
@@ -591,7 +591,7 @@ class BigDecimalAsReals(val mc: MathContext = MathContext.DECIMAL128) : Reals<Bi
 
 typealias BigFraction = RFraction<BigInteger>
 
-object BigFractionAsQuotient : RFractionOnInt<BigInteger>(BigIntegerAsIntegers), Quotients<BigFraction> {
+object BigFractionAsQuotients : RFracOverIntDom<BigInteger>(BigIntegerAsIntegers), Quotients<BigFraction> {
     override fun simplifyFrac(nume: BigInteger, deno: BigInteger): RFraction<BigInteger> {
         val r = super.simplifyFrac(nume, deno)
         if (r.deno < BigInteger.ZERO) {
@@ -646,15 +646,26 @@ object NumberModels {
     fun <T : FieldModel<T>> asField(zero: T, one: T, characteristic: Long? = 0) = AsField(zero, one, characteristic)
 
 
-    fun intAsIntegers(): Integers<Int> = IntAsIntegers
+    /**
+     * Gets the model of integers with type `Int`.
+     *
+     * @see Integers
+     */
+    fun integers(): Integers<Int> = IntAsIntegers
 
-    fun longAsIntegers(): Integers<Long> = LongAsIntegers
+    /**
+     * Gets the model of integers with type `Long`.
+     */
+    fun integersLong(): Integers<Long> = LongAsIntegers
 
-    fun bigIntegerAsIntegers(): Integers<BigInteger> = BigIntegerAsIntegers
+    /**
+     * Gets the model of integers with type `BigInteger`.
+     */
+    fun bigIntegers(): Integers<BigInteger> = BigIntegerAsIntegers
 
-    fun doubleAsReals(dev : Double = Double.MIN_VALUE): Reals<Double> = DoubleAsReals(dev)
+    fun doubles(dev : Double = Double.MIN_VALUE): Reals<Double> = DoubleAsReals(dev)
 
-    fun bigDecimalAsReals(mc: MathContext = MathContext.DECIMAL128): Reals<BigDecimal> = BigDecimalAsReals(mc)
+    fun bigDecimals(mc: MathContext = MathContext.DECIMAL128): Reals<BigDecimal> = BigDecimalAsReals(mc)
 
     /**
      * Returns the ring of integers mod n, `Z/nZ`.
@@ -677,16 +688,20 @@ object NumberModels {
         }
     }
 
-
-    fun fractions(): FractionAsQuotient {
-        return FractionAsQuotient
+    /**
+     * Gets the field of fractions [Fraction].
+     */
+    fun fractions(): FractionAsQuotients {
+        return FractionAsQuotients
     }
 
     /**
-     * Gets the field of fractions of integers.
+     * Gets the field of fractions with [BigInteger].
+     *
+     * @see RFraction
      */
-    fun fractionBig(): BigFractionAsQuotient {
-        return BigFractionAsQuotient
+    fun fractionBig(): BigFractionAsQuotients {
+        return BigFractionAsQuotients
     }
 
 }

@@ -5,14 +5,13 @@ import io.github.ezrnest.linear.T
 import io.github.ezrnest.linear.Vector
 import io.github.ezrnest.linear.times
 import io.github.ezrnest.model.NumberModels
-import io.github.ezrnest.structure.Field
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class VectorTest {
-    val ints = NumberModels.intAsIntegers()
-    val reals = NumberModels.doubleAsReals(1E-7)
+    val ints = NumberModels.integers()
+    val reals = NumberModels.doubles(1E-7)
     val vectors3 = Vector.space(reals, 3)
 
     @Test

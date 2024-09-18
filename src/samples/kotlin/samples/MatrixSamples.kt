@@ -13,7 +13,7 @@ import io.github.ezrnest.util.MathUtils
 import kotlin.random.Random
 
 fun computingDeterminants() {
-    val ℤ = NumberModels.intAsIntegers()
+    val ℤ = NumberModels.integers()
     val mult = Multinomial.over(ℤ)
     val A = Matrix(3, mult) { i, j ->
         mult.monomial("a${i + 1}${j + 1}")
@@ -27,7 +27,7 @@ fun computingDeterminants() {
 
 
 fun matrixCharacteristicPolynomials() {
-    val ℤ = NumberModels.intAsIntegers()
+    val ℤ = NumberModels.integers()
     val n = 4
     val A = Matrix(n, ℤ) { i, j -> i + 2 * j }
     println("Matrix A:")
@@ -62,7 +62,7 @@ fun matrixCharacteristicPolynomials() {
 fun matrixCharacteristicPolynomialsComplexExample() {
     // this example show the flexibility of the library
     // now we work with multinomials over integers
-    val ℤ = NumberModels.intAsIntegers()
+    val ℤ = NumberModels.integers()
     val multiOverZ = Multinomial.over(ℤ)
     val n = 4
     val A = Matrix(n, multiOverZ) { i, j -> multiOverZ.eval { i * a + 2 * j * b } }
@@ -97,7 +97,7 @@ fun matrixCharacteristicPolynomialsComplexExample() {
 }
 
 fun computeInvariantFactors(){
-    val Z = NumberModels.intAsIntegers()
+    val Z = NumberModels.integers()
     val n = 5
     val rng = Random(11)
     val A = Matrix(n, Z) { i, j ->

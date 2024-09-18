@@ -136,6 +136,11 @@ interface GenMatrix<T> : GenTuple<T> {
     val shape: Pair<Int, Int>
         get() = row to column
 
+    /**
+     * Gets the element at the `i`-th row and `j`-th column in this matrix.
+     *
+     * It is required that `0 <= i < row` and `0 <= j < column`.
+     */
     operator fun get(i: Int, j: Int): T
 
     override fun applyAll(f: (T) -> T): GenMatrix<T>
