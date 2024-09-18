@@ -1,8 +1,8 @@
 
 [![](https://jitpack.io/v/ezrnest/mathsymk.svg)](https://jitpack.io/#ezrnest/mathsymk)
 
-This project aims to provide a modern and easy-to-use symbolic Math library in Kotlin.
-We aim to cover a wide range of topics in mathematics, including but not limited to:
+This project aims to provide a modern and easy-to-use computer algebra and symbolic calculation library in Kotlin.
+This project tries to cover a wide range of topics in mathematics, including but not limited to:
 * algebraic structures
 * linear algebra
 * symbolic calculation
@@ -11,10 +11,9 @@ We aim to cover a wide range of topics in mathematics, including but not limited
 * analytic geometry
 * differential geometry
 
-This library enables users to treat various mathematical objects in a unified way.
+This library enables users to treat various mathematical objects in a unified way and provides a set of utilities to manipulate them. 
 For example, one can consider polynomials over a field, matrices over a ring, etc.
-See 
-and provides a set of utilities to manipulate them. 
+See the Quick Start section.
 
 The project is still under development. 
 Currently, it includes
