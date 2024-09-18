@@ -69,7 +69,7 @@ interface Cycle : Permutation {
 
     @Suppress("DuplicatedCode") // for non-generic types
     override fun permute(array: IntArray, inPlace: Boolean): IntArray {
-        val result = if (inPlace) array else array.clone()
+        val result = if (inPlace) array else array.copyOf()
         if (cycleLength <= 1) {
             return result
         }
@@ -85,7 +85,7 @@ interface Cycle : Permutation {
 
     @Suppress("DuplicatedCode") // for non-generic types
     override fun <T> permute(array: Array<T>, inPlace: Boolean): Array<T> {
-        val result = if (inPlace) array else array.clone()
+        val result = if (inPlace) array else array.copyOf()
         if (cycleLength <= 1) {
             return result
         }
@@ -178,13 +178,13 @@ interface Transposition : Cycle {
     }
 
     override fun permute(array: IntArray, inPlace: Boolean): IntArray {
-        val result = if (inPlace) array else array.clone()
+        val result = if (inPlace) array else array.copyOf()
         ArraySup.swap(result, first, second)
         return result
     }
 
     override fun <T> permute(array: Array<T>, inPlace: Boolean): Array<T> {
-        val result = if (inPlace) array else array.clone()
+        val result = if (inPlace) array else array.copyOf()
         ArraySup.swap(result, first, second)
         return result
     }
@@ -400,8 +400,8 @@ interface Permutation : BijectiveOperator<Int>, Composable<Permutation>, Compara
     @Suppress("DuplicatedCode") // for non-generic types
     fun <T> permute(array: Array<T>, inPlace: Boolean = false): Array<T> {
         require(array.size >= size) { "The array's length ${array.size} is not enough." }
-        val origin: Array<T> = if (inPlace) array.clone() else array
-        val dest = if (inPlace) array else array.clone()
+        val origin: Array<T> = if (inPlace) array.copyOf() else array
+        val dest = if (inPlace) array else array.copyOf()
         for (i in array.indices) {
             dest[apply(i)] = origin[i]
         }
@@ -418,8 +418,8 @@ interface Permutation : BijectiveOperator<Int>, Composable<Permutation>, Compara
     @Suppress("DuplicatedCode") // for non-generic types
     fun permute(array: IntArray, inPlace: Boolean = false): IntArray {
         require(array.size >= size) { "The array's length ${array.size} is not enough." }
-        val origin: IntArray = if (inPlace) array.clone() else array
-        val dest = if (inPlace) array else array.clone()
+        val origin: IntArray = if (inPlace) array.copyOf() else array
+        val dest = if (inPlace) array else array.copyOf()
         for (i in array.indices) {
             dest[apply(i)] = origin[i]
         }
@@ -710,7 +710,7 @@ interface Permutation : BijectiveOperator<Int>, Composable<Permutation>, Compara
             var i = 0
             IterUtils.permRev(n, false).forEach { (arr, revCount) ->
                 if (revCount % 2 == 0) {
-                    list[i++] = ArrPermutation(arr.clone())
+                    list[i++] = ArrPermutation(arr.copyOf())
                 }
             }
             return list

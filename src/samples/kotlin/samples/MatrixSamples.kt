@@ -1,7 +1,6 @@
 package samples
 
-import io.github.ezrnest.linear.Matrix
-import io.github.ezrnest.linear.MatrixImpl
+import io.github.ezrnest.linear.*
 import io.github.ezrnest.linear.MatrixUtils.charPoly
 import io.github.ezrnest.model.Multinomial
 import io.github.ezrnest.model.NumberModels
@@ -10,9 +9,10 @@ import io.github.ezrnest.numberTheory.NTFunctions
 import io.github.ezrnest.structure.eval
 import io.github.ezrnest.util.IterUtils
 import io.github.ezrnest.util.MathUtils
+import kotlin.math.cos
 import kotlin.random.Random
 
-fun computingDeterminants() {
+fun computingDeterminantSymbolic() {
     val ℤ = NumberModels.integers()
     val mult = Multinomial.over(ℤ)
     val A = Matrix(3, mult) { i, j ->
@@ -23,6 +23,19 @@ fun computingDeterminants() {
     println(A)
     println("Determinant of A:")
     println(det.toString())
+}
+
+fun matrixMultiplication() {
+    val ℤ = NumberModels.integers()
+    val n = 3
+    val A = Matrix(n, ℤ) { i, j -> (5 * cos(i + 2.0 * j)).toInt() } // generate a non-singular matrix
+    println("Matrix A:")
+    println(A)
+    val B = A * A.T // Matrix multiplication and transpose
+    println("det(A) = ${A.det()}; det(A*A.T) = ${B.det()}") // determinant
+    val u = Vector(n, ℤ) { i -> i + 1 }
+    println(A * u) // matrix-vector multiplication
+    println(u.T * B * u) // quadratic form
 }
 
 
@@ -96,7 +109,7 @@ fun matrixCharacteristicPolynomialsComplexExample() {
 
 }
 
-fun computeInvariantFactors(){
+fun computeInvariantFactors() {
     val Z = NumberModels.integers()
     val n = 5
     val rng = Random(11)
@@ -129,5 +142,5 @@ fun computeInvariantFactors(){
 
 
 fun main() {
-    computeInvariantFactors()
+    matrixMultiplication()
 }

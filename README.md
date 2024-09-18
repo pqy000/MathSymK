@@ -153,8 +153,41 @@ with(Q){
 }
 ```
 
-#### More examples are to be added...
+#### Matrix and vector
+```kotlin
+val ℤ = NumberModels.integers()
+val n = 3
+val A = Matrix(n, ℤ) { i, j -> (5 * cos(i + 2.0 * j)).toInt() } // generate a non-singular matrix
+println("Matrix A:")
+println(A)
+val B = A * A.T // Matrix multiplication and transpose
+println("det(A) = ${A.det()}; det(A*A.T) = ${B.det()}") // determinant
+val u = Vector(n, ℤ) { i -> i + 1 }
+println(A * u) // matrix-vector multiplication
+println(u.T * B * u) // quadratic form
+```
 
+#### Tensor
+```kotlin
+val ℤ = NumberModels.integers()
+val a = Tensor.of(intArrayOf(3, 4, 5), ℤ, 0 until 60)
+val b = Tensor.of(intArrayOf(4, 3, 2), ℤ, 0 until 24)
+/*
+The following three ways give the same result:
+ */
+val res0 = Tensor.zeros(ℤ, 5, 2)
+for ((i, j, k, n) in IterUtils.prodIdxN(intArrayOf(5, 2, 3, 4))) {
+  res0[i, j] += a[k, n, i] * b[n, k, j] // direct computation
+}
+println(res0.joinToString())
+val res1 = a.permute(2, 1, 0).matmul(b, 2) // matmul at the last 2 axes
+println(res1.shapeString) // (5, 2)
+println(res1.joinToString())
+
+val res2 = Tensor.einsum("kni,nkj->ij", a, b) // einsum
+println(res2.shapeString) // (5, 2)
+println(res2.joinToString())
+```
 
 # Features
 
