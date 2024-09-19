@@ -1,0 +1,415 @@
+<templateSet group="UnicodeLetters">
+    <template name="\bbZ" value="ℤ" description="black bold Z" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\bbN" value="ℕ" description="black bold N" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\bbQ" value="ℚ" description="black bold Q" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\bbR" value="ℝ" description="black bold R" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\bbC" value="ℂ" description="black bold C" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\bbP" value="ℙ" description="black bold P" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\bbF" value="𝔽" description="black bold F" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\bbk" value="𝕜" description="black bold K" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+
+    <template name="\alpha" value="α" description="greek alpha" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\beta" value="β" description="greek beta" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\gamma" value="γ" description="greek gamma" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\delta" value="δ" description="greek delta" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\epsilon" value="ε" description="greek epsilon" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\zeta" value="ζ" description="greek zeta" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\eta" value="η" description="greek eta" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\theta" value="θ" description="greek theta" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\iota" value="ι" description="greek iota" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\kappa" value="κ" description="greek kappa" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\lambda" value="λ" description="greek lambda" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\mu" value="μ" description="greek mu" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\nu" value="ν" description="greek nu" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\xi" value="ξ" description="greek xi" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\omicron" value="ο" description="greek omicron" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\pi" value="π" description="greek pi" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\rho" value="ρ" description="greek rho" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\sigma" value="σ" description="greek sigma" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\tau" value="τ" description="greek tau" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\upsilon" value="υ" description="greek upsilon" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\phi" value="φ" description="greek phi" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\chi" value="χ" description="greek chi" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\psi" value="ψ" description="greek psi" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\omega" value="ω" description="greek omega" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\caA" value="𝓐" description="mathcal A" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\caB" value="𝓑" description="mathcal B" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\caC" value="𝓒" description="mathcal C" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\caD" value="𝓓" description="mathcal D" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\caE" value="𝓔" description="mathcal E" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\caF" value="𝓕" description="mathcal F" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\caG" value="𝓖" description="mathcal G" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\caH" value="𝓗" description="mathcal H" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\caI" value="𝓘" description="mathcal I" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\caJ" value="𝓙" description="mathcal J" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\caK" value="𝓚" description="mathcal K" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\caL" value="𝓛" description="mathcal L" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\caM" value="𝓜" description="mathcal M" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\caN" value="𝓝" description="mathcal N" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\caO" value="𝓞" description="mathcal O" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\caP" value="𝓟" description="mathcal P" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\caQ" value="𝓠" description="mathcal Q" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\caR" value="𝓡" description="mathcal R" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\caS" value="𝓢" description="mathcal S" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\caT" value="𝓣" description="mathcal T" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\caU" value="𝓤" description="mathcal U" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\caV" value="𝓥" description="mathcal V" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\caW" value="𝓦" description="mathcal W" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\caX" value="𝓧" description="mathcal X" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\caY" value="𝓨" description="mathcal Y" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\caZ" value="𝓩" description="mathcal Z" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+
+    <template name="\Alpha" value="Α" description="greek capital alpha" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\Beta" value="Β" description="greek capital beta" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\Gamma" value="Γ" description="greek capital gamma" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\Delta" value="Δ" description="greek capital delta" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\Epsilon" value="Ε" description="greek capital epsilon" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\Zeta" value="Ζ" description="greek capital zeta" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\Eta" value="Η" description="greek capital eta" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\Theta" value="Θ" description="greek capital theta" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\Iota" value="Ι" description="greek capital iota" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\Kappa" value="Κ" description="greek capital kappa" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\Lambda" value="Λ" description="greek capital lambda" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\Mu" value="Μ" description="greek capital mu" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\Nu" value="Ν" description="greek capital nu" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\Xi" value="Ξ" description="greek capital xi" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\Omicron" value="Ο" description="greek capital omicron" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\Pi" value="Π" description="greek capital pi" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\Rho" value="Ρ" description="greek capital rho" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\Sigma" value="Σ" description="greek capital sigma" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\Tau" value="Τ" description="greek capital tau" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\Upsilon" value="Υ" description="greek capital upsilon" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\Phi" value="Φ" description="greek capital phi" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\Chi" value="Χ" description="greek capital chi" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\Psi" value="Ψ" description="greek capital psi" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+    <template name="\Omega" value="Ω" description="greek capital omega" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+
+</templateSet>
