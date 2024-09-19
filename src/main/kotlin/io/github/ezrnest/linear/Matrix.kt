@@ -268,6 +268,9 @@ interface Matrix<T> : GenMatrix<T>, ModeledMathObject<T, EqualPredicate<T>>,
         return slice(rows, cols)
     }
 
+    /**
+     * Returns sub-matrix obtained by deleting the given `rows` and `cols`.
+     */
     fun minor(rows: IntArray, cols: IntArray): Matrix<T> {
         val remRows = remainingIndices(row, rows)
         val remCols = remainingIndices(column, cols)
@@ -389,6 +392,18 @@ interface Matrix<T> : GenMatrix<T>, ModeledMathObject<T, EqualPredicate<T>>,
             return MatrixImpl.concatCol(a, b, a.model)
         }
 
+        /**
+         * Concatenates two matrix `A, B` to a new matrix
+         *
+         *     [A]
+         *     [B]
+         *
+         * It is required that `A` and `B` have that same column count.
+         */
+        fun <T> concatRow(a: Matrix<T>, b: Matrix<T>): Matrix<T> {
+            return MatrixImpl.concatRow(a, b, a.model)
+        }
+
 
         private fun remainingIndices(n: Int, indices: IntArray): IntArray {
             val set = indices.toMutableSet()
@@ -397,11 +412,18 @@ interface Matrix<T> : GenMatrix<T>, ModeledMathObject<T, EqualPredicate<T>>,
 
         /**
          * Computes the product of the given matrices.
+         *
+         * The order of multiplication is automatically optimized.
          */
         fun <T> product(vararg matrices: Matrix<T>): Matrix<T> {
             return product(matrices.asList())
         }
 
+        /**
+         * Computes the product of the given matrices.
+         *
+         * The order of multiplication is automatically optimized.
+         */
         fun <T> product(matrices: List<Matrix<T>>): Matrix<T> {
             return MatrixImpl.product(matrices, matrices.first().model as Ring)
         }
@@ -432,11 +454,10 @@ interface Matrix<T> : GenMatrix<T>, ModeledMathObject<T, EqualPredicate<T>>,
     }
 }
 
-//fun <T> Matrix<T>.times(v: Vector<T>): Vector<T> {
-//    return MatrixImpl.matmul(this, v, model as Ring)
-//}
 
-
+/**
+ * Returns the matrix product of this row vector and the matrix, resulting in a row vector.
+ */
 fun <T> RowVector<T>.matmul(m: Matrix<T>): RowVector<T> {
     return RowVector(MatrixImpl.matmul(this, m, this.v.model as Ring))
 }
@@ -445,10 +466,6 @@ operator fun <T> RowVector<T>.times(m: Matrix<T>): RowVector<T> {
     return this.matmul(m)
 }
 
-//fun <K> Matrix<Complex<K>>.conjugate(): Matrix<Complex<K>> {
-//    val model = model as ComplexNumbers<*,Complex<K>>
-//    return applyAll(model::conj)
-//}
 
 /**
  * Returns the transpose conjugate of this matrix.

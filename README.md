@@ -69,41 +69,18 @@ implementation("com.github.ezrnest:mathsymk:v0.0.1")
 
 We provide a few examples to demonstrate the usage of this library.
 
-#### Fraction
+### Fraction
+#### Arithmetic operations:
 ```kotlin
-val a = Fraction.of(1, 2)
-val b = Fraction.of(1, 3)
+val a = Fraction(1, 2)
+val b = Fraction(1, 3)
 println(
     listOf(a + b, a - b, a * b, a / b) // 5/6, 1/6, 1/6, 3/2
 )
 println(listOf(a.pow(2), a.pow(-1))) // 1/4, 2
 ```
 
-#### Complex (Double)
-```kotlin
-val z1 = ComplexD(1.0, 2.0)
-val z2 = ComplexD(3.0, 4.0)
-println(listOf(z1 + z2, z1 - z2, z1 * z2, z1 / z2)) // (4.0, 6.0), (-2.0, -2.0), (-5.0, 10.0), (0.44, 0.08)
-println(listOf(z2.mod,z2.arg)) // 5.0, 0.93
-```
-
-#### Polynomial
-```kotlin
-val Z97 = NumberModels.intModP(97) // Integers mod 97, Z/97Z, a field
-val polyZ = Polynomial.over(Z97) // Polynomials over Z/97Z
-with(polyZ) {
-    val f = x+1 // predefined variable x polyZ
-    val g = x-1
-    val p1 = f * g // x^2 - 1
-    val p2 = f pow 2 // (x+1)^2 = x^2 + 2x + 1
-    println("p1 = $p1")
-    println("p2 = $p2")
-    val h = gcd(p1,p2).toMonic()
-    println("gcd(p1,p2) = $h") // x + 1
-}
-```
-
-#### Fraction Field
+#### Fraction fields:
 ```kotlin
 // First example: fractions over integers, just as plain fractions
 val Z = NumberModels.integers()
@@ -131,7 +108,18 @@ with(polyF) {
 }
 ```
 
-#### Complex over Various Models
+
+### Complex numbers
+
+#### Complex of Double:
+```kotlin
+val z1 = ComplexD(1.0, 2.0)
+val z2 = ComplexD(3.0, 4.0)
+println(listOf(z1 + z2, z1 - z2, z1 * z2, z1 / z2)) // (4.0, 6.0), (-2.0, -2.0), (-5.0, 10.0), (0.44, 0.08)
+println(listOf(z2.mod,z2.arg)) // 5.0, 0.93
+```
+
+#### Complex over Various Models:
 ```kotlin
 val Z = NumberModels.integers()
 val GaussianInt = Complex.over(Z)
@@ -153,7 +141,28 @@ with(Q){
 }
 ```
 
-#### Matrix and vector
+### Polynomial
+```kotlin
+val Z97 = NumberModels.intModP(97) // Integers mod 97, Z/97Z, a field
+val polyZ = Polynomial.over(Z97) // Polynomials over Z/97Z
+with(polyZ) {
+    val f = x+1 // predefined variable x polyZ
+    val g = x-1
+    val p1 = f * g // x^2 - 1
+    val p2 = f pow 2 // (x+1)^2 = x^2 + 2x + 1
+    println("p1 = $p1")
+    println("p2 = $p2")
+    val h = gcd(p1,p2).toMonic()
+    println("gcd(p1,p2) = $h") // x + 1
+}
+```
+
+### Multinomial
+
+
+
+
+### Matrix and vector
 ```kotlin
 val ℤ = NumberModels.integers()
 val n = 3
@@ -167,27 +176,35 @@ println(A * u) // matrix-vector multiplication
 println(u.T * B * u) // quadratic form
 ```
 
-#### Tensor
+### Tensor
+
+#### Basic usage
+```kotlin
+val ℤ = NumberModels.integers()
+val a = Tensor.of(intArrayOf(2, 3, 2, 5), ℤ, 0 until 60) // create a 4D tensor
+// a is a 4D tensor with shape (2, 3, 2, 5)
+a[intArrayOf(1, 2, 1, 3)] // get a single element
+a[0, 1, 1, 2] // get a single element, operator overloaded version, need `import io.github.ezrnest.linear.get`
+a[-1, 1..2, null, 0..<5 step 2] // slicing, need `import io.github.ezrnest.linear.get`
+a.slice(-1, 1..2, null, 0..<5 step 2) // slicing, another way
+a[1, Tensor.DOTS, 1, Tensor.NEW_AXIS, 2] // support omitting some axes and adding new axes
+```
+
+#### Multiplication
 ```kotlin
 val ℤ = NumberModels.integers()
 val a = Tensor.of(intArrayOf(3, 4, 5), ℤ, 0 until 60)
 val b = Tensor.of(intArrayOf(4, 3, 2), ℤ, 0 until 24)
-/*
-The following three ways give the same result:
- */
+// The following three ways give the same result:
 val res0 = Tensor.zeros(ℤ, 5, 2)
 for ((i, j, k, n) in IterUtils.prodIdxN(intArrayOf(5, 2, 3, 4))) {
   res0[i, j] += a[k, n, i] * b[n, k, j] // direct computation
 }
-println(res0.joinToString())
 val res1 = a.permute(2, 1, 0).matmul(b, 2) // matmul at the last 2 axes
-println(res1.shapeString) // (5, 2)
-println(res1.joinToString())
-
 val res2 = Tensor.einsum("kni,nkj->ij", a, b) // einsum
-println(res2.shapeString) // (5, 2)
-println(res2.joinToString())
 ```
+
+#### More samples can be found in the `samples` directory.
 
 # Features
 

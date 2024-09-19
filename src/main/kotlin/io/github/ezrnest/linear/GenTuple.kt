@@ -255,7 +255,7 @@ fun <T, A : Appendable> GenTensor<T>.joinToL(
             }
             idx[level]++
         }
-        if (idx[level] + 1 > limits[level]) {
+        if (idx[level] + 1 > limits[level] && idx[level] < shape[level] - 1) {
             buffer.append(separators[level])
             buffer.append(truncated[level])
             idx[level] = shape[level] - 1
@@ -281,11 +281,11 @@ fun <T, A : Appendable> GenTensor<T>.joinToL(
 
 fun <T, A : Appendable> GenTensor<T>.joinTo(
     buffer: A, separator: CharSequence = ", ", prefix: CharSequence = "[", postfix: CharSequence = "]",
-    limit: Int = Int.MAX_VALUE, truncated: CharSequence = "...", transform: ((T) -> CharSequence)? = null
+    limits: IntArray = IntArray(dim) { Int.MAX_VALUE }, truncated: CharSequence = "...", transform: ((T) -> CharSequence)? = null
 ): A {
     val dim = this.dim
     val seps = run {
-        val t = java.util.ArrayList<CharSequence>(dim)
+        val t = ArrayList<CharSequence>(dim)
 
         val spaces = " ".repeat(prefix.length)
         var padded = "\n\n"
@@ -302,17 +302,17 @@ fun <T, A : Appendable> GenTensor<T>.joinTo(
 
     val pres = Collections.nCopies(dim, prefix)
     val posts = Collections.nCopies(dim, postfix)
-    val limits = IntArray(dim) { limit }
     val truns = Collections.nCopies(dim, truncated)
     val trans = transform ?: Any?::toString
     return this.joinToL(buffer, seps, pres, posts, limits, truns, trans)
 }
 
 fun <T> GenTensor<T>.joinToString(
-    separator: CharSequence = " ", prefix: CharSequence = "[", postfix: CharSequence = "]",
+    separator: CharSequence = ", ", prefix: CharSequence = "[", postfix: CharSequence = "]",
     limit: Int = Int.MAX_VALUE, truncated: CharSequence = "...", transform: ((T) -> CharSequence)? = null
 ): String {
-    return this.joinTo(StringBuilder(), separator, prefix, postfix, limit, truncated, transform).toString()
+    val limits = IntArray(dim) { limit }
+    return this.joinTo(StringBuilder(), separator, prefix, postfix, limits, truncated, transform).toString()
 }
 
 fun <T, A : Appendable> GenMatrix<T>.joinTo(

@@ -37,6 +37,18 @@ abstract class AbstractTensor<T>(
         return sh.contentEquals(y.shape)
     }
 
+    override fun toString(): String {
+        val sb = StringBuilder()
+        val dim = dim
+
+        sb.append("Tensor(").append(sh.joinToString()).append("): \n")
+        val limits = IntArray(dim) { 1 }
+        limits[dim - 1] = 10
+        if(dim >= 2) limits[dim - 2] = 10
+        this.joinTo(sb,limits = limits)
+        return sb.toString()
+    }
+
 
     final override val dim: Int get() = sh.size
 
@@ -342,6 +354,7 @@ internal constructor(mc: EqualPredicate<T>, shape: IntArray, val data: Array<Any
     }
 
 
+
     companion object {
 
         fun <T> buildFromSequence(mc: EqualPredicate<T>, shape: IntArray, sequence: Sequence<T>): ATensor<T> {
@@ -409,7 +422,6 @@ internal constructor(mc: EqualPredicate<T>, shape: IntArray, val data: Array<Any
                     data[pos++] = mc.multiply(a as T, b as T)
                 }
             }
-            @Suppress("UNCHECKED_CAST")
             return ATensor(mc, shape, data)
         }
 
@@ -461,7 +473,6 @@ internal constructor(mc: EqualPredicate<T>, shape: IntArray, val data: Array<Any
             val data = arrayOfNulls<Any>(size)
             val pos = recurAdd(list, shape, 0, 0, data, clazz)
             assert(pos == size)
-            @Suppress("UNCHECKED_CAST")
             return ATensor(mc, shape, data)
         }
     }

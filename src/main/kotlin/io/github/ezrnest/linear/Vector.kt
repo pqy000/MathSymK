@@ -144,8 +144,8 @@ interface Vector<T> : GenVector<T>, ModeledMathObject<T, EqualPredicate<T>>, Vec
             return VectorImpl.zero(size, model)
         }
 
-        fun <T> constant(size: Int, value: T, model: EqualPredicate<T>): MutableVector<T> {
-            return VectorImpl.constant(size, value, model)
+        fun <T> constant(size: Int, model: EqualPredicate<T>, value: T): MutableVector<T> {
+            return VectorImpl.constant(size, model, value)
         }
 
         fun <T> sum(vs: List<Vector<T>>): Vector<T> {
@@ -208,10 +208,16 @@ data class RowVector<T>(val v: Vector<T>) : GenVector<T> {
  */
 val <T> Vector<T>.T: RowVector<T> get() = RowVector(this)
 
+/**
+ * Returns the inner (dot) product of this row vector and the given vector: `⟨this, v⟩`.
+ */
 fun <T> RowVector<T>.matmul(v: Vector<T>): T {
     return this.v inner v
 }
 
+/**
+ * The operator function version of [matmul].
+ */
 operator fun <T> RowVector<T>.times(v: Vector<T>): T {
     return this.matmul(v)
 }
@@ -273,7 +279,20 @@ interface MutableVector<T> : Vector<T> {
             x[i] = model.eval { x[i] - k * y[i] }
         }
     }
+    companion object{
 
+        fun <T> of(size: Int, model: EqualPredicate<T>, init: (Int) -> T): MutableVector<T> {
+            return AVector.of(size, model, init)
+        }
+
+        fun <T> zero(size: Int, model: AddMonoid<T>): MutableVector<T> {
+            return VectorImpl.zero(size, model)
+        }
+
+        fun <T> constant(size: Int, value: T, model: EqualPredicate<T>): MutableVector<T> {
+            return VectorImpl.constant(size, model, value)
+        }
+    }
 
 }
 
@@ -374,12 +393,12 @@ object VectorImpl {
         return apply1(x, model) { it }
     }
 
-    fun <T> constant(size: Int, value: T, model: EqualPredicate<T>): AVector<T> {
+    fun <T> constant(size: Int, model: EqualPredicate<T>, value: T): AVector<T> {
         return AVector(size, model) { value }
     }
 
     fun <T> zero(size: Int, model: AddMonoid<T>): AVector<T> {
-        return constant(size, model.zero, model)
+        return constant(size, model, model.zero)
     }
 
     fun <T> isEqual(x: GenVector<T>, y: GenVector<T>, model: EqualPredicate<T>): Boolean {

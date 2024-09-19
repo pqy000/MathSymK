@@ -653,6 +653,13 @@ object MatrixImpl {
         }
     }
 
+    fun <T> concatRow(a: GenMatrix<T>, b: GenMatrix<T>, model: EqualPredicate<T>): AMatrix<T> {
+        require(a.column == b.column)
+        return AMatrix(a.row + b.row, a.column, model) { i, j ->
+            if (i < a.row) a[i, j] else b[i - a.row, j]
+        }
+    }
+
     fun <T> addDiagonal(m: MutableMatrix<T>, a: T, model: AddSemigroup<T>) {
         for (i in 0..<min(m.row, m.column)) {
             m[i, i] = model.add(m[i, i], a)

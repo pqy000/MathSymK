@@ -299,13 +299,19 @@ interface Tensor<T> : ModeledMathObject<T, EqualPredicate<T>>, AlgebraModel<T, T
     /**
      * Returns a view of this tensor according to the given slicing parameters.
      * It is required that an element is either
-     *  * an integer, `Int`: to get the corresponding elements in that axis;
+     *  * an integer, `Int`: to get the corresponding elements in that axis and remove the axis in the result tensor,
+     *    supporting negative indices;
      *  * a range, `IntProgression`: to get a slice of elements in that axis;
      *  * `null`: to keep the axis as it is;
      *  * a special object, [Tensor.NEW_AXIS]: to indicate a new axis should be inserted;
      *  * a special object, [Tensor.DOTS]: (it should appear at most once)
      *    to indicate zero or more omitted axes that will be kept the same.
-     *    The axes are computed according to other slicing parameters.
+     *    These axes are computed according to other slicing parameters.
+     *
+     * Special case: If all the slicing parameters are integers, then the result tensor will be a 1-D tensor with shape `(1)`.
+     *
+     * An extension function is provided to make the slicing more concise.
+     * Import [get][io.github.ezrnest.linear.get] (with overloads) to use it.
      */
     fun slice(vararg slices: Any?): Tensor<T> {
         return slice(slices.asList())
@@ -728,7 +734,8 @@ interface Tensor<T> : ModeledMathObject<T, EqualPredicate<T>>, AlgebraModel<T, T
 }
 
 /**
- * A vararg version of get. This method supports negative indices.
+ * A vararg version of get.
+ * This method supports negative indices.
  */
 operator fun <T> Tensor<T>.get(vararg idx: Int): T {
     for (i in idx.indices) {
@@ -737,6 +744,13 @@ operator fun <T> Tensor<T>.get(vararg idx: Int): T {
         }
     }
     return this[idx]
+}
+
+/**
+ * The operator-overloading version of the method [Tensor.slice], providing a more concise way to slice a tensor.
+ */
+operator fun <T> Tensor<T>.get(vararg slices : Any?) : Tensor<T> {
+    return slice(slices.asList())
 }
 
 infix fun <T> Tensor<T>.matmul(y: Tensor<T>): Tensor<T> = this.matmul(y, r = 1)

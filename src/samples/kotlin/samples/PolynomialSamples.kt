@@ -21,11 +21,10 @@ fun polynomial(){
         val h = gcd(p1,p2).toMonic()
         println("gcd(p1,p2) = $h") // x + 1
     }
-//    val fPoly = RFraction.asField(polyZ) // Fraction field of polynomials over Z/97Z
-//    with(polyZ) {
-//
-//    }
 }
+
+
+
 fun main() {
     polynomial()
 }

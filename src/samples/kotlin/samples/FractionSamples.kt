@@ -6,8 +6,8 @@ import io.github.ezrnest.model.Polynomial
 import io.github.ezrnest.model.RFraction
 
 fun basicFraction() {
-    val a = Fraction.of(1, 2)
-    val b = Fraction.of(1, 3)
+    val a = Fraction(1, 2)
+    val b = Fraction(1, 3)
     println(
         listOf(a + b, a - b, a * b, a / b) // 5/6, 1/6, 1/6, 3/2
     )

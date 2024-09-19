@@ -1,5 +1,6 @@
 package cn.mathsymk.samples
 
+import io.github.ezrnest.model.Fraction
 import io.github.ezrnest.model.NumberModels
 import io.github.ezrnest.model.RFraction
 
@@ -12,4 +13,12 @@ fun variousFractions(){
         println(a + b) // 5/6
         println(a * b) // 1/6
     }
+}
+
+fun fractions(){
+    val a = Fraction(1, 2)
+}
+
+fun main() {
+    variousFractions()
 }

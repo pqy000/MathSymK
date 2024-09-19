@@ -480,6 +480,8 @@ data class Fraction internal constructor(
             }
         }
 
+
+
         /**
          * Returns a fraction from a long.
          */
@@ -499,8 +501,9 @@ data class Fraction internal constructor(
         }
 
         /**
-         * Return a fraction representing the value of numerator/denominator,proper reduction
-         * will be done.
+         * Returns a fraction representing the value of `numerator/denominator`
+         * with reduction.
+         *
          * @param numerator the numerator of the fraction
          * @param denominator the denominator of the fraction, non-zero
          * @return a new fraction
@@ -514,6 +517,35 @@ data class Fraction internal constructor(
             val nAd = gcdReduce(numerator, denominator)
             return adjustSign(nAd[0], nAd[1])
         }
+
+        /**
+         * Returns a fraction representing the value of `numerator/denominator`
+         * with reduction.
+         *
+         * @param numerator the numerator of the fraction
+         * @param denominator the denominator of the fraction, non-zero
+         * @return a new fraction
+         */
+        operator fun invoke(numerator: Long, denominator: Long): Fraction {
+            return of(numerator, denominator)
+        }
+
+        operator fun invoke(numerator: Int, denominator: Int): Fraction {
+            return of(numerator.toLong(), denominator.toLong())
+        }
+
+        /**
+         * Returns a fraction corresponding to the `number`.
+         */
+        operator fun invoke(number : Long): Fraction {
+            return of(number)
+        }
+
+        operator fun invoke(number : Int): Fraction {
+            return of(number)
+        }
+
+
 
         private val maxPrecision = log10(java.lang.Long.MAX_VALUE.toDouble()).toInt() - 1
 
