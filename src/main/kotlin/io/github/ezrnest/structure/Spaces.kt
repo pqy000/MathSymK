@@ -45,10 +45,18 @@ interface MetricSpace<T, V> {
     fun distance(u: V, v: V): T
 }
 
-
+/**
+ * Describes a finite dimensional linear basis of type [V] over a field [K].
+ */
 interface FiniteLinearBasis<K, V> {
+    /**
+     * The elements of this basis.
+     */
     val elements: List<V>
 
+    /**
+     * The rank of this basis, which is equal to the number of elements.
+     */
     val rank: Int
         get() = elements.size
 
@@ -62,6 +70,9 @@ interface FiniteLinearBasis<K, V> {
      */
     fun produce(coefficients: List<K>): V
 
+    /**
+     * Determines whether the given vector is in the span of this basis.
+     */
     fun contains(v: V): Boolean
 }
 

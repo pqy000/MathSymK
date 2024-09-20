@@ -5,9 +5,10 @@ plugins {
 }
 
 group = "io.github.ezrnest"
-version = "0.0.1"
+version = "0.0.2"
 
 repositories {
+    mavenLocal()
     maven {
         url = uri("https://maven.aliyun.com/repository/public/")
     }
@@ -33,6 +34,7 @@ tasks.test {
 }
 
 java {
+
     toolchain {
         languageVersion.set(JavaLanguageVersion.of(21))
     }
@@ -41,6 +43,7 @@ java {
 }
 
 kotlin {
+    jvmToolchain(21)
     compilerOptions{
         freeCompilerArgs.add("-Xjvm-default=all")
     }

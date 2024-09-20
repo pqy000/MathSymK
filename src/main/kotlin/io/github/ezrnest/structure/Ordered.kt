@@ -10,6 +10,36 @@ interface OrderPredicate<T> : EqualPredicate<T>, Comparator<T> {
     operator fun T.compareTo(y: T): Int = compare(this, y)
 }
 
+/**
+ * Returns the minimum of two values.
+ */
+fun <T> OrderPredicate<T>.min(x: T, y: T): T {
+    return if (compare(x, y) < 0) x else y
+}
+
+/**
+ * Returns the maximum of two values.
+ */
+fun <T> OrderPredicate<T>.max(x: T, y: T): T {
+    return if (compare(x, y) > 0) x else y
+}
+
+fun <T> OrderPredicate<T>.isLess(x: T, y: T): Boolean {
+    return compare(x, y) < 0
+}
+
+fun <T> OrderPredicate<T>.isLessOrEqual(x: T, y: T): Boolean {
+    return compare(x, y) <= 0
+}
+
+fun <T> OrderPredicate<T>.isGreater(x: T, y: T): Boolean {
+    return compare(x, y) > 0
+}
+
+fun <T> OrderPredicate<T>.isGreaterOrEqual(x: T, y: T): Boolean {
+    return compare(x, y) >= 0
+}
+
 
 /**
  * Describes an Abelian group with an order.
@@ -65,7 +95,7 @@ interface OrderedAddGroupCal<T> : AddGroup<T>, OrderPredicate<T> {
 }
 
 /**
- * Describes a ring with a order relation denoted by `<, <=, >, >=`, which satisfies:
+ * Describes a ring with an order relation denoted by `<, <=, >, >=`, which satisfies:
  *
  *     x < y    implies    x + a < y + a, for any a
  *     x > 0, y > 0    implies    x * y > 0

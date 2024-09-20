@@ -638,7 +638,7 @@ object MatrixImpl {
         return scalar(n, model, model.one)
     }
 
-    fun <T> scalar(n : Int, model : AddMonoid<T>, k : T) : AMatrix<T>{
+    fun <T> scalar(n: Int, model: AddMonoid<T>, k: T): AMatrix<T> {
         val A = zero(n, n, model)
         for (i in 0 until n) {
             A[i, i] = k
@@ -706,7 +706,7 @@ object MatrixImpl {
      */
 
     fun <T> rank(A: GenMatrix<T>, model: Field<T>): Int {
-        val pivots = toEchelon(AMatrix.copyOf(A, model),model)
+        val pivots = toEchelon(AMatrix.copyOf(A, model), model)
         return pivots.size
     }
 
@@ -1339,7 +1339,7 @@ object MatrixImpl {
     }
 
 
-    fun <T> detDivisors(A: GenMatrix<T>, mc: EuclideanDomain<T>): List<T>{
+    fun <T> detDivisors(A: GenMatrix<T>, mc: EuclideanDomain<T>): List<T> {
         val invFactors = invariantFactors(A, mc)
         // d_k = a_k * a_{k-1} * ... * a_1
         val result = ArrayList<T>(invFactors.size)
@@ -1559,6 +1559,92 @@ object MatrixImpl {
 
     }
 
+
+    /*
+    Solve linear equations
+     */
+
+    internal fun <T> nullSpaceGenerator(
+        matrix: GenMatrix<T>, column: Int, pivots: List<Int>, mc: UnitRing<T>
+    ): List<Vector<T>> {
+        val k = column - pivots.size
+        if (k == 0) return emptyList()
+
+        val vectors = ArrayList<Vector<T>>(k)
+        val minusOne = mc.negate(mc.one)
+        var pivotIndex = 0
+
+        for (j in 0 until column) {
+            if (pivotIndex < pivots.size && pivots[pivotIndex] == j) {
+                pivotIndex++
+            } else {
+                val v = Vector.zero(column, mc).apply { this[j] = minusOne }
+                pivots.forEachIndexed { i, pivot -> v[pivot] = matrix[i, j] }
+                vectors += v
+            }
+        }
+        return vectors
+    }
+
+
+    internal fun <T> nullSpaceOf(
+        expanded: GenMatrix<T>, column: Int, pivots: List<Int>, mc: Field<T>
+    ): VectorBasis<T> {
+        val generators = nullSpaceGenerator(expanded, column, pivots, mc)
+        if (generators.isEmpty()) {
+            return VectorBasis.zero(column, mc)
+        }
+        TODO()
+//        return VectorBasis.createBaseWithoutCheck(generators)
+    }
+
+    fun <T> specialSolutionOf(expanded: GenMatrix<T>, column: Int, pivots: List<Int>, mc: Field<T>): Matrix<T> {
+        val special = zero(column, expanded.column - column, mc)
+        for (k in pivots.indices) {
+            val pk = pivots[k]
+            for (j in special.colIndices) {
+                special[pk, j] = expanded[k, j + column]
+            }
+        }
+        return special
+    }
+
+    fun <T> solveLinear(expanded: MutableMatrix<T>, colSep: Int, mc: Field<T>):
+            Triple<Matrix<T>, VectorBasis<T>, Boolean> {
+        val pivots = toEchelon(expanded, mc, colSep)
+        val r = pivots.size
+        val special = specialSolutionOf(expanded, colSep, pivots, mc)
+        val basis = nullSpaceOf(expanded, colSep, pivots, mc)
+        val solvable = (r until expanded.row).all { i ->
+            (colSep until expanded.column).all { j -> mc.isZero(expanded[i, j]) }
+        }
+        return Triple(special, basis, solvable)
+    }
+
+    fun <T> solveLinear(m: GenMatrix<T>, b: GenMatrix<T>, model: Field<T>): Triple<Matrix<T>, VectorBasis<T>, Boolean> {
+        require(m.row == b.row)
+        val expanded = MatrixImpl.concatCol(m, b, model)
+        return solveLinear(expanded, m.column, model)
+    }
+
+    fun <T> solveLinear(m: GenMatrix<T>, b: GenVector<T>, model: Field<T>): Triple<Vector<T>, VectorBasis<T>, Boolean> {
+        require(m.row == b.size)
+        val expanded = zero(m.row, m.column + 1, model)
+        val col = m.column
+        expanded.setAll(0, 0, m)
+        for (i in b.indices) {
+            expanded[i, col] = b[i]
+        }
+        val (special, basis, sol) = solveLinear(expanded, col, model)
+        val v = special.colAt(0)
+        return Triple(v, basis, sol)
+    }
+
+    fun <T> solveHomo(m: GenMatrix<T>, model: Field<T>): VectorBasis<T> {
+        val expanded = AMatrix.copyOf(m, model)
+        val pivots = toEchelon(expanded, model)
+        return nullSpaceOf(expanded, m.column, pivots, model)
+    }
 
 }
 
