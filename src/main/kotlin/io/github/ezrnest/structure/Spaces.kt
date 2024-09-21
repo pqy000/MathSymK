@@ -45,62 +45,81 @@ interface MetricSpace<T, V> {
     fun distance(u: V, v: V): T
 }
 
+///**
+// * Describes a finite dimensional linear basis of type [V] over a field [K].
+// */
+//interface FiniteLinearBasis<K, V> {
+//    /**
+//     * The elements of this basis.
+//     */
+//    val elements: List<V>
+//
+//    /**
+//     * The rank of this basis, which is equal to the number of elements.
+//     */
+//    val rank: Int
+//        get() = elements.size
+//
+//    /**
+//     * Returns the coefficients of the given vector under this basis.
+//     */
+//    fun reduce(v : V) : List<K>
+//
+//    /**
+//     * Returns the vector represented by the given coefficients.
+//     */
+//    fun produce(coefficients: List<K>): V
+//
+//    /**
+//     * Determines whether the given vector is in the span of this basis.
+//     */
+//    fun contains(v: V): Boolean
+//}
+
 /**
- * Describes a finite dimensional linear basis of type [V] over a field [K].
- */
-interface FiniteLinearBasis<K, V> {
-    /**
-     * The elements of this basis.
-     */
-    val elements: List<V>
-
-    /**
-     * The rank of this basis, which is equal to the number of elements.
-     */
-    val rank: Int
-        get() = elements.size
-
-    /**
-     * Returns the coefficients of the given vector under this basis.
-     */
-    fun reduce(v : V) : List<K>
-
-    /**
-     * Returns the vector represented by the given coefficients.
-     */
-    fun produce(coefficients: List<K>): V
-
-    /**
-     * Determines whether the given vector is in the span of this basis.
-     */
-    fun contains(v: V): Boolean
-}
-
-/**
- * Describes a linear space of finite dimension.
+ * Describes a linear space of finite dimension on a field [K] with vectors of type [V].
+ *
+ * An instance of linear space is associated with a fixed [basis], which is a list of vectors.
  */
 interface FiniteDimLinearSpace<K, V> : LinearSpace<K, V> {
 //Created by lyc at 2020-03-07 17:50
+//Rewritten at 2024/9/21
     /**
      * Gets the dimension of this linear space.
      */
     val dim: Int
-        get() = basis.rank
+        get() = basis.size
 
     /**
-     * Gets the default basis of this linear space.
+     * Gets the basis of this linear space.
      */
-    val basis: FiniteLinearBasis<K,V>
+    val basis: List<V>
 
     /**
      * Gets the coefficients of the given vector under the [basis] of this linear space.
      */
-    fun coefficients(v: V) : List<K>{
-        return basis.reduce(v)
+    fun coefficients(v: V): List<K>
+
+    /**
+     * Returns the vector represented by the given coefficients under the [basis].
+     */
+    fun produce(coefficients: List<K>): V {
+        require(coefficients.size == dim) { "The number of coefficients must be equal to the dimension of the space." }
+        return sumWeighted(coefficients, basis)
     }
 
-//    /**
-//     * Determines whether the given elements can be a basis of this linear space.
-//     */
-//    fun isBasis(vs: List<V>): Boolean
+}
+
+/**
+ * Describes a finite dimensional affine space on a field [K] with vectors of type [V].
+ *
+ * An affine space is a vector space with an origin.
+ */
+interface FiniteDimAffineSpace<K, V> {
+    val origin: V
+
+    val space: FiniteDimLinearSpace<K, V>
+
+    val dim: Int
+        get() = space.dim
 }

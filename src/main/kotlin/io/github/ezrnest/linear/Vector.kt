@@ -159,6 +159,11 @@ interface Vector<T> : GenVector<T>, ModeledMathObject<T, EqualPredicate<T>>, Vec
             return sum(vs.asList())
         }
 
+        fun <T> sumWeighted(weights: List<T>, elements: List<Vector<T>>): Vector<T> {
+            require(weights.size == elements.size)
+            return VectorImpl.sumWeighted(weights, elements, elements[0].size, elements[0].model as Ring<T>)
+        }
+
         /**
          * Gets a unit vector with the given [length] with the [index] element being `1` and all other elements being `0`.
          */
@@ -167,9 +172,16 @@ interface Vector<T> : GenVector<T>, ModeledMathObject<T, EqualPredicate<T>>, Vec
             return zero(length, model).also { it[index] = model.one }
         }
 
+        /**
+         * Returns the list of unit vectors of the given [length] with the given [model].
+         */
+        fun <T> unitVectors(length: Int, model: UnitRing<T>): List<Vector<T>> {
+            return (0 until length).map { i -> unitVector(length, i, model) }
+        }
 
-        fun <T> space(field: Field<T>, length: Int): CanonicalVectorSpace<T> {
-            return CanonicalVectorSpace(length, field)
+
+        fun <T> space(field: Field<T>, length: Int): StandardVectorSpace<T> {
+            return StandardVectorSpace(length, field)
         }
 
 
@@ -279,7 +291,8 @@ interface MutableVector<T> : Vector<T> {
             x[i] = model.eval { x[i] - k * y[i] }
         }
     }
-    companion object{
+
+    companion object {
 
         fun <T> of(size: Int, model: EqualPredicate<T>, init: (Int) -> T): MutableVector<T> {
             return AVector.of(size, model, init)
@@ -302,6 +315,7 @@ inline fun <T> MutableVector<T>.transform(f: (T) -> T) {
     }
 }
 
+//@kotlin.ConsistentCopyVisibility
 data class AVector<T> internal constructor(
     val data: Array<Any?>, override val model: EqualPredicate<T>
 ) : MutableVector<T> {
@@ -385,6 +399,12 @@ object VectorImpl {
         return AVector(x.size, model) { k -> f(x[k]) }
     }
 
+    internal inline fun <T> apply1Inplace(x: MutableVector<T>, f: (T, Int) -> T) {
+        for (i in x.indices) {
+            x[i] = f(x[i], i)
+        }
+    }
+
     fun <T> copyOf(x: Vector<T>): AVector<T> {
         return copyOf(x, x.model)
     }
@@ -410,6 +430,10 @@ object VectorImpl {
         return apply2(x, y, model, model::add)
     }
 
+    fun <T> addAssign(x: MutableVector<T>, y: GenVector<T>, model: AddSemigroup<T>) {
+        apply1Inplace(x) { t, i -> model.add(t, y[i]) }
+    }
+
     fun <T> subtract(x: GenVector<T>, y: GenVector<T>, model: AddGroup<T>): AVector<T> {
         return apply2(x, y, model, model::subtract)
     }
@@ -430,9 +454,26 @@ object VectorImpl {
         return apply1(x, model) { model.divide(it, k) }
     }
 
-    fun <T> sum(vs: List<GenVector<T>>, size: Int, cal: AddMonoid<T>): AVector<T> {
+    fun <T> sum(vs: List<GenVector<T>>, size: Int, model: AddMonoid<T>): AVector<T> {
         require(vs.all { it.size == size }) { "Size mismatch! " }
-        return vs.fold(zero(size, cal)) { acc, v -> add(acc, v, cal) }
+        val res = zero(size, model)
+        for (v in vs) {
+            require(v.size == size)
+            addAssign(res, v, model)
+        }
+        return res
+    }
+
+    fun <T> sumWeighted(weights: List<T>, elements: List<GenVector<T>>, size: Int, model: Ring<T>): AVector<T> {
+        require(weights.size == elements.size)
+        val res = zero(size, model)
+        for (i in elements.indices) {
+            val k = weights[i]
+            val v = elements[i]
+            require(v.size == size)
+            apply1Inplace(res) { t, j -> model.eval { t + k * v[j] } }
+        }
+        return res
     }
 
     fun <T> inner(x: GenVector<T>, y: GenVector<T>, model: Ring<T>): T {

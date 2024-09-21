@@ -58,6 +58,11 @@ interface Module<R, V> : AddGroup<V> {
 //    operator fun R.times(v: V): V {
 //        return scalarMul(this, v)
 //    }
+
+    fun sumWeighted(weights : List<R>, elements :List<V>): V {
+        require(weights.size == elements.size)
+        return weights.indices.fold(zero) { acc, i -> add(acc, scalarMul(weights[i], elements[i]) ) }
+    }
 }
 
 interface RingModule<R, V> : Module<R, V>, Ring<V> {

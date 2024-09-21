@@ -8,9 +8,7 @@ import io.github.ezrnest.structure.*
  *
  * Most of them are provided as extension functions.
  */
-object MatrixUtils {
-
-
+object MatrixExt {
 
 
     /**
@@ -31,6 +29,18 @@ object MatrixUtils {
     fun <T> Matrix<T>.charPoly(): Polynomial<T> {
         return MatrixImpl.charPoly(this, this.model as UnitRing<T>)
     }
+
+    /**
+     * Returns the null space of this matrix, which is the set of all vectors `x` such that `Ax = 0`.
+     *
+     * The null space of a matrix is also known as the kernel of the matrix, `Ker(A)`.
+     *
+     * It is required that the `model` of this matrix is a [Field].
+     */
+    fun <T> Matrix<T>.nullSpace(): VectorSpace<T> {
+        return MatrixImpl.solveHomo(this, this.model as Field<T>)
+    }
+
 
     /**
      * Returns the rank decomposition of a matrix `A = LR`, where `L` is a column full-rank matrix and `R` is a row full-rank matrix.
@@ -54,7 +64,7 @@ object MatrixUtils {
      *
      * @return a pair of `(L, U)`.
      */
-    fun <T> Matrix<T>.decompLU() : Pair<Matrix<T>, Matrix<T>> {
+    fun <T> Matrix<T>.decompLU(): Pair<Matrix<T>, Matrix<T>> {
         return MatrixImpl.decompLU(this, this.model as Field<T>)
     }
 
@@ -63,7 +73,7 @@ object MatrixUtils {
      *
      * It is required that the `model` of this matrix is a [Reals].
      */
-    fun <T> Matrix<T>.decompCholesky() : Matrix<T> {
+    fun <T> Matrix<T>.decompCholesky(): Matrix<T> {
         return MatrixImpl.decompCholesky(this, this.model as Reals<T>)
     }
 
@@ -74,7 +84,7 @@ object MatrixUtils {
      *
      * @return a pair of `(L, diag(D))`.
      */
-    fun <T> Matrix<T>.decompCholeskyD() : Pair<Matrix<T>, Vector<T>> {
+    fun <T> Matrix<T>.decompCholeskyD(): Pair<Matrix<T>, Vector<T>> {
         return MatrixImpl.decompCholeskyD(this, this.model as Field<T>)
     }
 
@@ -85,7 +95,7 @@ object MatrixUtils {
      *
      * @return a pair of `(Q, R)`.
      */
-    fun <T> Matrix<T>.decompQR() : Pair<Matrix<T>, Matrix<T>> {
+    fun <T> Matrix<T>.decompQR(): Pair<Matrix<T>, Matrix<T>> {
         return MatrixImpl.decompQR(this, this.model as Reals)
     }
 
@@ -104,9 +114,10 @@ object MatrixUtils {
      * * `A` for abelian subgroup;
      * * `N` for nilpotent subgroup.
      */
-    fun <T> Matrix<T>.decompKAN() :Triple<Matrix<T>, Vector<T>, Matrix<T>> {
+    fun <T> Matrix<T>.decompKAN(): Triple<Matrix<T>, Vector<T>, Matrix<T>> {
         return MatrixImpl.decompKAN(this, this.model as Reals<T>)
     }
+
     /**
      * Returns the (row) echelon form of this matrix and the indices of the pivot columns.
      *
@@ -130,7 +141,7 @@ object MatrixUtils {
      *
      * @return a pair of `(E, pivots)`, where `E` is the echelon form and `pivots` is the list of pivot columns.
      */
-    fun <T> Matrix<T>.toEchelonForm() : Pair<Matrix<T>, List<Int>> {
+    fun <T> Matrix<T>.toEchelonForm(): Pair<Matrix<T>, List<Int>> {
         val m = MutableMatrix.copyOf(this)
         val pivots = MatrixImpl.toEchelon(m, this.model as Field<T>)
         return m to pivots

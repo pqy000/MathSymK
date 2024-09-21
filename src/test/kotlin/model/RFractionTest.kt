@@ -306,22 +306,3 @@ class RFractionTest {
 }
 
 
-fun main() {
-    val ints = NumberModels.integers()
-    val polyRing = Polynomial.over(ints)
-    val qField = RFraction.over(polyRing)
-    with(polyRing) { // polynomial ring over integers, Z[x]
-        with(qField) { // quotient field of polynomials over integers, Z(x)
-            val f1 = (1 + x) / (1 + 2.x)
-            val f2 = (2 + 3.x) / (1 + 2.x)
-            println(f1 + f2) // (3 + 4x)/(1 + 2x)
-            println(f1 / f2) // (1 + x)/(2 + 3x)
-
-            val f3 = x / (1 + 2.x)
-            println(f1 + f3) // 1
-
-            val f4 = (1 + x) / (1 + 3.x)
-            println(f1 + f4) // (5*x^2 + 7*x + 2)/(6*x^2 + 5*x + 1)
-        }
-    }
-}

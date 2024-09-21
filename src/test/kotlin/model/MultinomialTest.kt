@@ -150,7 +150,7 @@ class MultinomialTest {
             val p1 = "xy".m - constant(1)
             val p2 = "y^2".m - constant(1)
             val (qs, r) = f.divideAndRemainder(listOf(p1, p2))
-            println("$qs, $r")
+//            println("$qs, $r")
             assertValueEquals(f, qs[0] * p1 + qs[1] * p2 + r)
             assertTrue(f.leadTermCompare(qs[0] * p1) >= 0)
             assertTrue(f.leadTermCompare(qs[1] * p1) >= 0)

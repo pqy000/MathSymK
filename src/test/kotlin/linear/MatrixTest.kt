@@ -2,9 +2,11 @@ package linear
 
 import TestUtils.assertEquals
 import TestUtils.assertValueEquals
+import io.github.ezrnest.linear.LinAlg
 import io.github.ezrnest.linear.Matrix
 import io.github.ezrnest.linear.MatrixImpl
-import io.github.ezrnest.linear.MatrixUtils.charPoly
+import io.github.ezrnest.linear.MatrixExt.charPoly
+import io.github.ezrnest.linear.Vector
 import io.github.ezrnest.linear.toMutable
 import io.github.ezrnest.model.Multinomial
 import io.github.ezrnest.model.NumberModels
@@ -22,6 +24,7 @@ import kotlin.test.assertTrue
 class MatrixTest {
     val Z = NumberModels.integers()
     val Zmod7 = NumberModels.intModP(7)
+    val Zmod97 = NumberModels.intModP(97)
 
     @Test
     fun testDetGB() {
@@ -141,7 +144,7 @@ class MatrixTest {
         val Z = NumberModels.integers()
         val n = 4
 //    val A = Matrix(n, Z) { i, j -> (i + 1) * (j + 2) }
-        for(seed in 10..12){
+        for (seed in 10..12) {
             val rng = Random(seed)
             val A = Matrix(n, Z) { i, j ->
                 rng.nextInt(10)
@@ -152,7 +155,8 @@ class MatrixTest {
             for (k in 1..n) {
                 val rows = IterUtils.comb(A.row, k, false)
                 val cols = IterUtils.comb(A.column, k, false)
-                val minors = IterUtils.prod2(rows, cols).map { A.slice(it.first, it.second).det() }.toList().toIntArray()
+                val minors =
+                    IterUtils.prod2(rows, cols).map { A.slice(it.first, it.second).det() }.toList().toIntArray()
                 val gcd = NTFunctions.gcd(*minors)
                 if (gcd == 0) {
                     break
@@ -162,4 +166,31 @@ class MatrixTest {
             assertEquals(gcds, accProd)
         }
     }
+
+    @Test
+    fun testSolveLinear() {
+        val F = Zmod97
+        run {
+            val A = Matrix.zero(3, 5, F)
+            val b = Vector.unitVector(3, 0, F)
+            val sol = LinAlg.solveLinear(A, b)
+            assertTrue(sol == null)
+        }
+        run {
+            val rng = Random(10)
+            val A = Matrix(4, 4, F) { i, j -> rng.nextInt(100) }
+            val b = Vector(4, F) { i -> rng.nextInt(100) }
+            val sol = LinAlg.solveLinear(A, b)!! // A is full rank
+            assertValueEquals(A * sol.solution, b)
+        }
+
+        run {
+            val rng = Random(10)
+            val A = Matrix(4, 4, F) { i, j -> rng.nextInt(100) }
+            val sol = LinAlg.solveHomo(A)
+            assertEquals(0, sol.dim) // A is full rank
+        }
+    }
+
+
 }

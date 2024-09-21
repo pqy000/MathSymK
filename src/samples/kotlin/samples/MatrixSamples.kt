@@ -1,7 +1,7 @@
 package samples
 
 import io.github.ezrnest.linear.*
-import io.github.ezrnest.linear.MatrixUtils.charPoly
+import io.github.ezrnest.linear.MatrixExt.charPoly
 import io.github.ezrnest.model.Multinomial
 import io.github.ezrnest.model.NumberModels
 import io.github.ezrnest.model.Polynomial

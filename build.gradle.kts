@@ -8,7 +8,6 @@ group = "io.github.ezrnest"
 version = "0.0.2"
 
 repositories {
-    mavenLocal()
     maven {
         url = uri("https://maven.aliyun.com/repository/public/")
     }

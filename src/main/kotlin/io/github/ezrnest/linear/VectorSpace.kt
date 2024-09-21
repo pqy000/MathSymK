@@ -1,27 +1,7 @@
 package io.github.ezrnest.linear
 
-import io.github.ezrnest.AbstractMathObject
-import io.github.ezrnest.ModeledMathObject
-import io.github.ezrnest.ValueEquatable
 import io.github.ezrnest.structure.*
-import java.util.function.Function
 
-/**
- *
- */
-interface VectorBasis<K> : FiniteLinearBasis<K, Vector<K>> {
-    val vectorLength: Int
-
-    companion object {
-        fun <K> standardBasis(vectorLength: Int, scalars: Field<K>): VectorBasis<K> {
-            return StandardVectorBasis(vectorLength, scalars)
-        }
-
-        fun <K> zero(vectorLength: Int, scalars: Field<K>): VectorBasis<K> {
-            return ZeroVectorBasis(scalars, vectorLength)
-        }
-    }
-}
 
 interface VectorSpace<K> : FiniteDimLinearSpace<K, Vector<K>> {
     /*
@@ -35,36 +15,116 @@ interface VectorSpace<K> : FiniteDimLinearSpace<K, Vector<K>> {
      */
     val vectorLength: Int
 
+    fun basisAsMatrix(): Matrix<K> {
+        return Matrix.fromColumns(basis, scalars)
+    }
+
     /**
      * Determines whether the given vector is in this vector space.
      *
      */
     override fun contains(x: Vector<K>): Boolean {
-        return x.size == vectorLength && basis.contains(x)
+        checkVector(x)
+        return MatrixImpl.solveLinear(basisAsMatrix(), x, scalars) != null
     }
 
     /**
      * Gets the coefficients of the vector in the basis of this vector space.
+     *
      * Throws [IllegalArgumentException] if the vector is not in this vector space.
+     *
      * @see contains
      */
     override fun coefficients(v: Vector<K>): List<K> {
-        return basis.reduce(v)
+        checkVector(v)
+        val mat = Matrix.fromColumns(basis)
+        val result = MatrixImpl.solveLinear(mat, v, scalars)?: throw IllegalArgumentException("The vector is not in the space.")
+        return result.solution.toList()
     }
 
-    override val basis: VectorBasis<K>
+    /**
+     * Gets the basis of the vector space as a list of vectors.
+     */
+    override val basis: List<Vector<K>>
+
+    override val scalars: Field<K>
+
+    override val zero: Vector<K>
+        get() = VectorImpl.zero(vectorLength, scalars)
+
+    override fun add(x: Vector<K>, y: Vector<K>): Vector<K> {
+        checkVector(x)
+        checkVector(y)
+        return VectorImpl.add(x, y, scalars)
+    }
+
+    override fun negate(x: Vector<K>): Vector<K> {
+        checkVector(x)
+        return VectorImpl.negate(x, scalars)
+    }
+
+    override fun scalarMul(k: K, v: Vector<K>): Vector<K> {
+        checkVector(v)
+        return VectorImpl.multiply(v, k, scalars)
+    }
+
+    override fun subtract(x: Vector<K>, y: Vector<K>): Vector<K> {
+        checkVector(x)
+        checkVector(y)
+        return VectorImpl.subtract(x, y, scalars)
+    }
+
+    override fun produce(coefficients: List<K>): Vector<K> {
+        return VectorImpl.sumWeighted(coefficients, basis, vectorLength, scalars)
+    }
+
+    override fun isEqual(x: Vector<K>, y: Vector<K>): Boolean {
+        checkVector(x)
+        checkVector(y)
+        return VectorImpl.isEqual(x, y, scalars)
+    }
+
+    companion object {
+        fun <K> zero(vectorLength: Int, scalars: Field<K>): VectorSpace<K> {
+            return ZeroVectorSpace(vectorLength, scalars)
+        }
+
+        fun <K> standard(vectorLength: Int, scalars : Field<K>) : StandardVectorSpace<K>{
+            return StandardVectorSpace(vectorLength, scalars)
+        }
+
+        private fun <K> VectorSpace<K>.checkVector(v: Vector<K>) {
+            require(v.size == vectorLength) { "Vector size mismatch: expected $vectorLength, got ${v.size}" }
+        }
+    }
 }
 
 
-open class CanonicalVectorSpace<K>(override val vectorLength: Int, override val scalars: Field<K>) :
+/**
+ * Describes the canonical `d`-dimensional vector space over the field [K] with the standard basis of unit vectors.
+ *
+ * The [dim] and [vectorLength] are equal to `d`.
+ */
+open class StandardVectorSpace<K>(override val dim: Int, override val scalars: Field<K>) :
     VectorSpace<K>, InnerProductSpace<K, Vector<K>> {
+    override val vectorLength: Int
+        get() = dim
+
+    override val zero: Vector<K>
+        get() = VectorImpl.zero(vectorLength, scalars)
 
     /**
      * Creates a new vector with the given [data].
      */
     fun vec(vararg data: K): Vector<K> {
-        require(data.size == vectorLength)
-        return Vector.of(data.asList(), scalars)
+        return produce(data.asList())
+    }
+
+    override fun produce(coefficients: List<K>): Vector<K> {
+        require(
+            coefficients.size == vectorLength
+        ) { "The number of coefficients must be equal to the dimension of the space." }
+        return Vector.of(coefficients, scalars)
     }
 
 
@@ -76,8 +136,6 @@ open class CanonicalVectorSpace<K>(override val vectorLength: Int, override val 
         return VectorImpl.isEqual(x, y, scalars)
     }
 
-    override val zero: Vector<K>
-        get() = VectorImpl.zero(vectorLength, scalars)
 
     override fun negate(x: Vector<K>): Vector<K> {
         return VectorImpl.negate(x, scalars)
@@ -104,8 +162,8 @@ open class CanonicalVectorSpace<K>(override val vectorLength: Int, override val 
     }
 
 
-    override val basis: VectorBasis<K>
-        get() = StandardVectorBasis(vectorLength, scalars)
+    override val basis: List<Vector<K>>
+        get() = Vector.unitVectors(vectorLength, scalars)
 
 
     override fun coefficients(v: Vector<K>): List<K> {
@@ -113,86 +171,41 @@ open class CanonicalVectorSpace<K>(override val vectorLength: Int, override val 
     }
 }
 
+
 /**
- * A standard basis for a vector space, which is the set of unit vectors.
+ * Describes the zero vector space over the field [K] embedded in the vector space of [vectorLength].
  */
-class StandardVectorBasis<K>(
-    override val vectorLength: Int,
-    private val scalars: Field<K>
-) : VectorBasis<K> {
-    override val elements: List<Vector<K>>
-        get() = (0 until vectorLength).map { i -> Vector.unitVector(vectorLength, i, scalars) }
-
-    override fun reduce(v: Vector<K>): List<K> {
-
-        return v.toList()
-    }
-
-    override fun produce(coefficients: List<K>): Vector<K> {
-        return Vector.of(coefficients, scalars)
-    }
-
-    override fun contains(v: Vector<K>): Boolean {
-        return v.model == scalars && v.size == vectorLength
-    }
-}
-
-internal class DVectorBasis<T>(
-    mc: Field<T>,
-    override val vectorLength: Int, override val elements: List<Vector<T>>
-) :
-    AbstractMathObject<T, Field<T>>(mc),
-    VectorBasis<T> {
-
-    override fun valueEquals(obj: ValueEquatable<T>): Boolean {
-        return obj is DVectorBasis && obj.vectorLength == vectorLength &&
-                elements.zip(obj.elements).all { (a, b: Vector<T>) -> a.valueEquals(b) }
-    }
-
-    override fun <S> mapTo(newModel: EqualPredicate<S>, mapping: Function<T, S>): DVectorBasis<S> {
-        return DVectorBasis(newModel as Field<S>, vectorLength, elements.map { it.mapTo(newModel, mapping) })
-    }
-
-    override fun reduce(v: Vector<T>): List<T> {
-        TODO("Not yet implemented")
-    }
-
-    override fun produce(coefficients: List<T>): Vector<T> {
-        TODO("Not yet implemented")
-    }
-
-    override fun contains(v: Vector<T>): Boolean {
-        TODO("Not yet implemented")
-    }
-}
-
-
-class ZeroVectorBasis<T> internal constructor(model: Field<T>, dimension: Int) :
-    AbstractMathObject<T, Field<T>>(model),
-    VectorBasis<T> {
-    override val rank: Int
-        get() = 0
-    override val vectorLength: Int = dimension
-    override val elements: List<Vector<T>>
-        get() = emptyList()
-
-    override fun reduce(v: Vector<T>): List<T> {
-        throw ArithmeticException("$v cannot be reduced in the zero basis.")
-    }
-
-    override fun produce(coefficients: List<T>): Vector<T> {
-        return Vector.zero(vectorLength, model)
-    }
-
-    override fun contains(v: Vector<T>): Boolean {
+class ZeroVectorSpace<K>(override val vectorLength: Int, override val scalars: Field<K>) :
+    VectorSpace<K> {
+    override fun contains(x: Vector<K>): Boolean {
         return false
     }
 
-    override fun <S> mapTo(newModel: EqualPredicate<S>, mapping: Function<T, S>): ZeroVectorBasis<S> {
-        return ZeroVectorBasis(newModel as Field<S>, vectorLength)
-    }
+    override val basis: List<Vector<K>>
+        get() = emptyList()
+}
 
-    override fun valueEquals(obj: ValueEquatable<T>): Boolean {
-        return obj is ZeroVectorBasis<*> && obj.vectorLength == vectorLength
-    }
+class DVectorSpace<K> internal constructor(
+    override val scalars: Field<K>, override val vectorLength: Int, override val basis: List<Vector<K>>
+) : VectorSpace<K>
+
+
+open class VectorAffineSpace<K>(override val origin: Vector<K>, override val space: VectorSpace<K>) :
+    FiniteDimAffineSpace<K, Vector<K>>
+
+
+class LinearEquationSolution<T>(solution: Vector<T>, nullSpace: VectorSpace<T>) :
+    VectorAffineSpace<T>(solution, nullSpace) {
+    /**
+     * Gets a special solution of the linear equation.
+     */
+    val solution: Vector<T>
+        get() = origin
+
+    val nullSpace: VectorSpace<T>
+        get() = space
+
+
+    val isUnique: Boolean
+        get() = nullSpace.dim == 0
 }

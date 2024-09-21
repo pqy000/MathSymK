@@ -1,6 +1,6 @@
 package io.github.ezrnest.linear
 
-import io.github.ezrnest.linear.MatrixUtils.cofactor
+import io.github.ezrnest.linear.MatrixExt.cofactor
 import io.github.ezrnest.model.Polynomial
 import io.github.ezrnest.structure.*
 import io.github.ezrnest.util.IterUtils
@@ -1240,6 +1240,7 @@ object MatrixImpl {
     fun <T> toEchelon(M: MutableMatrix<T>, mc: Field<T>, column: Int = M.column): List<Int> {
         //Created by lyc at 2021-04-29
         val pivots = toUpperTriangle(M, mc, column)
+        val zero = mc.zero
         for (i in pivots.lastIndex downTo 0) {
             val j = pivots[i]
             if (!mc.isOne(M[i, j])) {
@@ -1252,7 +1253,7 @@ object MatrixImpl {
                 }
                 val q = mc.eval { -M[k, j] }
                 M.multiplyAddRow(i, k, q, j + 1)
-                M[k, j] = mc.zero
+                M[k, j] = zero
             }
         }
         return pivots
@@ -1564,13 +1565,15 @@ object MatrixImpl {
     Solve linear equations
      */
 
-    internal fun <T> nullSpaceGenerator(
-        matrix: GenMatrix<T>, column: Int, pivots: List<Int>, mc: UnitRing<T>
-    ): List<Vector<T>> {
-        val k = column - pivots.size
-        if (k == 0) return emptyList()
 
-        val vectors = ArrayList<Vector<T>>(k)
+    private fun <T> nullSpaceOf(
+        expanded: GenMatrix<T>, column: Int, pivots: List<Int>, mc: Field<T>
+    ): VectorSpace<T> {
+
+        val k = column - pivots.size
+        if (k == 0) return VectorSpace.zero(column, mc)
+
+        val basis = ArrayList<Vector<T>>(k)
         val minusOne = mc.negate(mc.one)
         var pivotIndex = 0
 
@@ -1579,26 +1582,14 @@ object MatrixImpl {
                 pivotIndex++
             } else {
                 val v = Vector.zero(column, mc).apply { this[j] = minusOne }
-                pivots.forEachIndexed { i, pivot -> v[pivot] = matrix[i, j] }
-                vectors += v
+                pivots.forEachIndexed { i, pivot -> v[pivot] = expanded[i, j] }
+                basis += v
             }
         }
-        return vectors
+        return DVectorSpace(mc, column, basis)
     }
 
-
-    internal fun <T> nullSpaceOf(
-        expanded: GenMatrix<T>, column: Int, pivots: List<Int>, mc: Field<T>
-    ): VectorBasis<T> {
-        val generators = nullSpaceGenerator(expanded, column, pivots, mc)
-        if (generators.isEmpty()) {
-            return VectorBasis.zero(column, mc)
-        }
-        TODO()
-//        return VectorBasis.createBaseWithoutCheck(generators)
-    }
-
-    fun <T> specialSolutionOf(expanded: GenMatrix<T>, column: Int, pivots: List<Int>, mc: Field<T>): Matrix<T> {
+    private fun <T> specialSolutionOf(expanded: GenMatrix<T>, column: Int, pivots: List<Int>, mc: Field<T>): Matrix<T> {
         val special = zero(column, expanded.column - column, mc)
         for (k in pivots.indices) {
             val pk = pivots[k]
@@ -1609,41 +1600,55 @@ object MatrixImpl {
         return special
     }
 
-    fun <T> solveLinear(expanded: MutableMatrix<T>, colSep: Int, mc: Field<T>):
-            Triple<Matrix<T>, VectorBasis<T>, Boolean> {
-        val pivots = toEchelon(expanded, mc, colSep)
+    /**
+     * Solve the linear equation `AX = B` with `expanded = (A, B)` in the augmented matrix form.
+     * The column `colSep` is the column separating `A` and `B`, namely `A.column = colSep`.
+     *
+     */
+    fun <T> solveLinear(augmented: MutableMatrix<T>, colSep: Int, mc: Field<T>):
+            Triple<Matrix<T>, VectorSpace<T>, Boolean> {
+        val pivots = toEchelon(augmented, mc, colSep)
         val r = pivots.size
-        val special = specialSolutionOf(expanded, colSep, pivots, mc)
-        val basis = nullSpaceOf(expanded, colSep, pivots, mc)
-        val solvable = (r until expanded.row).all { i ->
-            (colSep until expanded.column).all { j -> mc.isZero(expanded[i, j]) }
+        val special = specialSolutionOf(augmented, colSep, pivots, mc)
+        val basis = nullSpaceOf(augmented, colSep, pivots, mc)
+        val solvable = (colSep until augmented.column).all { j ->
+            (r until augmented.row).all { i ->
+                mc.isZero(augmented[i, j])
+            }
         }
         return Triple(special, basis, solvable)
     }
 
-    fun <T> solveLinear(m: GenMatrix<T>, b: GenMatrix<T>, model: Field<T>): Triple<Matrix<T>, VectorBasis<T>, Boolean> {
-        require(m.row == b.row)
-        val expanded = MatrixImpl.concatCol(m, b, model)
-        return solveLinear(expanded, m.column, model)
+    fun <T> solveLinear(A: GenMatrix<T>, B: GenMatrix<T>, model: Field<T>): Triple<Matrix<T>, VectorSpace<T>, Boolean> {
+        require(A.row == B.row)
+        val augmented = MatrixImpl.concatCol(A, B, model)
+        return solveLinear(augmented, A.column, model)
     }
 
-    fun <T> solveLinear(m: GenMatrix<T>, b: GenVector<T>, model: Field<T>): Triple<Vector<T>, VectorBasis<T>, Boolean> {
-        require(m.row == b.size)
-        val expanded = zero(m.row, m.column + 1, model)
-        val col = m.column
-        expanded.setAll(0, 0, m)
+    /**
+     * Solves the linear equation `Ax = b` with the given matrix `A` and vector `b`.
+     */
+    fun <T> solveLinear(A: GenMatrix<T>, b: GenVector<T>, model: Field<T>): LinearEquationSolution<T>? {
+        require(A.row == b.size)
+        val augmented = zero(A.row, A.column + 1, model)
+        val col = A.column
+        augmented.setAll(0, 0, A)
         for (i in b.indices) {
-            expanded[i, col] = b[i]
+            augmented[i, col] = b[i]
         }
-        val (special, basis, sol) = solveLinear(expanded, col, model)
+        val (special, basis, sol) = solveLinear(augmented, col, model)
+        if (!sol) return null
         val v = special.colAt(0)
-        return Triple(v, basis, sol)
+        return LinearEquationSolution(v, basis)
     }
 
-    fun <T> solveHomo(m: GenMatrix<T>, model: Field<T>): VectorBasis<T> {
-        val expanded = AMatrix.copyOf(m, model)
+    /**
+     * Solves the homogeneous linear equation `Ax = 0` with the given matrix `A`.
+     */
+    fun <T> solveHomo(A: GenMatrix<T>, model: Field<T>): VectorSpace<T> {
+        val expanded = AMatrix.copyOf(A, model)
         val pivots = toEchelon(expanded, model)
-        return nullSpaceOf(expanded, m.column, pivots, model)
+        return nullSpaceOf(expanded, A.column, pivots, model)
     }
 
 }

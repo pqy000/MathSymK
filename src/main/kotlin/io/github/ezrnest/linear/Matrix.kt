@@ -14,10 +14,10 @@ import java.util.function.Function
  * scalar operations, and determinant computation.
  *
  *
- * For additional operations, see extension functions in [MatrixUtils].
+ * For additional operations, see extension functions in [MatrixExt].
  *
  * @param T the type of the elements in the matrix, which must belong to a ring or a field.
- * @see MatrixUtils
+ * @see MatrixExt
  * @see Vector
  */
 interface Matrix<T> : GenMatrix<T>, ModeledMathObject<T, EqualPredicate<T>>,
@@ -278,7 +278,6 @@ interface Matrix<T> : GenMatrix<T>, ModeledMathObject<T, EqualPredicate<T>>,
     }
 
 
-
     companion object {
         /**
          * Creates a new matrix `A` with the given row and column count, the model and the initializer function [init],
@@ -316,10 +315,16 @@ interface Matrix<T> : GenMatrix<T>, ModeledMathObject<T, EqualPredicate<T>>,
          * Creates a new matrix from a list of column vectors.
          */
         fun <T> fromColumns(columns: List<Vector<T>>): Matrix<T> {
+            return fromColumns(columns, columns.first().model)
+        }
+
+        /**
+         * Creates a new matrix from a list of column vectors.
+         */
+        fun <T> fromColumns(columns: List<Vector<T>>, model: EqualPredicate<T>): Matrix<T> {
             val row = columns.first().size
             val column = columns.size
             require(columns.all { it.size == row })
-            val model = columns.first().model
             return Matrix(row, column, model) { i, j -> columns[i][j] }
         }
 
@@ -429,6 +434,11 @@ interface Matrix<T> : GenMatrix<T>, ModeledMathObject<T, EqualPredicate<T>>,
         }
 
 
+
+        /*
+        Matrix models
+         */
+
         /**
          * Gets the model of `n × n` matrices over the given model.
          */
@@ -473,7 +483,7 @@ operator fun <T> RowVector<T>.times(m: Matrix<T>): RowVector<T> {
  * It is required that this matrix is a matrix of complex numbers with a model of [ComplexNumbers].
  */
 fun <K> Matrix<Complex<K>>.transposeConjugate(): Matrix<Complex<K>> {
-    val model = model as ComplexNumbers<*,Complex<K>>
+    val model = model as ComplexNumbers<*, Complex<K>>
     return TransposedMatrixView(this).applyAll(model::conj)
 }
 
@@ -483,8 +493,6 @@ fun <K> Matrix<Complex<K>>.transposeConjugate(): Matrix<Complex<K>> {
  * @see transposeConjugate
  */
 val <K> Matrix<Complex<K>>.H: Matrix<Complex<K>> get() = transposeConjugate()
-
-
 
 
 @JvmRecord
@@ -665,7 +673,7 @@ interface MutableMatrix<T> : Matrix<T> {
             return MatrixImpl.zero(row, column, model)
         }
 
-        fun <T> zero(n : Int, model: AddMonoid<T>): MutableMatrix<T> {
+        fun <T> zero(n: Int, model: AddMonoid<T>): MutableMatrix<T> {
             return zero(n, n, model)
         }
 
