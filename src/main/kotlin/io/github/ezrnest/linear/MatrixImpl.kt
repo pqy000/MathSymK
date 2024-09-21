@@ -7,7 +7,7 @@ import io.github.ezrnest.util.IterUtils
 import io.github.ezrnest.util.ModelPatterns
 import kotlin.math.min
 
-@kotlin.ConsistentCopyVisibility
+@ConsistentCopyVisibility
 data class AMatrix<T> internal constructor(
     override val row: Int, override val column: Int,
     override val model: EqualPredicate<T>,

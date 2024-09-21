@@ -5,7 +5,6 @@ import io.github.ezrnest.ModeledMathObject
 import io.github.ezrnest.function.MathOperator
 import io.github.ezrnest.linear.Matrix
 import io.github.ezrnest.linear.MutableMatrix
-import io.github.ezrnest.model.Polynomial.Companion.primitiveGCD
 import io.github.ezrnest.model.struct.AlgebraModel
 import io.github.ezrnest.model.struct.EuclidDomainModel
 import io.github.ezrnest.structure.*
@@ -490,7 +489,7 @@ data class Polynomial<T> internal constructor(
      * @return the resultant of this polynomial and `y`.
      */
     fun resultant(y: Polynomial<T>): T {
-        return Companion.resultant(this, y, model as Field<T>)
+        return resultant(this, y, model as Field<T>)
     }
 
 
@@ -781,7 +780,6 @@ data class Polynomial<T> internal constructor(
         fun <T, M> compute(p: Polynomial<T>, x: M, model: UnitRingModule<T, M>): M {
             return computeGeneral(p, x, model::zero, model::fromScalar, model::add, model::multiply, model::power)
         }
-
 
 
         /*

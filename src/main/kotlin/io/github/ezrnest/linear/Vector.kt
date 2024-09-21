@@ -315,7 +315,7 @@ inline fun <T> MutableVector<T>.transform(f: (T) -> T) {
     }
 }
 
-@kotlin.ConsistentCopyVisibility
+@ConsistentCopyVisibility
 data class AVector<T> internal constructor(
     val data: Array<Any?>, override val model: EqualPredicate<T>
 ) : MutableVector<T> {
