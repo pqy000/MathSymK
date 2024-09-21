@@ -32,6 +32,7 @@ data class PTerm<T>(val pow: Int, val value: T) : Comparable<PTerm<T>> {
  * Represents a polynomial with coefficients of type [T].
  */
 @JvmRecord
+@ConsistentCopyVisibility
 data class Polynomial<T> internal constructor(
     override val model: Ring<T>,
     /**

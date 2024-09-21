@@ -7,6 +7,7 @@ import io.github.ezrnest.util.IterUtils
 import io.github.ezrnest.util.ModelPatterns
 import kotlin.math.min
 
+@kotlin.ConsistentCopyVisibility
 data class AMatrix<T> internal constructor(
     override val row: Int, override val column: Int,
     override val model: EqualPredicate<T>,
@@ -1621,7 +1622,7 @@ object MatrixImpl {
 
     fun <T> solveLinear(A: GenMatrix<T>, B: GenMatrix<T>, model: Field<T>): Triple<Matrix<T>, VectorSpace<T>, Boolean> {
         require(A.row == B.row)
-        val augmented = MatrixImpl.concatCol(A, B, model)
+        val augmented = concatCol(A, B, model)
         return solveLinear(augmented, A.column, model)
     }
 

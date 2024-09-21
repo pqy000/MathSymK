@@ -31,6 +31,7 @@ import kotlin.math.*
  * @author lyc
  */
 @JvmRecord
+@ConsistentCopyVisibility
 data class Fraction internal constructor(
     /**
      * Gets the numerator of this Fraction, the numerator may be positive, zero or negative.

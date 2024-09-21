@@ -48,6 +48,7 @@ import io.github.ezrnest.structure.*
  * @param T the type of the ring elements in the numerator and denominator.
  */
 @JvmRecord
+@ConsistentCopyVisibility
 data class RFraction<T>
 internal constructor(val nume: T, val deno: T) {
     /*
