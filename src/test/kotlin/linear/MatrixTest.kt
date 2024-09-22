@@ -6,6 +6,8 @@ import io.github.ezrnest.linear.LinAlg
 import io.github.ezrnest.linear.Matrix
 import io.github.ezrnest.linear.MatrixImpl
 import io.github.ezrnest.linear.MatrixExt.charPoly
+import io.github.ezrnest.linear.MatrixExt.image
+import io.github.ezrnest.linear.MatrixExt.kernel
 import io.github.ezrnest.linear.Vector
 import io.github.ezrnest.linear.toMutable
 import io.github.ezrnest.model.Multinomial
@@ -192,5 +194,30 @@ class MatrixTest {
         }
     }
 
+    @Test
+    fun columnSpaceOfZeroMatrix() {
+        val A = Matrix.zero(3, 3, Zmod7)
+        val columnSpace = MatrixImpl.columnSpace(A, Zmod97)
+        assertEquals(0, columnSpace.dim)
+    }
 
+    @Test
+    fun columnSpaceOfFullRank(){
+        val A = Matrix.identity(3, Zmod7)
+        val columnSpace = MatrixImpl.columnSpace(A, Zmod97)
+        assertEquals(3, columnSpace.dim)
+    }
+
+
+    @Test
+    fun spaceDecomposition(){
+        val rng = Random(10)
+        repeat(3){
+            val n = 5
+            val A = Matrix(n, Zmod97) { _, _ -> rng.nextInt(97) }
+            val kernel = A.kernel()
+            val image = A.image()
+            assertEquals(n, kernel.dim + image.dim)
+        }
+    }
 }

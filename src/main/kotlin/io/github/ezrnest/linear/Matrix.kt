@@ -210,8 +210,7 @@ interface Matrix<T> : GenMatrix<T>, ModeledMathObject<T, EqualPredicate<T>>,
      * Gets the diagonal of this matrix as a vector.
      */
     fun diag(): Vector<T> {
-        require(isSquare)
-        return Vector(row, model) { i -> this[i, i] }
+        return MatrixImpl.diag(this, model)
     }
 
     /**
@@ -432,7 +431,6 @@ interface Matrix<T> : GenMatrix<T>, ModeledMathObject<T, EqualPredicate<T>>,
         fun <T> product(matrices: List<Matrix<T>>): Matrix<T> {
             return MatrixImpl.product(matrices, matrices.first().model as Ring)
         }
-
 
 
         /*

@@ -17,6 +17,49 @@ import io.github.ezrnest.structure.UnitRing
 object MatrixExt {
 
     /**
+     * Returns the hadamard (element-wise) product of two matrices.
+     */
+    fun <T> Matrix<T>.hadamard(other: Matrix<T>): Matrix<T> {
+        return MatrixImpl.hadamard(this, other, model as Ring)
+    }
+
+    /**
+     * Alias for [Matrix.hadamard].
+     */
+    infix fun <T> Matrix<T>.odot(other: Matrix<T>): Matrix<T> {
+        return MatrixImpl.hadamard(this, other, model as Ring)
+    }
+
+    /**
+     * Returns the kronecker product `C = A ⊗ B` of `A = this` and `B = other`.
+     * The result matrix `C` has the shape `(A.row * B.row, A.column * B.column)` and its elements are computed as:
+     * ```
+     * C[i1 * B.row + i2, j1 * B.column + j2] = A[i1, j1] * B[i2, j2]
+     * ```
+     * Alternatively, `C` can be expressed in the block matrix form:
+     * ```
+     * C = [A[i,j] * B], where i = 0 until A.row, j = 0 until A.column
+     * ```
+     *
+     * We have the following properties:
+     * - **Associativity** - `(A ⊗ B) ⊗ C = A ⊗ (B ⊗ C)`
+     * - **Distributivity** - `A ⊗ (B + C) = A ⊗ B + A ⊗ C`
+     * - Mixed with matrix multiplication: `(A ⊗ B)(C ⊗ D) = (AC) ⊗ (BD)`
+     *
+     *
+     */
+    fun <T> Matrix<T>.kronecker(other: Matrix<T>): Matrix<T> {
+        return MatrixImpl.kronecker(this, other, model as Ring)
+    }
+
+    /**
+     * Alias for [Matrix.kronecker].
+     */
+    infix fun <T> Matrix<T>.kron(other: Matrix<T>): Matrix<T> {
+        return MatrixImpl.kronecker(this, other, model as Ring)
+    }
+
+    /**
      * Returns the characteristic polynomial of the given square matrix.
      * The characteristic polynomial is defined as `f(λ) = det(λI-A)`.
      *
@@ -38,13 +81,43 @@ object MatrixExt {
     /**
      * Returns the null space of this matrix, which is the set of all vectors `x` such that `Ax = 0`.
      *
-     * The null space of a matrix is also known as the kernel of the matrix, `Ker(A)`.
+     * This is the same as [Matrix.kernel].
+     *
+     * @see [Matrix.kernel]
+     */
+    fun <T> Matrix<T>.nullSpace(): VectorSpace<T> {
+        return kernel()
+    }
+
+    /**
+     * Returns the kernel space of `A = this`:
+     * ```
+     * Ker(A) = { x | Ax = 0 }
+     * ```
      *
      * It is required that the `model` of this matrix is a [Field].
      */
-    fun <T> Matrix<T>.nullSpace(): VectorSpace<T> {
+    fun <T> Matrix<T>.kernel(): VectorSpace<T> {
         return MatrixImpl.solveHomo(this, this.model as Field<T>)
     }
+
+    /**
+     * Returns the column space of this matrix, which is the vector space spanned by the columns of the matrix.
+     */
+    fun <T> Matrix<T>.columnSpace(): VectorSpace<T> {
+        return MatrixImpl.columnSpace(this, this.model as Field<T>)
+    }
+
+    /**
+     * Returns the image space of `A = this`:
+     * ```
+     * Im(A) = { Ax | x ∈ V }
+     * ```
+     */
+    fun <T> Matrix<T>.image(): VectorSpace<T> {
+        return columnSpace()
+    }
+
 
 
     /**

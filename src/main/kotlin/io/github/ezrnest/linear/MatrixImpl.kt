@@ -681,6 +681,36 @@ object MatrixImpl {
         }
     }
 
+    /**
+     * Returns the kronecker product `C = A ⊗ B` of `A` and `B`.
+     * The result matrix `C` has the shape `(A.row * B.row, A.column * B.column)` and its elements are computed as:
+     * ```
+     * C[i1 * B.row + i2, j1 * B.column + j2] = A[i1, j1] * B[i2, j2]
+     * ```
+     * Alternatively, `C` can be expressed in the block matrix form:
+     * ```
+     * C = [A[i,j] * B], where i = 0 until A.row, j = 0 until A.column
+     * ```
+     *
+     * We have the following properties:
+     * - **Associativity** - `(A ⊗ B) ⊗ C = A ⊗ (B ⊗ C)`
+     * - **Distributivity** - `A ⊗ (B + C) = A ⊗ B + A ⊗ C`
+     * - Mixed with matrix multiplication: `(A ⊗ B)(C ⊗ D) = (AC) ⊗ (BD)`
+     */
+    fun <T> kronecker(A: GenMatrix<T>, B: GenMatrix<T>, model: Ring<T>): AMatrix<T> {
+        val res = zero(A.row * B.row, A.column * B.column, model)
+        for (i in 0 until A.row) {
+            for (j in 0 until A.column) {
+                for (i2 in 0 until B.row) {
+                    for (j2 in 0 until B.column) {
+                        res[i * B.row + i2, j * B.column + j2] = model.eval { A[i, j] * B[i2, j2] }
+                    }
+                }
+            }
+        }
+        return res
+    }
+
     /*
     Statistics
      */
@@ -709,6 +739,22 @@ object MatrixImpl {
     fun <T> rank(A: GenMatrix<T>, model: Field<T>): Int {
         val pivots = toEchelon(AMatrix.copyOf(A, model), model)
         return pivots.size
+    }
+
+    fun <T> columnSpace(A: GenMatrix<T>, model: Field<T>): VectorSpace<T> {
+        val mutable = AMatrix.copyOf(A, model)
+        val pivots = toUpperTriangle(mutable, model)
+        val indepVectors = pivots.map { mutable.colAt(it) }
+        return VectorSpace.fromBasis(indepVectors, A.row, model)
+    }
+
+
+    fun <T> spanOf(vectors: List<GenVector<T>>, vecLength: Int, model: Field<T>): VectorSpace<T> {
+        if (vectors.isEmpty()) return VectorSpace.zero(vecLength, model)
+        val mutable = AMatrix(vecLength, vectors.size, model) { i, j -> vectors[j][i] }
+        val pivots = toUpperTriangle(mutable, model)
+        val indepVectors = pivots.map { mutable.colAt(it) }
+        return VectorSpace.fromBasis(indepVectors)
     }
 
     /**
@@ -1203,6 +1249,8 @@ object MatrixImpl {
 
 
     /**
+     * Transforms the given matrix `M` over a field to an upper triangular form using row operations (Gaussian elimination).
+     *
      *
      * @return a list of strictly increasing pivots of the column. The size of it is equal to the rank of the matrix.
      */

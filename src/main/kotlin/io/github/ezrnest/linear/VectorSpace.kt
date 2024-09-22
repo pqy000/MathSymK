@@ -38,7 +38,8 @@ interface VectorSpace<K> : FiniteDimLinearSpace<K, Vector<K>> {
     override fun coefficients(v: Vector<K>): List<K> {
         checkVector(v)
         val mat = Matrix.fromColumns(basis)
-        val result = MatrixImpl.solveLinear(mat, v, scalars)?: throw IllegalArgumentException("The vector is not in the space.")
+        val result =
+            MatrixImpl.solveLinear(mat, v, scalars) ?: throw IllegalArgumentException("The vector is not in the space.")
         return result.solution.toList()
     }
 
@@ -89,12 +90,41 @@ interface VectorSpace<K> : FiniteDimLinearSpace<K, Vector<K>> {
             return ZeroVectorSpace(vectorLength, scalars)
         }
 
-        fun <K> standard(vectorLength: Int, scalars : Field<K>) : StandardVectorSpace<K>{
+        fun <K> standard(vectorLength: Int, scalars: Field<K>): StandardVectorSpace<K> {
             return StandardVectorSpace(vectorLength, scalars)
         }
 
         private fun <K> VectorSpace<K>.checkVector(v: Vector<K>) {
             require(v.size == vectorLength) { "Vector size mismatch: expected $vectorLength, got ${v.size}" }
+        }
+
+        /**
+         * Creates a vector space from the given non-empty basis.
+         *
+         * It is the caller's responsibility to ensure that the basis is linearly independent.
+         *
+         */
+        fun <K> fromBasis(basis: List<Vector<K>>): VectorSpace<K> {
+            val v1 = basis.first()
+            val scalars = v1.model as Field<K>
+            val vectorLength = v1.size
+            return DVectorSpace(scalars, vectorLength, basis)
+        }
+
+        fun <K> fromBasis(basis: List<Vector<K>>, vectorLength: Int, model : Field<K>): VectorSpace<K> {
+            if(basis.isEmpty()) return zero(vectorLength, model)
+            return DVectorSpace(model, vectorLength, basis)
+        }
+
+        /**
+         * Creates a vector space spanned by the given non-empty list of vectors.
+         *
+         */
+        fun <K> span(basis: List<Vector<K>>): VectorSpace<K> {
+            val v = basis.first()
+            val model = v.model as Field<K>
+            val vectorLength = v.size
+            return MatrixImpl.spanOf(basis, vectorLength, model)
         }
     }
 }
