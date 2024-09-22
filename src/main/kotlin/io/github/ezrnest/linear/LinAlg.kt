@@ -119,7 +119,6 @@ object MatrixExt {
     }
 
 
-
     /**
      * Returns the rank decomposition of a matrix `A = LR`, where `L` is a column full-rank matrix and `R` is a row full-rank matrix.
      *
@@ -127,7 +126,9 @@ object MatrixExt {
      * Then, `L` is of shape `(n,r)` and `R` is of shape `(r,m)` with `rank(L) = rank(R) = r`.
      *
      *
+     *
      * @return a pair of `(L, R)`.
+     * @throws ArithmeticException if the rank of the given matrix is zero
      */
     fun <T> Matrix<T>.decompRank(): Pair<Matrix<T>, Matrix<T>> {
         return MatrixImpl.decompRank(this, this.model as Field)
@@ -156,14 +157,19 @@ object MatrixExt {
     }
 
     /**
-     * Returns the Cholesky decomposition of this matrix: `A = L D L.T`, where `L` is a lower triangular matrix and `D` is a diagonal matrix.
+     * Returns the LDL decomposition of the given positive definite matrix:
+     * ```
+     * A = L D L.T
+     * ```
+     * where
+     * - `L` is a lower triangular matrix whose diagonal elements are all `1`;
+     * - `D` is a diagonal matrix with positive diagonal elements.
      *
-     * It is required that the `model` of this matrix is a [Field].
-     *
-     * @return a pair of `(L, diag(D))`.
+     * @return `(L, diag(D))`, where `L` is a lower triangular matrix, `diag(D)` is a vector of diagonal elements
+     * of `D`.
      */
-    fun <T> Matrix<T>.decompCholeskyD(): Pair<Matrix<T>, Vector<T>> {
-        return MatrixImpl.decompCholeskyD(this, this.model as Field<T>)
+    fun <T> Matrix<T>.decompLDL(): Pair<Matrix<T>, Vector<T>> {
+        return MatrixImpl.decompLDL(this, this.model as Field<T>)
     }
 
     /**
@@ -226,14 +232,18 @@ object MatrixExt {
     }
 
     /**
-     * Returns the congruence diagonal normal form `J` of this matrix `A` and the corresponding transformation `P`,
-     * which satisfies
+     * Transforms a symmetric matrix `A` into its congruence diagonal normal form `Λ` and computes the transformation matrix `P`
+     * such that:
+     * ```
+     *     P * A * P.T = Λ
+     * ```
+     * where `Λ` is a diagonal matrix and `P` is non-singular.
      *
-     *     P.T * A * P = J
+     * The matrix `A` must be symmetric, and the matrix entries must be over a [Field].
      *
-     * @return `(J, P)`.
+     * @return A pair `(Λ, P)` where `Λ` is the diagonal matrix and `P` is the transformation matrix.
      */
-    fun <T> Matrix<T>.toCongDiagForm(): Pair<Matrix<T>, Matrix<T>> {
+    fun <T> Matrix<T>.toCongDiagForm(): Pair<Vector<T>, Matrix<T>> {
         return MatrixImpl.toCongDiagonalForm(this, this.model as Field<T>)
     }
 

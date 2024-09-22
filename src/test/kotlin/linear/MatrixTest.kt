@@ -6,8 +6,12 @@ import io.github.ezrnest.linear.LinAlg
 import io.github.ezrnest.linear.Matrix
 import io.github.ezrnest.linear.MatrixImpl
 import io.github.ezrnest.linear.MatrixExt.charPoly
+import io.github.ezrnest.linear.MatrixExt.decompLDL
+import io.github.ezrnest.linear.MatrixExt.decompLU
+import io.github.ezrnest.linear.MatrixExt.decompRank
 import io.github.ezrnest.linear.MatrixExt.image
 import io.github.ezrnest.linear.MatrixExt.kernel
+import io.github.ezrnest.linear.MatrixExt.toCongDiagForm
 import io.github.ezrnest.linear.Vector
 import io.github.ezrnest.linear.toMutable
 import io.github.ezrnest.model.Multinomial
@@ -202,7 +206,7 @@ class MatrixTest {
     }
 
     @Test
-    fun columnSpaceOfFullRank(){
+    fun columnSpaceOfFullRank() {
         val A = Matrix.identity(3, Zmod7)
         val columnSpace = MatrixImpl.columnSpace(A, Zmod97)
         assertEquals(3, columnSpace.dim)
@@ -210,9 +214,9 @@ class MatrixTest {
 
 
     @Test
-    fun spaceDecomposition(){
+    fun spaceDecomposition() {
         val rng = Random(10)
-        repeat(3){
+        repeat(3) {
             val n = 5
             val A = Matrix(n, Zmod97) { _, _ -> rng.nextInt(97) }
             val kernel = A.kernel()
@@ -220,4 +224,131 @@ class MatrixTest {
             assertEquals(n, kernel.dim + image.dim)
         }
     }
+
+    @Test
+    fun decompCholeskyDOfPositiveDefiniteMatrix() {
+        val F = Zmod7
+        val A = Matrix(3, 3, F) { i, j -> if (i == j) 4 else 1 }
+        val (L, D) = A.decompLDL()
+        assertValueEquals(A, L * Matrix.diag(D) * L.T)
+    }
+
+    @Test
+    fun testCholeskyDRandom() {
+        val rng = Random(10)
+        val A = Matrix(4, 4, Zmod97) { i, j -> rng.nextInt(100) }.let { it * it.T }
+        val (L, D) = A.decompLDL()
+        println(L)
+        println(D)
+        assertValueEquals(A, L * Matrix.diag(D) * L.T)
+    }
+
+    @Test
+    fun decompLUOfSquareMatrix() {
+        val rng = Random(10)
+        val n = 5
+        val A = Matrix(n, Zmod97) { _, _ -> rng.nextInt(97) }
+        val (L, U) = A.decompLU()
+        assertValueEquals(A, L * U)
+    }
+
+    @Test
+    fun decompRankOfFullRankMatrix() {
+        val A = Matrix(3, 3, Zmod7) { i, j -> if (i == j) 1 else 0 }
+        val (L, R) = A.decompRank()
+        assertEquals(3, L.column)
+        assertEquals(3, R.row)
+        assertValueEquals(A, L * R)
+    }
+
+    @Test
+    fun decompRankOfRankDeficientMatrix() {
+        val A = Matrix(3, 3, Zmod7) { _, _ -> 1 }
+        val (L, R) = A.decompRank()
+        assertEquals(1, L.column)
+        assertEquals(1, R.row)
+        assertValueEquals(A, L * R)
+    }
+
+    @Test
+    fun decompRankOfNonSquareMatrix() {
+        val A = Matrix(3, 2, Zmod7) { i, j -> i + j }
+        val (L, R) = A.decompRank()
+        assertEquals(2, L.column)
+        assertEquals(2, R.row)
+        assertValueEquals(A, L * R)
+    }
+
+    @Test
+    fun decompRankOfZeroMatrix() {
+        val A = Matrix.zero(3, 3, Zmod7)
+        val (L, R) = A.decompRank()
+        assertEquals(0, L.column)
+        assertEquals(0, R.row)
+        assertValueEquals(A, L * R)
+    }
+
+    @Test
+    fun toCongDiagFormOfIdentityMatrix() {
+        val A = Matrix.identity(3, Zmod7)
+        val (Lambda, P) = A.toCongDiagForm()
+        assertValueEquals(P.T * A * P, Matrix.diag(Lambda))
+    }
+
+    @Test
+    fun toCongDiagFormOfZeroMatrix() {
+        val A = Matrix.zero(3, 3, Zmod7)
+        val (Lambda, P) = A.toCongDiagForm()
+        assertTrue(Lambda.isZero)
+        assertValueEquals(Matrix.identity(3, Zmod7), P)
+    }
+
+    @Test
+    fun toCongDiagFormOfSymmetricMatrix() {
+        val A = Matrix(3, 3, Zmod7) { i, j -> if (i == j) 2 else 1 }
+        val (Lambda, P) = A.toCongDiagForm()
+        assertValueEquals(P * A * P.T, Matrix.diag(Lambda))
+    }
+
+    @Test
+    fun toCongDiagFormRandom() {
+        val rng = Random(10)
+        val A = Matrix(4, 4, Zmod97) { i, j -> rng.nextInt(100) }.run { this + this.T }
+        val (Lambda, P) = A.toCongDiagForm()
+        assertValueEquals(P * A * P.T, Matrix.diag(Lambda))
+    }
+
+    @Test
+    fun toCongDiagFormRandom2() {
+        val rng = Random(10)
+        val A = Matrix(4, 4, Zmod97) { i, j -> rng.nextInt(100) }
+            .run { this + this.T }
+            .let { it - Matrix.diag(it.diag()) }
+        val (Lambda, P) = A.toCongDiagForm()
+        assertValueEquals(P * A * P.T, Matrix.diag(Lambda))
+    }
+
+
+    @Test
+    fun toCongDiagFormOfNonSquareMatrixThrowsException() {
+        val A = Matrix(2, 3, Zmod7) { i, j -> i + j }
+        assertThrows<IllegalArgumentException> { A.toCongDiagForm() }
+    }
+
+    @Test
+    fun toCongDiagFormOfNonSymmetricMatrixThrowsException() {
+        val A = Matrix(3, 3, Zmod7) { i, j -> if (i < j) 1 else 0 }
+        assertThrows<IllegalArgumentException> { A.toCongDiagForm() }
+    }
+
+}
+
+fun main() {
+    val A = Matrix.zero(3, 3, NumberModels.intModP(7))
+    val (L, R) = A.decompRank()
+    println(L)
+    println(R)
+//        assertEquals(0, L.column)
+//        assertEquals(0, R.row)
+//        assertEquals(A, L * R)
 }

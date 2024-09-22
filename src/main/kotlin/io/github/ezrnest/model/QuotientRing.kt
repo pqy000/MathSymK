@@ -2,7 +2,6 @@ package io.github.ezrnest.model
 
 import io.github.ezrnest.numberTheory.NTFunctions
 import io.github.ezrnest.structure.*
-import kotlin.math.sqrt
 
 
 /**
@@ -145,7 +144,6 @@ internal class IntModPCached(p: Int) : IntModP(p) {
         if (m == 0) throw ArithmeticException("Division by zero")
         return invTable[mod(x)]
     }
-
 
 }
 

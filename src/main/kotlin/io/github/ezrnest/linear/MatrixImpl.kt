@@ -7,7 +7,9 @@ import io.github.ezrnest.util.IterUtils
 import io.github.ezrnest.util.ModelPatterns
 import kotlin.math.min
 
+
 @ConsistentCopyVisibility
+@JvmRecord
 data class AMatrix<T> internal constructor(
     override val row: Int, override val column: Int,
     override val model: EqualPredicate<T>,
@@ -16,7 +18,7 @@ data class AMatrix<T> internal constructor(
 
     init {
         require(row * column == data.size)
-        require(data.isNotEmpty())
+//        require(data.isNotEmpty()) // allow empty matrix
     }
 
     override val size: Int
@@ -130,7 +132,7 @@ data class AMatrix<T> internal constructor(
         }
     }
 
-    override fun multiplyRow(r: Int, k: T, colStart: Int, colEnd: Int) {
+    override fun mulRow(r: Int, k: T, colStart: Int, colEnd: Int) {
         require(r in 0 until row)
         val d = toPos(r, 0)
         val mc = model as MulSemigroup
@@ -140,7 +142,7 @@ data class AMatrix<T> internal constructor(
         }
     }
 
-    override fun divideRow(r: Int, k: T, colStart: Int, colEnd: Int) {
+    override fun divRow(r: Int, k: T, colStart: Int, colEnd: Int) {
         require(r in 0 until row)
         val d = toPos(r, 0)
         val mc = model as UnitRing
@@ -150,7 +152,7 @@ data class AMatrix<T> internal constructor(
         }
     }
 
-    override fun multiplyCol(c: Int, k: T, rowStart: Int, rowEnd: Int) {
+    override fun mulCol(c: Int, k: T, rowStart: Int, rowEnd: Int) {
         require(c in 0 until column)
         val mc = model as MulSemigroup
         for (r in rowStart until rowEnd) {
@@ -160,7 +162,7 @@ data class AMatrix<T> internal constructor(
         }
     }
 
-    override fun divideCol(c: Int, k: T, rowStart: Int, rowEnd: Int) {
+    override fun divCol(c: Int, k: T, rowStart: Int, rowEnd: Int) {
         require(c in 0 until column)
         val mc = model as UnitRing
         for (r in rowStart until rowEnd) {
@@ -192,7 +194,28 @@ data class AMatrix<T> internal constructor(
     }
 
     @Suppress("UNCHECKED_CAST")
-    override fun multiplyAddRow(r1: Int, r2: Int, k: T, colStart: Int, colEnd: Int) {
+    override fun addRowTo(r1: Int, r2: Int, colStart: Int, colEnd: Int) {
+        require(r1 in 0 until row && r2 in 0 until row)
+        val s1 = toPos(r1, 0)
+        val s2 = toPos(r2, 0)
+        val mc = model as AddSemigroup
+        for (l in colStart until colEnd) {
+            data[s2 + l] = mc.add(data[s2 + l] as T, data[s1 + l] as T)
+        }
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    override fun addColTo(c1: Int, c2: Int, rowStart: Int, rowEnd: Int) {
+        require(c1 in 0..<column && c2 in 0..<column)
+        val mc = model as AddSemigroup
+        for (r in rowStart..<rowEnd) {
+            val l = toPos(r, 0)
+            data[l + c2] = mc.add(data[l + c2] as T, data[l + c1] as T)
+        }
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    override fun mulAddRow(r1: Int, r2: Int, k: T, colStart: Int, colEnd: Int) {
         require(r1 in 0..<row && r2 in 0..<row)
         val s1 = toPos(r1, 0)
         val s2 = toPos(r2, 0)
@@ -203,7 +226,7 @@ data class AMatrix<T> internal constructor(
     }
 
     @Suppress("UNCHECKED_CAST")
-    override fun multiplyAddCol(c1: Int, c2: Int, k: T, rowStart: Int, rowEnd: Int) {
+    override fun mulAddCol(c1: Int, c2: Int, k: T, rowStart: Int, rowEnd: Int) {
         require(c1 in 0..<column && c2 in 0..<column)
         val mc = model as Ring
         for (r in rowStart..<rowEnd) {
@@ -253,13 +276,14 @@ data class AMatrix<T> internal constructor(
     }
 
     override fun hashCode(): Int {
-        var result = super.hashCode()
+        var result = row
+        result = 31 * result + column
         result = 31 * result + data.contentHashCode()
         return result
     }
 
     override fun toString(): String {
-        return this.joinToString()
+        return MatrixImpl.formatString(this)
     }
 
     companion object {
@@ -402,6 +426,10 @@ open class TransposedMatrixView<T>(open val origin: Matrix<T>) : Matrix<T> {
     override fun sumAll(): T {
         return origin.sumAll()
     }
+
+    override fun toString(): String {
+        return MatrixImpl.formatString(this)
+    }
 }
 
 open class SubMatrixView<T>(
@@ -409,8 +437,8 @@ open class SubMatrixView<T>(
     rowStart: Int, rowEnd: Int, colStart: Int, colEnd: Int,
 ) : Matrix<T> {
     init {
-        require(0 <= rowStart && rowEnd <= origin.row && rowStart < rowEnd)
-        require(0 <= colStart && colEnd <= origin.column && colStart < colEnd)
+        require(0 <= rowStart && rowEnd <= origin.row && rowStart <= rowEnd)
+        require(0 <= colStart && colEnd <= origin.column && colStart <= colEnd)
     }
 
     final override val row = rowEnd - rowStart
@@ -421,19 +449,17 @@ open class SubMatrixView<T>(
     override val model: EqualPredicate<T>
         get() = origin.model
 
-    init {
-        require(dRow + row <= origin.row && dCol + column <= origin.column)
-    }
-
     override fun get(i: Int, j: Int): T {
         require(i in 0 until row && j in 0 until column)
         return origin[i + dRow, j + dCol]
     }
 
     override fun subMatrix(rowStart: Int, colStart: Int, rowEnd: Int, colEnd: Int): Matrix<T> {
-        require(0 <= rowStart && rowEnd <= row && rowStart < rowEnd)
-        require(0 <= colStart && colEnd <= column && colStart < colEnd)
         return SubMatrixView(origin, rowStart + dRow, rowEnd + dRow, colStart + dCol, colEnd + dCol)
+    }
+
+    override fun toString(): String {
+        return MatrixImpl.formatString(this)
     }
 }
 
@@ -464,6 +490,10 @@ open class SlicedMatrixView<T>(
         val newCols = IntArray(cols.size) { this.colMap[cols[it]] }
         return SlicedMatrixView(origin, newRows, newCols)
     }
+
+    override fun toString(): String {
+        return MatrixImpl.formatString(this)
+    }
 }
 
 //TODO Mutable view
@@ -474,6 +504,13 @@ open class SlicedMatrixView<T>(
  * Most of the methods in this object accept [GenMatrix]'s as inputs and a `model` should be provided to specify the operations.
  */
 object MatrixImpl {
+
+    fun <T> formatString(m: GenMatrix<T>): String {
+        val sb = StringBuilder()
+        sb.append("Matrix(${m.row}, ${m.column}):\n")
+        m.joinTo(sb)
+        return sb.toString()
+    }
 
     fun <T> isEqual(x: GenMatrix<T>, y: GenMatrix<T>, predicate: EqualPredicate<T>): Boolean {
         if (x is AMatrix && y is AMatrix) {
@@ -771,18 +808,25 @@ object MatrixImpl {
         return adj
     }
 
+    private fun <T> buildAugmentedI(m: GenMatrix<T>, model: UnitRing<T>): AMatrix<T> {
+        val n = m.row
+        val aug = zero(n, 2 * n, model)
+        aug.setAll(0, 0, m)
+        val one = model.one
+        for (i in 0 until n) {
+            aug[i, i + n] = one
+        }
+        return aug
+    }
+
     fun <T> inverseInField(m: GenMatrix<T>, model: Field<T>): AMatrix<T> {
         val n = m.row
-        val expanded = zero(n, 2 * n, model)
-        expanded.setAll(0, 0, m)
-        for (i in 0 until n) {
-            expanded[i, i + n] = model.one
-        }
-        val pivots = toEchelon(expanded, model, column = n)
+        val aug = buildAugmentedI(m, model)
+        val pivots = toEchelon(aug, model, column = n)
         if (pivots.size != n) {
             throw ArithmeticException("The matrix is not invertible")
         }
-        return AMatrix.copyOf(expanded.subMatrix(0, n, n, 2 * n), model)
+        return AMatrix.copyOf(aug.subMatrix(0, n, n, 2 * n), model)
     }
 
 //    /**
@@ -795,11 +839,7 @@ object MatrixImpl {
 //        M.requireSquare()
 //        val n = M.column
 //
-//        val A = zero(n, 2 * n, mc)
-//        A.setAll(0, 0, M)
-//        for (i in 0 until n) {
-//            A[i, i + n] = mc.one
-//        }
+//        val A =
 ////        Printer.printMatrix(A)
 //        // to upper triangle
 //        for (j in 0 until n) {
@@ -1122,7 +1162,7 @@ object MatrixImpl {
         val one = model.one
         for (i in 0 until R.row) {
             R[i, i] = one
-            R.divideRow(i, d[i], i + 1)
+            R.divRow(i, d[i], i + 1)
         }
         return Triple(Q, d, R)
     }
@@ -1131,7 +1171,7 @@ object MatrixImpl {
         A.requireSquare()
         for (i in 0..<A.row) {
             for (j in 0..<i) {
-                require(mc.isEqual(A[i, j], A[j, i])) { "Not symmetric!" }
+                require(mc.isEqual(A[i, j], A[j, i])) { "The given matrix is not symmetric!: $A" }
             }
         }
     }
@@ -1139,8 +1179,7 @@ object MatrixImpl {
 
     /**
      * Computes the LU decomposition of the given matrix `A` , returns a pair of matrices `(L,U)` such that
-     * `A = LU`, `P` is a permutation matrix, `L` is a lower triangular matrix with 1 as diagonal elements, and
-     * `U` is an upper triangular matrix.
+     * `A = LU`, where `L` is lower triangular with `1` as diagonal elements and `U` is upper triangular.
      *
      * It is required that the matrix is invertible.
      *
@@ -1163,7 +1202,7 @@ object MatrixImpl {
                 }
                 lower[i, k] = lambda
                 upper[i, k] = mc.zero
-                upper.multiplyAddRow(k, i, mc.negate(lambda), k + 1)
+                upper.mulAddRow(k, i, mc.negate(lambda), k + 1)
             }
         }
         return lower to upper
@@ -1190,7 +1229,6 @@ object MatrixImpl {
             t = mc.sqrt(t)
             L[j, j] = t
             // l_{jj} = sqrt(a_{jj} - sum(0,j-1, l_{jk}^2))
-
             for (i in (j + 1) until n) {
                 var a = A[i, j]
                 for (k in 0 until j) {
@@ -1205,16 +1243,19 @@ object MatrixImpl {
     }
 
     /**
-     * Decomposes a symmetric matrix `A = L D L^T`, where
-     * `L` is a lower triangular matrix and `D` is a diagonal matrix.
+     * Returns the LDL decomposition of the given positive definite matrix:
+     * ```
+     * A = L D L.T
+     * ```
+     * where
+     * - `L` is a lower triangular matrix whose diagonal elements are all `1`;
+     * - `D` is a diagonal matrix with positive diagonal elements.
      *
      * @return `(L, diag(D))`, where `L` is a lower triangular matrix, `diag(D)` is a vector of diagonal elements
      * of `D`.
      */
-    fun <T> decompCholeskyD(A: GenMatrix<T>, mc: Field<T>): Pair<Matrix<T>, Vector<T>> {
-        require(A.isSquare) {
-            "The matrix must be square!"
-        }
+    fun <T> decompLDL(A: GenMatrix<T>, mc: Field<T>): Pair<Matrix<T>, Vector<T>> {
+        checkSymmetric(A, mc)
         val n = A.row
 
         val L = zero(n, n, mc)
@@ -1225,18 +1266,18 @@ object MatrixImpl {
             for (k in 0 until j) {
                 t = mc.eval { t - L[j, k] * L[j, k] * d[k] }
             }
+
             d += t
             // d_j = a_{jj} - sum(0,j-1, l_{jk}^2)
             L[j, j] = mc.one
             // l_{jj} = a_{jj} - sum(0,j-1, l_{jk}^2)
-
             for (i in (j + 1) until n) {
                 var a = A[i, j]
                 for (k in 0 until j) {
                     a = mc.eval { a - L[i, k] * L[j, k] * d[k] }
                 }
                 L[i, j] = mc.eval { a / t }
-                // l_{ij} = (a_{ij} - sum(0,j-1,d_k * l_{ik}l_{jk}))
+                // l_{ij} = (a_{ij} - sum(0,j-1,d_k * l_{ik}l_{jk})) / d_j
             }
         }
         return L to Vector.of(d, mc)
@@ -1274,7 +1315,7 @@ object MatrixImpl {
                 if (model.isZero(M[i, c])) continue
                 val k = model.eval { -M[i, c] / f }
                 M[i, c] = zero
-                M.multiplyAddRow(r, i, k, c + 1)
+                M.mulAddRow(r, i, k, c + 1)
             }
             pivots += c
             r++
@@ -1293,7 +1334,7 @@ object MatrixImpl {
         for (i in pivots.lastIndex downTo 0) {
             val j = pivots[i]
             if (!mc.isOne(M[i, j])) {
-                M.divideRow(i, M[i, j], j + 1)
+                M.divRow(i, M[i, j], j + 1)
                 M[i, j] = mc.one
             }
             for (k in (i - 1) downTo 0) {
@@ -1301,7 +1342,7 @@ object MatrixImpl {
                     continue
                 }
                 val q = mc.eval { -M[k, j] }
-                M.multiplyAddRow(i, k, q, j + 1)
+                M.mulAddRow(i, k, q, j + 1)
                 M[k, j] = zero
             }
         }
@@ -1341,7 +1382,7 @@ object MatrixImpl {
                 if (mc.isNegative(M[k, j])) {
                     q = mc.increase(q)
                 }
-                M.multiplyAddRow(i, k, q, j)
+                M.mulAddRow(i, k, q, j)
             }
         }
         return pivots
@@ -1433,7 +1474,7 @@ object MatrixImpl {
                     if (mc.isZero(v)) continue // M[r,c] | M[i,j], continue
                     // make a gcd at M[r,j] by row and col trans
                     // then swap col c and j
-                    M.multiplyAddRow(i, r, v, j + 1)
+                    M.mulAddRow(i, r, v, j + 1)
                     // col trans can be omitted since elements below M[r,c] are all zero
                     M.swapCol(c, j, r + 1)
                     M[r, j] = mc.negate(M[r, c]) // negate so det is not changed by swapping
@@ -1460,7 +1501,7 @@ object MatrixImpl {
     ): Int {
         return templateReduceInEUD(
             mc, M.row, r, c, zeroed, colStart, M::get, M::set,
-            M::swapRow, M::multiplyAddRow, M::multiplyRow, M::transformRows
+            M::swapRow, M::mulAddRow, M::mulRow, M::transformRows
         )
     }
 
@@ -1472,7 +1513,7 @@ object MatrixImpl {
             mc, M.column, c, r, zeroed, rowStart,
             mGet = { i, j -> M[j, i] },
             mSet = { i, j, v -> M[j, i] = v },
-            M::swapCol, M::multiplyAddCol, M::multiplyCol, M::transformCols
+            M::swapCol, M::mulAddCol, M::mulCol, M::transformCols
         )
     }
 
@@ -1526,61 +1567,60 @@ object MatrixImpl {
 
 
     /**
-     * Returns the congruence diagonal normal form `J` of matrix `A` and the corresponding transformation `P`,
-     * which satisfies
+     * Transforms a symmetric matrix `A` into its congruence diagonal normal form `Λ` and computes the transformation matrix `P`
+     * such that:
+     * ```
+     *     P * A * P.T = Λ
+     * ```
+     * where `Λ` is a diagonal matrix and `P` is non-singular.
      *
-     *     P.T * A * P = J
+     * The matrix `A` must be symmetric, and the matrix entries must be over a [Field].
      *
-     * @return `(J, P)`.
+     * @return A pair `(Λ, P)` where `Λ` is the diagonal matrix and `P` is the transformation matrix.
      */
-    fun <T> toCongDiagonalForm(A: GenMatrix<T>, mc: Field<T>): Pair<Matrix<T>, Matrix<T>> {
-        checkSymmetric(A, mc)
+    fun <T> toCongDiagonalForm(A: GenMatrix<T>, mc: Field<T>): Pair<AVector<T>, AMatrix<T>> {
         //Re-written by lyc at 2021-04-30 13:00
+        checkSymmetric(A, mc)
         val n = A.row
-        val x = zero(2 * n, n, mc)
-        x.setAll(0, 0, A)
-        val one = mc.one
-        for (i in 0 until n) {
-            x[i + n, i] = one
-        }
-        var pos = 0
-        while (pos < n) {
-            if (mc.isZero(x[pos, pos])) {
-                var pi = -1
-                var pj = -1
-                SEARCH@ for (i in pos until n) {
-                    for (j in pos..i) {
-                        if (!mc.isZero(x[j, j])) {
-                            pi = i
-                            pj = j
-                            break@SEARCH
-                        }
-                    }
+        // Create a matrix `x` of size (2n x n), where the first `n` rows are A and the next `n` rows form the identity matrix
+        val aug = buildAugmentedI(A, mc)
+        for(pos in 0 ..< n){
+            // Ensure the diagonal element at `pos, pos` is non-zero
+            var pi = -1
+            var pj = -1
+            Outer@
+            for (i in pos..<n) {
+                for (j in i..<n) {
+                    if (mc.isZero(aug[i, j])) continue
+                    pi = i
+                    pj = j
+                    break@Outer
                 }
-                if (pj < 0) {
-                    break
-                }
-                if (pj != pos) {
-                    x.multiplyAddRow(pj, pos, one)
-                    x.multiplyAddCol(pj, pos, one)
-                }
-                x.multiplyAddRow(pi, pos, one)
-                x.multiplyAddCol(pi, pos, one)
+            }
+            if(pi == -1) break
+            if (pj != pos) {
+                aug.addRowTo(pj, pos)
+                aug.addColTo(pj, pos)
+            }
+            if (pi != pos) {
+                aug.addRowTo(pi, pos)
+                aug.addColTo(pi, pos)
+            }
 
-            }
+            // Reduce all elements in the current row and column (except the diagonal) to zero
+            val diagElement = aug[pos, pos]
             for (i in pos + 1 until n) {
-                if (mc.isZero(x[pos, i])) {
-                    continue
-                }
-                val k = mc.negate(mc.divide(x[pos, i], x[pos, pos]))
-                x.multiplyAddRow(pos, i, k)
-                x.multiplyAddCol(pos, i, k)
+                if (mc.isZero(aug[pos, i])) continue
+                val k = mc.eval { -aug[pos, i] / diagElement }
+                aug.mulAddRow(pos, i, k)
+                aug.mulAddCol(pos, i, k)
             }
-            pos++
         }
-        val m1 = x.subMatrix(0, 0, n, n)
-        val m2 = x.subMatrix(n, 0, 2 * n, n)
-        return m1 to m2
+
+        // Extract the diagonal matrix `Λ` and the transformation matrix `P`
+        val lambda = AVector(n, mc) { aug[it, it] }
+        val p = AMatrix.copyOf(aug.subMatrix(0, n, n, 2 * n), mc)
+        return lambda to p
     }
 
 
@@ -1600,9 +1640,9 @@ object MatrixImpl {
             for (i in (m + 2) until n) {
                 if (mc.isZero(H[i, m])) continue
                 val u = mc.eval { H[i, m] / t }
-                H.multiplyAddRow(m + 1, i, mc.negate(u), m)
+                H.mulAddRow(m + 1, i, mc.negate(u), m)
                 H[i, m] = mc.zero
-                H.multiplyAddCol(i, m + 1, mc.reciprocal(u))
+                H.mulAddCol(i, m + 1, mc.reciprocal(u))
             }
         }
         return H

@@ -7,7 +7,8 @@ import kotlin.test.asserter
  * 2017-12-10 20:36
  */
 object TestUtils {
-    fun <T> assertValueEquals(expected: ValueEquatable<T>, actual: ValueEquatable<T>) {
+
+    fun <T,S : ValueEquatable<T>> assertValueEquals(expected: S, actual: S) {
         asserter.assertTrue({
             "Expected <$expected>, actual <$actual>"
         }, expected.valueEquals(actual))

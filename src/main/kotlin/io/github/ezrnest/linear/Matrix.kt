@@ -247,7 +247,7 @@ interface Matrix<T> : GenMatrix<T>, ModeledMathObject<T, EqualPredicate<T>>,
 //        require(0 <= rowStart && rowEnd <= row && rowStart < rowEnd)
 //        require(0 <= colStart && colEnd <= column && colStart < colEnd)
         // checked in SubMatrixView
-        return SubMatrixView(this, rowStart, colStart, rowEnd, colEnd)
+        return SubMatrixView(this, rowStart, rowEnd, colStart, colEnd)
     }
 
     /**
@@ -371,6 +371,19 @@ interface Matrix<T> : GenMatrix<T>, ModeledMathObject<T, EqualPredicate<T>>,
          */
         fun <T> diag(model: AddMonoid<T>, vararg elements: T): Matrix<T> {
             return diag(model, elements.asList())
+        }
+
+        /**
+         * Creates a diagonal matrix with the given vector as the diagonal elements.
+         */
+        fun <T> diag(v: Vector<T>): Matrix<T> {
+            val model = v.model as AddMonoid
+            val n = v.size
+            val A = MatrixImpl.zero(n, n, model)
+            for (i in 0 until n) {
+                A[i, i] = v[i]
+            }
+            return A
         }
 
         /**
@@ -594,50 +607,77 @@ interface MutableMatrix<T> : Matrix<T> {
      */
     fun negateCol(c: Int, rowStart: Int = 0, rowEnd: Int = row)
 
+
+    /**
+     * Negates all elements in this matrix.
+     */
+    fun negateInPlace()
+
     /**
      * Multiplies the row `r` by `k` with the given column range `[colStart, colEnd)`.
      */
-    fun multiplyRow(r: Int, k: T, colStart: Int = 0, colEnd: Int = column)
+    fun mulRow(r: Int, k: T, colStart: Int = 0, colEnd: Int = column)
 
     /**
      * Divides the row `r` by `k` with the given column range `[colStart, colEnd)`.
      */
-    fun divideRow(r: Int, k: T, colStart: Int = 0, colEnd: Int = column)
+    fun divRow(r: Int, k: T, colStart: Int = 0, colEnd: Int = column)
 
     /**
      * Multiplies the column `c` by `k` with the given row range `[rowStart, rowEnd)`.
      */
-    fun multiplyCol(c: Int, k: T, rowStart: Int = 0, rowEnd: Int = row)
+    fun mulCol(c: Int, k: T, rowStart: Int = 0, rowEnd: Int = row)
 
     /**
      * Divides the column `c` by `k` with the given row range `[rowStart, rowEnd)`.
      */
-    fun divideCol(c: Int, k: T, rowStart: Int = 0, rowEnd: Int = row)
+    fun divCol(c: Int, k: T, rowStart: Int = 0, rowEnd: Int = row)
+
+    /**
+     * Adds the row `r1` to the row `r2` with the given column range `[colStart, colEnd)`.
+     */
+    fun addRowTo(r1: Int, r2: Int, colStart: Int = 0, colEnd: Int = column)
+
+    /**
+     * Adds the column `c1` to the column `c2` with the given row range `[rowStart, rowEnd)`.
+     */
+    fun addColTo(c1: Int, c2: Int, rowStart: Int = 0, rowEnd: Int = row)
 
     /**
      * Adds the row `r1` multiplied by `k` to the row `r2` with the given column range `[colStart, colEnd)`:
      *
      *    this[r2,j] = this[r2,j] + k * this[r1,j]     for j in [colStart, colEnd)
      */
-    fun multiplyAddRow(r1: Int, r2: Int, k: T, colStart: Int = 0, colEnd: Int = column)
+    fun mulAddRow(r1: Int, r2: Int, k: T, colStart: Int = 0, colEnd: Int = column)
 
     /**
      * Adds the column `c1` multiplied by `k` to the column `c2` with the given row range `[rowStart, rowEnd)`:
      *
      *    this[i,c2] = this[i,c2] + k * this[i,c1]     for i in [rowStart, rowEnd)
      */
-    fun multiplyAddCol(c1: Int, c2: Int, k: T, rowStart: Int = 0, rowEnd: Int = row)
+    fun mulAddCol(c1: Int, c2: Int, k: T, rowStart: Int = 0, rowEnd: Int = row)
 
     /**
-     *     v1 = this[r1], v2 = this[r2]
-     *     this[r1] = a11 * v1 + a12 * v2
-     *     this[r2] = a21 * v1 + a22 * v2
+     * Performs a row transformation described as:
+     * ```
+     *     v1 = this[r1,:], v2 = this[r2,:]
+     *     this[r1,:] = a11 * v1 + a12 * v2
+     *     this[r2,:] = a21 * v1 + a22 * v2
+     * ```
      */
     fun transformRows(
         r1: Int, r2: Int, a11: T, a12: T, a21: T, a22: T,
         colStart: Int = 0, colEnd: Int = column
     )
 
+    /**
+     * Performs a column transformation described as:
+     * ```
+     *    v1 = this[:,c1], v2 = this[:,c2]
+     *    this[:,c1] = a11 * v1 + a12 * v2
+     *    this[:,c2] = a21 * v1 + a22 * v2
+     * ```
+     */
     fun transformCols(
         c1: Int, c2: Int, a11: T, a12: T, a21: T, a22: T,
         rowStart: Int = 0, rowEnd: Int = row
@@ -654,7 +694,7 @@ interface MutableMatrix<T> : Matrix<T> {
         }
     }
 
-    fun negateInPlace()
+
 
     companion object {
         operator fun <T> invoke(
