@@ -56,7 +56,7 @@ interface UnitRing<T> : Ring<T>, MulMonoid<T> {
      * @throws ArithmeticException if `a` is not exactly divisible by `b`, or `b==0`.
      * @throws UnsupportedOperationException if this method is not supported.
      */
-    fun exactDivide(a: T, b: T): T {
+    fun exactDiv(a: T, b: T): T {
         throw UnsupportedOperationException()
     }
 
@@ -64,12 +64,12 @@ interface UnitRing<T> : Ring<T>, MulMonoid<T> {
      * Exact division of two numbers.
      */
     operator fun T.div(y: T): T {
-        return exactDivide(this, y)
+        return exactDiv(this, y)
     }
 }
 
-fun <T> UnitRing<T>.exactDivide(a: T, n: Long): T {
-    return exactDivide(a, of(n))
+fun <T> UnitRing<T>.exactDiv(a: T, n: Long): T {
+    return exactDiv(a, of(n))
 }
 
 interface CommutativeRing<T> : Ring<T>{
@@ -99,7 +99,7 @@ interface DivisionRing<T> : UnitRing<T>, MulGroup<T> {
         return !isZero(x)
     }
 
-    override fun exactDivide(a: T, b: T): T {
+    override fun exactDiv(a: T, b: T): T {
         return divide(a, b)
     }
 

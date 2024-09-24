@@ -550,13 +550,13 @@ fun <T> Matrix<T>.toMutable(): MutableMatrix<T> {
 interface MutableMatrix<T> : Matrix<T> {
     operator fun set(i: Int, j: Int, value: T)
 
-    fun setRow(i: Int, row: Vector<T>) {
+    fun setRow(i: Int, row: GenVector<T>) {
         for (j in 0..<column) {
             this[i, j] = row[j]
         }
     }
 
-    fun setCol(j: Int, col: Vector<T>) {
+    fun setCol(j: Int, col: GenVector<T>) {
         for (i in 0..<row) {
             this[i, j] = col[i]
         }
@@ -584,7 +584,7 @@ interface MutableMatrix<T> : Matrix<T> {
 
     operator fun divAssign(k: T) {
         val model = model as UnitRing
-        transform { _, _, t -> model.exactDivide(t, k) }
+        transform { _, _, t -> model.exactDiv(t, k) }
     }
 
     /**

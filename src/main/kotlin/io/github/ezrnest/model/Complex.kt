@@ -59,21 +59,7 @@ data class Complex<T>(val a: T, val b: T) {
     Created by lyc at 2024/8/29
      */
 
-//    /*
-//    MathObject
-//     */
-//
-//
-//    override fun valueEquals(obj: IMathObject<T>): Boolean {
-//        if (obj !is Complex) {
-//            return false
-//        }
-//        return model.isEqual(a, obj.a) && model.isEqual(b, obj.b)
-//    }
-
     override fun toString(): String {
-//        if (model.isZero(b)) return "$a"
-//        if (model.isZero(a)) return "${b}i"
         return "$a+${b}i"
     }
 
@@ -93,9 +79,9 @@ data class Complex<T>(val a: T, val b: T) {
             return ComplexOnField(model)
         }
 
-//        fun <T> from(reals : Reals<T>) : ComplexOnField<T> {
-//            return ComplexOnField(reals)
-//        }
+        fun <T> over(reals: Reals<T>) : ComplexFromReals<T>{
+            return ComplexFromReals(reals)
+        }
     }
 }
 

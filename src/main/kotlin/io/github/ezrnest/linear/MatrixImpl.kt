@@ -71,7 +71,7 @@ data class AMatrix<T> internal constructor(
         data[toPos(i, j)] = value
     }
 
-    override fun setRow(i: Int, row: Vector<T>) {
+    override fun setRow(i: Int, row: GenVector<T>) {
         require(row.size == column)
         require(i in 0..<this.row)
         if (row !is AVector) {
@@ -105,7 +105,7 @@ data class AMatrix<T> internal constructor(
 
     override fun divAssign(k: T) {
         val model = model as UnitRing
-        inPlaceApply1 { model.exactDivide(it, k) }
+        inPlaceApply1 { model.exactDiv(it, k) }
     }
 
 
@@ -148,7 +148,7 @@ data class AMatrix<T> internal constructor(
         val mc = model as UnitRing
         for (l in colStart until colEnd) {
             @Suppress("UNCHECKED_CAST")
-            data[d + l] = mc.exactDivide(data[d + l] as T, k)
+            data[d + l] = mc.exactDiv(data[d + l] as T, k)
         }
     }
 
@@ -168,7 +168,7 @@ data class AMatrix<T> internal constructor(
         for (r in rowStart until rowEnd) {
             val pos = toPos(r, c)
             @Suppress("UNCHECKED_CAST")
-            data[pos] = mc.exactDivide(k, data[pos] as T)
+            data[pos] = mc.exactDiv(k, data[pos] as T)
         }
     }
 
@@ -802,7 +802,7 @@ object MatrixImpl {
      */
     fun <T> inverseInRing(M: GenMatrix<T>, model: UnitRing<T>): AMatrix<T> {
         val (p, adj) = charPolyAndAdj(M, model)
-        val det = p.constantCoef
+        val det = p.getOrNull(0) ?: model.zero
         if (!model.isUnit(det)) throw ArithmeticException("The determinant is not invertible")
         adj /= det
         return adj
@@ -994,7 +994,7 @@ object MatrixImpl {
                 val head = mat[i, k]
                 for (j in k + 1..<n) { // j<=k are all zero, just ignore them
                     mat[i, j] = model.eval {
-                        exactDivide(p * mat[i, j] - head * mat[k, j], d)
+                        exactDiv(p * mat[i, j] - head * mat[k, j], d)
                     }
                 }
             }
@@ -1052,7 +1052,7 @@ object MatrixImpl {
         var Bk: AMatrix<T> = Ak // B_{k+1} = A_k - a_{n-k} I, the initial value is discarded
         while (true) {
             val tr = trace(Ak, mc)
-            val ak = mc.exactDivide(tr, k.toLong())
+            val ak = mc.exactDiv(tr, k.toLong())
             aList += ak
             if (k == n) break
             Bk = Ak
@@ -1378,7 +1378,7 @@ object MatrixImpl {
                 if (mc.isZero(M[k, j])) {
                     continue
                 }
-                var q = mc.eval { -divideToInteger(M[k, j], d) }
+                var q = mc.eval { -divToInt(M[k, j], d) }
                 if (mc.isNegative(M[k, j])) {
                     q = mc.increase(q)
                 }
@@ -1584,7 +1584,7 @@ object MatrixImpl {
         val n = A.row
         // Create a matrix `x` of size (2n x n), where the first `n` rows are A and the next `n` rows form the identity matrix
         val aug = buildAugmentedI(A, mc)
-        for(pos in 0 ..< n){
+        for (pos in 0..<n) {
             // Ensure the diagonal element at `pos, pos` is non-zero
             var pi = -1
             var pj = -1
@@ -1597,7 +1597,7 @@ object MatrixImpl {
                     break@Outer
                 }
             }
-            if(pi == -1) break
+            if (pi == -1) break
             if (pj != pos) {
                 aug.addRowTo(pj, pos)
                 aug.addColTo(pj, pos)
@@ -1695,23 +1695,24 @@ object MatrixImpl {
      *
      */
     fun <T> solveLinear(augmented: MutableMatrix<T>, colSep: Int, mc: Field<T>):
-            Triple<Matrix<T>, VectorSpace<T>, Boolean> {
+            Pair<Matrix<T>?, VectorSpace<T>> {
         val pivots = toEchelon(augmented, mc, colSep)
         val r = pivots.size
-        val special = specialSolutionOf(augmented, colSep, pivots, mc)
-        val basis = nullSpaceOf(augmented, colSep, pivots, mc)
         val solvable = (colSep until augmented.column).all { j ->
             (r until augmented.row).all { i ->
                 mc.isZero(augmented[i, j])
             }
         }
-        return Triple(special, basis, solvable)
+        val basis = nullSpaceOf(augmented, colSep, pivots, mc)
+        val special = if (solvable) specialSolutionOf(augmented, colSep, pivots, mc) else null
+        return special to basis
     }
 
-    fun <T> solveLinear(A: GenMatrix<T>, B: GenMatrix<T>, model: Field<T>): Triple<Matrix<T>, VectorSpace<T>, Boolean> {
+    fun <T> solveLinear(A: GenMatrix<T>, B: GenMatrix<T>, model: Field<T>): Pair<Matrix<T>, VectorSpace<T>>? {
         require(A.row == B.row)
-        val augmented = concatCol(A, B, model)
-        return solveLinear(augmented, A.column, model)
+        val aug = concatCol(A, B, model)
+        val (special, basis) = solveLinear(aug, A.column, model)
+        return if (special == null) null else special to basis
     }
 
     /**
@@ -1719,16 +1720,12 @@ object MatrixImpl {
      */
     fun <T> solveLinear(A: GenMatrix<T>, b: GenVector<T>, model: Field<T>): LinearEquationSolution<T>? {
         require(A.row == b.size)
-        val augmented = zero(A.row, A.column + 1, model)
         val col = A.column
+        val augmented = zero(A.row, col + 1, model)
         augmented.setAll(0, 0, A)
-        for (i in b.indices) {
-            augmented[i, col] = b[i]
-        }
-        val (special, basis, sol) = solveLinear(augmented, col, model)
-        if (!sol) return null
-        val v = special.colAt(0)
-        return LinearEquationSolution(v, basis)
+        augmented.setCol(col, b)
+        val (special, basis) = solveLinear(augmented, col, model)
+        return if (special == null) null else LinearEquationSolution(special.colAt(0), basis)
     }
 
     /**

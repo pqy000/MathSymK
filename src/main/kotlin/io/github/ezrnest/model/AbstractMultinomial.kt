@@ -165,7 +165,7 @@ abstract class AbstractMultinomial<T, K, C : Comparator<K>, R : AbstractMultinom
     override fun scalarDiv(k: T): R {
         val model = model
         require(model is UnitRing) { "The model must support division." }
-        return mapTermsNonZero { Term(model.exactDivide(it.c, k), it.key) }
+        return mapTermsNonZero { Term(model.exactDiv(it.c, k), it.key) }
     }
 
     companion object {

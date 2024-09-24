@@ -48,7 +48,7 @@ interface UniqueFactorizationDomain<T> : IntegralDomain<T> {
      * * `lcm(a,0) = 0`
      */
     fun lcm(a: T, b: T): T{
-        return exactDivide(multiply(a, b), gcd(a, b))
+        return exactDiv(multiply(a, b), gcd(a, b))
     }
 
 
@@ -56,16 +56,16 @@ interface UniqueFactorizationDomain<T> : IntegralDomain<T> {
      * Returns the result of exact division `a/b`, throws an `ArithmeticException` if it is not exact division.
      *
      * @throws ArithmeticException if `a` is not exactly divisible by `b`, or `b` is zero.
-     * @see isExactDivide
+     * @see isExactDiv
      */
-    override fun exactDivide(a: T, b: T): T
+    override fun exactDiv(a: T, b: T): T
 
     /**
      * Determines whether the division `a/b` is exact, namely `a = qb` for some `q`.
      *
      * @throws ArithmeticException if `b` is zero.
      */
-    fun isExactDivide(a: T, b: T): Boolean
+    fun isExactDiv(a: T, b: T): Boolean
 
 
 }
@@ -73,7 +73,7 @@ interface UniqueFactorizationDomain<T> : IntegralDomain<T> {
 
 /**
  * Describes a Euclidean domain.
- * The fundamental operation is [divideAndRemainder].
+ * The fundamental operation is [divideAndRem].
  *
  *
  * For example, integers and polynomials over a field are both `EuclideanDomain`,
@@ -94,27 +94,33 @@ interface EuclideanDomain<T> : UniqueFactorizationDomain<T> {
      * where `q` is the quotient, `r` is the remainder.
      *
      */
-    fun divideAndRemainder(a: T, b: T): Pair<T, T>
+    fun divideAndRem(a: T, b: T): Pair<T, T>
 
     /**
-     * Returns the quotient part of [divideAndRemainder].
+     * Extension function for [divideAndRem].
+     */
+    fun T.divAndRem(b: T): Pair<T, T> = divideAndRem(this, b)
+
+
+    /**
+     * Returns the quotient part of [divideAndRem].
      *
      * @param a the dividend
      * @param b the divisor
      * @return the quotient `q` of `a = qb + r`.
-     * @see divideAndRemainder
+     * @see divideAndRem
      */
-    fun divideToInteger(a: T, b: T): T = divideAndRemainder(a, b).first
+    fun divToInt(a: T, b: T): T = divideAndRem(a, b).first
 
     /**
-     * Returns the remainder part of [divideAndRemainder].
+     * Returns the remainder part of [divideAndRem].
      *
      * @param a the dividend
      * @param b the divisor
      * @return the remainder `r` of `a = qb + r`.
-     * @see divideAndRemainder
+     * @see divideAndRem
      */
-    fun remainder(a: T, b: T): T = divideAndRemainder(a, b).second
+    fun remainder(a: T, b: T): T = divideAndRem(a, b).second
 
 
     /**
@@ -124,8 +130,8 @@ interface EuclideanDomain<T> : UniqueFactorizationDomain<T> {
      */
     fun mod(a: T, b: T): T = remainder(a, b)
 
-    override fun exactDivide(a: T, b: T): T {
-        val (q, r) = divideAndRemainder(a, b)
+    override fun exactDiv(a: T, b: T): T {
+        val (q, r) = divideAndRem(a, b)
         if (!isZero(r)) {
             ExceptionUtil.notExactDivision(a, b)
         }
@@ -139,7 +145,7 @@ interface EuclideanDomain<T> : UniqueFactorizationDomain<T> {
      *
      * @throws ArithmeticException if `b` is zero.
      */
-    override fun isExactDivide(a: T, b: T): Boolean {
+    override fun isExactDiv(a: T, b: T): Boolean {
         return isZero(remainder(a, b))
     }
 
@@ -166,7 +172,7 @@ interface EuclideanDomain<T> : UniqueFactorizationDomain<T> {
             a, b, zero, one,
             this::isZero,
             this::subtract, this::multiply,
-            this::divideAndRemainder, this::divideToInteger
+            this::divideAndRem, this::divToInt
         )
     }
 
@@ -181,7 +187,7 @@ interface EuclideanDomain<T> : UniqueFactorizationDomain<T> {
             a, b, zero, one,
             this::isZero,
             this::add, this::subtract, this::multiply,
-            this::divideAndRemainder
+            this::divideAndRem
         )
     }
 
@@ -204,9 +210,9 @@ interface EuclideanDomain<T> : UniqueFactorizationDomain<T> {
         }
         val (d, u, v) = result
 
-        val a1 = divideToInteger(a, d)
-        val b1 = divideToInteger(b, d)
-        val (k, v1) = divideAndRemainder(v, a1)
+        val a1 = divToInt(a, d)
+        val b1 = divToInt(b, d)
+        val (k, v1) = divideAndRem(v, a1)
 
         val u1 = u + b1 * k
         return Triple(d, u1, v1)
@@ -473,7 +479,7 @@ interface EuclideanDomain<T> : UniqueFactorizationDomain<T> {
  * * a [ring with unity][UnitRing] under addition and multiplication.
  *
  * Moreover, the ring of integers is further a Euclidean domain, meaning that it supports the
- * [divideAndRemainder][EuclideanDomain.divideAndRemainder] operation.
+ * [divideAndRemainder][EuclideanDomain.divideAndRem] operation.
  *
  *
  * @see EuclideanDomain
@@ -580,7 +586,7 @@ interface Integers<T> : EuclideanDomain<T>, OrderedRing<T> {
      * @param b the divisor
      * @return `a \ b`
      */
-    override fun divideToInteger(a: T, b: T): T
+    override fun divToInt(a: T, b: T): T
 
     /**
      * Returns a pair of two numbers containing `(this / val)` followed by
@@ -591,8 +597,8 @@ interface Integers<T> : EuclideanDomain<T>, OrderedRing<T> {
      * @return a pair of two numbers: the quotient `(a / b)` is the first
      * element, and the remainder `(a % b)` is the second element.
      */
-    override fun divideAndRemainder(a: T, b: T): Pair<T, T> {
-        val quotient = divideToInteger(a, b)
+    override fun divideAndRem(a: T, b: T): Pair<T, T> {
+        val quotient = divToInt(a, b)
         val reminder = remainder(a, b)
         return Pair(quotient, reminder)
     }
@@ -657,13 +663,13 @@ interface Integers<T> : EuclideanDomain<T>, OrderedRing<T> {
         y = abs(y)
         require(!(isZero(x) || isEqual(x, one))) { "a==0 or |a|==1" }
         var k: T = zero
-        var dar = divideAndRemainder(y, x)
+        var dar = divideAndRem(y, x)
         while (isZero(dar.second)) {
             // b%a==0
             k = increase(k)
             y = dar.first
             // b = b/a;
-            dar = divideAndRemainder(y, x)
+            dar = divideAndRem(y, x)
         }
         // while(b % a ==0){
         // k++;
@@ -703,7 +709,7 @@ interface Integers<T> : EuclideanDomain<T>, OrderedRing<T> {
                 ans = mod(multiply(x, ans), m)
             }
             x = mod(multiply(x, x), m)
-            p = divideToInteger(p, two)
+            p = divToInt(p, two)
         }
         return ans
     }

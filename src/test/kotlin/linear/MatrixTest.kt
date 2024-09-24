@@ -105,15 +105,16 @@ class MatrixTest {
     @Test
     fun testMatrixCharPoly() {
         val ℤ = NumberModels.integers()
+        val Zx = Polynomial.over(ℤ)
         val n = 4
-        val A = Matrix(n, ℤ) { i, j -> i + 2 * j }
-        val p = A.charPoly() // the characteristic polynomial of A, p(λ) = det(λI - A)
-        ℤ.assertEquals(A.trace(), -p[n - 1])
-        ℤ.assertEquals(A.det(), (-1).pow(n) * p[0])
+        with(Zx){
+            val A = Matrix(n, ℤ) { i, j -> i + 2 * j }
+            val p = A.charPoly() // the characteristic polynomial of A, p(λ) = det(λI - A)
+            ℤ.assertEquals(A.trace(), -p[n - 1])
+            ℤ.assertEquals(A.det(), (-1).pow(n) * p[0])
 
-        // another way to compute the characteristic polynomial
-        // sum of all principal minors of A
-        run {
+            // another way to compute the characteristic polynomial
+            // sum of all principal minors of A
             val coef = (0..n).map { k ->
                 if (k == n) return@map ℤ.one
                 var res = ℤ.zero
@@ -124,11 +125,11 @@ class MatrixTest {
                 res * MathUtils.powOfMinusOne(k)
             }
             val p2 = Polynomial.fromList(ℤ, coef)
-            assertValueEquals(p, p2)
-        }
+            assertEquals(p, p2)
 
-        val matOverZ = Matrix.over(n, ℤ)
-        assertTrue(p.substitute(A, matOverZ).isZero) // p(A) = 0, a matrix of zeros
+            val matOverZ = Matrix.over(n, ℤ)
+            assertTrue(p.substitute(A, matOverZ).isZero) // p(A) = 0, a matrix of zeros
+        }
     }
 
     @Test

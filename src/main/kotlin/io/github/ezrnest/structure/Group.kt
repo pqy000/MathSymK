@@ -210,6 +210,10 @@ interface AddMonoid<T> : AddSemigroup<T> {
 //        get() = zero.javaClass
 }
 
+fun <T> AddMonoid<T>.sum(vararg elements : T) : T{
+    return sum(elements.asList())
+}
+
 /**
  * A GroupCalculator defines a binary operation [add] (which we denote as `+`)
  * an [zero] element (`0`) with respect to the operation and

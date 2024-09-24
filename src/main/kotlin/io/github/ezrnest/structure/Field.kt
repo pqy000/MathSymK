@@ -50,7 +50,7 @@ interface Field<T> : DivisionRing<T>, EuclideanDomain<T> {
      *
      * @see divide
      */
-    override fun exactDivide(a: T, b: T): T {
+    override fun exactDiv(a: T, b: T): T {
         return divide(a, b)
     }
 
@@ -62,7 +62,7 @@ interface Field<T> : DivisionRing<T>, EuclideanDomain<T> {
         get() = true
 
 
-    override fun divideAndRemainder(a: T, b: T): Pair<T, T> {
+    override fun divideAndRem(a: T, b: T): Pair<T, T> {
         return (a/b) to zero
     }
 

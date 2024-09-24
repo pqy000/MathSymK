@@ -97,7 +97,7 @@ object IntAsIntegers : Integers<Int> {
         return NTFunctions.mod(a, b)
     }
 
-    override fun divideToInteger(a: Int, b: Int): Int {
+    override fun divToInt(a: Int, b: Int): Int {
         return a / b
     }
 
@@ -187,7 +187,7 @@ object LongAsIntegers : Integers<Long> {
         return NTFunctions.mod(a, b)
     }
 
-    override fun divideToInteger(a: Long, b: Long): Long {
+    override fun divToInt(a: Long, b: Long): Long {
         return a / b
     }
 
@@ -301,7 +301,7 @@ object BigIntegerAsIntegers : Integers<BigInteger> {
         return a.mod(b)
     }
 
-    override fun divideToInteger(a: BigInteger, b: BigInteger): BigInteger {
+    override fun divToInt(a: BigInteger, b: BigInteger): BigInteger {
         return a.divide(b)
     }
 
@@ -337,7 +337,7 @@ object BigIntegerAsIntegers : Integers<BigInteger> {
         return a.remainder(b)
     }
 
-    override fun divideAndRemainder(a: BigInteger, b: BigInteger): Pair<BigInteger, BigInteger> {
+    override fun divideAndRem(a: BigInteger, b: BigInteger): Pair<BigInteger, BigInteger> {
         val res = a.divideAndRemainder(b)
         return res[0] to res[1]
     }

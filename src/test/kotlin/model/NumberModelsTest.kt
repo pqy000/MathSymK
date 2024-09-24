@@ -31,9 +31,9 @@ class NumberModelsTest {
 
         // exactDivide
         assertEquals(0, int.mod(3, 1))
-        assertEquals(3, int.divideToInteger(3, 1))
-        assertEquals(1, int.exactDivide(2, 2))
-        assertEquals(-3, int.exactDivide(-3, 1))
+        assertEquals(3, int.divToInt(3, 1))
+        assertEquals(1, int.exactDiv(2, 2))
+        assertEquals(-3, int.exactDiv(-3, 1))
     }
 
     @Test

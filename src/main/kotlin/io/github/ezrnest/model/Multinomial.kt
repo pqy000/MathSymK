@@ -7,7 +7,6 @@ import java.util.*
 import java.util.function.Function
 import java.util.regex.Pattern
 import kotlin.Comparator
-import kotlin.collections.ArrayList
 
 
 /*
@@ -466,7 +465,7 @@ internal constructor(
     companion object {
 
         private fun <T> termExactDiv(model: UnitRing<T>, t1: MTerm<T>, t2: MTerm<T>): MTerm<T> {
-            val c = model.exactDivide(t1.c, t2.c)
+            val c = model.exactDiv(t1.c, t2.c)
             val chs = t1.key.exactDivide(t2.key)
             return MTerm(c, chs)
         }
@@ -756,7 +755,7 @@ open class MultinomialOverUnitRing<T>(_model: UnitRing<T>, order: MonomialOrder)
         return m.times(this)
     }
 
-    override fun exactDivide(a: Multinomial<T>, b: Multinomial<T>): Multinomial<T> {
+    override fun exactDiv(a: Multinomial<T>, b: Multinomial<T>): Multinomial<T> {
         val (q, r) = a.divideAndRemainder(b)
         if (!r.isZero) {
             throw ArithmeticException("The division is not exact.")

@@ -224,8 +224,8 @@ open class RFracOverIntDom<T>(override val model: IntegralDomain<T>) : RFracOver
         val model = model
         if (model is UniqueFactorizationDomain) {
             val g = model.gcd(nume, deno)
-            val n = model.exactDivide(nume, g)
-            val d = model.exactDivide(deno, g)
+            val n = model.exactDiv(nume, g)
+            val d = model.exactDiv(deno, g)
             return RFraction(n, d)
         }
         return RFraction(nume, deno)
@@ -269,8 +269,8 @@ open class RFracOverIntDom<T>(override val model: IntegralDomain<T>) : RFracOver
     private fun addWithGCD(x: RFraction<T>, y: RFraction<T>, model : UniqueFactorizationDomain<T>): RFraction<T> {
         with(model) {
             val g = gcd(x.deno, y.deno)
-            val b1 = exactDivide(x.deno, g)
-            val d1 = exactDivide(y.deno, g)
+            val b1 = exactDiv(x.deno, g)
+            val d1 = exactDiv(y.deno, g)
             val lcm = b1 * y.deno
             val num = x.nume * d1 + y.nume * b1
             return simplifyFrac(num, lcm)

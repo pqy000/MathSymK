@@ -8,6 +8,9 @@ import io.github.ezrnest.structure.Reals
 import io.github.ezrnest.structure.Ring
 import io.github.ezrnest.structure.UnitRing
 
+object VectorExt{
+
+}
 
 /**
  * Provides extra matrix functionalities.
@@ -391,6 +394,14 @@ object LinAlg {
     fun <T> solveLinear(A: Matrix<T>, b: Vector<T>): LinearEquationSolution<T>? {
         val model = A.model as Field<T>
         return MatrixImpl.solveLinear(A, b, model)
+    }
+
+    /**
+     * Solves the matrix linear equation `AX = B`.
+     */
+    fun <T> solveLinear(A : Matrix<T>, B : Matrix<T>) : Pair<Matrix<T>, VectorSpace<T>>?{
+        val model = A.model as Field
+        return MatrixImpl.solveLinear(A, B, model)
     }
 
 
