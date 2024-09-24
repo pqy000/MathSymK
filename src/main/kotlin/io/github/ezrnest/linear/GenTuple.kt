@@ -1,5 +1,6 @@
 package io.github.ezrnest.linear
 
+import io.github.ezrnest.Mappable
 import io.github.ezrnest.util.IterUtils
 import io.github.ezrnest.util.MathUtils
 import java.util.*
@@ -14,7 +15,7 @@ import kotlin.math.min
 /**
  * A generic (multidimensional) tuple-like container with finite elements in order.
  */
-interface GenTuple<T> {
+interface GenTuple<T> : Mappable<T> {
     /**
      * The count of elements contained in this tuple.
      */
@@ -44,7 +45,16 @@ interface GenTuple<T> {
     /**
      * Returns a new tuple of the same type as the result of applying the given function to each element in this.
      */
-    fun applyAll(f: (T) -> T): GenTuple<T>
+//    fun <S> applyAll(f: (T) -> S): GenTuple<T>
+    override fun <S> map(mapping: (T) -> S): GenTuple<S>
+
+}
+
+inline fun <T> GenTuple<T>.all(predicate: (T) -> Boolean): Boolean {
+    for (e in elementSequence()) {
+        if (!predicate(e)) return false
+    }
+    return true
 }
 
 typealias Index = IntArray
@@ -73,7 +83,8 @@ interface GenTensor<T> : GenTuple<T> {
 
     operator fun get(idx: Index): T
 
-    override fun applyAll(f: (T) -> T): GenTensor<T>
+    //    override fun applyAll(f: (T) -> T): GenTensor<T>
+    override fun <S> map(mapping: (T) -> S): GenTensor<S>
 
     /**
      * Gets the elements in this generic tuple, iterating from the first dimension to the last as:
@@ -143,7 +154,7 @@ interface GenMatrix<T> : GenTuple<T> {
      */
     operator fun get(i: Int, j: Int): T
 
-    override fun applyAll(f: (T) -> T): GenMatrix<T>
+    override fun <S> map(mapping: (T) -> S): GenMatrix<S>
 
     /**
      * Gets the elements in this generic matrix, iterating row first and then column as:
@@ -166,8 +177,6 @@ interface GenMatrix<T> : GenTuple<T> {
     fun shapeMatches(y: GenMatrix<*>): Boolean {
         return row == y.row && column == y.column
     }
-
-
 }
 
 /**
@@ -200,40 +209,6 @@ inline val GenMatrix<*>.colIndices: IntRange
  */
 inline val GenMatrix<*>.indices: Sequence<Pair<Int, Int>>
     get() = IterUtils.prod2(rowIndices, colIndices)
-
-
-interface GenVector<T> : GenTuple<T> {
-
-    /**
-     * Gets the `i`-th element in the generic vector.
-     */
-    operator fun get(i: Int): T
-
-    /**
-     * Returns a list containing all the elements in this generic vector in order.
-     */
-    fun toList(): List<T>
-
-    override fun flattenToList(): List<T> {
-        return toList()
-    }
-
-    override fun applyAll(f: (T) -> T): GenVector<T>
-
-    /**
-     * Determines whether the two vectors are of the identity size.
-     *
-     * @param v another vector.
-     * @return `true` if they are the identity in size.
-     */
-    fun isSameSize(v: GenVector<*>): Boolean {
-        return size == v.size
-    }
-}
-
-
-inline val GenVector<*>.indices: IntRange
-    get() = 0..<size
 
 
 fun <T, A : Appendable> GenTensor<T>.joinToL(
@@ -281,7 +256,8 @@ fun <T, A : Appendable> GenTensor<T>.joinToL(
 
 fun <T, A : Appendable> GenTensor<T>.joinTo(
     buffer: A, separator: CharSequence = ", ", prefix: CharSequence = "[", postfix: CharSequence = "]",
-    limits: IntArray = IntArray(dim) { Int.MAX_VALUE }, truncated: CharSequence = "...", transform: ((T) -> CharSequence)? = null
+    limits: IntArray = IntArray(dim) { Int.MAX_VALUE }, truncated: CharSequence = "...",
+    transform: ((T) -> CharSequence)? = null
 ): A {
     val dim = this.dim
     val seps = run {
@@ -370,7 +346,7 @@ fun <T> GenMatrix<T>.joinToString(
 }
 
 
-fun <T, A : Appendable> GenVector<T>.joinTo(
+fun <T, A : Appendable> Vector<T>.joinTo(
     buffer: A,
     separator: CharSequence = ", ", prefix: CharSequence = "[", postfix: CharSequence = "]",
     limit: Int = Int.MAX_VALUE, truncated: CharSequence = "...",
@@ -379,7 +355,7 @@ fun <T, A : Appendable> GenVector<T>.joinTo(
     return elementSequence().joinTo(buffer, separator, prefix, postfix, limit, truncated, transform)
 }
 
-fun <T> GenVector<T>.joinToString(
+fun <T> Vector<T>.joinToString(
     separator: CharSequence = ", ", prefix: CharSequence = "[", postfix: CharSequence = "]",
     limit: Int = Int.MAX_VALUE, truncated: CharSequence = "...",
     transform: ((T) -> CharSequence)? = null

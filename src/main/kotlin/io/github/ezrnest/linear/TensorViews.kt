@@ -136,10 +136,6 @@ class MutableSliceView<T>(
         t[pos] = v
     }
 
-    override fun applyAll(f: (T) -> T): MutableTensor<T> {
-        return mapTo(model, f)
-    }
-
 
 //    override fun <N> mapTo(newCalculator: MathCalculator<N>, mapper: Function<T, N>): MutableTensor<N> {
 //        return ATensor.buildFromSequence(newCalculator, sh, elementSequence().map { mapper.apply(it) })

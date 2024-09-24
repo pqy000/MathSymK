@@ -13,6 +13,8 @@ interface Ring<T> : AddGroup<T>, MulSemigroup<T> {
      * @return `0`
      */
     override val zero: T
+
+    override fun contains(x: T): Boolean
 }
 
 interface UnitRing<T> : Ring<T>, MulMonoid<T> {

@@ -179,6 +179,10 @@ interface AddMonoid<T> : AddSemigroup<T> {
      */
     fun isZero(x: T) = isEqual(zero, x)
 
+
+//    val T.isZero: Boolean
+//        get() = isZero(this)
+
     /**
      * Returns the result of adding [x] for [n] times, which we usually denote as `n * x` or simply `nx`.
      *

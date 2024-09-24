@@ -45,7 +45,7 @@ data class AMatrix<T> internal constructor(
 
     override fun rowAt(rowIdx: Int): Vector<T> {
         val pos0 = toPos(rowIdx, 0)
-        return AVector(data.copyOfRange(pos0, pos0 + column), model)
+        return AVector(data.copyOfRange(pos0, pos0 + column))
     }
 
     override fun setAll(row: Int, col: Int, matrix: GenMatrix<T>) {
@@ -607,11 +607,11 @@ object MatrixImpl {
      * Matrix-vector multiplication: `Ay`, where `y` is a column vector.
      *
      */
-    fun <T> matmul(A: GenMatrix<T>, y: GenVector<T>, model: Ring<T>): AVector<T> {
+    fun <T> matmul(A: GenMatrix<T>, y: Vector<T>, model: Ring<T>): AVector<T> {
         require(A.column == y.size) {
             "Shape mismatch in matmul: (${A.row}, ${A.column}) * (${y.size})"
         }
-        return AVector(A.row, model) { i ->
+        return AVector(A.row) { i ->
             var sum = model.zero
             for (k in 0 until A.column) {
                 sum = model.eval { sum + A[i, k] * y[k] }
@@ -625,11 +625,11 @@ object MatrixImpl {
      *
      * The result will be a vector
      */
-    fun <T> matmul(v: GenVector<T>, A: GenMatrix<T>, model: Ring<T>): AVector<T> {
+    fun <T> matmul(v: Vector<T>, A: GenMatrix<T>, model: Ring<T>): AVector<T> {
         require(v.size == A.row) {
             "Shape mismatch in matmul: (${v.size}) * (${A.row}, ${A.column})"
         }
-        return AVector(A.column, model) { j ->
+        return AVector(A.column) { j ->
             var sum = model.zero
             for (k in 0..<A.row) {
                 sum = model.eval { sum + v[k] * A[k, j] }
@@ -714,7 +714,7 @@ object MatrixImpl {
 
     private fun <T> colVectors(A: GenMatrix<T>, model: EqualPredicate<T>): List<Vector<T>> {
         return A.colIndices.map { j ->
-            AVector(A.row, model) { i -> A[i, j] }
+            AVector(A.row) { i -> A[i, j] }
         }
     }
 
@@ -760,9 +760,9 @@ object MatrixImpl {
         return res
     }
 
-    fun <T> diag(A: GenMatrix<T>, model: EqualPredicate<T>): AVector<T> {
+    fun <T> diag(A: GenMatrix<T>): AVector<T> {
         require(A.isSquare)
-        return AVector(A.row, model) { i -> A[i, i] }
+        return AVector(A.row) { i -> A[i, i] }
     }
 
     fun <T> sumAll(A: GenMatrix<T>, model: AddSemigroup<T>): T {
@@ -782,16 +782,16 @@ object MatrixImpl {
         val mutable = AMatrix.copyOf(A, model)
         val pivots = toUpperTriangle(mutable, model)
         val indepVectors = pivots.map { mutable.colAt(it) }
-        return VectorSpace.fromBasis(indepVectors, A.row, model)
+        return VectorSpace.fromBasis(A.row, model, indepVectors)
     }
 
 
-    fun <T> spanOf(vectors: List<GenVector<T>>, vecLength: Int, model: Field<T>): VectorSpace<T> {
+    fun <T> spanOf(vectors: List<Vector<T>>, vecLength: Int, model: Field<T>): VectorSpace<T> {
         if (vectors.isEmpty()) return VectorSpace.zero(vecLength, model)
         val mutable = AMatrix(vecLength, vectors.size, model) { i, j -> vectors[j][i] }
         val pivots = toUpperTriangle(mutable, model)
         val indepVectors = pivots.map { mutable.colAt(it) }
-        return VectorSpace.fromBasis(indepVectors)
+        return VectorSpace.fromBasis(model, indepVectors)
     }
 
     /**
@@ -1120,22 +1120,26 @@ object MatrixImpl {
         A.requireSquare()
         val vs = colVectors(A, mc)
         val R = zero(A.row, A.column, mc)
-        val ws = ArrayList<MutableVector<T>>(A.row)
+        val ws = ArrayList<Vector<T>>(A.row)
         val Q = zero(A.row, A.column, mc)
-        for (i in 0 until A.row) {
-            val u: MutableVector<T> = VectorImpl.copyOf(vs[i], mc)
-            for (j in 0 until i) {
-                val k = u.inner(ws[j])
-                u.minusAssignTimes(k, ws[j])
-                R[j, i] = k
+        val vectors = Vector.over(mc, A.row)
+        with(vectors) {
+            for (i in 0 ..< A.row) {
+                val u = MutableVector.copyOf(vs[i])
+                for (j in 0 until i) {
+                    val k = u dot ws[j]
+                    u.minusAssignTimes(k, ws[j])
+                    R[j, i] = k
+                }
+                if (!isZero(u)) {
+                    val length = u.norm()
+                    R[i, i] = length
+                    u.divAssign(length)
+                }
+                ws += u
             }
-            if (!u.isZero) {
-                val length = u.norm()
-                R[i, i] = length
-                u.divAssign(length)
-            }
-            ws += u
         }
+
 //        val Q = Matrix.fromColumns(ws)
         return Q to R
     }
@@ -1280,7 +1284,7 @@ object MatrixImpl {
                 // l_{ij} = (a_{ij} - sum(0,j-1,d_k * l_{ik}l_{jk})) / d_j
             }
         }
-        return L to Vector.of(d, mc)
+        return L to Vector.of(d)
     }
 
 
@@ -1584,7 +1588,7 @@ object MatrixImpl {
         val n = A.row
         // Create a matrix `x` of size (2n x n), where the first `n` rows are A and the next `n` rows form the identity matrix
         val aug = buildAugmentedI(A, mc)
-        for(pos in 0 ..< n){
+        for (pos in 0..<n) {
             // Ensure the diagonal element at `pos, pos` is non-zero
             var pi = -1
             var pj = -1
@@ -1597,7 +1601,7 @@ object MatrixImpl {
                     break@Outer
                 }
             }
-            if(pi == -1) break
+            if (pi == -1) break
             if (pj != pos) {
                 aug.addRowTo(pj, pos)
                 aug.addColTo(pj, pos)
@@ -1618,7 +1622,7 @@ object MatrixImpl {
         }
 
         // Extract the diagonal matrix `Λ` and the transformation matrix `P`
-        val lambda = AVector(n, mc) { aug[it, it] }
+        val lambda = AVector(n) { aug[it, it] }
         val p = AMatrix.copyOf(aug.subMatrix(0, n, n, 2 * n), mc)
         return lambda to p
     }
@@ -1717,7 +1721,7 @@ object MatrixImpl {
     /**
      * Solves the linear equation `Ax = b` with the given matrix `A` and vector `b`.
      */
-    fun <T> solveLinear(A: GenMatrix<T>, b: GenVector<T>, model: Field<T>): LinearEquationSolution<T>? {
+    fun <T> solveLinear(A: GenMatrix<T>, b: Vector<T>, model: Field<T>): LinearEquationSolution<T>? {
         require(A.row == b.size)
         val augmented = zero(A.row, A.column + 1, model)
         val col = A.column

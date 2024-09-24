@@ -31,14 +31,14 @@ interface Matrix<T> : GenMatrix<T>, ModeledMathObject<T, EqualPredicate<T>>,
      * Gets the row at the given index as a vector.
      */
     fun rowAt(rowIdx: Int): Vector<T> {
-        return Vector(column, model) { colIdx -> this[rowIdx, colIdx] }
+        return Vector(column) { colIdx -> this[rowIdx, colIdx] }
     }
 
     /**
      * Gets the column at the given index as a vector.
      */
     fun colAt(colIdx: Int): Vector<T> {
-        return Vector(row, model) { rowIdx -> this[rowIdx, colIdx] }
+        return Vector(row) { rowIdx -> this[rowIdx, colIdx] }
     }
 
     /**
@@ -55,13 +55,14 @@ interface Matrix<T> : GenMatrix<T>, ModeledMathObject<T, EqualPredicate<T>>,
         return colIndices.map { colAt(it) }
     }
 
-
     /**
      * Applies the given function to all elements in this matrix and returns a new matrix.
      */
-    override fun applyAll(f: (T) -> T): Matrix<T> {
-        return MatrixImpl.apply1(this, model, f)
+    override fun <S> map(mapping: (T) -> S): Matrix<S> {
+        TODO()
+//        return MatrixImpl.apply1(this, model, mapping)
     }
+
 
     /*
     MathObject
@@ -210,7 +211,7 @@ interface Matrix<T> : GenMatrix<T>, ModeledMathObject<T, EqualPredicate<T>>,
      * Gets the diagonal of this matrix as a vector.
      */
     fun diag(): Vector<T> {
-        return MatrixImpl.diag(this, model)
+        return MatrixImpl.diag(this)
     }
 
     /**
@@ -310,21 +311,16 @@ interface Matrix<T> : GenMatrix<T>, ModeledMathObject<T, EqualPredicate<T>>,
             return AMatrix.of(row, col, model, *elements)
         }
 
-        /**
-         * Creates a new matrix from a list of column vectors.
-         */
-        fun <T> fromColumns(columns: List<Vector<T>>): Matrix<T> {
-            return fromColumns(columns, columns.first().model)
-        }
 
         /**
          * Creates a new matrix from a list of column vectors.
          */
-        fun <T> fromColumns(columns: List<Vector<T>>, model: EqualPredicate<T>): Matrix<T> {
+        fun <T> fromColumns(columns: List<Vector<T>>): Matrix<T> {
             val row = columns.first().size
             val column = columns.size
             require(columns.all { it.size == row })
-            return Matrix(row, column, model) { i, j -> columns[i][j] }
+            TODO()
+//            return Matrix(row, column) { i, j -> columns[i][j] }
         }
 
         /**
@@ -334,8 +330,8 @@ interface Matrix<T> : GenMatrix<T>, ModeledMathObject<T, EqualPredicate<T>>,
             val row = rows.size
             val column = rows.first().size
             require(rows.all { it.size == column })
-            val model = rows.first().model
-            return Matrix(row, column, model) { i, j -> rows[i][j] }
+            TODO()
+//            return Matrix(row, column) { i, j -> rows[i][j] }
         }
 
         /**
@@ -377,9 +373,8 @@ interface Matrix<T> : GenMatrix<T>, ModeledMathObject<T, EqualPredicate<T>>,
          * Creates a diagonal matrix with the given vector as the diagonal elements.
          */
         fun <T> diag(v: Vector<T>): Matrix<T> {
-            val model = v.model as AddMonoid
             val n = v.size
-            val A = MatrixImpl.zero(n, n, model)
+            val A = MatrixImpl.zero<T>(n, n,TODO())
             for (i in 0 until n) {
                 A[i, i] = v[i]
             }
@@ -480,7 +475,8 @@ interface Matrix<T> : GenMatrix<T>, ModeledMathObject<T, EqualPredicate<T>>,
  * Returns the matrix product of this row vector and the matrix, resulting in a row vector.
  */
 fun <T> RowVector<T>.matmul(m: Matrix<T>): RowVector<T> {
-    return RowVector(MatrixImpl.matmul(this, m, this.v.model as Ring))
+    TODO()
+//    return RowVector(MatrixImpl.matmul(this, m, this.v.model as Ring))
 }
 
 operator fun <T> RowVector<T>.times(m: Matrix<T>): RowVector<T> {
@@ -495,7 +491,7 @@ operator fun <T> RowVector<T>.times(m: Matrix<T>): RowVector<T> {
  */
 fun <K> Matrix<Complex<K>>.transposeConjugate(): Matrix<Complex<K>> {
     val model = model as ComplexNumbers<*, Complex<K>>
-    return TransposedMatrixView(this).applyAll(model::conj)
+    return TransposedMatrixView(this).map(model::conj)
 }
 
 /**
@@ -509,7 +505,7 @@ val <K> Matrix<Complex<K>>.H: Matrix<Complex<K>> get() = transposeConjugate()
 @JvmRecord
 data class VectorAsColMatrix<T>(val v: Vector<T>) : Matrix<T> {
     override val model: EqualPredicate<T>
-        get() = v.model
+        get() = TODO()
     override val row: Int
         get() = v.size
     override val column: Int
@@ -524,7 +520,7 @@ data class VectorAsColMatrix<T>(val v: Vector<T>) : Matrix<T> {
 @JvmRecord
 data class VectorAsRowMatrix<T>(val v: Vector<T>) : Matrix<T> {
     override val model: EqualPredicate<T>
-        get() = v.model
+        get() = TODO()
     override val row: Int
         get() = 1
     override val column: Int
@@ -693,7 +689,6 @@ interface MutableMatrix<T> : Matrix<T> {
             }
         }
     }
-
 
 
     companion object {

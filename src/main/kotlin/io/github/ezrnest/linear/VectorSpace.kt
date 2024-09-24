@@ -3,7 +3,7 @@ package io.github.ezrnest.linear
 import io.github.ezrnest.structure.*
 
 
-interface VectorSpace<K> : FiniteDimLinearSpace<K, Vector<K>> {
+interface VectorSpace<K> : VecOverRing<K>, FiniteDimLinearSpace<K, Vector<K>> {
     /*
     Rewritten at 2024/8/25
      */
@@ -13,10 +13,15 @@ interface VectorSpace<K> : FiniteDimLinearSpace<K, Vector<K>> {
      *
      * Note: This is the length of the vector, not the dimension of the vector space.
      */
-    val vectorLength: Int
+    override val vectorLength: Int
+
+    override val scalars: Field<K>
+        get() = model
+
+    override val model: Field<K>
 
     fun basisAsMatrix(): Matrix<K> {
-        return Matrix.fromColumns(basis, scalars)
+        return Matrix.fromColumns(basis)
     }
 
     /**
@@ -47,8 +52,6 @@ interface VectorSpace<K> : FiniteDimLinearSpace<K, Vector<K>> {
      * Gets the basis of the vector space as a list of vectors.
      */
     override val basis: List<Vector<K>>
-
-    override val scalars: Field<K>
 
     override val zero: Vector<K>
         get() = VectorImpl.zero(vectorLength, scalars)
@@ -104,15 +107,14 @@ interface VectorSpace<K> : FiniteDimLinearSpace<K, Vector<K>> {
          * It is the caller's responsibility to ensure that the basis is linearly independent.
          *
          */
-        fun <K> fromBasis(basis: List<Vector<K>>): VectorSpace<K> {
+        fun <K> fromBasis(model: Field<K>, basis: List<Vector<K>>): VectorSpace<K> {
             val v1 = basis.first()
-            val scalars = v1.model as Field<K>
             val vectorLength = v1.size
-            return DVectorSpace(scalars, vectorLength, basis)
+            return DVectorSpace(model, vectorLength, basis)
         }
 
-        fun <K> fromBasis(basis: List<Vector<K>>, vectorLength: Int, model : Field<K>): VectorSpace<K> {
-            if(basis.isEmpty()) return zero(vectorLength, model)
+        fun <K> fromBasis(vectorLength: Int, model: Field<K>, basis: List<Vector<K>>): VectorSpace<K> {
+            if (basis.isEmpty()) return zero(vectorLength, model)
             return DVectorSpace(model, vectorLength, basis)
         }
 
@@ -120,9 +122,8 @@ interface VectorSpace<K> : FiniteDimLinearSpace<K, Vector<K>> {
          * Creates a vector space spanned by the given non-empty list of vectors.
          *
          */
-        fun <K> span(basis: List<Vector<K>>): VectorSpace<K> {
+        fun <K> span(model: Field<K>, basis: List<Vector<K>>): VectorSpace<K> {
             val v = basis.first()
-            val model = v.model as Field<K>
             val vectorLength = v.size
             return MatrixImpl.spanOf(basis, vectorLength, model)
         }
@@ -135,13 +136,13 @@ interface VectorSpace<K> : FiniteDimLinearSpace<K, Vector<K>> {
  *
  * The [dim] and [vectorLength] are equal to `d`.
  */
-open class StandardVectorSpace<K>(override val dim: Int, override val scalars: Field<K>) :
+open class StandardVectorSpace<K>(override val dim: Int, override val model: Field<K>) :
     VectorSpace<K>, InnerProductSpace<K, Vector<K>> {
     override val vectorLength: Int
         get() = dim
 
     override val zero: Vector<K>
-        get() = VectorImpl.zero(vectorLength, scalars)
+        get() = VectorImpl.zero(vectorLength, model)
 
     /**
      * Creates a new vector with the given [data].
@@ -151,15 +152,15 @@ open class StandardVectorSpace<K>(override val dim: Int, override val scalars: F
     }
 
     override fun produce(coefficients: List<K>): Vector<K> {
-        require(
-            coefficients.size == vectorLength
-        ) { "The number of coefficients must be equal to the dimension of the space." }
-        return Vector.of(coefficients, scalars)
+        require(coefficients.size == vectorLength) {
+            "The number of coefficients must be equal to the dimension of the space."
+        }
+        return Vector.of(coefficients)
     }
 
 
     override fun contains(x: Vector<K>): Boolean {
-        return x.model == scalars && x.size == vectorLength && x.elementSequence().all { scalars.contains(it) }
+        return x.size == vectorLength && x.elementSequence().all { scalars.contains(it) }
     }
 
     override fun isEqual(x: Vector<K>, y: Vector<K>): Boolean {
@@ -183,10 +184,6 @@ open class StandardVectorSpace<K>(override val dim: Int, override val scalars: F
         return VectorImpl.subtract(x, y, scalars)
     }
 
-    override fun sum(elements: List<Vector<K>>): Vector<K> {
-        return VectorImpl.sum(elements, vectorLength, scalars)
-    }
-
     override fun inner(u: Vector<K>, v: Vector<K>): K {
         return VectorImpl.inner(u, v, scalars)
     }
@@ -205,7 +202,7 @@ open class StandardVectorSpace<K>(override val dim: Int, override val scalars: F
 /**
  * Describes the zero vector space over the field [K] embedded in the vector space of [vectorLength].
  */
-class ZeroVectorSpace<K>(override val vectorLength: Int, override val scalars: Field<K>) :
+class ZeroVectorSpace<K>(override val vectorLength: Int, override val model: Field<K>) :
     VectorSpace<K> {
     override fun contains(x: Vector<K>): Boolean {
         return false
@@ -216,7 +213,7 @@ class ZeroVectorSpace<K>(override val vectorLength: Int, override val scalars: F
 }
 
 class DVectorSpace<K> internal constructor(
-    override val scalars: Field<K>, override val vectorLength: Int, override val basis: List<Vector<K>>
+    override val model: Field<K>, override val vectorLength: Int, override val basis: List<Vector<K>>
 ) : VectorSpace<K>
 
 

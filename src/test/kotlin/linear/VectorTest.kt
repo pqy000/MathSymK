@@ -3,6 +3,7 @@ package linear
 import TestUtils.assertEquals
 import io.github.ezrnest.linear.T
 import io.github.ezrnest.linear.Vector
+import io.github.ezrnest.linear.Vector.Companion.vec
 import io.github.ezrnest.linear.times
 import io.github.ezrnest.model.NumberModels
 import kotlin.test.Test
@@ -12,70 +13,82 @@ import kotlin.test.assertTrue
 class VectorTest {
     val ints = NumberModels.integers()
     val reals = NumberModels.doubles(1E-7)
-    val vectors3 = Vector.space(reals, 3)
+    val R3 = Vector.over(reals, 3)
+    val Z3 = Vector.over(ints, 3)
 
     @Test
     fun applyAll_appliesFunctionToAllElements() {
-        val vector = Vector.of(listOf(1, 2, 3), ints)
-        val result = vector.applyAll { it * 2 }
+        val vector = Vector.of(listOf(1, 2, 3))
+        val result = vector.map { it * 2 }
         assertEquals(listOf(2, 4, 6), result.toList())
     }
 
     @Test
     fun valueEquals_returnsTrueForEqualVectors() {
-        val vector1 = Vector.of(listOf(1, 2, 3), ints)
-        val vector2 = Vector.of(listOf(1, 2, 3), ints)
-        assertTrue(vector1.valueEquals(vector2))
+        val vector1 = Vector.of(listOf(1, 2, 3))
+        val vector2 = Vector.of(listOf(1, 2, 3))
+        with(Z3) {
+            assertEquals(vector1, vector2)
+        }
+
     }
 
     @Test
     fun plus_addsTwoVectors() {
-        val vector1 = Vector.of(listOf(1, 2, 3), ints)
-        val vector2 = Vector.of(listOf(4, 5, 6), ints)
-        val result = vector1.plus(vector2)
-        assertEquals(listOf(5, 7, 9), result.toList())
+        with(Z3) {
+            val v1 = Vector(1, 2, 3)
+            val v2 = Vector(4, 5, 6)
+            val result = v1 + v2
+            assertEquals(Vector(5, 7, 9), result)
+        }
     }
 
     @Test
     fun times_multipliesVectorByScalar() {
-        val vector = Vector.of(listOf(1, 2, 3), ints)
-        val result = vector.times(2)
-        assertEquals(listOf(2, 4, 6), result.toList())
+        with(Z3) {
+            val vector = Vector(1, 2, 3)
+            val result = vector * 2
+            assertEquals(Vector(2, 4, 6), result)
+        }
     }
 
     @Test
     fun inner_calculatesInnerProduct() {
-        val vector1 = Vector.of(listOf(1, 2, 3), ints)
-        val vector2 = Vector.of(listOf(4, 5, 6), ints)
-        val result = vector1 inner vector2
-        assertEquals(32, result)
+        with(Z3) {
+            val vector1 = Vector(1, 2, 3)
+            val vector2 = Vector(4, 5, 6)
+            val result = vector1 dot vector2
+            assertEquals(32, result)
+        }
     }
 
     @Test
     fun norm_calculatesNorm() {
-        val vector = Vector.of(listOf(3, 4), ints)
-        val result = vector.normSq()
-        assertEquals(25, result)
+        with(Z3) {
+            val vector = Vector(3, 4)
+            val result = vector.normSq()
+            assertEquals(25, result)
+        }
     }
 
     @Test
     fun unitize_returnsUnitVector() {
-        with(vectors3) {
+        with(R3) {
             val v = vec(3.0, 4.0, 5.0)
             val result = v.unitize()
             assertEquals(vec(0.4242640687119285, 0.565685424949238, 0.7071067811865475), result)
         }
 
-        with(vectors3) {
-            val vector = vec(3.0, 4.0,.0)
+        with(R3) {
+            val vector = vec(3.0, 4.0, 0.0)
             val result = vector.unitize()
-            assertEquals(vec(0.6, 0.8,0.0), result)
+            assertEquals(vec(0.6, 0.8, 0.0), result)
         }
     }
 
     @Test
     fun div_dividesVectorByScalar() {
-        with(vectors3) {
+        with(R3) {
             val v = vec(1.0, 2.0, 3.0)
             val result = v / 2.0
             assertEquals(vec(0.5, 1.0, 1.5), result)
@@ -84,15 +97,17 @@ class VectorTest {
 
     @Test
     fun odot_calculatesHadamardProduct() {
-        val vector1 = Vector.of(listOf(1, 2, 3), ints)
-        val vector2 = Vector.of(listOf(4, 5, 6), ints)
-        val result = vector1 odot vector2
-        assertEquals(listOf(4, 10, 18), result.toList())
+        with(Z3) {
+            val vector1 = Vector(1, 2, 3)
+            val vector2 = Vector(4, 5, 6)
+            val result = vector1 odot vector2
+            assertEquals(Vector(4, 10, 18), result)
+        }
     }
 
     @Test
     fun testVectorSpace() {
-        with(vectors3) {
+        with(R3) {
             val v1 = vec(1.0, 2.0, 3.0)
             val v2 = vec(4.0, 5.0, 6.0)
             assertEquals(vec(5.0, 7.0, 9.0), v1 + v2)
@@ -100,20 +115,10 @@ class VectorTest {
     }
 
     @Test
-    fun testRowVector(){
-        with(vectors3) {
+    fun testRowVector() {
+        with(R3) {
             val v = vec(1.0, 2.0, 3.0)
-            assertEquals(inner(v,v), v.T * v)
+            assertEquals(inner(v, v), v.T * v)
         }
-//        with(Vector.space(NumberModels.longAsIntegers() as Field<Long>, 3)){
-//            val v1 = vec(1, 2, 3)
-//            val v2 = vec(4, 5, 6)
-//            scalarMul(2, v1)
-//            assertEquals(vec(5, 7, 9), v1 + v2)
-//        }
-//        val v = Vector.of(NumberModels.longAsIntegers(), 1, 2, 3)
-//        run{
-//
-//        }
     }
 }
