@@ -1,7 +1,5 @@
 package io.github.ezrnest.geometry.plane
 
-import io.github.ezrnest.structure.*
-import io.github.ezrnest.structure.eval
 
 data class Point2d<T>(val x: T, val y: T) {
 

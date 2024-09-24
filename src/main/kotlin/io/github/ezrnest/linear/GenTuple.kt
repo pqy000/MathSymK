@@ -171,12 +171,14 @@ interface GenMatrix<T> : GenTuple<T> {
     }
 
 
-    /**
-     * Determines whether this matrix is the same shape as [y].
-     */
-    fun shapeMatches(y: GenMatrix<*>): Boolean {
-        return row == y.row && column == y.column
-    }
+
+}
+
+/**
+ * Determines whether this matrix is the same shape as [y].
+ */
+fun GenMatrix<*>.shapeMatches(y: GenMatrix<*>): Boolean {
+    return row == y.row && column == y.column
 }
 
 /**

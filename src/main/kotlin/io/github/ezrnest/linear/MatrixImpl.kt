@@ -1,5 +1,16 @@
 package io.github.ezrnest.linear
 
+import io.github.ezrnest.linear.AMatrix.Companion.addColTo
+import io.github.ezrnest.linear.AMatrix.Companion.addRowTo
+import io.github.ezrnest.linear.AMatrix.Companion.divAssign
+import io.github.ezrnest.linear.AMatrix.Companion.divRow
+import io.github.ezrnest.linear.AMatrix.Companion.mulAddCol
+import io.github.ezrnest.linear.AMatrix.Companion.mulAddRow
+import io.github.ezrnest.linear.AMatrix.Companion.mulCol
+import io.github.ezrnest.linear.AMatrix.Companion.mulRow
+import io.github.ezrnest.linear.AMatrix.Companion.negateRow
+import io.github.ezrnest.linear.AMatrix.Companion.transformCols
+import io.github.ezrnest.linear.AMatrix.Companion.transformRows
 import io.github.ezrnest.linear.MatrixExt.cofactor
 import io.github.ezrnest.model.Polynomial
 import io.github.ezrnest.structure.*
@@ -12,7 +23,6 @@ import kotlin.math.min
 @JvmRecord
 data class AMatrix<T> internal constructor(
     override val row: Int, override val column: Int,
-    override val model: EqualPredicate<T>,
     val data: Array<Any?>,
 ) : MutableMatrix<T> {
 
@@ -63,7 +73,7 @@ data class AMatrix<T> internal constructor(
 
 
     override fun copy(): AMatrix<T> {
-        return AMatrix(row, column, model, data.clone())
+        return AMatrix(row, column, data.clone())
     }
 
     override fun set(i: Int, j: Int, value: T) {
@@ -86,26 +96,6 @@ data class AMatrix<T> internal constructor(
             @Suppress("UNCHECKED_CAST")
             data[i] = f(data[i] as T)
         }
-    }
-
-
-    override fun negateInPlace() {
-        val mc = model as AddGroup
-        inPlaceApply1 { mc.negate(it) }
-    }
-
-    override fun plusAssign(y: Matrix<T>) {
-        return MatrixImpl.addInPlace(this, y, model as AddSemigroup<T>)
-    }
-
-    override fun timesAssign(k: T) {
-        val model = model as MulSemigroup
-        inPlaceApply1 { model.multiply(k, it) }
-    }
-
-    override fun divAssign(k: T) {
-        val model = model as UnitRing
-        inPlaceApply1 { model.exactDivide(it, k) }
     }
 
 
@@ -132,139 +122,158 @@ data class AMatrix<T> internal constructor(
         }
     }
 
-    override fun mulRow(r: Int, k: T, colStart: Int, colEnd: Int) {
-        require(r in 0 until row)
-        val d = toPos(r, 0)
-        val mc = model as MulSemigroup
-        for (l in colStart until colEnd) {
-            @Suppress("UNCHECKED_CAST")
-            data[d + l] = mc.multiply(k, data[d + l] as T)
-        }
-    }
-
-    override fun divRow(r: Int, k: T, colStart: Int, colEnd: Int) {
-        require(r in 0 until row)
-        val d = toPos(r, 0)
-        val mc = model as UnitRing
-        for (l in colStart until colEnd) {
-            @Suppress("UNCHECKED_CAST")
-            data[d + l] = mc.exactDivide(data[d + l] as T, k)
-        }
-    }
-
-    override fun mulCol(c: Int, k: T, rowStart: Int, rowEnd: Int) {
-        require(c in 0 until column)
-        val mc = model as MulSemigroup
-        for (r in rowStart until rowEnd) {
-            val pos = toPos(r, c)
-            @Suppress("UNCHECKED_CAST")
-            data[pos] = mc.multiply(k, data[pos] as T)
-        }
-    }
-
-    override fun divCol(c: Int, k: T, rowStart: Int, rowEnd: Int) {
-        require(c in 0 until column)
-        val mc = model as UnitRing
-        for (r in rowStart until rowEnd) {
-            val pos = toPos(r, c)
-            @Suppress("UNCHECKED_CAST")
-            data[pos] = mc.exactDivide(k, data[pos] as T)
-        }
-    }
-
-    override fun negateRow(r: Int, colStart: Int, colEnd: Int) {
-        require(r in 0 until row)
-        val mc = model as AddGroup
-        val d = toPos(r, 0)
-        for (l in colStart until colEnd) {
-            @Suppress("UNCHECKED_CAST")
-            data[d + l] = mc.negate(data[d + l] as T)
-        }
-    }
-
-
-    override fun negateCol(c: Int, rowStart: Int, rowEnd: Int) {
-        require(c in 0 until column)
-        val mc = model as AddGroup
-        for (r in rowStart until rowEnd) {
-            val pos = toPos(r, c)
-            @Suppress("UNCHECKED_CAST")
-            data[pos] = mc.negate(data[pos] as T)
-        }
-    }
-
-    @Suppress("UNCHECKED_CAST")
-    override fun addRowTo(r1: Int, r2: Int, colStart: Int, colEnd: Int) {
-        require(r1 in 0 until row && r2 in 0 until row)
-        val s1 = toPos(r1, 0)
-        val s2 = toPos(r2, 0)
-        val mc = model as AddSemigroup
-        for (l in colStart until colEnd) {
-            data[s2 + l] = mc.add(data[s2 + l] as T, data[s1 + l] as T)
-        }
-    }
-
-    @Suppress("UNCHECKED_CAST")
-    override fun addColTo(c1: Int, c2: Int, rowStart: Int, rowEnd: Int) {
-        require(c1 in 0..<column && c2 in 0..<column)
-        val mc = model as AddSemigroup
-        for (r in rowStart..<rowEnd) {
-            val l = toPos(r, 0)
-            data[l + c2] = mc.add(data[l + c2] as T, data[l + c1] as T)
-        }
-    }
-
-    @Suppress("UNCHECKED_CAST")
-    override fun mulAddRow(r1: Int, r2: Int, k: T, colStart: Int, colEnd: Int) {
-        require(r1 in 0..<row && r2 in 0..<row)
-        val s1 = toPos(r1, 0)
-        val s2 = toPos(r2, 0)
-        val mc = model as Ring
-        for (l in colStart until colEnd) {
-            data[s2 + l] = mc.eval { (data[s2 + l] as T) + k * (data[s1 + l] as T) }
-        }
-    }
-
-    @Suppress("UNCHECKED_CAST")
-    override fun mulAddCol(c1: Int, c2: Int, k: T, rowStart: Int, rowEnd: Int) {
-        require(c1 in 0..<column && c2 in 0..<column)
-        val mc = model as Ring
-        for (r in rowStart..<rowEnd) {
-            val l = toPos(r, 0)
-            data[l + c2] = mc.eval { (data[l + c2] as T) + k * (data[l + c1] as T) }
-        }
-    }
-
-    @Suppress("UNCHECKED_CAST")
-    override fun transformRows(r1: Int, r2: Int, a11: T, a12: T, a21: T, a22: T, colStart: Int, colEnd: Int) {
-        require(r1 in 0..<row && r2 in 0..<row)
-        require(colStart in 0..colEnd && colEnd <= column)
-        val s1 = toPos(r1, 0)
-        val s2 = toPos(r2, 0)
-        with(model as Ring) {
-            for (l in colStart..<colEnd) {
-                val x = data[s1 + l] as T
-                val y = data[s2 + l] as T
-                data[s1 + l] = a11 * x + a12 * y
-                data[s2 + l] = a21 * x + a22 * y
-            }
-        }
-    }
-
-    @Suppress("UNCHECKED_CAST")
-    override fun transformCols(c1: Int, c2: Int, a11: T, a12: T, a21: T, a22: T, rowStart: Int, rowEnd: Int) {
-        with(model as Ring) {
-            for (r in rowStart until rowEnd) {
-                val pos0 = toPos(r, 0)
-                val pos1 = pos0 + c1
-                val pos2 = pos0 + c2
-                val x = data[pos1] as T
-                val y = data[pos2] as T
-                data[pos1] = a11 * x + a12 * y
-                data[pos2] = a21 * x + a22 * y
-            }
-        }
-    }
+//    override fun negateInPlace() {
+//        val mc = model as AddGroup
+//        inPlaceApply1 { mc.negate(it) }
+//    }
+//
+//    override fun plusAssign(y: Matrix<T>) {
+//        return MatrixImpl.addInPlace(this, y, model as AddSemigroup<T>)
+//    }
+//
+//    override fun timesAssign(k: T) {
+//        val model = model as MulSemigroup
+//        inPlaceApply1 { model.multiply(k, it) }
+//    }
+//
+//    override fun divAssign(k: T) {
+//        val model = model as UnitRing
+//        inPlaceApply1 { model.exactDivide(it, k) }
+//    }
+//
+//    override fun mulRow(r: Int, k: T, colStart: Int, colEnd: Int) {
+//        require(r in 0 until row)
+//        val d = toPos(r, 0)
+//        val mc = model as MulSemigroup
+//        for (l in colStart until colEnd) {
+//            @Suppress("UNCHECKED_CAST")
+//            data[d + l] = mc.multiply(k, data[d + l] as T)
+//        }
+//    }
+//
+//    override fun divRow(r: Int, k: T, colStart: Int, colEnd: Int) {
+//        require(r in 0 until row)
+//        val d = toPos(r, 0)
+//        val mc = model as UnitRing
+//        for (l in colStart until colEnd) {
+//            @Suppress("UNCHECKED_CAST")
+//            data[d + l] = mc.exactDivide(data[d + l] as T, k)
+//        }
+//    }
+//
+//    override fun mulCol(c: Int, k: T, rowStart: Int = 0, rowEnd: Int) {
+//        require(c in 0 until column)
+//        val mc = model as MulSemigroup
+//        for (r in rowStart until rowEnd) {
+//            val pos = toPos(r, c)
+//            @Suppress("UNCHECKED_CAST")
+//            data[pos] = mc.multiply(k, data[pos] as T)
+//        }
+//    }
+//
+//    override fun divCol(c: Int, k: T, rowStart: Int = 0, rowEnd: Int) {
+//        require(c in 0 until column)
+//        val mc = model as UnitRing
+//        for (r in rowStart until rowEnd) {
+//            val pos = toPos(r, c)
+//            @Suppress("UNCHECKED_CAST")
+//            data[pos] = mc.exactDivide(k, data[pos] as T)
+//        }
+//    }
+//
+//    override fun negateRow(r: Int, colStart: Int, colEnd: Int) {
+//        require(r in 0 until row)
+//        val mc = model as AddGroup
+//        val d = toPos(r, 0)
+//        for (l in colStart until colEnd) {
+//            @Suppress("UNCHECKED_CAST")
+//            data[d + l] = mc.negate(data[d + l] as T)
+//        }
+//    }
+//
+//
+//    override fun negateCol(c: Int, rowStart: Int = 0, rowEnd: Int) {
+//        require(c in 0 until column)
+//        val mc = model as AddGroup
+//        for (r in rowStart until rowEnd) {
+//            val pos = toPos(r, c)
+//            @Suppress("UNCHECKED_CAST")
+//            data[pos] = mc.negate(data[pos] as T)
+//        }
+//    }
+//
+//    @Suppress("UNCHECKED_CAST")
+//    override fun addRowTo(r1: Int, r2: Int, colStart: Int, colEnd: Int) {
+//        require(r1 in 0 until row && r2 in 0 until row)
+//        val s1 = toPos(r1, 0)
+//        val s2 = toPos(r2, 0)
+//        val mc = model as AddSemigroup
+//        for (l in colStart until colEnd) {
+//            data[s2 + l] = mc.add(data[s2 + l] as T, data[s1 + l] as T)
+//        }
+//    }
+//
+//    @Suppress("UNCHECKED_CAST")
+//    override fun addColTo(c1: Int, c2: Int, rowStart: Int = 0, rowEnd: Int) {
+//        require(c1 in 0..<column && c2 in 0..<column)
+//        val mc = model as AddSemigroup
+//        for (r in rowStart..<rowEnd) {
+//            val l = toPos(r, 0)
+//            data[l + c2] = mc.add(data[l + c2] as T, data[l + c1] as T)
+//        }
+//    }
+//
+//    @Suppress("UNCHECKED_CAST")
+//    override fun mulAddRow(r1: Int, r2: Int, k: T, colStart: Int, colEnd: Int) {
+//        require(r1 in 0..<row && r2 in 0..<row)
+//        val s1 = toPos(r1, 0)
+//        val s2 = toPos(r2, 0)
+//        val mc = model as Ring
+//        for (l in colStart until colEnd) {
+//            data[s2 + l] = mc.eval { (data[s2 + l] as T) + k * (data[s1 + l] as T) }
+//        }
+//    }
+//
+//    @Suppress("UNCHECKED_CAST")
+//    override fun mulAddCol(c1: Int, c2: Int, k: T, rowStart: Int = 0, rowEnd: Int) {
+//        require(c1 in 0..<column && c2 in 0..<column)
+//        val mc = model as Ring
+//        for (r in rowStart..<rowEnd) {
+//            val l = toPos(r, 0)
+//            data[l + c2] = mc.eval { (data[l + c2] as T) + k * (data[l + c1] as T) }
+//        }
+//    }
+//
+//    @Suppress("UNCHECKED_CAST")
+//    override fun transformRows(r1: Int, r2: Int, a11: T, a12: T, a21: T, a22: T, colStart: Int, colEnd: Int) {
+//        require(r1 in 0..<row && r2 in 0..<row)
+//        require(colStart in 0..colEnd && colEnd <= column)
+//        val s1 = toPos(r1, 0)
+//        val s2 = toPos(r2, 0)
+//        with(model as Ring) {
+//            for (l in colStart..<colEnd) {
+//                val x = data[s1 + l] as T
+//                val y = data[s2 + l] as T
+//                data[s1 + l] = a11 * x + a12 * y
+//                data[s2 + l] = a21 * x + a22 * y
+//            }
+//        }
+//    }
+//
+//    @Suppress("UNCHECKED_CAST")
+//    override fun transformCols(c1: Int, c2: Int, a11: T, a12: T, a21: T, a22: T, rowStart: Int = 0, rowEnd: Int) {
+//        with(model as Ring) {
+//            for (r in rowStart until rowEnd) {
+//                val pos0 = toPos(r, 0)
+//                val pos1 = pos0 + c1
+//                val pos2 = pos0 + c2
+//                val x = data[pos1] as T
+//                val y = data[pos2] as T
+//                data[pos1] = a11 * x + a12 * y
+//                data[pos2] = a21 * x + a22 * y
+//            }
+//        }
+//    }
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -302,14 +311,14 @@ data class AMatrix<T> internal constructor(
             return x.data.all { model.isZero(it as T) }
         }
 
-        internal inline fun <T> ofFlatten(row: Int, col: Int, model: EqualPredicate<T>, init: (Int) -> T): AMatrix<T> {
+        internal inline fun <T> ofFlatten(row: Int, col: Int, init: (Int) -> T): AMatrix<T> {
             val data = Array<Any?>(row * col) { init(it) }
-            return AMatrix(row, col, model, data)
+            return AMatrix(row, col, data)
         }
 
 
         internal inline operator fun <T> invoke(
-            row: Int, column: Int, model: EqualPredicate<T>, init: (Int, Int) -> T,
+            row: Int, column: Int, init: (Int, Int) -> T,
         ): AMatrix<T> {
             val data = Array<Any?>(row * column) { }
             for (i in 0..<row) {
@@ -318,24 +327,24 @@ data class AMatrix<T> internal constructor(
                     data[pos + j] = init(i, j)
                 }
             }
-            return AMatrix(row, column, model, data)
+            return AMatrix(row, column, data)
         }
 
-        internal inline fun <T, N> apply2(
-            x: AMatrix<T>, y: AMatrix<T>, model: EqualPredicate<N>, f: (T, T) -> N,
+        internal inline fun <T1, T2, N> apply2(
+            x: AMatrix<T1>, y: AMatrix<T2>, f: (T1, T2) -> N,
         ): AMatrix<N> {
-//            require(x.shapeMatches(y))
+            require(x.shapeMatches(y))
             val d1 = x.data
             val d2 = y.data
-            return ofFlatten(x.row, x.column, model) { k ->
+            return ofFlatten(x.row, x.column) { k ->
                 @Suppress("UNCHECKED_CAST")
-                f(d1[k] as T, d2[k] as T)
+                f(d1[k] as T1, d2[k] as T2)
             }
         }
 
-        internal inline fun <T, N> apply1(x: AMatrix<T>, model: EqualPredicate<N>, f: (T) -> N): AMatrix<N> {
+        internal inline fun <T, N> apply1(x: AMatrix<T>, f: (T) -> N): AMatrix<N> {
             val data = x.data
-            return ofFlatten(x.row, x.column, model) { k ->
+            return ofFlatten(x.row, x.column) { k ->
                 @Suppress("UNCHECKED_CAST")
                 f(data[k] as T)
             }
@@ -350,28 +359,188 @@ data class AMatrix<T> internal constructor(
             }
         }
 
-        fun <T> copyOf(x: GenMatrix<T>, mc: EqualPredicate<T>): AMatrix<T> {
+        fun <T> copyOf(x: GenMatrix<T>): AMatrix<T> {
             if (x is AMatrix) {
                 return x.copy()
             }
-            return AMatrix(x.row, x.column, mc) { i, j -> x[i, j] }
+            return AMatrix(x.row, x.column) { i, j -> x[i, j] }
         }
 
-        fun <T> of(row: Int, column: Int, model: EqualPredicate<T>, init: (Int, Int) -> T): AMatrix<T> {
-            return AMatrix(row, column, model, init)
+        fun <T> of(row: Int, column: Int, init: (Int, Int) -> T): AMatrix<T> {
+            return AMatrix(row, column, init)
         }
 
-        fun <T> of(row: Int, col: Int, model: EqualPredicate<T>, vararg data: T): AMatrix<T> {
+        fun <T> of(row: Int, col: Int, vararg data: T): AMatrix<T> {
             require(row * col == data.size)
             val dataCopy = Array<Any?>(data.size) { data[it] }
-            return AMatrix(row, col, model, dataCopy)
+            return AMatrix(row, col, dataCopy)
+        }
+
+        internal fun <T> AMatrix<T>.negateInPlace(model: AddGroup<T>) {
+            inPlaceApply1 { model.negate(it) }
+        }
+
+        internal fun <T> AMatrix<T>.plusAssign(y: Matrix<T>, model: AddSemigroup<T>) {
+            return MatrixImpl.addInPlace(this, y, model)
+        }
+
+        internal fun <T> AMatrix<T>.timesAssign(k: T, model: MulSemigroup<T>) {
+            inPlaceApply1 { model.multiply(k, it) }
+        }
+
+        internal fun <T> AMatrix<T>.divAssign(k: T, model: UnitRing<T>) {
+            inPlaceApply1 { model.exactDivide(it, k) }
+        }
+
+        internal fun <T> AMatrix<T>.mulRow(
+            r: Int, k: T, colStart: Int = 0, colEnd: Int = this.column, model: MulSemigroup<T>
+        ) {
+            require(r in 0 until row)
+            val d = toPos(r, 0)
+            for (l in colStart until colEnd) {
+                @Suppress("UNCHECKED_CAST")
+                data[d + l] = model.multiply(k, data[d + l] as T)
+            }
+        }
+
+        internal fun <T> AMatrix<T>.divRow(
+            r: Int, k: T, colStart: Int = 0, colEnd: Int = this.column, model: UnitRing<T>
+        ) {
+            require(r in 0 until row)
+            val d = toPos(r, 0)
+            for (l in colStart until colEnd) {
+                @Suppress("UNCHECKED_CAST")
+                data[d + l] = model.exactDivide(data[d + l] as T, k)
+            }
+        }
+
+        internal fun <T> AMatrix<T>.mulCol(
+            c: Int, k: T, rowStart: Int = 0, rowEnd: Int = this.row, model: MulSemigroup<T>
+        ) {
+            require(c in 0 until column)
+            for (r in rowStart until rowEnd) {
+                val pos = toPos(r, c)
+                @Suppress("UNCHECKED_CAST")
+                data[pos] = model.multiply(k, data[pos] as T)
+            }
+        }
+
+        internal fun <T> AMatrix<T>.divCol(
+            c: Int, k: T, rowStart: Int = 0, rowEnd: Int = this.row, model: UnitRing<T>
+        ) {
+            require(c in 0 until column)
+            for (r in rowStart until rowEnd) {
+                val pos = toPos(r, c)
+                @Suppress("UNCHECKED_CAST")
+                data[pos] = model.exactDivide(k, data[pos] as T)
+            }
+        }
+
+        internal fun <T> AMatrix<T>.negateRow(
+            r: Int, colStart: Int = 0, colEnd: Int = this.column, model: AddGroup<T>
+        ) {
+            require(r in 0 until row)
+            val d = toPos(r, 0)
+            for (l in colStart until colEnd) {
+                @Suppress("UNCHECKED_CAST")
+                data[d + l] = model.negate(data[d + l] as T)
+            }
+        }
+
+        internal fun <T> AMatrix<T>.negateCol(c: Int, rowStart: Int = 0, rowEnd: Int = this.row, model: AddGroup<T>) {
+            require(c in 0 until column)
+            for (r in rowStart until rowEnd) {
+                val pos = toPos(r, c)
+                @Suppress("UNCHECKED_CAST")
+                data[pos] = model.negate(data[pos] as T)
+            }
+        }
+
+        @Suppress("UNCHECKED_CAST")
+        internal fun <T> AMatrix<T>.addRowTo(
+            r1: Int, r2: Int, colStart: Int = 0, colEnd: Int = this.column, model: AddSemigroup<T>
+        ) {
+            require(r1 in 0 until row && r2 in 0 until row)
+            val s1 = toPos(r1, 0)
+            val s2 = toPos(r2, 0)
+            for (l in colStart until colEnd) {
+                data[s2 + l] = model.add(data[s2 + l] as T, data[s1 + l] as T)
+            }
+        }
+
+        @Suppress("UNCHECKED_CAST")
+        internal fun <T> AMatrix<T>.addColTo(
+            c1: Int, c2: Int, rowStart: Int = 0, rowEnd: Int = this.row, model: AddSemigroup<T>
+        ) {
+            require(c1 in 0..<column && c2 in 0..<column)
+            for (r in rowStart..<rowEnd) {
+                val l = toPos(r, 0)
+                data[l + c2] = model.add(data[l + c2] as T, data[l + c1] as T)
+            }
+        }
+
+        @Suppress("UNCHECKED_CAST")
+        internal fun <T> AMatrix<T>.mulAddRow(
+            r1: Int, r2: Int, k: T, colStart: Int = 0, colEnd: Int = this.column, model: Ring<T>
+        ) {
+            require(r1 in 0..<row && r2 in 0..<row)
+            val s1 = toPos(r1, 0)
+            val s2 = toPos(r2, 0)
+            for (l in colStart until colEnd) {
+                data[s2 + l] = model.eval { (data[s2 + l] as T) + k * (data[s1 + l] as T) }
+            }
+        }
+
+        @Suppress("UNCHECKED_CAST")
+        internal fun <T> AMatrix<T>.mulAddCol(
+            c1: Int, c2: Int, k: T, rowStart: Int = 0, rowEnd: Int = this.row, model: Ring<T>
+        ) {
+            require(c1 in 0..<column && c2 in 0..<column)
+            for (r in rowStart..<rowEnd) {
+                val l = toPos(r, 0)
+                data[l + c2] = model.eval { (data[l + c2] as T) + k * (data[l + c1] as T) }
+            }
+        }
+
+        @Suppress("UNCHECKED_CAST")
+        internal fun <T> AMatrix<T>.transformRows(
+            r1: Int, r2: Int, a11: T, a12: T, a21: T, a22: T, colStart: Int = 0, colEnd: Int = this.column,
+            model: Ring<T>
+        ) {
+            require(r1 in 0..<row && r2 in 0..<row)
+            require(colStart in 0..colEnd && colEnd <= column)
+            val s1 = toPos(r1, 0)
+            val s2 = toPos(r2, 0)
+            with(model) {
+                for (l in colStart..<colEnd) {
+                    val x = data[s1 + l] as T
+                    val y = data[s2 + l] as T
+                    data[s1 + l] = a11 * x + a12 * y
+                    data[s2 + l] = a21 * x + a22 * y
+                }
+            }
+        }
+
+        @Suppress("UNCHECKED_CAST")
+        internal fun <T> AMatrix<T>.transformCols(
+            c1: Int, c2: Int, a11: T, a12: T, a21: T, a22: T, rowStart: Int = 0, rowEnd: Int = this.row, model: Ring<T>
+        ) {
+            with(model) {
+                for (r in rowStart until rowEnd) {
+                    val pos0 = toPos(r, 0)
+                    val pos1 = pos0 + c1
+                    val pos2 = pos0 + c2
+                    val x = data[pos1] as T
+                    val y = data[pos2] as T
+                    data[pos1] = a11 * x + a12 * y
+                    data[pos2] = a21 * x + a22 * y
+                }
+            }
         }
     }
 }
 
 open class TransposedMatrixView<T>(open val origin: Matrix<T>) : Matrix<T> {
-    override val model: EqualPredicate<T>
-        get() = origin.model
     override val row: Int
         get() = origin.column
     override val column: Int
@@ -404,9 +573,6 @@ open class TransposedMatrixView<T>(open val origin: Matrix<T>) : Matrix<T> {
         return origin.rowVectors()
     }
 
-    override val isZero: Boolean
-        get() = origin.isZero
-
     override fun det(): T {
         return origin.det()
     }
@@ -434,7 +600,7 @@ open class TransposedMatrixView<T>(open val origin: Matrix<T>) : Matrix<T> {
 
 open class SubMatrixView<T>(
     val origin: Matrix<T>,
-    rowStart: Int, rowEnd: Int, colStart: Int, colEnd: Int,
+    rowStart: Int = 0, rowEnd: Int, colStart: Int, colEnd: Int,
 ) : Matrix<T> {
     init {
         require(0 <= rowStart && rowEnd <= origin.row && rowStart <= rowEnd)
@@ -445,9 +611,6 @@ open class SubMatrixView<T>(
     final override val column = colEnd - colStart
     val dRow = rowStart
     val dCol = colStart
-
-    override val model: EqualPredicate<T>
-        get() = origin.model
 
     override fun get(i: Int, j: Int): T {
         require(i in 0 until row && j in 0 until column)
@@ -477,8 +640,6 @@ open class SlicedMatrixView<T>(
         get() = rowMap.size
     override val column: Int
         get() = colMap.size
-    override val model: EqualPredicate<T>
-        get() = origin.model
 
     override fun get(i: Int, j: Int): T {
         require(i in 0 until row && j in 0 until column)
@@ -530,31 +691,30 @@ object MatrixImpl {
         return x.elementSequence().all(scalars::isZero)
     }
 
-    internal inline fun <T, N> apply2(
-        x: GenMatrix<T>, y: GenMatrix<T>,
-        model: EqualPredicate<N>, f: (T, T) -> N,
+    internal inline fun <T1, T2, N> apply2(
+        x: GenMatrix<T1>, y: GenMatrix<T2>, f: (T1, T2) -> N,
     ): AMatrix<N> {
         require(x.shapeMatches(y))
         if (x is AMatrix && y is AMatrix) {
-            return AMatrix.apply2(x, y, model, f) // flattened version
+            return AMatrix.apply2(x, y, f) // flattened version
         }
-        return AMatrix(x.row, x.column, model) { i, j -> f(x[i, j], y[i, j]) }
+        return AMatrix(x.row, x.column) { i, j -> f(x[i, j], y[i, j]) }
     }
 
-    internal inline fun <T, N> apply1(x: GenMatrix<T>, model: EqualPredicate<N>, f: (T) -> N): AMatrix<N> {
+    internal inline fun <T, N> apply1(x: GenMatrix<T>, f: (T) -> N): AMatrix<N> {
         if (x is AMatrix) {
-            return AMatrix.apply1(x, model, f)// flattened version
+            return AMatrix.apply1(x, f)// flattened version
         }
-        return AMatrix(x.row, x.column, model) { i, j -> f(x[i, j]) }
+        return AMatrix(x.row, x.column) { i, j -> f(x[i, j]) }
     }
 
 
     fun <T> hadamard(x: GenMatrix<T>, y: GenMatrix<T>, model: MulSemigroup<T>): AMatrix<T> {
-        return apply2(x, y, model, model::multiply)
+        return apply2(x, y, model::multiply)
     }
 
     fun <T> add(x: GenMatrix<T>, y: GenMatrix<T>, model: AddSemigroup<T>): AMatrix<T> {
-        return apply2(x, y, model, model::add)
+        return apply2(x, y, model::add)
     }
 
     fun <T> addInPlace(x: MutableMatrix<T>, y: GenMatrix<T>, model: AddSemigroup<T>) {
@@ -570,18 +730,18 @@ object MatrixImpl {
     }
 
     fun <T> negate(x: GenMatrix<T>, model: AddGroup<T>): AMatrix<T> {
-        return apply1(x, model, model::negate)
+        return apply1(x, model::negate)
     }
 
     fun <T> subtract(x: GenMatrix<T>, y: GenMatrix<T>, model: AddGroup<T>): AMatrix<T> {
-        return apply2(x, y, model, model::subtract)
+        return apply2(x, y, model::subtract)
     }
 
     fun <T> sum(mats: List<GenMatrix<T>>, model: AddSemigroup<T>): AMatrix<T> {
         require(mats.isNotEmpty())
         val row = mats.first().row
         val column = mats.first().column
-        val result = AMatrix.copyOf(mats.first(), model)
+        val result = AMatrix.copyOf(mats.first())
         for (i in 1 until mats.size) {
             val m = mats[i]
             require(m.row == row && m.column == column)
@@ -594,7 +754,7 @@ object MatrixImpl {
         require(x.column == y.row) {
             "Shape mismatch in matmul: (${x.row}, ${x.column}) * (${y.row}, ${y.column})"
         }
-        return AMatrix(x.row, y.column, model) { i, j ->
+        return AMatrix(x.row, y.column) { i, j ->
             var sum = model.zero
             for (k in 0 until x.column) {
                 sum = model.eval { sum + x[i, k] * y[k, j] }
@@ -651,15 +811,15 @@ object MatrixImpl {
 
 
     fun <T> multiply(x: GenMatrix<T>, k: T, model: MulSemigroup<T>): AMatrix<T> {
-        return apply1(x, model) { model.multiply(k, it) }
+        return apply1(x) { model.multiply(k, it) }
     }
 
     fun <T> multiplyLong(x: GenMatrix<T>, k: Long, model: AddGroup<T>): AMatrix<T> {
-        return apply1(x, model) { model.multiplyLong(it, k) }
+        return apply1(x) { model.multiplyLong(it, k) }
     }
 
     fun <T> divide(x: GenMatrix<T>, k: T, model: MulGroup<T>): AMatrix<T> {
-        return apply1(x, model) { model.divide(it, k) }
+        return apply1(x) { model.divide(it, k) }
     }
 
 
@@ -669,7 +829,7 @@ object MatrixImpl {
 
     fun <T> zero(row: Int, column: Int, model: AddMonoid<T>): AMatrix<T> {
         val zero = model.zero
-        return AMatrix.ofFlatten(row, column, model) { zero }
+        return AMatrix.ofFlatten(row, column) { zero }
     }
 
     fun <T> identity(n: Int, model: UnitRing<T>): AMatrix<T> {
@@ -684,16 +844,16 @@ object MatrixImpl {
         return A
     }
 
-    fun <T> concatCol(a: GenMatrix<T>, b: GenMatrix<T>, model: EqualPredicate<T>): AMatrix<T> {
+    fun <T> concatCol(a: GenMatrix<T>, b: GenMatrix<T>): AMatrix<T> {
         require(a.row == b.row)
-        return AMatrix(a.row, a.column + b.column, model) { i, j ->
+        return AMatrix(a.row, a.column + b.column) { i, j ->
             if (j < a.column) a[i, j] else b[i, j - a.column]
         }
     }
 
-    fun <T> concatRow(a: GenMatrix<T>, b: GenMatrix<T>, model: EqualPredicate<T>): AMatrix<T> {
+    fun <T> concatRow(a: GenMatrix<T>, b: GenMatrix<T>): AMatrix<T> {
         require(a.column == b.column)
-        return AMatrix(a.row + b.row, a.column, model) { i, j ->
+        return AMatrix(a.row + b.row, a.column) { i, j ->
             if (i < a.row) a[i, j] else b[i - a.row, j]
         }
     }
@@ -774,12 +934,12 @@ object MatrixImpl {
      */
 
     fun <T> rank(A: GenMatrix<T>, model: Field<T>): Int {
-        val pivots = toEchelon(AMatrix.copyOf(A, model), model)
+        val pivots = toEchelon(AMatrix.copyOf(A), model)
         return pivots.size
     }
 
     fun <T> columnSpace(A: GenMatrix<T>, model: Field<T>): VectorSpace<T> {
-        val mutable = AMatrix.copyOf(A, model)
+        val mutable = AMatrix.copyOf(A)
         val pivots = toUpperTriangle(mutable, model)
         val indepVectors = pivots.map { mutable.colAt(it) }
         return VectorSpace.fromBasis(A.row, model, indepVectors)
@@ -788,7 +948,7 @@ object MatrixImpl {
 
     fun <T> spanOf(vectors: List<Vector<T>>, vecLength: Int, model: Field<T>): VectorSpace<T> {
         if (vectors.isEmpty()) return VectorSpace.zero(vecLength, model)
-        val mutable = AMatrix(vecLength, vectors.size, model) { i, j -> vectors[j][i] }
+        val mutable = AMatrix(vecLength, vectors.size) { i, j -> vectors[j][i] }
         val pivots = toUpperTriangle(mutable, model)
         val indepVectors = pivots.map { mutable.colAt(it) }
         return VectorSpace.fromBasis(model, indepVectors)
@@ -804,9 +964,10 @@ object MatrixImpl {
         val (p, adj) = charPolyAndAdj(M, model)
         val det = p.constantCoef
         if (!model.isUnit(det)) throw ArithmeticException("The determinant is not invertible")
-        adj /= det
+        adj.divAssign(det, model)
         return adj
     }
+
 
     private fun <T> buildAugmentedI(m: GenMatrix<T>, model: UnitRing<T>): AMatrix<T> {
         val n = m.row
@@ -826,7 +987,7 @@ object MatrixImpl {
         if (pivots.size != n) {
             throw ArithmeticException("The matrix is not invertible")
         }
-        return AMatrix.copyOf(aug.subMatrix(0, n, n, 2 * n), model)
+        return AMatrix.copyOf(aug.subMatrix(0, n, n, 2 * n))
     }
 
 //    /**
@@ -978,7 +1139,7 @@ object MatrixImpl {
         Finally, we should divide the final det by m[k,k] for all k < n-1.
         Since det is the product of diagonal elements, we can just leave those m[k,k] and return m[n-1,n-1].
          */
-        val mat = AMatrix.copyOf(matrix, model)
+        val mat = AMatrix.copyOf(matrix)
         val n: Int = mat.row
         var d = model.one // the denominator that we store
         var positive = true
@@ -1074,8 +1235,8 @@ object MatrixImpl {
     fun <T> adjugateDefinition(matrix: GenMatrix<T>, mc: Ring<T>): AMatrix<T> {
         require(matrix.isSquare)
         val n = matrix.row
-        val A = AMatrix.copyOf(matrix, mc)
-        val adj = AMatrix(n, n, mc) { i, j -> A.cofactor(i, j) }
+        val A = AMatrix.copyOf(matrix)
+        val adj = AMatrix(n, n) { i, j -> A.cofactor(i, j) }
         return adj
     }
 
@@ -1091,7 +1252,7 @@ object MatrixImpl {
         val polyRing = Polynomial.over(mc)
         val n = matrix.row
         // det(xI - A)
-        val matPoly = AMatrix(n, n, polyRing) { i, j ->
+        val matPoly = AMatrix(n, n) { i, j ->
             polyRing.constant(mc.negate(matrix[i, j]))
         }
         addDiagonal(matPoly, polyRing.x, polyRing)
@@ -1107,15 +1268,15 @@ object MatrixImpl {
     Decomposition
      */
     fun <T> decompRank(x: GenMatrix<T>, model: Field<T>): Pair<Matrix<T>, Matrix<T>> {
-        val m = AMatrix.copyOf(x, model)
+        val m = AMatrix.copyOf(x)
         val pivots = toEchelon(m, model)
-        val L = AMatrix(x.row, pivots.size, model) { i, j -> x[i, pivots[j]] }
+        val L = AMatrix(x.row, pivots.size) { i, j -> x[i, pivots[j]] }
         val R = m.subMatrix(0, 0, pivots.size, m.column)
         return L to R
     }
 
 
-    private fun <T> decompQR0(A: GenMatrix<T>, mc: Reals<T>): Pair<Matrix<T>, MutableMatrix<T>> {
+    private fun <T> decompQR0(A: GenMatrix<T>, mc: Reals<T>): Pair<AMatrix<T>, AMatrix<T>> {
         //Re-written by lyc at 2021-04-30 13:00
         A.requireSquare()
         val vs = colVectors(A, mc)
@@ -1124,7 +1285,7 @@ object MatrixImpl {
         val Q = zero(A.row, A.column, mc)
         val vectors = Vector.over(mc, A.row)
         with(vectors) {
-            for (i in 0 ..< A.row) {
+            for (i in 0..<A.row) {
                 val u = MutableVector.copyOf(vs[i])
                 for (j in 0 until i) {
                     val k = u dot ws[j]
@@ -1151,14 +1312,14 @@ object MatrixImpl {
      *
      * @return `(Q, R)` as a pair
      */
-    fun <T> decompQR(A: GenMatrix<T>, model: Reals<T>): Pair<Matrix<T>, Matrix<T>> {
+    fun <T> decompQR(A: GenMatrix<T>, model: Reals<T>): Pair<AMatrix<T>, AMatrix<T>> {
         return decompQR0(A, model)
     }
 
     /**
      *
      */
-    fun <T> decompKAN(A: GenMatrix<T>, model: Reals<T>): Triple<Matrix<T>, Vector<T>, Matrix<T>> {
+    fun <T> decompKAN(A: GenMatrix<T>, model: Reals<T>): Triple<AMatrix<T>, Vector<T>, AMatrix<T>> {
         //Created by lyc at 2021-05-11 20:25
         //TODO: re-implement this method for general cases
         val (Q, R) = decompQR0(A, model)
@@ -1166,7 +1327,7 @@ object MatrixImpl {
         val one = model.one
         for (i in 0 until R.row) {
             R[i, i] = one
-            R.divRow(i, d[i], i + 1)
+            R.divRow(i, d[i], i + 1, model = model)
         }
         return Triple(Q, d, R)
     }
@@ -1196,7 +1357,7 @@ object MatrixImpl {
             "The matrix must be square!"
         }
         val n = m.row
-        val upper = AMatrix.copyOf(m, mc)
+        val upper = AMatrix.copyOf(m)
         val lower = zero(n, n, mc)
         for (k in 0 until m.row) {
             lower[k, k] = mc.one
@@ -1206,7 +1367,7 @@ object MatrixImpl {
                 }
                 lower[i, k] = lambda
                 upper[i, k] = mc.zero
-                upper.mulAddRow(k, i, mc.negate(lambda), k + 1)
+                upper.mulAddRow(k, i, mc.negate(lambda), k + 1, model = mc)
             }
         }
         return lower to upper
@@ -1299,7 +1460,7 @@ object MatrixImpl {
      *
      * @return a list of strictly increasing pivots of the column. The size of it is equal to the rank of the matrix.
      */
-    fun <T> toUpperTriangle(M: MutableMatrix<T>, model: Field<T>, column: Int = M.column): List<Int> {
+    fun <T> toUpperTriangle(M: AMatrix<T>, model: Field<T>, column: Int = M.column): List<Int> {
         //Created by lyc at 2021-04-29
         val row = M.row
         var r = 0
@@ -1319,7 +1480,7 @@ object MatrixImpl {
                 if (model.isZero(M[i, c])) continue
                 val k = model.eval { -M[i, c] / f }
                 M[i, c] = zero
-                M.mulAddRow(r, i, k, c + 1)
+                M.mulAddRow(r, i, k, c + 1, model = model)
             }
             pivots += c
             r++
@@ -1331,14 +1492,14 @@ object MatrixImpl {
      *
      * @return a list of strictly increasing pivots of the column. The size of it is equal to the rank of the matrix.
      */
-    fun <T> toEchelon(M: MutableMatrix<T>, mc: Field<T>, column: Int = M.column): List<Int> {
+    fun <T> toEchelon(M: AMatrix<T>, mc: Field<T>, column: Int = M.column): List<Int> {
         //Created by lyc at 2021-04-29
         val pivots = toUpperTriangle(M, mc, column)
         val zero = mc.zero
         for (i in pivots.lastIndex downTo 0) {
             val j = pivots[i]
             if (!mc.isOne(M[i, j])) {
-                M.divRow(i, M[i, j], j + 1)
+                M.divRow(i, M[i, j], j + 1, model = mc)
                 M[i, j] = mc.one
             }
             for (k in (i - 1) downTo 0) {
@@ -1346,7 +1507,7 @@ object MatrixImpl {
                     continue
                 }
                 val q = mc.eval { -M[k, j] }
-                M.mulAddRow(i, k, q, j + 1)
+                M.mulAddRow(i, k, q, j + 1, model = mc)
                 M[k, j] = zero
             }
         }
@@ -1356,7 +1517,7 @@ object MatrixImpl {
     /**
      * Transforms the given matrix `M` over a Euclidean domain to an upper triangular form.
      */
-    internal fun <T> toUpperEUD0(M: MutableMatrix<T>, mc: EuclideanDomain<T>, column: Int = M.column): List<Int> {
+    internal fun <T> toUpperEUD0(M: AMatrix<T>, mc: EuclideanDomain<T>, column: Int = M.column): List<Int> {
         val row = M.row
         var r = 0
         val pivots = ArrayList<Int>(min(M.row, column))
@@ -1370,12 +1531,12 @@ object MatrixImpl {
     }
 
 
-    internal fun <T> toHermitForm0(M: MutableMatrix<T>, mc: Integers<T>, column: Int = M.column): List<Int> {
+    internal fun <T> toHermitForm0(M: AMatrix<T>, mc: Integers<T>, column: Int = M.column): List<Int> {
         val pivots = toUpperEUD0(M, mc, column)
         for (i in pivots.lastIndex downTo 0) {
             val j = pivots[i]
             if (mc.isNegative(M[i, j])) {
-                M.negateRow(i)
+                M.negateRow(i, model = mc)
             }
             val d = M[i, j]
             for (k in (i - 1) downTo 0) {
@@ -1386,7 +1547,7 @@ object MatrixImpl {
                 if (mc.isNegative(M[k, j])) {
                     q = mc.increase(q)
                 }
-                M.mulAddRow(i, k, q, j)
+                M.mulAddRow(i, k, q, j, model = mc)
             }
         }
         return pivots
@@ -1397,7 +1558,7 @@ object MatrixImpl {
      * Transform this matrix to (row) Hermit Form.
      */
     fun <T> toHermitForm(A: GenMatrix<T>, mc: Integers<T>): Matrix<T> {
-        val M = AMatrix.copyOf(A, mc)
+        val M = AMatrix.copyOf(A)
         toHermitForm0(M, mc)
         return M
     }
@@ -1430,7 +1591,7 @@ object MatrixImpl {
      * The `i`-th invariant factors are the greatest common divisors of all `i x i` minors of the matrix.
      */
     fun <T> invariantFactors(A: GenMatrix<T>, mc: EuclideanDomain<T>): List<T> {
-        return toSmithForm0(AMatrix.copyOf(A, mc), mc)
+        return toSmithForm0(AMatrix.copyOf(A), mc)
     }
 
 
@@ -1454,7 +1615,7 @@ object MatrixImpl {
      * @param mc The Euclidean domain calculator for the matrix entries.
      * @return List of invariant factors (non-zero diagonal entries) of the Smith Normal Form.
      */
-    internal fun <T> toSmithForm0(M: MutableMatrix<T>, mc: EuclideanDomain<T>): List<T> {
+    internal fun <T> toSmithForm0(M: AMatrix<T>, mc: EuclideanDomain<T>): List<T> {
         val rows = M.row
         val cols = M.column
         val invariants = mutableListOf<T>()
@@ -1478,7 +1639,7 @@ object MatrixImpl {
                     if (mc.isZero(v)) continue // M[r,c] | M[i,j], continue
                     // make a gcd at M[r,j] by row and col trans
                     // then swap col c and j
-                    M.mulAddRow(i, r, v, j + 1)
+                    M.mulAddRow(i, r, v, j + 1, model = mc)
                     // col trans can be omitted since elements below M[r,c] are all zero
                     M.swapCol(c, j, r + 1)
                     M[r, j] = mc.negate(M[r, c]) // negate so det is not changed by swapping
@@ -1501,23 +1662,33 @@ object MatrixImpl {
      * @return 0 if the row is all zero, 1 if any row is reduced, 2 if the original row is changed.
      */
     private fun <T> reduceByRowEUD(
-        M: MutableMatrix<T>, mc: EuclideanDomain<T>, r: Int, c: Int, zeroed: Boolean = false, colStart: Int = c + 1
+        M: AMatrix<T>, mc: EuclideanDomain<T>, r: Int, c: Int, zeroed: Boolean = false, colStart: Int = c + 1
     ): Int {
         return templateReduceInEUD(
             mc, M.row, r, c, zeroed, colStart, M::get, M::set,
-            M::swapRow, M::mulAddRow, M::mulRow, M::transformRows
+            M::swapRow,
+            mMulAddRow = { r1, r2, k, col -> M.mulAddRow(r1, r2, k, col, model = mc) },
+            mMulRow = { r0, k, col -> M.mulRow(r0, k, col, model = mc) },
+            mTransformRows = { r1, r2, a11, a12, a21, a22, col ->
+                M.transformRows(r1, r2, a11, a12, a21, a22, col, model = mc)
+            }
         )
     }
 
 
     private fun <T> reduceByColEUD(
-        M: MutableMatrix<T>, mc: EuclideanDomain<T>, r: Int, c: Int, zeroed: Boolean = false, rowStart: Int = r + 1
+        M: AMatrix<T>, mc: EuclideanDomain<T>, r: Int, c: Int, zeroed: Boolean = false, rowStart: Int = r + 1
     ): Int {
         return templateReduceInEUD(
             mc, M.column, c, r, zeroed, rowStart,
             mGet = { i, j -> M[j, i] },
             mSet = { i, j, v -> M[j, i] = v },
-            M::swapCol, M::mulAddCol, M::mulCol, M::transformCols
+            M::swapCol,
+            mMulAddRow = { r1, r2, k, col -> M.mulAddCol(r1, r2, k, col, model = mc) },
+            mMulRow = { r0, k, col -> M.mulCol(r0, k, col, model = mc) },
+            mTransformRows = { r1, r2, a11, a12, a21, a22, col ->
+                M.transformCols(r1, r2, a11, a12, a21, a22, col, model = mc)
+            }
         )
     }
 
@@ -1603,12 +1774,12 @@ object MatrixImpl {
             }
             if (pi == -1) break
             if (pj != pos) {
-                aug.addRowTo(pj, pos)
-                aug.addColTo(pj, pos)
+                aug.addRowTo(pj, pos, model = mc)
+                aug.addColTo(pj, pos, model = mc)
             }
             if (pi != pos) {
-                aug.addRowTo(pi, pos)
-                aug.addColTo(pi, pos)
+                aug.addRowTo(pi, pos, model = mc)
+                aug.addColTo(pi, pos, model = mc)
             }
 
             // Reduce all elements in the current row and column (except the diagonal) to zero
@@ -1616,21 +1787,21 @@ object MatrixImpl {
             for (i in pos + 1 until n) {
                 if (mc.isZero(aug[pos, i])) continue
                 val k = mc.eval { -aug[pos, i] / diagElement }
-                aug.mulAddRow(pos, i, k)
-                aug.mulAddCol(pos, i, k)
+                aug.mulAddRow(pos, i, k, model = mc)
+                aug.mulAddCol(pos, i, k, model = mc)
             }
         }
 
         // Extract the diagonal matrix `Λ` and the transformation matrix `P`
         val lambda = AVector(n) { aug[it, it] }
-        val p = AMatrix.copyOf(aug.subMatrix(0, n, n, 2 * n), mc)
+        val p = AMatrix.copyOf(aug.subMatrix(0, n, n, 2 * n))
         return lambda to p
     }
 
 
     fun <T> toHessenberg(matrix: GenMatrix<T>, mc: Field<T>): Matrix<T> {
         require(matrix.isSquare)
-        val H = AMatrix.copyOf(matrix, mc)
+        val H = AMatrix.copyOf(matrix)
         val n = matrix.row
 
         for (m in 0 until (n - 1)) {
@@ -1644,9 +1815,9 @@ object MatrixImpl {
             for (i in (m + 2) until n) {
                 if (mc.isZero(H[i, m])) continue
                 val u = mc.eval { H[i, m] / t }
-                H.mulAddRow(m + 1, i, mc.negate(u), m)
+                H.mulAddRow(m + 1, i, mc.negate(u), m, model = mc)
                 H[i, m] = mc.zero
-                H.mulAddCol(i, m + 1, mc.reciprocal(u))
+                H.mulAddCol(i, m + 1, mc.reciprocal(u), model = mc)
             }
         }
         return H
@@ -1698,7 +1869,7 @@ object MatrixImpl {
      * The column `colSep` is the column separating `A` and `B`, namely `A.column = colSep`.
      *
      */
-    fun <T> solveLinear(augmented: MutableMatrix<T>, colSep: Int, mc: Field<T>):
+    fun <T> solveLinear(augmented: AMatrix<T>, colSep: Int, mc: Field<T>):
             Triple<Matrix<T>, VectorSpace<T>, Boolean> {
         val pivots = toEchelon(augmented, mc, colSep)
         val r = pivots.size
@@ -1714,7 +1885,7 @@ object MatrixImpl {
 
     fun <T> solveLinear(A: GenMatrix<T>, B: GenMatrix<T>, model: Field<T>): Triple<Matrix<T>, VectorSpace<T>, Boolean> {
         require(A.row == B.row)
-        val augmented = concatCol(A, B, model)
+        val augmented = concatCol(A, B)
         return solveLinear(augmented, A.column, model)
     }
 
@@ -1739,7 +1910,7 @@ object MatrixImpl {
      * Solves the homogeneous linear equation `Ax = 0` with the given matrix `A`.
      */
     fun <T> solveHomo(A: GenMatrix<T>, model: Field<T>): VectorSpace<T> {
-        val expanded = AMatrix.copyOf(A, model)
+        val expanded = AMatrix.copyOf(A)
         val pivots = toEchelon(expanded, model)
         return nullSpaceOf(expanded, A.column, pivots, model)
     }

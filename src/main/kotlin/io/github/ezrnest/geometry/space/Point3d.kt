@@ -1,6 +1,5 @@
 package io.github.ezrnest.geometry.space
 
-import io.github.ezrnest.structure.*
 /**
  * A class representing a point in 3D space.
  *

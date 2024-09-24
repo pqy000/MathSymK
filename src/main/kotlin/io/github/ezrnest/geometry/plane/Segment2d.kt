@@ -1,6 +1,5 @@
 package io.github.ezrnest.geometry.plane
 
-import io.github.ezrnest.structure.*
 
 data class Segment2d<T>(val start: Point2d<T>, val end: Point2d<T>) {
 
