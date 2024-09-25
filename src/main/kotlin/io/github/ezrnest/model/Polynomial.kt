@@ -2,7 +2,6 @@ package io.github.ezrnest.model
 
 import io.github.ezrnest.linear.Matrix
 import io.github.ezrnest.linear.MutableMatrix
-import io.github.ezrnest.model.Polynomial.Companion.compute
 import io.github.ezrnest.model.Polynomial.Companion.computeGeneral
 import io.github.ezrnest.structure.*
 import io.github.ezrnest.util.DataStructureUtil
@@ -115,7 +114,11 @@ data class Polynomial<T> internal constructor(
      */
 
     override fun toString(): String {
-        return terms.asReversed().joinToString(separator = " + ") { "${it.value}x^${it.pow}" }
+        return toString("x")
+    }
+
+    fun toString(ch: String): String {
+        return terms.asReversed().joinToString(separator = " + ") { "${it.value}$ch^${it.pow}" }
     }
 
     /*
@@ -222,8 +225,8 @@ data class Polynomial<T> internal constructor(
             return result
         }
 
-        fun <T, M> compute(p: Polynomial<T>, x: M, model: UnitRingModule<T, M>): M {
-            return computeGeneral(p, x, model::zero, model::fromScalar, model::add, model::multiply, model::power)
+        fun <T, M> Polynomial<T>.substitute(x: M, model: UnitRingModule<T, M>): M {
+            return computeGeneral(this, x, model::zero, model::fromScalar, model::add, model::multiply, model::power)
         }
 
 
@@ -269,7 +272,6 @@ data class Polynomial<T> internal constructor(
         /*
         Methods for number theory
          */
-
 
     }
 }
@@ -485,10 +487,6 @@ open class PolyOverRing<T>(protected val modelRing: Ring<T>) :
      */
     fun Polynomial<T>.apply(x: T): T {
         return computeGeneral(this, x, model::zero, { it }, model::add, model::multiply, model::power)
-    }
-
-    fun <M> Polynomial<T>.substitute(x: M, model: UnitRingModule<T, M>): M {
-        return compute(this, x, model)
     }
 
 

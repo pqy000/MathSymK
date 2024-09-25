@@ -4,7 +4,6 @@ import TestUtils.assertEquals
 import io.github.ezrnest.linear.T
 import io.github.ezrnest.linear.Vector
 import io.github.ezrnest.linear.Vector.Companion.vec
-import io.github.ezrnest.linear.times
 import io.github.ezrnest.model.NumberModels
 import kotlin.test.Test
 import kotlin.test.assertEquals

@@ -239,5 +239,6 @@ Any contribution is welcome.
 ## Roadmap
 - [ ] Linear algebra related
 - [ ] Preliminary implementation of symbolic calculation
+- [ ] Geometry related
 - [ ] Implement more algebraic structures
 - [ ] Symbolic differentiation and integration

@@ -1,7 +1,6 @@
 package io.github.ezrnest.linear
 
-import io.github.ezrnest.model.Complex
-import io.github.ezrnest.model.struct.*
+import io.github.ezrnest.model.Polynomial
 import io.github.ezrnest.structure.*
 
 /**
@@ -63,40 +62,7 @@ interface Matrix<T> : GenMatrix<T> {
     Matrix operations
      */
 
-//    /**
-//     * Returns the matrix product of this matrix and the given matrix.
-//     * It is required that `this.column == y.row`.
-//     *
-//     *
-//     * Let `C = A * B`, then `C[i, j] = sum(k; A[i, k] * B[k, j])` for all `i` and `j`.
-//     *
-//     */
-//    infix fun matmul(y: Matrix<T>): Matrix<T> {
-//        return MatrixImpl.matmul(this, y, model as Ring)
-//    }
-//
-//    /**
-//     * Returns the matrix product of this matrix and the given matrix.
-//     * It is required that `this.column == y.row`.
-//     *
-//     *
-//     * Let `C = A * B`, then `C[i, j] = sum(k; A[i, k] * B[k, j])` for all `i` and `j`.
-//     *
-//     * @see matmul
-//     *
-//     */
-//    override operator fun times(y: Matrix<T>): Matrix<T> {
-//        return this.matmul(y)
-//    }
-//
-//    /**
-//     * Returns the matrix product of this matrix and the given column vector as a column vector.
-//     *
-//     * Let `v = A * x`, then `v[i ] = sum(k; A[i, k] * x[k ])` for all `i`.
-//     */
-//    infix fun matmul(v: Vector<T>): Vector<T> {
-//        return MatrixImpl.matmul(this, v, model as Ring)
-//    }
+
 //
 //    /**
 //     * An operator function for [matmul].
@@ -115,64 +81,19 @@ interface Matrix<T> : GenMatrix<T> {
 //            return MatrixImpl.isInvertible(this, model as UnitRing)
 //        }
 //
-//    /**
-//     * Computes the inverse of this matrix.
-//     *
-//     * It is required that this matrix is square and the [model] is a unit ring.
-//     *
-//     * @throws ArithmeticException if this matrix is not invertible.
-//     */
-//    override fun inv(): Matrix<T> {
-//        return MatrixImpl.inverse(this, model as UnitRing)
-//    }
+
 //
-//    /**
-//     * Computes the determinant of this matrix.
-//     *
-//     * The determinant is defined as:
-//     *
-//     *     det(A) = \sum_{σ ∈ S_n} sign(σ) \prod_{i=1}^n A_{i, σ(i)},
-//     *
-//     * where `S_n` is the symmetric group of degree `n`.
-//     */
-//    fun det(): T {
-//        return MatrixImpl.det(this, model as Ring)
-//    }
+
 //
-//    /**
-//     * Computes the rank of this matrix.
-//     *
-//     * The rank of a matrix is the maximum number of linearly independent rows or columns in the matrix.
-//     *
-//     * It is required that this matrix is a matrix of elements in a field.
-//     */
-//    fun rank(): Int {
-//        return MatrixImpl.rank(this, model as Field)
-//    }
-//
-//    /**
-//     * Returns the trace if this matrix, that is, the sum of diagonal elements.
-//     *
-//     * It is required that this matrix is square.
-//     *
-//     */
-//    fun trace(): T {
-//        return MatrixImpl.trace(this, model as AddSemigroup<T>)
-//    }
-//
-//    /**
-//     * Gets the diagonal of this matrix as a vector.
-//     */
-//    fun diag(): Vector<T> {
-//        return MatrixImpl.diag(this)
-//    }
-//
-//    /**
-//     * Returns the sum of all elements in this matrix.
-//     */
-//    fun sumAll(): T {
-//        return MatrixImpl.sumAll(this, model as AddSemigroup<T>)
-//    }
+
+
+    /**
+     * Gets the diagonal of this matrix as a vector.
+     */
+    fun diag(): Vector<T> {
+        return MatrixImpl.diag(this)
+    }
+
 
     /**
      * Returns a transposed view of this matrix.
@@ -236,7 +157,7 @@ interface Matrix<T> : GenMatrix<T> {
          * Creates a new matrix `A` with the given row and column count, the model and the initializer function [init],
          * such that `A[i, j] = init(i, j)`.
          */
-        operator fun <T> invoke(row: Int, column: Int, model: EqualPredicate<T>, init: (Int, Int) -> T): Matrix<T> {
+        operator fun <T> invoke(row: Int, column: Int, init: (Int, Int) -> T): Matrix<T> {
             return AMatrix.of(row, column, init)
         }
 
@@ -244,8 +165,16 @@ interface Matrix<T> : GenMatrix<T> {
          * Creates a new square matrix `A` with row and column count being `n`, the model and the initializer function [init],
          * such that `A[i, j] = init(i, j)`.
          */
-        operator fun <T> invoke(n: Int, model: EqualPredicate<T>, init: (Int, Int) -> T): Matrix<T> {
-            return invoke(n, n, model, init)
+        operator fun <T> invoke(n: Int, init: (Int, Int) -> T): Matrix<T> {
+            return AMatrix.of(n, n, init)
+        }
+
+        fun <T> mat(row: Int, col: Int, init: (Int, Int) -> T): Matrix<T> {
+            return AMatrix.of(row, col, init)
+        }
+
+        fun <T> mat(n: Int, init: (Int, Int) -> T): Matrix<T> {
+            return AMatrix.of(n, n, init)
         }
 
         /**
@@ -259,7 +188,7 @@ interface Matrix<T> : GenMatrix<T> {
          * ```
          *
          */
-        fun <T> of(row: Int, col: Int, model: EqualPredicate<T>, vararg elements: T): Matrix<T> {
+        fun <T> of(row: Int, col: Int, vararg elements: T): Matrix<T> {
             require(row * col == elements.size)
             return AMatrix.of(row, col, *elements)
         }
@@ -272,8 +201,7 @@ interface Matrix<T> : GenMatrix<T> {
             val row = columns.first().size
             val column = columns.size
             require(columns.all { it.size == row })
-            TODO()
-//            return Matrix(row, column) { i, j -> columns[i][j] }
+            return Matrix(row, column) { i, j -> columns[i][j] }
         }
 
         /**
@@ -283,8 +211,7 @@ interface Matrix<T> : GenMatrix<T> {
             val row = rows.size
             val column = rows.first().size
             require(rows.all { it.size == column })
-            TODO()
-//            return Matrix(row, column) { i, j -> rows[i][j] }
+            return Matrix(row, column) { i, j -> rows[i][j] }
         }
 
         /**
@@ -325,9 +252,9 @@ interface Matrix<T> : GenMatrix<T> {
         /**
          * Creates a diagonal matrix with the given vector as the diagonal elements.
          */
-        fun <T> diag(v: Vector<T>): Matrix<T> {
+        fun <T> diag(model: AddMonoid<T>, v: Vector<T>): Matrix<T> {
             val n = v.size
-            val A = MatrixImpl.zero<T>(n, n, TODO())
+            val A = MatrixImpl.zero<T>(n, n, model)
             for (i in 0 until n) {
                 A[i, i] = v[i]
             }
@@ -398,25 +325,55 @@ interface Matrix<T> : GenMatrix<T> {
         Matrix models
          */
 
-        /**
-         * Gets the model of `n × n` matrices over the given model.
-         */
-        fun <T> over(n: Int, model: UnitRing<T>): SqMatOverURing<T> {
-            return SqMatOverURing(n, model)
+//        /**
+//         * Gets the model of `n × n` matrices over the given model.
+//         */
+//        fun <T> over(n: Int, model: UnitRing<T>): MatOverURing<T> {
+////            return SqMatOverURing(n, model)
+//            TODO()
+//        }
+
+
+        fun <T> over(model: EqualPredicate<T>): MatOverEqualPredicate<T> {
+            return MatOverEqualPredicateImpl(model)
         }
 
-        /**
-         * Gets the model of `n × n` matrices over the given field.
-         */
-        fun <T> over(n: Int, model: Field<T>): SqMatOverField<T> {
-            return SqMatOverField(n, model)
+        fun <T> over(model: AddMonoid<T>): MatOverAddMonoid<T> {
+            return MatOverAddMonoidImpl(model)
         }
 
-        /**
-         * Gets the model of general linear group `GL(n)`.
-         */
-        fun <T> generalLinear(n: Int, model: UnitRing<T>): GeneralLinearGroup<T> {
-            return GeneralLinearGroup(n, model)
+        fun <T> over(model: AddGroup<T>): MatOverAddGroup<T> {
+            return MatOverAddGroupImpl(model)
+        }
+
+        fun <T> over(model: Ring<T>): MatOverRing<T> {
+            return MatOverRingImpl(model)
+        }
+
+        fun <T> over(model: UnitRing<T>): MatOverURing<T> {
+            return MatOverURingImpl(model)
+        }
+
+        fun <T> over(model: UnitRing<T>, n : Int): MatOverURing<T> {
+            return MatOverURingShapedImpl(model,n,n)
+        }
+
+        fun <T> over(model: EuclideanDomain<T>): MatOverEUD<T> {
+            return MatOverEUDImpl(model)
+        }
+
+
+
+        fun <T> over(model: EuclideanDomain<T>, row: Int, col: Int): MatOverEUD<T> {
+            return MatOverEUDShapedImpl(model,row,col)
+        }
+
+        fun <T> over(model: EuclideanDomain<T>, n: Int): MatOverEUD<T> {
+            return over(model, n, n)
+        }
+
+        fun <T> over(model: Field<T>): MatOverField<T> {
+            return MatOverFieldImpl(model)
         }
 
 
@@ -424,35 +381,22 @@ interface Matrix<T> : GenMatrix<T> {
 }
 
 
-/**
- * Returns the matrix product of this row vector and the matrix, resulting in a row vector.
- */
-fun <T> RowVector<T>.matmul(m: Matrix<T>): RowVector<T> {
-    TODO()
-//    return RowVector(MatrixImpl.matmul(this, m, this.v.model as Ring))
-}
-
-operator fun <T> RowVector<T>.times(m: Matrix<T>): RowVector<T> {
-    return this.matmul(m)
-}
-
-
-/**
- * Returns the transpose conjugate of this matrix.
- *
- * It is required that this matrix is a matrix of complex numbers with a model of [ComplexNumbers].
- */
-fun <K> Matrix<Complex<K>>.transposeConjugate(): Matrix<Complex<K>> {
-    TODO()
-//    return TransposedMatrixView(this).map(model::conj)
-}
-
-/**
- * The same as [transposeConjugate].
- *
- * @see transposeConjugate
- */
-val <K> Matrix<Complex<K>>.H: Matrix<Complex<K>> get() = transposeConjugate()
+///**
+// * Returns the transpose conjugate of this matrix.
+// *
+// * It is required that this matrix is a matrix of complex numbers with a model of [ComplexNumbers].
+// */
+//fun <K> Matrix<Complex<K>>.transposeConjugate(): Matrix<Complex<K>> {
+//    TODO()
+////    return TransposedMatrixView(this).map(model::conj)
+//}
+//
+///**
+// * The same as [transposeConjugate].
+// *
+// * @see transposeConjugate
+// */
+//val <K> Matrix<Complex<K>>.H: Matrix<Complex<K>> get() = transposeConjugate()
 
 
 @JvmRecord
@@ -527,6 +471,14 @@ interface MutableMatrix<T> : Matrix<T> {
      * Swaps the columns `c1` and `c2` with the given row range `[rowStart, rowEnd)`.
      */
     fun swapCol(c1: Int, c2: Int, rowStart: Int = 0, rowEnd: Int = row)
+
+    fun transform(f: (Int, Int, T) -> T) {
+        for (i in 0 until row) {
+            for (j in 0 until column) {
+                this[i, j] = f(i, j, this[i, j])
+            }
+        }
+    }
 
 //    operator fun plusAssign(y: Matrix<T>) {
 //        val model = model as AddSemigroup
@@ -628,7 +580,7 @@ interface MutableMatrix<T> : Matrix<T> {
 //        c1: Int, c2: Int, a11: T, a12: T, a21: T, a22: T,
 //        rowStart: Int = 0, rowEnd: Int = row
 //    ) {
-//        val model = model as Ring
+//        val model = model
 //        val A = this
 //        for (i in rowStart until rowEnd) {
 //            val v1 = A[i, c1]
@@ -669,154 +621,703 @@ interface MutableMatrix<T> : Matrix<T> {
     }
 }
 
-inline fun <T> MutableMatrix<T>.transform(f: (Int, Int, T) -> T) {
-    for (i in 0 until row) {
-        for (j in 0 until column) {
-            this[i, j] = f(i, j, this[i, j])
-        }
-    }
-}
 
-open class MatOverModel<T>(val row: Int, val col: Int, open val model: EqualPredicate<T>) {
-    fun mat(init: (Int, Int) -> T): Matrix<T> {
-        return Matrix(row, col, model, init)
-    }
-
-    fun mat(vararg elements: T): Matrix<T> {
-        return Matrix.of(row, col, model, *elements)
-    }
-}
-
-
-open class MatOverAGroup<T>(row: Int, col: Int, override val scalars: Ring<T>) : MatOverModel<T>(row, col, scalars),
-    Module<T, Matrix<T>> {
-    override fun contains(x: Matrix<T>): Boolean {
-        return x.row == row && x.column == col
-    }
+interface MatOverEqualPredicate<T> : EqualPredicate<Matrix<T>> {
+    val model: EqualPredicate<T>
 
     override fun isEqual(x: Matrix<T>, y: Matrix<T>): Boolean {
-        require(x in this && y in this)
-        return MatrixImpl.isEqual(x, y, scalars)
+        require(x.shapeMatches(y))
+        return MatrixImpl.isEqual(x, y, model)
     }
+}
 
-    override fun scalarMul(k: T, v: Matrix<T>): Matrix<T> {
-        require(v in this)
-        return MatrixImpl.multiply(v, k, scalars)
-    }
+
+interface MatOverAddMonoid<T> : MatOverEqualPredicate<T>, AddMonoid<Matrix<T>> {
+
+    override val model: AddMonoid<T>
 
     override val zero: Matrix<T>
-        get() = Matrix.zero(row, col, scalars)
+        get() = throw UnsupportedOperationException("Use `zero(row, column)` instead")
 
-    override fun isZero(x: Matrix<T>): Boolean {
-        require(x in this)
-        return MatrixImpl.isZero(x, scalars)
+    override fun contains(x: Matrix<T>): Boolean {
+        return true
     }
 
-    override fun negate(x: Matrix<T>): Matrix<T> {
-        require(x in this)
-        return MatrixImpl.negate(x, scalars)
+    fun zero(row: Int, column: Int): Matrix<T> {
+        return Matrix.zero(row, column, model)
+    }
+
+    fun zero(n: Int): Matrix<T> {
+        return zero(n, n)
+    }
+
+    fun diag(elements: List<T>): Matrix<T> {
+        return Matrix.diag(model, elements)
+    }
+
+    fun diag(vararg elements: T): Matrix<T> {
+        return Matrix.diag(model, *elements)
+    }
+
+    fun diag(v: Vector<T>): Matrix<T> {
+        return Matrix.diag(model, v)
+    }
+
+    fun scalar(n: Int, k: T): Matrix<T> {
+        return Matrix.scalar(n, model, k)
+    }
+
+    override fun isZero(x: Matrix<T>): Boolean {
+        return MatrixImpl.isZero(x, model)
     }
 
     override fun add(x: Matrix<T>, y: Matrix<T>): Matrix<T> {
-        require(x in this && y in this)
-        return MatrixImpl.add(x, y, scalars)
-    }
-
-    override fun subtract(x: Matrix<T>, y: Matrix<T>): Matrix<T> {
-        require(x in this && y in this)
-        return MatrixImpl.subtract(x, y, scalars)
-    }
-
-    override fun multiplyLong(x: Matrix<T>, n: Long): Matrix<T> {
-        require(x in this)
-        return MatrixImpl.multiplyLong(x, n, scalars)
-    }
-}
-
-
-open class SqMatOverURing<T>(n: Int, override val scalars: UnitRing<T>) :
-    MatOverAGroup<T>(n, n, scalars),
-    UnitRingModule<T, Matrix<T>> {
-
-    inline val n: Int get() = row
-
-    override fun contains(x: Matrix<T>): Boolean {
-        return x.row == n && x.column == n
-    }
-
-    override val one: Matrix<T>
-        get() = Matrix.identity(n, scalars)
-
-    override fun multiply(x: Matrix<T>, y: Matrix<T>): Matrix<T> {
-        require(x in this && y in this)
-        return MatrixImpl.matmul(x, y, scalars)
-    }
-
-    override fun fromScalar(r: T): Matrix<T> {
-        return Matrix.scalar(n, scalars, r)
-    }
-
-    override fun product(ps: List<Matrix<T>>): Matrix<T> {
-        if (ps.isEmpty()) return one
-        require(ps.all { it in this })
-        return MatrixImpl.product(ps, scalars)
+        require(x.shapeMatches(y))
+        return MatrixImpl.add(x, y, model)
     }
 
     override fun sum(elements: List<Matrix<T>>): Matrix<T> {
-        require(elements.all { it in this })
-        return MatrixImpl.sum(elements, scalars)
+        return MatrixImpl.sum(elements, model)
     }
 
-    override fun isUnit(x: Matrix<T>): Boolean {
-        TODO()
-//        return scalars.isUnit(x.det())
+    override fun multiplyLong(x: Matrix<T>, n: Long): Matrix<T> {
+        return MatrixImpl.apply1(x) { model.multiplyLong(it, n) }
     }
 
-    fun isInvertible(x: Matrix<T>): Boolean {
-        return MatrixImpl.isInvertible(x, scalars)
+
+    /*
+    Matrix-related
+     */
+
+    /**
+     * Returns the trace if this matrix, that is, the sum of diagonal elements.
+     *
+     * It is required that this matrix is square.
+     *
+     */
+    fun Matrix<T>.trace(): T {
+        return MatrixImpl.trace(this, model as AddSemigroup<T>)
     }
 
-    fun inverse(x: Matrix<T>): Matrix<T> {
-        return MatrixImpl.inverse(x, scalars)
+    fun Matrix<T>.sum(): T {
+        return MatrixImpl.sumAll(this, model)
     }
 }
 
-open class SqMatOverField<T>(n: Int, override val scalars: Field<T>) :
-    SqMatOverURing<T>(n, scalars), Algebra<T, Matrix<T>> {
-    override fun scalarDiv(x: Matrix<T>, k: T): Matrix<T> {
-        require(x in this)
-        return MatrixImpl.divide(x, k, scalars)
+
+interface MatOverAddGroup<T> : AddGroup<Matrix<T>>, MatOverAddMonoid<T> {
+    override val model: AddGroup<T>
+
+    override fun negate(x: Matrix<T>): Matrix<T> {
+        return MatrixImpl.negate(x, model)
     }
 
+    override fun subtract(x: Matrix<T>, y: Matrix<T>): Matrix<T> {
+        require(x.shapeMatches(y))
+        return MatrixImpl.subtract(x, y, model)
+    }
 
+    override fun multiplyLong(x: Matrix<T>, n: Long): Matrix<T> {
+        return super<MatOverAddMonoid>.multiplyLong(x, n)
+    }
 }
 
-open class GeneralLinearGroup<T>(val n: Int, override val model: UnitRing<T>) :
-    MatOverModel<T>(n, n, model), MulGroup<Matrix<T>> {
+interface MatOverRing<T> : MatOverAddGroup<T>, Ring<Matrix<T>>, RingModule<T, Matrix<T>> {
+    override val model: Ring<T>
+
+    override val scalars: Ring<T>
+        get() = model
+
+    override val zero: Matrix<T>
+        get() = throw UnsupportedOperationException("Use `zero(row, column)` instead")
+
     override fun contains(x: Matrix<T>): Boolean {
-        return x.row == n && x.column == n && MatrixImpl.isInvertible(x, model)
+        return true
     }
 
-    override fun isEqual(x: Matrix<T>, y: Matrix<T>): Boolean {
-        require(x in this && y in this)
-        return MatrixImpl.isEqual(x, y, model)
+    override fun scalarMul(k: T, v: Matrix<T>): Matrix<T> {
+        return MatrixImpl.multiply(v, k, model)
     }
 
+    /*
+    Matrix related operations
+     */
+
+    /**
+     * Returns the matrix product of this matrix and the given matrix.
+     * It is required that `this.column == y.row`.
+     *
+     *
+     * Let `C = A * B`, then `C[i, j] = sum(k; A[i, k] * B[k, j])` for all `i` and `j`.
+     *
+     */
+    infix fun Matrix<T>.matmul(y: Matrix<T>): Matrix<T> {
+        return MatrixImpl.matmul(this, y, model)
+    }
+
+    /**
+     * Returns the matrix product of two matrices.
+     */
     override fun multiply(x: Matrix<T>, y: Matrix<T>): Matrix<T> {
-        require(x in this && y in this)
         return MatrixImpl.matmul(x, y, model)
     }
 
-    override fun reciprocal(x: Matrix<T>): Matrix<T> {
+    /**
+     * The matrix product of two matrices.
+     *
+     * @see [Matrix.matmul]
+     */
+    override fun Matrix<T>.times(y: Matrix<T>): Matrix<T> {
+        return this.matmul(y)
+    }
+
+    /**
+     * Returns the matrix product of this matrix and the given column vector as a column vector.
+     *
+     * Let `v = A * x`, then `v[i ] = sum(k; A[i, k] * x[k ])` for all `i`.
+     */
+    infix fun Matrix<T>.matmul(v: Vector<T>): Vector<T> {
+        return MatrixImpl.matmul(this, v, model)
+    }
+
+    /**
+     * Returns the matrix product of this matrix and the given column vector as a column vector.
+     */
+    operator fun Matrix<T>.times(v: Vector<T>): Vector<T> {
+        return this.matmul(v)
+    }
+
+    /**
+     * Returns the matrix product of this row vector and the matrix, resulting in a row vector.
+     */
+    infix fun RowVector<T>.matmul(m: Matrix<T>): RowVector<T> {
+        return RowVector(MatrixImpl.matmul(this.v, m, model))
+    }
+
+    /**
+     * Returns the matrix product of this row vector and the matrix, resulting in a row vector.
+     *
+     * @see [RowVector.matmul]
+     */
+    operator fun RowVector<T>.times(m: Matrix<T>): RowVector<T> {
+        return this.matmul(m)
+    }
+
+    infix fun RowVector<T>.matmul(v : Vector<T>) : T{
+        return VectorImpl.inner(this.v,v,model)
+    }
+
+    operator fun RowVector<T>.times(v : Vector<T>) : T{
+        return this.matmul(v)
+    }
+
+    /**
+     * Computes the determinant of this matrix.
+     *
+     * The determinant is defined as:
+     *
+     *     det(A) = \sum_{σ ∈ S_n} sign(σ) \prod_{i=1}^n A_{i, σ(i)},
+     *
+     * where `S_n` is the symmetric group of degree `n`.
+     */
+    fun Matrix<T>.det(): T {
+        return MatrixImpl.det(this, model)
+    }
+
+    /**
+     * Returns the cofactor of this matrix at the position `(i, j)`.
+     * The cofactor is the determinant of the minor matrix at `(i, j)` with a sign determined by `(-1)^(i+j)`.
+     *
+     *     C(i, j) = (-1)^(i+j) * det(minor(i, j))
+     */
+    fun Matrix<T>.cofactor(i: Int, j: Int): T {
+        return MatrixImpl.cofactor(this, i, j, model)
+    }
+
+    /**
+     * Returns the adjugate of this matrix, which is defined as the transpose of the matrix of cofactors:
+     *
+     *    adj(A) = (C(i, j))_{i,j}^T
+     *
+     * If `A` is invertible, then `A * adjugate(A) = det(A) * I`.
+     */
+    fun Matrix<T>.adjugate(): Matrix<T> {
+        return MatrixImpl.adjugate(this, model)
+    }
+
+    /**
+     * Returns the hadamard (element-wise) product of two matrices.
+     */
+    fun Matrix<T>.hadamard(other: Matrix<T>): Matrix<T> {
+        return MatrixImpl.hadamard(this, other, model)
+    }
+
+    /**
+     * Alias for [Matrix.hadamard].
+     */
+    infix fun Matrix<T>.odot(other: Matrix<T>): Matrix<T> {
+        return MatrixImpl.hadamard(this, other, model)
+    }
+
+    /**
+     * Returns the kronecker product `C = A ⊗ B` of `A = this` and `B = other`.
+     * The result matrix `C` has the shape `(A.row * B.row, A.column * B.column)` and its elements are computed as:
+     * ```
+     * C[i1 * B.row + i2, j1 * B.column + j2] = A[i1, j1] * B[i2, j2]
+     * ```
+     * Alternatively, `C` can be expressed in the block matrix form:
+     * ```
+     * C = [A[i,j] * B], where i = 0 until A.row, j = 0 until A.column
+     * ```
+     *
+     * We have the following properties:
+     * - **Associativity** - `(A ⊗ B) ⊗ C = A ⊗ (B ⊗ C)`
+     * - **Distributivity** - `A ⊗ (B + C) = A ⊗ B + A ⊗ C`
+     * - Mixed with matrix multiplication: `(A ⊗ B)(C ⊗ D) = (AC) ⊗ (BD)`
+     *
+     *
+     */
+    fun Matrix<T>.kronecker(other: Matrix<T>): Matrix<T> {
+        return MatrixImpl.kronecker(this, other, model)
+    }
+
+    /**
+     * Alias for [Matrix.kronecker].
+     */
+    infix fun Matrix<T>.kron(other: Matrix<T>): Matrix<T> {
+        return MatrixImpl.kronecker(this, other, model)
+    }
+
+
+}
+
+interface MatOverURing<T> : MatOverRing<T>, UnitRing<Matrix<T>>, UnitRingModule<T, Matrix<T>> {
+    override val model: UnitRing<T>
+
+
+    override val one: Matrix<T>
+        get() = throw UnsupportedOperationException("Use `eye(n)` instead")
+
+    /**
+     * Returns the identity matrix of size `n` with diagonal elements being `1`.
+     */
+    fun eye(n: Int): Matrix<T> {
+        return Matrix.identity(n, model)
+    }
+
+
+    override fun scalarMul(k: T, v: Matrix<T>): Matrix<T> {
+        return MatrixImpl.multiply(v, k, model)
+    }
+
+    operator fun Matrix<T>.div(k: T): Matrix<T> {
+        return MatrixImpl.apply1(this) { model.exactDiv(it, k) }
+    }
+
+    override fun isUnit(x: Matrix<T>): Boolean {
+        return MatrixImpl.isInvertible(x, model)
+    }
+
+    fun inverse(x: Matrix<T>): Matrix<T> {
         return MatrixImpl.inverse(x, model)
     }
 
-    override val one: Matrix<T>
-        get() = Matrix.identity(n, model)
+    /**
+     * Computes the inverse of this matrix.
+     *
+     * It is required that this matrix is square.
+     *
+     * @throws ArithmeticException if this matrix is not invertible.
+     */
+    fun Matrix<T>.inv(): Matrix<T> {
+        return MatrixImpl.inverse(this, model)
+    }
 
-    override fun product(ps: List<Matrix<T>>): Matrix<T> {
-        if (ps.isEmpty()) return one
-        require(ps.all { it in this })
-        return MatrixImpl.product(ps, model)
+    /**
+     * Returns the characteristic polynomial of the given square matrix.
+     * The characteristic polynomial is defined as `f(λ) = det(λI-A)`.
+     *
+     *
+     * The characteristic polynomial is a polynomial of degree `n` where `n` is the row count (= column count) of the matrix.
+     * The leading coefficient is `1`, and the constant term is the determinant of the matrix.
+     *
+     * The roots of the characteristic polynomial are defined to be the eigenvalues of the matrix.
+     *
+     * It is required that the `this.model` is actually a [UnitRing].
+     *
+     * @see [Matrix.det]
+     *
+     */
+    fun Matrix<T>.charPoly(): Polynomial<T> {
+        return MatrixImpl.charPoly(this, model)
     }
 }
+
+
+interface MatOverEUD<T> : MatOverURing<T> {
+    override val model: EuclideanDomain<T>
+
+    /**
+     * Transforms this matrix to Smith normal form, a diagonal matrix with the following property:
+     *
+     *     m[i,i] | m[i+1,i+1]  for i <= r,
+     *     m[i,i] = 0, for i > r
+     *
+     *
+     * It is required that the `model` of this matrix is an [EuclideanDomain].
+     *
+     * For example, the Smith normal form of matrix `[[1 2 3][4 5 6][7 8 9]]` can be
+     * `diag(1,3,0)`
+     *
+     * The method [Matrix.invariantFactors] might be more useful if you only need the invariant factors.
+     *
+     * @see [Matrix.invariantFactors]
+     */
+    fun Matrix<T>.toSmithForm(): Matrix<T> {
+        //Created by lyc at 2020-03-10 14:54
+        return MatrixImpl.toSmithForm(this, model)
+    }
+
+    /**
+     * Returns the list of non-zero invariant factors of this matrix in order.
+     *
+     * To introduce invariant factors, we first define the determinantal divisors `d_k` of a matrix `A`
+     * as the greatest common divisor of all `k × k` minors of `A`.
+     * For example, the first determinant divisors is the gcd of all elements of the matrix,
+     * while the `n`-th  determinant divisors is just the determinant of the matrix.
+     * It is easy to see that `d_1 | d_2 | ... | d_n`.
+     *
+     * Then, the **invariant factors** `α_k` of a matrix `A` are defined by `α_k = d_k / d_{k-1}`, where we take `d_0 = 1`,
+     * and take `α_k = 0` if `d_k = 0`.
+     *
+     * The invariant factors have the following properties:
+     * * They are unique up to multiplication by units.
+     * * `α_{r+1} = α_{r+2} = ... = α_n = 0`, where `r` is the rank of the matrix.
+     * * `α_1 | α_2 | ... | α_r`.
+     *
+     *
+     * It is required that the `model` of this matrix is an [EuclideanDomain].
+     *
+     * @return the list of non-zero invariant factors `a_1, a_2, ..., a_r`
+     *
+     */
+    fun Matrix<T>.invariantFactors(): List<T> {
+        return MatrixImpl.invariantFactors(this, model)
+    }
+
+    /**
+     * Returns the list of non-zero determinant divisors of this matrix.
+     *
+     * The `k`-th determinant divisor of a matrix `A` is the greatest common divisor of all `k × k` minors of `A`.
+     * For example, the first determinant divisor is the gcd of all elements of the matrix,
+     * while the `n`-th determinant divisor is just the determinant of the matrix.
+     *
+     * The determinant divisors have the following properties:
+     * * They are unique up to multiplication by units.
+     * * Let `r` be the rank of the matrix. Then `d_k = 0` for `k > r`.
+     * * `d_1 | d_2 | ... | d_n`, while the quotient `α_k = d_k / d_{k-1}` is referred to as the `k`-th invariant factor.
+     *
+     * @return the list of non-zero determinant divisors `d_1, d_2, ..., d_r`
+     */
+    fun Matrix<T>.detDivisors(): List<T> {
+        return MatrixImpl.detDivisors(this, model)
+    }
+
+}
+
+interface MatOverField<T> : Algebra<T, Matrix<T>>, MatOverEUD<T> {
+    override val model: Field<T>
+
+    override val scalars: Field<T>
+        get() = model
+
+    override fun scalarDiv(x: Matrix<T>, k: T): Matrix<T> {
+        return MatrixImpl.divide(x, k, model)
+    }
+
+    override operator fun Matrix<T>.div(k: T): Matrix<T> {
+        return MatrixImpl.divide(this, k, model)
+    }
+
+    /*
+    Matrix-related
+     */
+
+    /**
+     * Computes the rank of this matrix.
+     *
+     * The rank of a matrix is the maximum number of linearly independent rows or columns in the matrix.
+     *
+     * It is required that this matrix is a matrix of elements in a field.
+     */
+    fun Matrix<T>.rank(): Int {
+        return MatrixImpl.rank(this, model)
+    }
+
+    /**
+     * Returns the null space of this matrix, which is the set of all vectors `x` such that `Ax = 0`.
+     *
+     * This is the same as [Matrix.kernel].
+     *
+     * @see [Matrix.kernel]
+     */
+    fun Matrix<T>.nullSpace(): VectorSpace<T> {
+        return kernel()
+    }
+
+    /**
+     * Returns the kernel space of `A = this`:
+     * ```
+     * Ker(A) = { x | Ax = 0 }
+     * ```
+     *
+     * It is required that the `model` of this matrix is a [Field].
+     */
+    fun Matrix<T>.kernel(): VectorSpace<T> {
+        return MatrixImpl.solveHomo(this, model)
+    }
+
+    /**
+     * Returns the column space of this matrix, which is the vector space spanned by the columns of the matrix.
+     */
+    fun Matrix<T>.columnSpace(): VectorSpace<T> {
+        return MatrixImpl.columnSpace(this, model)
+    }
+
+    /**
+     * Returns the image space of `A = this`:
+     * ```
+     * Im(A) = { Ax | x ∈ V }
+     * ```
+     */
+    fun Matrix<T>.image(): VectorSpace<T> {
+        return columnSpace()
+    }
+
+    /**
+     * Returns the rank decomposition of a matrix `A = LR`, where `L` is a column full-rank matrix and `R` is a row full-rank matrix.
+     *
+     * Let `A` be a matrix of shape `(n,m)` and rank `r`.
+     * Then, `L` is of shape `(n,r)` and `R` is of shape `(r,m)` with `rank(L) = rank(R) = r`.
+     *
+     *
+     *
+     * @return a pair of `(L, R)`.
+     * @throws ArithmeticException if the rank of the given matrix is zero
+     */
+    fun Matrix<T>.decompRank(): Pair<Matrix<T>, Matrix<T>> {
+        return MatrixImpl.decompRank(this, model)
+    }
+
+    /**
+     * Returns the LU decomposition of this matrix: `A = LU`.
+     *
+     * The LU decomposition is defined as `A = LU` where `L` is a lower triangular matrix and `U` is an upper triangular matrix.
+     *
+     * It is required that the `model` of this matrix is a [Field].
+     *
+     * @return a pair of `(L, U)`.
+     */
+    fun Matrix<T>.decompLU(): Pair<Matrix<T>, Matrix<T>> {
+        return MatrixImpl.decompLU(this, model)
+    }
+
+    /**
+     * Returns the LDL decomposition of the given positive definite matrix:
+     * ```
+     * A = L D L.T
+     * ```
+     * where
+     * - `L` is a lower triangular matrix whose diagonal elements are all `1`;
+     * - `D` is a diagonal matrix with positive diagonal elements.
+     *
+     * @return `(L, diag(D))`, where `L` is a lower triangular matrix, `diag(D)` is a vector of diagonal elements
+     * of `D`.
+     */
+    fun Matrix<T>.decompLDL(): Pair<Matrix<T>, Vector<T>> {
+        return MatrixImpl.decompLDL(this, model)
+    }
+
+
+    /**
+     * Returns the (row) echelon form of this matrix and the indices of the pivot columns.
+     *
+     * The row echelon form of a matrix is a matrix in which
+     * * all zero rows are at the bottom of the matrix;
+     * * the leading coefficient of each row is to the right of the leading coefficient of the row above it;
+     * * all entries in the column below a leading coefficient are zeros.
+     *
+     *
+     * An example of a row echelon form of a 4x4 matrix `A` is like
+     *
+     *    [1 2 3 4]
+     *    [0 0 1 2]
+     *    [0 0 0 1]
+     *    [0 0 0 0]
+     *
+     * Here, the pivot columns are `0, 2, 3`.
+     *
+     *
+     * It is required that the `model` of this matrix is a [Field].
+     *
+     * @return a pair of `(E, pivots)`, where `E` is the echelon form and `pivots` is the list of pivot columns.
+     */
+    fun Matrix<T>.toEchelonForm(): Pair<Matrix<T>, List<Int>> {
+        val m = AMatrix.copyOf(this)
+        val pivots = MatrixImpl.toEchelon(m, model)
+        return m to pivots
+    }
+
+    /**
+     * Transforms a symmetric matrix `A` into its congruence diagonal normal form `Λ` and computes the transformation matrix `P`
+     * such that:
+     * ```
+     *     P * A * P.T = Λ
+     * ```
+     * where `Λ` is a diagonal matrix and `P` is non-singular.
+     *
+     * The matrix `A` must be symmetric, and the matrix entries must be over a [Field].
+     *
+     * @return A pair `(Λ, P)` where `Λ` is the diagonal matrix and `P` is the transformation matrix.
+     */
+    fun Matrix<T>.toCongDiagForm(): Pair<Vector<T>, Matrix<T>> {
+        return MatrixImpl.toCongDiagonalForm(this, model)
+    }
+
+    /**
+     * Transforms this matrix to (upper) Hessenberg form.
+     *
+     * The Hessenberg form of a matrix `A` is a matrix `H` such that all elements below the first subdiagonal are zero.
+     * For example, the Hessenberg form of a 4x4 matrix `A` is like
+     *
+     *    [a b c d]
+     *    [e f g h]
+     *    [0 i j k]
+     *    [0 0 l m]
+     *
+     *
+     */
+    fun Matrix<T>.toHessenbergForm(): Matrix<T> {
+        return MatrixImpl.toHessenberg(this, model)
+    }
+}
+
+interface MatOverReals<T> : MatOverField<T> {
+    override val model: Reals<T>
+
+
+    /**
+     * Returns the Cholesky decomposition of this matrix: `A = L L.T`, where `L` is a lower triangular matrix.
+     *
+     * It is required that the `model` of this matrix is a [Reals].
+     */
+    fun Matrix<T>.decompCholesky(): Matrix<T> {
+        return MatrixImpl.decompCholesky(this, model)
+    }
+
+
+    /**
+     * Returns the QR decomposition of this matrix: `A = QR`, where `Q` is an orthogonal matrix and `R` is an upper triangular matrix.
+     *
+     * It is required that the `model` of this matrix is a [Reals].
+     *
+     * @return a pair of `(Q, R)`.
+     */
+    fun Matrix<T>.decompQR(): Pair<Matrix<T>, Matrix<T>> {
+        return MatrixImpl.decompQR(this, model)
+    }
+
+
+    /**
+     * Returns the KAN decomposition (also known as Iwasawa decomposition) of this square matrix.
+     *
+     * Here, `M = K * A * N`:
+     * * `K` is an orthogonal matrix,
+     * * `A` is a diagonal matrix,
+     * * `N` is an upper triangular matrix.
+     *
+     *
+     * The KAN decomposition comes from factorization for Lie groups, particularly semisimple Lie groups.
+     * The abbreviation KAN comes from:
+     * * `K` for maximal compact subgroup;
+     * * `A` for abelian subgroup;
+     * * `N` for nilpotent subgroup.
+     */
+    fun Matrix<T>.decompKAN(): Triple<Matrix<T>, Vector<T>, Matrix<T>> {
+        return MatrixImpl.decompKAN(this, model)
+    }
+
+}
+
+interface MatricesShaped<T> : MatOverEqualPredicate<T> {
+    val row: Int
+    val column: Int
+}
+
+interface MatOverAddMonoidShaped<T> : MatOverAddMonoid<T>, MatricesShaped<T> {
+    override val zero: Matrix<T>
+        get() = zero(row, column)
+}
+
+interface MatOverURingShaped<T> : MatOverURing<T>, MatOverAddMonoidShaped<T> {
+    override val one: Matrix<T>
+        get() {
+            require(row == column)
+            return Matrix.identity(row, model)
+        }
+
+    override val zero: Matrix<T>
+        get() = zero(row, column)
+}
+
+
+internal data class MatOverEqualPredicateImpl<T>(override val model: EqualPredicate<T>) : MatOverEqualPredicate<T>
+
+internal data class MatOverAddMonoidImpl<T>(override val model: AddMonoid<T>) : MatOverAddMonoid<T>
+
+internal data class MatOverAddGroupImpl<T>(override val model: AddGroup<T>) : MatOverAddGroup<T>
+
+internal data class MatOverRingImpl<T>(override val model: Ring<T>) : MatOverRing<T>
+
+internal data class MatOverURingImpl<T>(override val model: UnitRing<T>) : MatOverURing<T>
+
+internal data class MatOverURingShapedImpl<T>(override val model: UnitRing<T>, override val row: Int, override val column: Int)
+    : MatOverURingShaped<T>
+
+internal data class MatOverEUDImpl<T>(override val model: EuclideanDomain<T>) : MatOverEUD<T>
+
+internal data class MatOverEUDShapedImpl<T>(override val model: EuclideanDomain<T>, override val row: Int, override val column: Int)
+    : MatOverEUD<T>, MatOverURingShaped<T>
+
+internal data class MatOverFieldImpl<T>(override val model: Field<T>) : MatOverField<T>
+
+//
+//open class GeneralLinearGroup<T>(val n: Int, override val model: UnitRing<T>) :
+//    MatOverModel<T>(n, n, model), MulGroup<Matrix<T>> {
+//    override fun contains(x: Matrix<T>): Boolean {
+//        return x.row == n && x.column == n && MatrixImpl.isInvertible(x, model)
+//    }
+//
+//    override fun isEqual(x: Matrix<T>, y: Matrix<T>): Boolean {
+//        require(x in this && y in this)
+//        return MatrixImpl.isEqual(x, y, model)
+//    }
+//
+//    override fun multiply(x: Matrix<T>, y: Matrix<T>): Matrix<T> {
+//        require(x in this && y in this)
+//        return MatrixImpl.matmul(x, y, model)
+//    }
+//
+//    override fun reciprocal(x: Matrix<T>): Matrix<T> {
+//        return MatrixImpl.inverse(x, model)
+//    }
+//
+//    override val one: Matrix<T>
+//        get() = Matrix.identity(n, model)
+//
+//    override fun product(ps: List<Matrix<T>>): Matrix<T> {
+//        if (ps.isEmpty()) return one
+//        require(ps.all { it in this })
+//        return MatrixImpl.product(ps, model)
+//    }
+//}

@@ -11,7 +11,6 @@ import io.github.ezrnest.linear.AMatrix.Companion.mulRow
 import io.github.ezrnest.linear.AMatrix.Companion.negateRow
 import io.github.ezrnest.linear.AMatrix.Companion.transformCols
 import io.github.ezrnest.linear.AMatrix.Companion.transformRows
-import io.github.ezrnest.linear.MatrixExt.cofactor
 import io.github.ezrnest.model.Polynomial
 import io.github.ezrnest.structure.*
 import io.github.ezrnest.util.IterUtils
@@ -138,7 +137,7 @@ data class AMatrix<T> internal constructor(
 //
 //    override fun divAssign(k: T) {
 //        val model = model as UnitRing
-//        inPlaceApply1 { model.exactDivide(it, k) }
+//        inPlaceApply1 { model.exactDiv(it, k) }
 //    }
 //
 //    override fun mulRow(r: Int, k: T, colStart: Int, colEnd: Int) {
@@ -157,7 +156,7 @@ data class AMatrix<T> internal constructor(
 //        val mc = model as UnitRing
 //        for (l in colStart until colEnd) {
 //            @Suppress("UNCHECKED_CAST")
-//            data[d + l] = mc.exactDivide(data[d + l] as T, k)
+//            data[d + l] = mc.exactDiv(data[d + l] as T, k)
 //        }
 //    }
 //
@@ -177,7 +176,7 @@ data class AMatrix<T> internal constructor(
 //        for (r in rowStart until rowEnd) {
 //            val pos = toPos(r, c)
 //            @Suppress("UNCHECKED_CAST")
-//            data[pos] = mc.exactDivide(k, data[pos] as T)
+//            data[pos] = mc.exactDiv(k, data[pos] as T)
 //        }
 //    }
 //
@@ -389,7 +388,7 @@ data class AMatrix<T> internal constructor(
         }
 
         internal fun <T> AMatrix<T>.divAssign(k: T, model: UnitRing<T>) {
-            inPlaceApply1 { model.exactDivide(it, k) }
+            inPlaceApply1 { model.exactDiv(it, k) }
         }
 
         internal fun <T> AMatrix<T>.mulRow(
@@ -573,25 +572,25 @@ open class TransposedMatrixView<T>(open val origin: Matrix<T>) : Matrix<T> {
         return origin.rowVectors()
     }
 
-    override fun det(): T {
-        return origin.det()
-    }
-
-    override fun rank(): Int {
-        return origin.rank()
-    }
-
-    override fun trace(): T {
-        return origin.trace()
-    }
-
-    override fun diag(): Vector<T> {
-        return origin.diag()
-    }
-
-    override fun sumAll(): T {
-        return origin.sumAll()
-    }
+//    override fun det(): T {
+//        return origin.det()
+//    }
+//
+//    override fun rank(): Int {
+//        return origin.rank()
+//    }
+//
+//    override fun trace(): T {
+//        return origin.trace()
+//    }
+//
+//    override fun diag(): Vector<T> {
+//        return origin.diag()
+//    }
+//
+//    override fun sumAll(): T {
+//        return origin.sumAll()
+//    }
 
     override fun toString(): String {
         return MatrixImpl.formatString(this)
@@ -688,7 +687,11 @@ object MatrixImpl {
         if (x is AMatrix) {
             return AMatrix.isZero(x, scalars)
         }
-        return x.elementSequence().all(scalars::isZero)
+        return x.rowIndices.all { i ->
+            x.colIndices.all { j ->
+                scalars.isZero(x[i, j])
+            }
+        }
     }
 
     internal inline fun <T1, T2, N> apply2(
@@ -750,6 +753,7 @@ object MatrixImpl {
         return result
     }
 
+
     fun <T> matmul(x: GenMatrix<T>, y: GenMatrix<T>, model: Ring<T>): AMatrix<T> {
         require(x.column == y.row) {
             "Shape mismatch in matmul: (${x.row}, ${x.column}) * (${y.row}, ${y.column})"
@@ -767,7 +771,7 @@ object MatrixImpl {
      * Matrix-vector multiplication: `Ay`, where `y` is a column vector.
      *
      */
-    fun <T> matmul(A: GenMatrix<T>, y: Vector<T>, model: Ring<T>): AVector<T> {
+    fun <T> matmul(A: GenMatrix<T>, y: GenVector<T>, model: Ring<T>): AVector<T> {
         require(A.column == y.size) {
             "Shape mismatch in matmul: (${A.row}, ${A.column}) * (${y.size})"
         }
@@ -785,7 +789,7 @@ object MatrixImpl {
      *
      * The result will be a vector
      */
-    fun <T> matmul(v: Vector<T>, A: GenMatrix<T>, model: Ring<T>): AVector<T> {
+    fun <T> matmul(v: GenVector<T>, A: GenMatrix<T>, model: Ring<T>): AVector<T> {
         require(v.size == A.row) {
             "Shape mismatch in matmul: (${v.size}) * (${A.row}, ${A.column})"
         }
@@ -1174,6 +1178,11 @@ object MatrixImpl {
         return detDefinition(mat, mc)
     }
 
+    fun <T> cofactor(m: Matrix<T>, i: Int, j: Int, model: Ring<T>): T {
+        val t = det(m.minor(i, j),model)
+        return if ((i + j) % 2 == 0) t else model.negate(t)
+    }
+
 
     /**
      * Gets the characteristic polynomial of the given matrix, which is defined as `det(xI - A)`,
@@ -1236,7 +1245,7 @@ object MatrixImpl {
         require(matrix.isSquare)
         val n = matrix.row
         val A = AMatrix.copyOf(matrix)
-        val adj = AMatrix(n, n) { i, j -> A.cofactor(i, j) }
+        val adj = AMatrix(n, n) { i, j -> cofactor(A, i, j, mc) }
         return adj
     }
 
