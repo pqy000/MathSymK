@@ -176,10 +176,13 @@ data class Polynomial<T> internal constructor(
     companion object {
 
 
-        fun <T> linear(model: AddMonoid<T>, a: T, b: T): Polynomial<T> {
-            return Polynomial(listOf(PTerm(1, a), PTerm(0, b)))
-        }
-
+        /**
+         * Creates a polynomial from a list of coefficients [cs].
+         * The index of the coefficient corresponds to the power of `x`:
+         * ```
+         * p(x) = Σ_i cs[i] * x^i
+         * ```
+         */
         fun <T> fromList(model: AddMonoid<T>, cs: List<T>): Polynomial<T> {
             val terms = ArrayList<PTerm<T>>(cs.size)
             for ((index, value) in cs.withIndex()) {
@@ -604,7 +607,7 @@ open class PolyOverRing<T>(protected val modelRing: Ring<T>) :
         return x.terms.all { model.contains(it.value) }
     }
 
-    override fun multiplyLong(x: Polynomial<T>, n: Long): Polynomial<T> {
+    override fun multiplyN(x: Polynomial<T>, n: Long): Polynomial<T> {
         return x.times(n)
     }
 
@@ -649,11 +652,91 @@ open class PolyOverRing<T>(protected val modelRing: Ring<T>) :
      */
     fun Polynomial<T>.derivative(): Polynomial<T> {
         if (isConstant) return zero
-
         val nonConstantTerms = if (terms[0].pow == 0) terms.subList(1, terms.size) else terms
         return mapTermsPossiblyZeroT(nonConstantTerms, model) { t ->
-            PTerm(t.pow - 1, model.multiplyLong(t.value, t.pow.toLong()))
+            PTerm(t.pow - 1, model.multiplyN(t.value, t.pow.toLong()))
         }
+    }
+
+    /**
+     * Performs the pseudo division of two polynomials only over a ring.
+     * This algorithm finds `Q` and `R` such that
+     * ```
+     *     d^(A.degree - B.degree + 1) A = BQ + R     and     R.degree < B.degree.
+     * ```
+     * It is required that `B` is not zero and
+     * `A.degree >= B.degree`.
+     *
+     *
+     * This method is suitable for polynomials over a ring.
+     *
+     * @return a pair of `Q` and `R`.
+     *
+     */
+    fun pseudoDivision(A: Polynomial<T>, B: Polynomial<T>): Pair<Polynomial<T>, Polynomial<T>> {
+        require(!B.isZero)
+        /*
+        See Algorithm 3.1.2, page 112 of
+        'A Course in Computational Algebraic Number Theory', Henri Cohen
+        Created by lyc at 2020-03-01 14:25
+         */
+        val m = A.degree
+        val n = B.degree
+        require(m >= n)
+        val model = model
+        val d = B.leadCoef
+        var R = A
+        var Q = zero
+        var e = m - n + 1
+        while (!R.isZero && R.degree >= B.degree) {
+            val S = xpow(R.degree - B.degree, R.leadCoef)
+            Q = Q * d + S
+            R = R * d - S * B
+            e -= 1
+        }
+        val q = model.power(d, e.toLong())
+        Q *= q
+        R *= q
+        return Pair(Q, R)
+    }
+
+    /**
+     * Performs the pseudo division of two polynomials only over a ring.
+     * This algorithm finds `Q` and `R` such that
+     * ```
+     *     d^(A.degree - B.degree + 1) A = BQ + R     and     R.degree < B.degree,
+     * ```
+     * where `d` is the leading coefficient of `B`.
+     *
+     * It is required that `B` is not zero and
+     * `A.degree >= B.degree`.
+     *
+     * This method is suitable for polynomials over a ring.
+     *
+     * @return the pseudo remainder `R`.
+     */
+    fun pseudoDivRem(A: Polynomial<T>, B: Polynomial<T>): Polynomial<T> {
+        require(!B.isZero)
+        /*
+        See Algorithm 3.1.2, page 112 of
+        'A Course in Computational Algebraic Number Theory', Henri Cohen
+        Created by lyc at 2020-03-01 14:25
+         */
+        val model = model
+        val m = A.degree
+        val n = B.degree
+        require(m >= n)
+        val d = B.leadCoef
+        var R = A
+        var e = m - n + 1
+        while (!R.isZero && R.degree >= B.degree) {
+            val S = R.leadCoef xpow (R.degree - B.degree)
+            R = R * d - S * B
+            e -= 1
+        }
+        val q = model.power(d, e.toLong())
+        R *= q
+        return R
     }
 
     internal companion object {
@@ -772,82 +855,7 @@ open class PolyOverUnitRing<T>(_model: UnitRing<T>) : PolyOverRing<T>(_model), U
         return x.degree == 0 && model.isUnit(x.constantCoef)
     }
 
-    /**
-     * Performs the pseudo division of two polynomials only over a ring.
-     * This algorithm finds `Q` and `R` such that
-     * ```
-     *     d^(A.degree - B.degree + 1) A = BQ + R     and     R.degree < B.degree.
-     * ```
-     * It is required that `B` is not zero and
-     * `A.degree >= B.degree`.
-     *
-     * @param T the calculator for [T] should at least be a ring calculator.
-     */
-    @Suppress("LocalVariableName")
-    fun pseudoDivision(A: Polynomial<T>, B: Polynomial<T>): Pair<Polynomial<T>, Polynomial<T>> {
-        require(!B.isZero)
-        /*
-        See Algorithm 3.1.2, page 112 of
-        'A Course in Computational Algebraic Number Theory', Henri Cohen
-        Created by lyc at 2020-03-01 14:25
-         */
-        val m = A.degree
-        val n = B.degree
-        require(m >= n)
-        val model = model
-        val d = B.leadCoef
-        var R = A
-        var Q = zero
-        var e = m - n + 1
-        while (!R.isZero && R.degree >= B.degree) {
-            val S = xpow(R.degree - B.degree, R.leadCoef)
-            Q = Q * d + S
-            R = R * d - S * B
-            e -= 1
-        }
-        val q = model.power(d, e.toLong())
-        Q *= q
-        R *= q
-        return Pair(Q, R)
-    }
 
-    /**
-     * Performs the pseudo division of two polynomials only over a ring.
-     * This algorithm finds `Q` and `R` such that
-     * ```
-     *     d^(A.degree - B.degree + 1) A = BQ + R     and     R.degree < B.degree,
-     * ```
-     * where `d` is the leading coefficient of `B`.
-     *
-     * It is required that `B` is not zero and
-     * `A.degree >= B.degree`.
-     *
-     * @param T the calculator for [T] should at least be a ring calculator.
-     */
-    @Suppress("LocalVariableName")
-    fun pseudoDivRem(A: Polynomial<T>, B: Polynomial<T>): Polynomial<T> {
-        require(!B.isZero)
-        /*
-        See Algorithm 3.1.2, page 112 of
-        'A Course in Computational Algebraic Number Theory', Henri Cohen
-        Created by lyc at 2020-03-01 14:25
-         */
-        val model = model
-        val m = A.degree
-        val n = B.degree
-        require(m >= n)
-        val d = B.leadCoef
-        var R = A
-        var e = m - n + 1
-        while (!R.isZero && R.degree >= B.degree) {
-            val S = R.leadCoef xpow (R.degree - B.degree)
-            R = R * d - S * B
-            e -= 1
-        }
-        val q = model.power(d, e.toLong())
-        R *= q
-        return R
-    }
 
     protected fun divideAndRemainder0(x: Polynomial<T>, y: Polynomial<T>): Pair<Polynomial<T>, Polynomial<T>> {
         if (y.isZero) throw ArithmeticException("Division by zero")

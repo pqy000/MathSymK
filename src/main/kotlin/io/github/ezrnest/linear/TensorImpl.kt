@@ -514,7 +514,7 @@ internal object TensorImpl {
     }
 
     fun <T> multiplyLong(x: Tensor<T>, k: Long, mc : AddSemigroup<T>): MutableTensor<T> {
-        return ATensor.buildFromSequence(mc, x.shape, x.indices.map { idx -> mc.multiplyLong(x[idx], k) })
+        return ATensor.buildFromSequence(mc, x.shape, x.indices.map { idx -> mc.multiplyN(x[idx], k) })
     }
 
     /**

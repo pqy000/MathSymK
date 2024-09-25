@@ -285,7 +285,7 @@ object BigIntegerAsIntegers : Integers<BigInteger> {
     }
 
 
-    override fun multiplyLong(x: BigInteger, n: Long): BigInteger {
+    override fun multiplyN(x: BigInteger, n: Long): BigInteger {
         return x.multiply(n.toBigInteger())
     }
 

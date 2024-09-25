@@ -87,7 +87,7 @@ open class IntModN(val n: Int) : OrderedRing<Int>, CommutativeRing<Int>, UnitRin
     }
 
 
-    override fun multiplyLong(x: Int, n: Long): Int {
+    override fun multiplyN(x: Int, n: Long): Int {
         val n1 = NTFunctions.mod(n, this.n)
         return multiply(x, n1)
     }
@@ -200,8 +200,8 @@ class QuotientField<T>(val domain: EuclideanDomain<T>, val p: T) : Field<T> {
     }
 
 
-    override fun multiplyLong(x: T, n: Long): T {
-        return domain.eval { mod(multiplyLong(x, n), p) }
+    override fun multiplyN(x: T, n: Long): T {
+        return domain.eval { mod(multiplyN(x, n), p) }
     }
 
 

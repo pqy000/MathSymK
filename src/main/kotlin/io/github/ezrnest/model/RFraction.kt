@@ -210,7 +210,7 @@ open class RFracOverURing<T>(_model: UnitRing<T>) : UnitRing<RFraction<T>>,Modul
         }
     }
 
-    override fun multiplyLong(x: RFraction<T>, n: Long): RFraction<T> {
+    override fun multiplyN(x: RFraction<T>, n: Long): RFraction<T> {
         return scalarMul(model.of(n), x)
     }
 

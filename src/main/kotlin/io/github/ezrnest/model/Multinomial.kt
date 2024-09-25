@@ -587,7 +587,7 @@ internal constructor(
 //        }
 
         fun <T> parse(str: String, model: UnitRing<T>, comp: MonomialOrder = DEFAULT_MONOMIAL_ORDER) {
-            TODO()
+            TODO("Not yet implemented$str $model $comp")
         }
 
         fun getMonomialOrderLex(chComparator: Comparator<String>): MonomialOrder {
@@ -690,7 +690,7 @@ open class MultinomialOverRing<T>(protected val _model: Ring<T>, val monomialOrd
         return x - y
     }
 
-    override fun multiplyLong(x: Multinomial<T>, n: Long): Multinomial<T> {
+    override fun multiplyN(x: Multinomial<T>, n: Long): Multinomial<T> {
         return x.times(n)
     }
 

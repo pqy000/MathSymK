@@ -169,9 +169,9 @@ class QuaternionNumbers<T>(val field: Field<T>) : DivisionRing<Quaternion<T>>, A
         return reciprocal(q) * this
     }
 
-    override fun multiplyLong(x: Quaternion<T>, n: Long): Quaternion<T> {
+    override fun multiplyN(x: Quaternion<T>, n: Long): Quaternion<T> {
         field.eval {
-            return Quaternion(multiplyLong(x.a, n), multiplyLong(x.b, n), multiplyLong(x.c, n), multiplyLong(x.d, n))
+            return Quaternion(multiplyN(x.a, n), multiplyN(x.b, n), multiplyN(x.c, n), multiplyN(x.d, n))
         }
     }
 

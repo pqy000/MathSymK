@@ -450,7 +450,7 @@ class BroadcastView<T>(
             k *= sh[ax]
         }
         val mc = model as AddSemigroup
-        return mc.multiplyLong(re, k)
+        return mc.multiplyN(re, k)
     }
 
 }

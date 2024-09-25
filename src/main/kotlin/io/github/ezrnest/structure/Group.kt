@@ -126,7 +126,7 @@ interface AddSemigroup<T> : EqualPredicate<T> {
      *
      * @param n a positive integer
      */
-    fun multiplyLong(x: T, n: Long): T {
+    fun multiplyN(x: T, n: Long): T {
         require(n > 0) { "n > 0 is required" }
         return ModelPatterns.binaryProduce(n - 1, x, x, this::add)
     }
@@ -142,15 +142,15 @@ interface AddSemigroup<T> : EqualPredicate<T> {
 
     /**
      * Operator function for [T].
-     * @see multiplyLong
+     * @see multiplyN
      */
-    operator fun Long.times(x: T): T = multiplyLong(x, this)
+    operator fun Long.times(x: T): T = multiplyN(x, this)
 
     /**
      * Operator function for [T].
-     * @see multiplyLong
+     * @see multiplyN
      */
-    operator fun T.times(n: Long) = multiplyLong(this, n)
+    operator fun T.times(n: Long) = multiplyN(this, n)
 }
 
 
@@ -194,7 +194,7 @@ interface AddMonoid<T> : AddSemigroup<T> {
      *
      * @param n a non-negative integer
      */
-    override fun multiplyLong(x: T, n: Long): T {
+    override fun multiplyN(x: T, n: Long): T {
         require(n >= 0) { "n >= 0 is required" }
         return ModelPatterns.binaryProduce(n, zero, x, this::add)
     }
@@ -273,7 +273,7 @@ interface AddGroup<T> : AddMonoid<T> {
      *
      * @param n an integer
      */
-    override fun multiplyLong(x: T, n: Long): T {
+    override fun multiplyN(x: T, n: Long): T {
         if (n == 0L) {
             return zero
         }

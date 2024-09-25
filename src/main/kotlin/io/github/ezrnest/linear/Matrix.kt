@@ -1,20 +1,41 @@
 package io.github.ezrnest.linear
 
+import io.github.ezrnest.linear.AMatrix.Companion.mulRow
+import io.github.ezrnest.linear.Matrix.Companion.invoke
 import io.github.ezrnest.model.Polynomial
 import io.github.ezrnest.structure.*
 import io.github.ezrnest.util.IterUtils
 import kotlin.math.min
 
 /**
- * Represents a mathematical matrix of elements of type [T].
- *
- * This interface defines the basic operations that can be performed on matrices, such as addition, multiplication,
- * scalar operations, and determinant computation.
+ * Represents a matrix of elements of type [T] with shape [row] × [column].
+ * The elements can be accessed by [get(i,j)][Matrix.get].
  *
  *
+ * To create a matrix, you can use the constructor-like functions [Matrix.invoke] or other factory methods like [Matrix.zero].
+ *
+ * This interface only defines the **data structure** of a matrix and **does not** provide any mathematical operations like addition, multiplication, etc.
+ * To operate on matrices, you should use the extension functions provided in the context returned by [Matrix.over],
+ * which has many overloads for different models, such as [Ring] and [Field].
+ *
+ * Generally speaking, the applicable mathematical operations on matrices depend on the model of the elements in the matrix.
+ * For example, matrices can be added over an [AddGroup] and matrix products can be computed over a [Ring].
+ * Also, the identity matrix can be created with [eye(n)][MatOverURing.eye] over a [UnitRing].
+ *
+ * Here is a table of the basic operations on matrices over different models:
+ *
+ * | Model | Operations |
+ * | --- | --- |
+ * | [EqualPredicate] | Equality check |
+ * | [AddMonoid] | Addition, [zero matrix][MatOverAddMonoid.zero] |
+ * | [AddGroup] | Addition, subtraction, negation |
+ * | [Ring] | [matrix multiplication][MatOverRing.matmul], [scalar multiplication][MatOverRing.scalarMul], [determinant][MatOverRing.det] |
+ * | [UnitRing] | [identity matrix][MatOverURing.eye] |
+ * | [Field] | [rank][MatOverField.rank], [kernel][MatOverField.kernel], [image][MatOverField.image] |
  *
  * @param T the type of the elements in the matrix, which must belong to a ring or a field.
  * @see Matrix.over
+ * @see MutableMatrix
  * @see Vector
  */
 interface Matrix<T> : GenTuple<T> {
@@ -51,7 +72,7 @@ interface Matrix<T> : GenTuple<T> {
 
 
     /**
-     * Applies the given function to all elements in this matrix and returns a new matrix.
+     * Creates a new matrix of the same shape by applying the given function [mapping] to each element in this matrix.
      */
     override fun <S> map(mapping: (T) -> S): Matrix<S> {
         return MatrixImpl.apply1(this, mapping)
@@ -184,10 +205,16 @@ interface Matrix<T> : GenTuple<T> {
             return AMatrix.of(n, n, init)
         }
 
+        /**
+         * An alias for [invoke].
+         */
         fun <T> mat(row: Int, col: Int, init: (Int, Int) -> T): Matrix<T> {
             return AMatrix.of(row, col, init)
         }
 
+        /**
+         * An alias for [invoke].
+         */
         fun <T> mat(n: Int, init: (Int, Int) -> T): Matrix<T> {
             return AMatrix.of(n, n, init)
         }
@@ -492,7 +519,6 @@ fun <T> Matrix<T>.joinToString(
 }
 
 
-
 ///**
 // * Returns the transpose conjugate of this matrix.
 // *
@@ -541,25 +567,43 @@ data class VectorAsRowMatrix<T>(val v: Vector<T>) : Matrix<T> {
 val <T> Vector<T>.asMatrix: Matrix<T> get() = VectorAsColMatrix(this)
 val <T> RowVector<T>.asMatrix: Matrix<T> get() = VectorAsRowMatrix(this.v)
 
-/**
- * Returns a mutable copy of this matrix.
- */
-fun <T> Matrix<T>.toMutable(): MutableMatrix<T> {
-    return MutableMatrix.copyOf(this)
-}
 
+/**
+ * Describes a mutable matrix of elements of type [T].
+ */
 interface MutableMatrix<T> : Matrix<T> {
     operator fun set(i: Int, j: Int, value: T)
 
+    /**
+     * Sets the row `i` with the given row vector.
+     */
     fun setRow(i: Int, row: GenVector<T>) {
         for (j in 0..<column) {
             this[i, j] = row[j]
         }
     }
 
+    /**
+     * Sets the row `i` with the given element `v`.
+     */
+    fun setRow(i: Int, v: T) {
+        for (j in colIndices) {
+            this[i, j] = v
+        }
+    }
+
     fun setCol(j: Int, col: GenVector<T>) {
         for (i in 0..<row) {
             this[i, j] = col[i]
+        }
+    }
+
+    /**
+     * Sets the column `j` with the given element `v`.
+     */
+    fun setCol(j: Int, v: T) {
+        for (i in rowIndices) {
+            this[i, j] = v
         }
     }
 
@@ -736,6 +780,16 @@ interface MutableMatrix<T> : Matrix<T> {
     }
 }
 
+/**
+ * Returns a mutable copy of this matrix.
+ */
+fun <T> Matrix<T>.toMutable(): MutableMatrix<T> {
+    return MutableMatrix.copyOf(this)
+}
+
+/*
+ Matrix models
+ */
 
 interface MatricesShaped {
     /**
@@ -766,6 +820,7 @@ interface MatOverEqualPredicate<T> : EqualPredicate<Matrix<T>>, MatricesShaped {
 interface MatOverAddMonoid<T> : MatOverEqualPredicate<T>, AddMonoid<Matrix<T>> {
 
     override val model: AddMonoid<T>
+
     /**
      * Gets the zero matrix of the prescribed shape [row] and [column].
      *
@@ -778,10 +833,16 @@ interface MatOverAddMonoid<T> : MatOverEqualPredicate<T>, AddMonoid<Matrix<T>> {
         return true
     }
 
+    /**
+     * Creates a zero matrix with the given [row] and [column].
+     */
     fun zero(row: Int, column: Int): Matrix<T> {
         return Matrix.zero(row, column, model)
     }
 
+    /**
+     * Creates a zero square matrix with shape `n × n`.
+     */
     fun zero(n: Int): Matrix<T> {
         return zero(n, n)
     }
@@ -812,11 +873,12 @@ interface MatOverAddMonoid<T> : MatOverEqualPredicate<T>, AddMonoid<Matrix<T>> {
     }
 
     override fun sum(elements: List<Matrix<T>>): Matrix<T> {
+        if(elements.isEmpty()) return zero
         return MatrixImpl.sum(elements, model)
     }
 
-    override fun multiplyLong(x: Matrix<T>, n: Long): Matrix<T> {
-        return MatrixImpl.apply1(x) { model.multiplyLong(it, n) }
+    override fun multiplyN(x: Matrix<T>, n: Long): Matrix<T> {
+        return MatrixImpl.apply1(x) { model.multiplyN(it, n) }
     }
 
 
@@ -837,6 +899,18 @@ interface MatOverAddMonoid<T> : MatOverEqualPredicate<T>, AddMonoid<Matrix<T>> {
     fun Matrix<T>.sum(): T {
         return MatrixImpl.sumAll(this, model)
     }
+
+    /*
+    Mutable matrix
+     */
+
+    operator fun MutableMatrix<T>.plusAssign(y: Matrix<T>) {
+        return MatrixImpl.addInPlace(this, y, model)
+    }
+
+    operator fun MutableMatrix<T>.timesAssign(n: Long) {
+        return MatrixImpl.multiplyNInPlace(this, n, model)
+    }
 }
 
 
@@ -852,8 +926,12 @@ interface MatOverAddGroup<T> : AddGroup<Matrix<T>>, MatOverAddMonoid<T> {
         return MatrixImpl.subtract(x, y, model)
     }
 
-    override fun multiplyLong(x: Matrix<T>, n: Long): Matrix<T> {
-        return super<MatOverAddMonoid>.multiplyLong(x, n)
+    override fun multiplyN(x: Matrix<T>, n: Long): Matrix<T> {
+        return super<MatOverAddMonoid>.multiplyN(x, n)
+    }
+
+    operator fun MutableMatrix<T>.minusAssign(y: Matrix<T>) {
+        return MatrixImpl.subtractInPlace(this, y, model)
     }
 }
 
@@ -954,6 +1032,12 @@ interface MatOverRing<T> : MatOverAddGroup<T>, Ring<Matrix<T>>, RingModule<T, Ma
      *     det(A) = \sum_{σ ∈ S_n} sign(σ) \prod_{i=1}^n A_{i, σ(i)},
      *
      * where `S_n` is the symmetric group of degree `n`.
+     *
+     * It is required that this matrix is square.
+     *
+     * This method can be defined for matrices over a ring,
+     * but a faster implementation (not being `O(n!)`) is available for matrices over a [field][Field] or
+     * a [unit ring][UnitRing] supporting [exact division][UnitRing.exactDiv].
      */
     fun Matrix<T>.det(): T {
         return MatrixImpl.det(this, model)
@@ -962,8 +1046,11 @@ interface MatOverRing<T> : MatOverAddGroup<T>, Ring<Matrix<T>>, RingModule<T, Ma
     /**
      * Returns the cofactor of this matrix at the position `(i, j)`.
      * The cofactor is the determinant of the minor matrix at `(i, j)` with a sign determined by `(-1)^(i+j)`.
-     *
+     * ```
      *     C(i, j) = (-1)^(i+j) * det(minor(i, j))
+     * ```
+     *
+     * @see [Matrix.det]
      */
     fun Matrix<T>.cofactor(i: Int, j: Int): T {
         return MatrixImpl.cofactor(this, i, j, model)
@@ -975,6 +1062,9 @@ interface MatOverRing<T> : MatOverAddGroup<T>, Ring<Matrix<T>>, RingModule<T, Ma
      *    adj(A) = (C(i, j))_{i,j}^T
      *
      * If `A` is invertible, then `A * adjugate(A) = det(A) * I`.
+     *
+     *
+     * @see [Matrix.det]
      */
     fun Matrix<T>.adjugate(): Matrix<T> {
         return MatrixImpl.adjugate(this, model)
@@ -1023,7 +1113,31 @@ interface MatOverRing<T> : MatOverAddGroup<T>, Ring<Matrix<T>>, RingModule<T, Ma
         return MatrixImpl.kronecker(this, other, model)
     }
 
+    /*
+    Mutable matrix
+     */
 
+    operator fun MutableMatrix<T>.timesAssign(k: T) {
+        return MatrixImpl.scalarMulInPlace(this, k, model)
+    }
+
+    // row and column operations
+
+    fun MutableMatrix<T>.mulRow(r: Int, k: T, colStart: Int = 0, colEnd: Int = column) {
+        if (this is AMatrix) {
+            this.mulRow(r, k, colStart, colEnd, model)
+        } else {
+            for (j in colStart until colEnd) {
+                this[r, j] = model.multiply(this[r, j], k)
+            }
+        }
+    }
+
+    fun MutableMatrix<T>.mulCol(c: Int, k: T, rowStart: Int = 0, rowEnd: Int = row) {
+        for (i in rowStart until rowEnd) {
+            this[i, c] = model.multiply(this[i, c], k)
+        }
+    }
 }
 
 interface MatOverURing<T> : MatOverRing<T>, UnitRing<Matrix<T>>, UnitRingModule<T, Matrix<T>> {

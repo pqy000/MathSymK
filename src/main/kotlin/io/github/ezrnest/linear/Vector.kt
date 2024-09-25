@@ -321,7 +321,7 @@ object VectorImpl {
     }
 
     fun <T> multiplyLong(x: Vector<T>, k: Long, model: AddGroup<T>): AVector<T> {
-        return apply1(x) { model.multiplyLong(it, k) }
+        return apply1(x) { model.multiplyN(it, k) }
     }
 
     fun <T> divide(x: Vector<T>, k: T, model: MulGroup<T>): AVector<T> {

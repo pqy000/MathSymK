@@ -46,12 +46,12 @@ interface UnitRing<T> : Ring<T>, MulMonoid<T> {
      * Returns element in this ring that represents `one * n`, namely adding `one` for `n` times.
      */
     fun of(n: Long): T {
-        return multiplyLong(one, n)
+        return multiplyN(one, n)
     }
 
 
     /**
-     * Returns the result of exact division `a/b`.
+     * Returns the result of exact division `a/b`, namely an element `c` such that `a = c * b`.
      *
      * This method is optional for a unit ring.
      *

@@ -168,7 +168,7 @@ open class ComplexOverUnitRing<T>(_model: UnitRing<T>) : UnitRing<Complex<T>>,Mo
 
 
 
-    final override fun multiplyLong(x: Complex<T>, n: Long): Complex<T> {
+    final override fun multiplyN(x: Complex<T>, n: Long): Complex<T> {
         return scalars.eval { of(x.a * n, x.b * n) }
     }
 
