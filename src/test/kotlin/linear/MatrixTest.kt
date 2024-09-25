@@ -2,9 +2,7 @@ package linear
 
 import TestUtils.assertEquals
 import TestUtils.assertValueEquals
-import io.github.ezrnest.linear.LinAlg
-import io.github.ezrnest.linear.Matrix
-import io.github.ezrnest.linear.MatrixImpl
+import io.github.ezrnest.linear.*
 import io.github.ezrnest.linear.MatrixExt.charPoly
 import io.github.ezrnest.linear.MatrixExt.decompLDL
 import io.github.ezrnest.linear.MatrixExt.decompLU
@@ -12,8 +10,6 @@ import io.github.ezrnest.linear.MatrixExt.decompRank
 import io.github.ezrnest.linear.MatrixExt.image
 import io.github.ezrnest.linear.MatrixExt.kernel
 import io.github.ezrnest.linear.MatrixExt.toCongDiagForm
-import io.github.ezrnest.linear.Vector
-import io.github.ezrnest.linear.toMutable
 import io.github.ezrnest.model.Multinomial
 import io.github.ezrnest.model.NumberModels
 import io.github.ezrnest.model.Polynomial
@@ -186,9 +182,9 @@ class MatrixTest {
         run {
             val rng = Random(10)
             val A = Matrix(4, 4, F) { i, j -> rng.nextInt(100) }
-            val b = Vector(4, F) { i -> rng.nextInt(100) }
+            val b = Vector(4) { i -> rng.nextInt(100) }
             val sol = LinAlg.solveLinear(A, b)!! // A is full rank
-            assertValueEquals(A * sol.solution, b)
+            assertEquals(A * sol.solution, b)
         }
 
         run {
@@ -300,7 +296,7 @@ class MatrixTest {
     fun toCongDiagFormOfZeroMatrix() {
         val A = Matrix.zero(3, 3, Zmod7)
         val (Lambda, P) = A.toCongDiagForm()
-        assertTrue(Lambda.isZero)
+        assertTrue(Lambda.all { it == 0 })
         assertValueEquals(Matrix.identity(3, Zmod7), P)
     }
 

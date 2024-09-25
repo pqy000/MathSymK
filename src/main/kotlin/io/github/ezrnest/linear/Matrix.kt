@@ -1,11 +1,8 @@
 package io.github.ezrnest.linear
 
-import io.github.ezrnest.ValueEquatable
-import io.github.ezrnest.ModeledMathObject
 import io.github.ezrnest.model.Complex
 import io.github.ezrnest.model.struct.*
 import io.github.ezrnest.structure.*
-import java.util.function.Function
 
 /**
  * Represents a mathematical matrix of elements of type [T].
@@ -20,8 +17,7 @@ import java.util.function.Function
  * @see MatrixExt
  * @see Vector
  */
-interface Matrix<T> : GenMatrix<T>, ModeledMathObject<T, EqualPredicate<T>>,
-    AlgebraModel<T, Matrix<T>>, MulGroupModel<Matrix<T>> {
+interface Matrix<T> : GenMatrix<T> {
 
     /*
     Matrix
@@ -31,14 +27,14 @@ interface Matrix<T> : GenMatrix<T>, ModeledMathObject<T, EqualPredicate<T>>,
      * Gets the row at the given index as a vector.
      */
     fun rowAt(rowIdx: Int): Vector<T> {
-        return Vector(column, model) { colIdx -> this[rowIdx, colIdx] }
+        return Vector(column) { colIdx -> this[rowIdx, colIdx] }
     }
 
     /**
      * Gets the column at the given index as a vector.
      */
     fun colAt(colIdx: Int): Vector<T> {
-        return Vector(row, model) { rowIdx -> this[rowIdx, colIdx] }
+        return Vector(row) { rowIdx -> this[rowIdx, colIdx] }
     }
 
     /**
@@ -55,53 +51,11 @@ interface Matrix<T> : GenMatrix<T>, ModeledMathObject<T, EqualPredicate<T>>,
         return colIndices.map { colAt(it) }
     }
 
-
     /**
      * Applies the given function to all elements in this matrix and returns a new matrix.
      */
-    override fun applyAll(f: (T) -> T): Matrix<T> {
-        return MatrixImpl.apply1(this, model, f)
-    }
-
-    /*
-    MathObject
-     */
-
-    override fun <S> mapTo(newModel: EqualPredicate<S>, mapping: Function<T, S>): Matrix<S> {
-        return MatrixImpl.apply1(this, newModel, mapping::apply)
-    }
-
-
-    override fun valueEquals(obj: ValueEquatable<T>): Boolean {
-        if (obj !is Matrix) return false
-        if (row != obj.row || column != obj.column) return false
-        return rowIndices.all { r -> colIndices.all { c -> model.isEqual(this[r, c], obj[r, c]) } }
-    }
-
-    /*
-    VectorModel
-     */
-
-    override val isZero: Boolean
-        get() {
-            val model = model as AddGroup<T>
-            return elementSequence().all { model.isZero(it) }
-        }
-
-    override fun plus(y: Matrix<T>): Matrix<T> {
-        return MatrixImpl.add(this, y, model as AddSemigroup<T>)
-    }
-
-    override fun unaryMinus(): Matrix<T> {
-        return MatrixImpl.negate(this, model as AddGroup<T>)
-    }
-
-    override fun scalarMul(k: T): Matrix<T> {
-        return MatrixImpl.multiply(this, k, model as MulSemigroup)
-    }
-
-    override fun scalarDiv(k: T): Matrix<T> {
-        return MatrixImpl.divide(this, k, model as MulGroup)
+    override fun <S> map(mapping: (T) -> S): Matrix<S> {
+        return MatrixImpl.apply1(this, mapping)
     }
 
 
@@ -109,116 +63,116 @@ interface Matrix<T> : GenMatrix<T>, ModeledMathObject<T, EqualPredicate<T>>,
     Matrix operations
      */
 
-    /**
-     * Returns the matrix product of this matrix and the given matrix.
-     * It is required that `this.column == y.row`.
-     *
-     *
-     * Let `C = A * B`, then `C[i, j] = sum(k; A[i, k] * B[k, j])` for all `i` and `j`.
-     *
-     */
-    infix fun matmul(y: Matrix<T>): Matrix<T> {
-        return MatrixImpl.matmul(this, y, model as Ring)
-    }
-
-    /**
-     * Returns the matrix product of this matrix and the given matrix.
-     * It is required that `this.column == y.row`.
-     *
-     *
-     * Let `C = A * B`, then `C[i, j] = sum(k; A[i, k] * B[k, j])` for all `i` and `j`.
-     *
-     * @see matmul
-     *
-     */
-    override operator fun times(y: Matrix<T>): Matrix<T> {
-        return this.matmul(y)
-    }
-
-    /**
-     * Returns the matrix product of this matrix and the given column vector as a column vector.
-     *
-     * Let `v = A * x`, then `v[i ] = sum(k; A[i, k] * x[k ])` for all `i`.
-     */
-    infix fun matmul(v: Vector<T>): Vector<T> {
-        return MatrixImpl.matmul(this, v, model as Ring)
-    }
-
-    /**
-     * An operator function for [matmul].
-     */
-    operator fun times(v: Vector<T>): Vector<T> {
-        return this.matmul(v)
-    }
-
-    /**
-     * Determines if this matrix is invertible.
-     *
-     * It is required that this matrix is square and the [model] is a unit ring.
-     */
-    override val isInvertible: Boolean
-        get() {
-            return MatrixImpl.isInvertible(this, model as UnitRing)
-        }
-
-    /**
-     * Computes the inverse of this matrix.
-     *
-     * It is required that this matrix is square and the [model] is a unit ring.
-     *
-     * @throws ArithmeticException if this matrix is not invertible.
-     */
-    override fun inv(): Matrix<T> {
-        return MatrixImpl.inverse(this, model as UnitRing)
-    }
-
-    /**
-     * Computes the determinant of this matrix.
-     *
-     * The determinant is defined as:
-     *
-     *     det(A) = \sum_{σ ∈ S_n} sign(σ) \prod_{i=1}^n A_{i, σ(i)},
-     *
-     * where `S_n` is the symmetric group of degree `n`.
-     */
-    fun det(): T {
-        return MatrixImpl.det(this, model as Ring)
-    }
-
-    /**
-     * Computes the rank of this matrix.
-     *
-     * The rank of a matrix is the maximum number of linearly independent rows or columns in the matrix.
-     *
-     * It is required that this matrix is a matrix of elements in a field.
-     */
-    fun rank(): Int {
-        return MatrixImpl.rank(this, model as Field)
-    }
-
-    /**
-     * Returns the trace if this matrix, that is, the sum of diagonal elements.
-     *
-     * It is required that this matrix is square.
-     *
-     */
-    fun trace(): T {
-        return MatrixImpl.trace(this, model as AddSemigroup<T>)
-    }
-
-    /**
-     * Gets the diagonal of this matrix as a vector.
-     */
-    fun diag(): Vector<T> {
-        return MatrixImpl.diag(this, model)
-    }
-
-    /**
-     * Returns the sum of all elements in this matrix.
-     */
-    fun sumAll(): T {
-        return MatrixImpl.sumAll(this, model as AddSemigroup<T>)
-    }
+//    /**
+//     * Returns the matrix product of this matrix and the given matrix.
+//     * It is required that `this.column == y.row`.
+//     *
+//     *
+//     * Let `C = A * B`, then `C[i, j] = sum(k; A[i, k] * B[k, j])` for all `i` and `j`.
+//     *
+//     */
+//    infix fun matmul(y: Matrix<T>): Matrix<T> {
+//        return MatrixImpl.matmul(this, y, model as Ring)
+//    }
+//
+//    /**
+//     * Returns the matrix product of this matrix and the given matrix.
+//     * It is required that `this.column == y.row`.
+//     *
+//     *
+//     * Let `C = A * B`, then `C[i, j] = sum(k; A[i, k] * B[k, j])` for all `i` and `j`.
+//     *
+//     * @see matmul
+//     *
+//     */
+//    override operator fun times(y: Matrix<T>): Matrix<T> {
+//        return this.matmul(y)
+//    }
+//
+//    /**
+//     * Returns the matrix product of this matrix and the given column vector as a column vector.
+//     *
+//     * Let `v = A * x`, then `v[i ] = sum(k; A[i, k] * x[k ])` for all `i`.
+//     */
+//    infix fun matmul(v: Vector<T>): Vector<T> {
+//        return MatrixImpl.matmul(this, v, model as Ring)
+//    }
+//
+//    /**
+//     * An operator function for [matmul].
+//     */
+//    operator fun times(v: Vector<T>): Vector<T> {
+//        return this.matmul(v)
+//    }
+//
+//    /**
+//     * Determines if this matrix is invertible.
+//     *
+//     * It is required that this matrix is square and the [model] is a unit ring.
+//     */
+//    override val isInvertible: Boolean
+//        get() {
+//            return MatrixImpl.isInvertible(this, model as UnitRing)
+//        }
+//
+//    /**
+//     * Computes the inverse of this matrix.
+//     *
+//     * It is required that this matrix is square and the [model] is a unit ring.
+//     *
+//     * @throws ArithmeticException if this matrix is not invertible.
+//     */
+//    override fun inv(): Matrix<T> {
+//        return MatrixImpl.inverse(this, model as UnitRing)
+//    }
+//
+//    /**
+//     * Computes the determinant of this matrix.
+//     *
+//     * The determinant is defined as:
+//     *
+//     *     det(A) = \sum_{σ ∈ S_n} sign(σ) \prod_{i=1}^n A_{i, σ(i)},
+//     *
+//     * where `S_n` is the symmetric group of degree `n`.
+//     */
+//    fun det(): T {
+//        return MatrixImpl.det(this, model as Ring)
+//    }
+//
+//    /**
+//     * Computes the rank of this matrix.
+//     *
+//     * The rank of a matrix is the maximum number of linearly independent rows or columns in the matrix.
+//     *
+//     * It is required that this matrix is a matrix of elements in a field.
+//     */
+//    fun rank(): Int {
+//        return MatrixImpl.rank(this, model as Field)
+//    }
+//
+//    /**
+//     * Returns the trace if this matrix, that is, the sum of diagonal elements.
+//     *
+//     * It is required that this matrix is square.
+//     *
+//     */
+//    fun trace(): T {
+//        return MatrixImpl.trace(this, model as AddSemigroup<T>)
+//    }
+//
+//    /**
+//     * Gets the diagonal of this matrix as a vector.
+//     */
+//    fun diag(): Vector<T> {
+//        return MatrixImpl.diag(this)
+//    }
+//
+//    /**
+//     * Returns the sum of all elements in this matrix.
+//     */
+//    fun sumAll(): T {
+//        return MatrixImpl.sumAll(this, model as AddSemigroup<T>)
+//    }
 
     /**
      * Returns a transposed view of this matrix.
@@ -283,7 +237,7 @@ interface Matrix<T> : GenMatrix<T>, ModeledMathObject<T, EqualPredicate<T>>,
          * such that `A[i, j] = init(i, j)`.
          */
         operator fun <T> invoke(row: Int, column: Int, model: EqualPredicate<T>, init: (Int, Int) -> T): Matrix<T> {
-            return AMatrix.of(row, column, model, init)
+            return AMatrix.of(row, column, init)
         }
 
         /**
@@ -307,24 +261,19 @@ interface Matrix<T> : GenMatrix<T>, ModeledMathObject<T, EqualPredicate<T>>,
          */
         fun <T> of(row: Int, col: Int, model: EqualPredicate<T>, vararg elements: T): Matrix<T> {
             require(row * col == elements.size)
-            return AMatrix.of(row, col, model, *elements)
+            return AMatrix.of(row, col, *elements)
         }
+
 
         /**
          * Creates a new matrix from a list of column vectors.
          */
         fun <T> fromColumns(columns: List<Vector<T>>): Matrix<T> {
-            return fromColumns(columns, columns.first().model)
-        }
-
-        /**
-         * Creates a new matrix from a list of column vectors.
-         */
-        fun <T> fromColumns(columns: List<Vector<T>>, model: EqualPredicate<T>): Matrix<T> {
             val row = columns.first().size
             val column = columns.size
             require(columns.all { it.size == row })
-            return Matrix(row, column, model) { i, j -> columns[i][j] }
+            TODO()
+//            return Matrix(row, column) { i, j -> columns[i][j] }
         }
 
         /**
@@ -334,8 +283,8 @@ interface Matrix<T> : GenMatrix<T>, ModeledMathObject<T, EqualPredicate<T>>,
             val row = rows.size
             val column = rows.first().size
             require(rows.all { it.size == column })
-            val model = rows.first().model
-            return Matrix(row, column, model) { i, j -> rows[i][j] }
+            TODO()
+//            return Matrix(row, column) { i, j -> rows[i][j] }
         }
 
         /**
@@ -377,9 +326,8 @@ interface Matrix<T> : GenMatrix<T>, ModeledMathObject<T, EqualPredicate<T>>,
          * Creates a diagonal matrix with the given vector as the diagonal elements.
          */
         fun <T> diag(v: Vector<T>): Matrix<T> {
-            val model = v.model as AddMonoid
             val n = v.size
-            val A = MatrixImpl.zero(n, n, model)
+            val A = MatrixImpl.zero<T>(n, n, TODO())
             for (i in 0 until n) {
                 A[i, i] = v[i]
             }
@@ -406,7 +354,7 @@ interface Matrix<T> : GenMatrix<T>, ModeledMathObject<T, EqualPredicate<T>>,
          * It is required that `A` and `B` have that same row count.
          */
         fun <T> concatColumn(a: Matrix<T>, b: Matrix<T>): Matrix<T> {
-            return MatrixImpl.concatCol(a, b, a.model)
+            return MatrixImpl.concatCol(a, b)
         }
 
         /**
@@ -418,7 +366,7 @@ interface Matrix<T> : GenMatrix<T>, ModeledMathObject<T, EqualPredicate<T>>,
          * It is required that `A` and `B` have that same column count.
          */
         fun <T> concatRow(a: Matrix<T>, b: Matrix<T>): Matrix<T> {
-            return MatrixImpl.concatRow(a, b, a.model)
+            return MatrixImpl.concatRow(a, b)
         }
 
 
@@ -432,8 +380,8 @@ interface Matrix<T> : GenMatrix<T>, ModeledMathObject<T, EqualPredicate<T>>,
          *
          * The order of multiplication is automatically optimized.
          */
-        fun <T> product(vararg matrices: Matrix<T>): Matrix<T> {
-            return product(matrices.asList())
+        fun <T> product(model: Ring<T>, vararg matrices: Matrix<T>): Matrix<T> {
+            return product(model, matrices.asList())
         }
 
         /**
@@ -441,8 +389,8 @@ interface Matrix<T> : GenMatrix<T>, ModeledMathObject<T, EqualPredicate<T>>,
          *
          * The order of multiplication is automatically optimized.
          */
-        fun <T> product(matrices: List<Matrix<T>>): Matrix<T> {
-            return MatrixImpl.product(matrices, matrices.first().model as Ring)
+        fun <T> product(model: Ring<T>, matrices: List<Matrix<T>>): Matrix<T> {
+            return MatrixImpl.product(matrices, model)
         }
 
 
@@ -480,7 +428,8 @@ interface Matrix<T> : GenMatrix<T>, ModeledMathObject<T, EqualPredicate<T>>,
  * Returns the matrix product of this row vector and the matrix, resulting in a row vector.
  */
 fun <T> RowVector<T>.matmul(m: Matrix<T>): RowVector<T> {
-    return RowVector(MatrixImpl.matmul(this, m, this.v.model as Ring))
+    TODO()
+//    return RowVector(MatrixImpl.matmul(this, m, this.v.model as Ring))
 }
 
 operator fun <T> RowVector<T>.times(m: Matrix<T>): RowVector<T> {
@@ -494,8 +443,8 @@ operator fun <T> RowVector<T>.times(m: Matrix<T>): RowVector<T> {
  * It is required that this matrix is a matrix of complex numbers with a model of [ComplexNumbers].
  */
 fun <K> Matrix<Complex<K>>.transposeConjugate(): Matrix<Complex<K>> {
-    val model = model as ComplexNumbers<*, Complex<K>>
-    return TransposedMatrixView(this).applyAll(model::conj)
+    TODO()
+//    return TransposedMatrixView(this).map(model::conj)
 }
 
 /**
@@ -508,8 +457,6 @@ val <K> Matrix<Complex<K>>.H: Matrix<Complex<K>> get() = transposeConjugate()
 
 @JvmRecord
 data class VectorAsColMatrix<T>(val v: Vector<T>) : Matrix<T> {
-    override val model: EqualPredicate<T>
-        get() = v.model
     override val row: Int
         get() = v.size
     override val column: Int
@@ -523,8 +470,6 @@ data class VectorAsColMatrix<T>(val v: Vector<T>) : Matrix<T> {
 
 @JvmRecord
 data class VectorAsRowMatrix<T>(val v: Vector<T>) : Matrix<T> {
-    override val model: EqualPredicate<T>
-        get() = v.model
     override val row: Int
         get() = 1
     override val column: Int
@@ -572,20 +517,6 @@ interface MutableMatrix<T> : Matrix<T> {
 
     fun copy(): MutableMatrix<T>
 
-    operator fun plusAssign(y: Matrix<T>) {
-        val model = model as AddSemigroup
-        transform { i, j, t -> model.add(t, y[i, j]) }
-    }
-
-    operator fun timesAssign(k: T) {
-        val model = model as MulSemigroup
-        transform { _, _, t -> model.multiply(t, k) }
-    }
-
-    operator fun divAssign(k: T) {
-        val model = model as UnitRing
-        transform { _, _, t -> model.exactDiv(t, k) }
-    }
 
     /**
      * Swaps the rows `r1` and `r2` with the given column range `[colStart, colEnd)`.
@@ -597,114 +528,127 @@ interface MutableMatrix<T> : Matrix<T> {
      */
     fun swapCol(c1: Int, c2: Int, rowStart: Int = 0, rowEnd: Int = row)
 
-    /**
-     * Negates the row `r` with the given column range `[colStart, colEnd)`.
-     */
-    fun negateRow(r: Int, colStart: Int = 0, colEnd: Int = column)
-
-    /**
-     * Negates the column `c` with the given row range `[rowStart, rowEnd)`.
-     */
-    fun negateCol(c: Int, rowStart: Int = 0, rowEnd: Int = row)
-
-
-    /**
-     * Negates all elements in this matrix.
-     */
-    fun negateInPlace()
-
-    /**
-     * Multiplies the row `r` by `k` with the given column range `[colStart, colEnd)`.
-     */
-    fun mulRow(r: Int, k: T, colStart: Int = 0, colEnd: Int = column)
-
-    /**
-     * Divides the row `r` by `k` with the given column range `[colStart, colEnd)`.
-     */
-    fun divRow(r: Int, k: T, colStart: Int = 0, colEnd: Int = column)
-
-    /**
-     * Multiplies the column `c` by `k` with the given row range `[rowStart, rowEnd)`.
-     */
-    fun mulCol(c: Int, k: T, rowStart: Int = 0, rowEnd: Int = row)
-
-    /**
-     * Divides the column `c` by `k` with the given row range `[rowStart, rowEnd)`.
-     */
-    fun divCol(c: Int, k: T, rowStart: Int = 0, rowEnd: Int = row)
-
-    /**
-     * Adds the row `r1` to the row `r2` with the given column range `[colStart, colEnd)`.
-     */
-    fun addRowTo(r1: Int, r2: Int, colStart: Int = 0, colEnd: Int = column)
-
-    /**
-     * Adds the column `c1` to the column `c2` with the given row range `[rowStart, rowEnd)`.
-     */
-    fun addColTo(c1: Int, c2: Int, rowStart: Int = 0, rowEnd: Int = row)
-
-    /**
-     * Adds the row `r1` multiplied by `k` to the row `r2` with the given column range `[colStart, colEnd)`:
-     *
-     *    this[r2,j] = this[r2,j] + k * this[r1,j]     for j in [colStart, colEnd)
-     */
-    fun mulAddRow(r1: Int, r2: Int, k: T, colStart: Int = 0, colEnd: Int = column)
-
-    /**
-     * Adds the column `c1` multiplied by `k` to the column `c2` with the given row range `[rowStart, rowEnd)`:
-     *
-     *    this[i,c2] = this[i,c2] + k * this[i,c1]     for i in [rowStart, rowEnd)
-     */
-    fun mulAddCol(c1: Int, c2: Int, k: T, rowStart: Int = 0, rowEnd: Int = row)
-
-    /**
-     * Performs a row transformation described as:
-     * ```
-     *     v1 = this[r1,:], v2 = this[r2,:]
-     *     this[r1,:] = a11 * v1 + a12 * v2
-     *     this[r2,:] = a21 * v1 + a22 * v2
-     * ```
-     */
-    fun transformRows(
-        r1: Int, r2: Int, a11: T, a12: T, a21: T, a22: T,
-        colStart: Int = 0, colEnd: Int = column
-    )
-
-    /**
-     * Performs a column transformation described as:
-     * ```
-     *    v1 = this[:,c1], v2 = this[:,c2]
-     *    this[:,c1] = a11 * v1 + a12 * v2
-     *    this[:,c2] = a21 * v1 + a22 * v2
-     * ```
-     */
-    fun transformCols(
-        c1: Int, c2: Int, a11: T, a12: T, a21: T, a22: T,
-        rowStart: Int = 0, rowEnd: Int = row
-    ) {
-        val model = model as Ring
-        val A = this
-        for (i in rowStart until rowEnd) {
-            val v1 = A[i, c1]
-            val v2 = A[i, c2]
-            with(model) {
-                A[i, c1] = a11 * v1 + a12 * v2
-                A[i, c2] = a21 * v1 + a22 * v2
-            }
-        }
-    }
-
-
+//    operator fun plusAssign(y: Matrix<T>) {
+//        val model = model as AddSemigroup
+//        transform { i, j, t -> model.add(t, y[i, j]) }
+//    }
+//
+//    operator fun timesAssign(k: T) {
+//        val model = model as MulSemigroup
+//        transform { _, _, t -> model.multiply(t, k) }
+//    }
+//
+//    operator fun divAssign(k: T) {
+//        val model = model as UnitRing
+//        transform { _, _, t -> model.exactDivide(t, k) }
+//    }
+//
+//    /**
+//     * Negates the row `r` with the given column range `[colStart, colEnd)`.
+//     */
+//    fun negateRow(r: Int, colStart: Int = 0, colEnd: Int = column)
+//
+//    /**
+//     * Negates the column `c` with the given row range `[rowStart, rowEnd)`.
+//     */
+//    fun negateCol(c: Int, rowStart: Int = 0, rowEnd: Int = row)
+//
+//
+//    /**
+//     * Negates all elements in this matrix.
+//     */
+//    fun negateInPlace()
+//
+//    /**
+//     * Multiplies the row `r` by `k` with the given column range `[colStart, colEnd)`.
+//     */
+//    fun mulRow(r: Int, k: T, colStart: Int = 0, colEnd: Int = column)
+//
+//    /**
+//     * Divides the row `r` by `k` with the given column range `[colStart, colEnd)`.
+//     */
+//    fun divRow(r: Int, k: T, colStart: Int = 0, colEnd: Int = column)
+//
+//    /**
+//     * Multiplies the column `c` by `k` with the given row range `[rowStart, rowEnd)`.
+//     */
+//    fun mulCol(c: Int, k: T, rowStart: Int = 0, rowEnd: Int = row)
+//
+//    /**
+//     * Divides the column `c` by `k` with the given row range `[rowStart, rowEnd)`.
+//     */
+//    fun divCol(c: Int, k: T, rowStart: Int = 0, rowEnd: Int = row)
+//
+//    /**
+//     * Adds the row `r1` to the row `r2` with the given column range `[colStart, colEnd)`.
+//     */
+//    fun addRowTo(r1: Int, r2: Int, colStart: Int = 0, colEnd: Int = column)
+//
+//    /**
+//     * Adds the column `c1` to the column `c2` with the given row range `[rowStart, rowEnd)`.
+//     */
+//    fun addColTo(c1: Int, c2: Int, rowStart: Int = 0, rowEnd: Int = row)
+//
+//    /**
+//     * Adds the row `r1` multiplied by `k` to the row `r2` with the given column range `[colStart, colEnd)`:
+//     *
+//     *    this[r2,j] = this[r2,j] + k * this[r1,j]     for j in [colStart, colEnd)
+//     */
+//    fun mulAddRow(r1: Int, r2: Int, k: T, colStart: Int = 0, colEnd: Int = column)
+//
+//    /**
+//     * Adds the column `c1` multiplied by `k` to the column `c2` with the given row range `[rowStart, rowEnd)`:
+//     *
+//     *    this[i,c2] = this[i,c2] + k * this[i,c1]     for i in [rowStart, rowEnd)
+//     */
+//    fun mulAddCol(c1: Int, c2: Int, k: T, rowStart: Int = 0, rowEnd: Int = row)
+//
+//    /**
+//     * Performs a row transformation described as:
+//     * ```
+//     *     v1 = this[r1,:], v2 = this[r2,:]
+//     *     this[r1,:] = a11 * v1 + a12 * v2
+//     *     this[r2,:] = a21 * v1 + a22 * v2
+//     * ```
+//     */
+//    fun transformRows(
+//        r1: Int, r2: Int, a11: T, a12: T, a21: T, a22: T,
+//        colStart: Int = 0, colEnd: Int = column
+//    )
+//
+//    /**
+//     * Performs a column transformation described as:
+//     * ```
+//     *    v1 = this[:,c1], v2 = this[:,c2]
+//     *    this[:,c1] = a11 * v1 + a12 * v2
+//     *    this[:,c2] = a21 * v1 + a22 * v2
+//     * ```
+//     */
+//    fun transformCols(
+//        c1: Int, c2: Int, a11: T, a12: T, a21: T, a22: T,
+//        rowStart: Int = 0, rowEnd: Int = row
+//    ) {
+//        val model = model as Ring
+//        val A = this
+//        for (i in rowStart until rowEnd) {
+//            val v1 = A[i, c1]
+//            val v2 = A[i, c2]
+//            with(model) {
+//                A[i, c1] = a11 * v1 + a12 * v2
+//                A[i, c2] = a21 * v1 + a22 * v2
+//            }
+//        }
+//    }
 
     companion object {
         operator fun <T> invoke(
-            row: Int, column: Int, model: EqualPredicate<T>, init: (Int, Int) -> T
+            row: Int, column: Int, init: (Int, Int) -> T
         ): MutableMatrix<T> {
-            return AMatrix.of(row, column, model, init)
+            return AMatrix.of(row, column, init)
         }
 
         fun <T> copyOf(matrix: Matrix<T>): MutableMatrix<T> {
-            return AMatrix.copyOf(matrix, matrix.model)
+            return AMatrix.copyOf(matrix)
         }
 
         fun <T> zero(row: Int, column: Int, model: AddMonoid<T>): MutableMatrix<T> {
@@ -720,7 +664,7 @@ interface MutableMatrix<T> : Matrix<T> {
         }
 
         fun <T> concatColumn(a: Matrix<T>, b: Matrix<T>): MutableMatrix<T> {
-            return MatrixImpl.concatCol(a, b, a.model)
+            return MatrixImpl.concatCol(a, b)
         }
     }
 }
@@ -824,7 +768,8 @@ open class SqMatOverURing<T>(n: Int, override val scalars: UnitRing<T>) :
     }
 
     override fun isUnit(x: Matrix<T>): Boolean {
-        return scalars.isUnit(x.det())
+        TODO()
+//        return scalars.isUnit(x.det())
     }
 
     fun isInvertible(x: Matrix<T>): Boolean {

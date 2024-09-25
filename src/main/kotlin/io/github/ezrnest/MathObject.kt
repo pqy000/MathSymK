@@ -28,11 +28,12 @@ import java.util.function.Function
  */
 interface ValueEquatable<T> {
 
-
-
     infix fun valueEquals(obj: ValueEquatable<T>): Boolean
 }
 
+interface Mappable<T>{
+    fun <S> map(mapping : (T) -> S) : Mappable<S>
+}
 
 interface ModeledMathObject<T, M : EqualPredicate<T>> : ValueEquatable<T> {
 

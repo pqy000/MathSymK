@@ -126,9 +126,7 @@ abstract class AbstractTensor<T>(
 
 abstract class AbstractMutableTensor<T>(mc: EqualPredicate<T>, shape: IntArray) : AbstractTensor<T>(mc, shape),
     MutableTensor<T> {
-    override fun applyAll(f: (T) -> T): MutableTensor<T> {
-        return mapTo(model, f)
-    }
+
 
     override fun plus(y: Tensor<T>): MutableTensor<T> {
         return super<MutableTensor>.plus(y)
@@ -207,6 +205,10 @@ internal constructor(mc: EqualPredicate<T>, shape: IntArray, val data: Array<Any
         return ATensor(model, sh, data.clone())
     }
 
+    override fun <S> map(mapping: (T) -> S): ATensor<S> {
+        TODO()
+    }
+
     override fun set(idx: Index, v: T) {
         checkIdx(idx)
         data[toPos(idx)] = v
@@ -225,19 +227,8 @@ internal constructor(mc: EqualPredicate<T>, shape: IntArray, val data: Array<Any
     }
 
 
-    override fun applyAll(f: (T) -> T): ATensor<T> {
-        val ndata = Array<Any?>(size) { i ->
-            @Suppress("UNCHECKED_CAST")
-            f(data[i] as T)
-        }
-        return ATensor(model, sh, ndata)
-    }
-
     override fun transform(f: (T) -> T) {
         inlineApplyAll(f)
-//        for (i in 0 until size) {
-//            data[i] = f(data[i] as T)
-//        }
     }
 
     override val isZero: Boolean
@@ -274,12 +265,12 @@ internal constructor(mc: EqualPredicate<T>, shape: IntArray, val data: Array<Any
 
     override fun scalarMul(k: T): ATensor<T> {
         val mc = model as Ring<T>
-        return applyAll { t -> mc.multiply(k, t) }
+        return map { t -> mc.multiply(k, t) }
     }
 
     override fun scalarDiv(k: T): ATensor<T> {
         val mc = model as Field<T>
-        return applyAll { t -> mc.divide(k, t) }
+        return map { t -> mc.divide(k, t) }
     }
 
     override fun times(y: Tensor<T>): MutableTensor<T> {

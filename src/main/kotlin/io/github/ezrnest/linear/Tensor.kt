@@ -291,8 +291,8 @@ interface Tensor<T> : ModeledMathObject<T, EqualPredicate<T>>, AlgebraModel<T, T
     /**
      * Returns a new tensor of applying the given function to this tensor element-wise.
      */
-    override fun applyAll(f: (T) -> T): Tensor<T> {
-        return mapTo(model, f)
+    override fun <S> map(mapping: (T) -> S): Tensor<S>{
+        TODO()
     }
 
 
@@ -766,6 +766,8 @@ infix fun <T> MutableTensor<T>.matmul(y: Tensor<T>): MutableTensor<T> = this.mat
 //}
 
 interface MutableTensor<T> : Tensor<T> {
+
+
     /**
      * Sets an element in this tensor.
      */
@@ -823,10 +825,10 @@ interface MutableTensor<T> : Tensor<T> {
         }
     }
 
-
-    override fun applyAll(f: (T) -> T): MutableTensor<T> {
-        return mapTo(model, f)
+    override fun <S> map(mapping: (T) -> S): MutableTensor<S>{
+        TODO()
     }
+
 
     /**
      * Performs the element-wise transformation to this mutable tensor in-place.
