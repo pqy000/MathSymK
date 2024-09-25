@@ -165,16 +165,31 @@ with(polyZ) {
 ### Matrix and vector
 ```kotlin
 val ℤ = NumberModels.integers()
-val n = 3
-val A = Matrix(n, ℤ) { i, j -> (5 * cos(i + 2.0 * j)).toInt() } // generate a non-singular matrix
-println("Matrix A:")
-println(A)
-val B = A * A.T // Matrix multiplication and transpose
-println("det(A) = ${A.det()}; det(A*A.T) = ${B.det()}") // determinant
-val u = Vector(n, ℤ) { i -> i + 1 }
-println(A * u) // matrix-vector multiplication
-println(u.T * B * u) // quadratic form
+with(Matrix.over(ℤ)) {
+  val n = 3
+  val A = Matrix(n) { i, j -> (5 * cos(i + 2.0 * j)).toInt() } // generate a non-singular matrix
+  println("Matrix A:")
+  println(A)
+  val B = A * A.T // Matrix multiplication and transpose
+  println("det(A) = ${A.det()}; det(A*A.T) = ${B.det()}") // determinant
+  val u = Vector(n) { i -> i + 1 }
+  println(A * u) // matrix-vector multiplication
+  println(u.T * B * u) // quadratic form
+}
 ```
+#### Characteristic polynomial
+```kotlin
+val ℤ = NumberModels.integers()
+val n = 4
+with(Matrix.over(ℤ,n)){
+  val A = Matrix(n) { i, j -> i + 2 * j }
+  val p = A.charPoly() // the characteristic polynomial of A, p(λ) = det(λI - A)
+  println(p.toString(ch = "λ"))
+  println("Substitute A into p(λ) = det(λI - A), is it zero?")
+  println(isZero(p.substitute(A, this@with))) // p(A) = 0, a matrix of zeros
+}
+```
+
 
 ### Tensor
 

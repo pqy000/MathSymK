@@ -57,7 +57,7 @@ data class AMatrix<T> internal constructor(
         return AVector(data.copyOfRange(pos0, pos0 + column))
     }
 
-    override fun setAll(row: Int, col: Int, matrix: GenMatrix<T>) {
+    override fun setAll(row: Int, col: Int, matrix: Matrix<T>) {
         if (matrix !is AMatrix) {
             super.setAll(row, col, matrix)
             return
@@ -358,7 +358,7 @@ data class AMatrix<T> internal constructor(
             }
         }
 
-        fun <T> copyOf(x: GenMatrix<T>): AMatrix<T> {
+        fun <T> copyOf(x: Matrix<T>): AMatrix<T> {
             if (x is AMatrix) {
                 return x.copy()
             }
@@ -661,18 +661,18 @@ open class SlicedMatrixView<T>(
 /**
  * Provides Matrix-related functionalities.
  *
- * Most of the methods in this object accept [GenMatrix]'s as inputs and a `model` should be provided to specify the operations.
+ * Most of the methods in this object accept [Matrix]'s as inputs and a `model` should be provided to specify the operations.
  */
 object MatrixImpl {
 
-    fun <T> formatString(m: GenMatrix<T>): String {
+    fun <T> formatString(m: Matrix<T>): String {
         val sb = StringBuilder()
         sb.append("Matrix(${m.row}, ${m.column}):\n")
         m.joinTo(sb)
         return sb.toString()
     }
 
-    fun <T> isEqual(x: GenMatrix<T>, y: GenMatrix<T>, predicate: EqualPredicate<T>): Boolean {
+    fun <T> isEqual(x: Matrix<T>, y: Matrix<T>, predicate: EqualPredicate<T>): Boolean {
         if (x is AMatrix && y is AMatrix) {
             return AMatrix.isEqual(x, y, predicate)
         }
@@ -683,7 +683,7 @@ object MatrixImpl {
         }
     }
 
-    fun <T> isZero(x: GenMatrix<T>, scalars: AddMonoid<T>): Boolean {
+    fun <T> isZero(x: Matrix<T>, scalars: AddMonoid<T>): Boolean {
         if (x is AMatrix) {
             return AMatrix.isZero(x, scalars)
         }
@@ -695,7 +695,7 @@ object MatrixImpl {
     }
 
     internal inline fun <T1, T2, N> apply2(
-        x: GenMatrix<T1>, y: GenMatrix<T2>, f: (T1, T2) -> N,
+        x: Matrix<T1>, y: Matrix<T2>, f: (T1, T2) -> N,
     ): AMatrix<N> {
         require(x.shapeMatches(y))
         if (x is AMatrix && y is AMatrix) {
@@ -704,7 +704,7 @@ object MatrixImpl {
         return AMatrix(x.row, x.column) { i, j -> f(x[i, j], y[i, j]) }
     }
 
-    internal inline fun <T, N> apply1(x: GenMatrix<T>, f: (T) -> N): AMatrix<N> {
+    internal inline fun <T, N> apply1(x: Matrix<T>, f: (T) -> N): AMatrix<N> {
         if (x is AMatrix) {
             return AMatrix.apply1(x, f)// flattened version
         }
@@ -712,15 +712,15 @@ object MatrixImpl {
     }
 
 
-    fun <T> hadamard(x: GenMatrix<T>, y: GenMatrix<T>, model: MulSemigroup<T>): AMatrix<T> {
+    fun <T> hadamard(x: Matrix<T>, y: Matrix<T>, model: MulSemigroup<T>): AMatrix<T> {
         return apply2(x, y, model::multiply)
     }
 
-    fun <T> add(x: GenMatrix<T>, y: GenMatrix<T>, model: AddSemigroup<T>): AMatrix<T> {
+    fun <T> add(x: Matrix<T>, y: Matrix<T>, model: AddSemigroup<T>): AMatrix<T> {
         return apply2(x, y, model::add)
     }
 
-    fun <T> addInPlace(x: MutableMatrix<T>, y: GenMatrix<T>, model: AddSemigroup<T>) {
+    fun <T> addInPlace(x: MutableMatrix<T>, y: Matrix<T>, model: AddSemigroup<T>) {
         if (x is AMatrix && y is AMatrix) {
             AMatrix.addInPlace(x, y, model)
         } else {
@@ -732,15 +732,15 @@ object MatrixImpl {
         }
     }
 
-    fun <T> negate(x: GenMatrix<T>, model: AddGroup<T>): AMatrix<T> {
+    fun <T> negate(x: Matrix<T>, model: AddGroup<T>): AMatrix<T> {
         return apply1(x, model::negate)
     }
 
-    fun <T> subtract(x: GenMatrix<T>, y: GenMatrix<T>, model: AddGroup<T>): AMatrix<T> {
+    fun <T> subtract(x: Matrix<T>, y: Matrix<T>, model: AddGroup<T>): AMatrix<T> {
         return apply2(x, y, model::subtract)
     }
 
-    fun <T> sum(mats: List<GenMatrix<T>>, model: AddSemigroup<T>): AMatrix<T> {
+    fun <T> sum(mats: List<Matrix<T>>, model: AddSemigroup<T>): AMatrix<T> {
         require(mats.isNotEmpty())
         val row = mats.first().row
         val column = mats.first().column
@@ -754,7 +754,7 @@ object MatrixImpl {
     }
 
 
-    fun <T> matmul(x: GenMatrix<T>, y: GenMatrix<T>, model: Ring<T>): AMatrix<T> {
+    fun <T> matmul(x: Matrix<T>, y: Matrix<T>, model: Ring<T>): AMatrix<T> {
         require(x.column == y.row) {
             "Shape mismatch in matmul: (${x.row}, ${x.column}) * (${y.row}, ${y.column})"
         }
@@ -771,7 +771,7 @@ object MatrixImpl {
      * Matrix-vector multiplication: `Ay`, where `y` is a column vector.
      *
      */
-    fun <T> matmul(A: GenMatrix<T>, y: GenVector<T>, model: Ring<T>): AVector<T> {
+    fun <T> matmul(A: Matrix<T>, y: GenVector<T>, model: Ring<T>): AVector<T> {
         require(A.column == y.size) {
             "Shape mismatch in matmul: (${A.row}, ${A.column}) * (${y.size})"
         }
@@ -789,7 +789,7 @@ object MatrixImpl {
      *
      * The result will be a vector
      */
-    fun <T> matmul(v: GenVector<T>, A: GenMatrix<T>, model: Ring<T>): AVector<T> {
+    fun <T> matmul(v: GenVector<T>, A: Matrix<T>, model: Ring<T>): AVector<T> {
         require(v.size == A.row) {
             "Shape mismatch in matmul: (${v.size}) * (${A.row}, ${A.column})"
         }
@@ -814,15 +814,15 @@ object MatrixImpl {
     }
 
 
-    fun <T> multiply(x: GenMatrix<T>, k: T, model: MulSemigroup<T>): AMatrix<T> {
+    fun <T> multiply(x: Matrix<T>, k: T, model: MulSemigroup<T>): AMatrix<T> {
         return apply1(x) { model.multiply(k, it) }
     }
 
-    fun <T> multiplyLong(x: GenMatrix<T>, k: Long, model: AddGroup<T>): AMatrix<T> {
+    fun <T> multiplyLong(x: Matrix<T>, k: Long, model: AddGroup<T>): AMatrix<T> {
         return apply1(x) { model.multiplyLong(it, k) }
     }
 
-    fun <T> divide(x: GenMatrix<T>, k: T, model: MulGroup<T>): AMatrix<T> {
+    fun <T> divide(x: Matrix<T>, k: T, model: MulGroup<T>): AMatrix<T> {
         return apply1(x) { model.divide(it, k) }
     }
 
@@ -848,14 +848,14 @@ object MatrixImpl {
         return A
     }
 
-    fun <T> concatCol(a: GenMatrix<T>, b: GenMatrix<T>): AMatrix<T> {
+    fun <T> concatCol(a: Matrix<T>, b: Matrix<T>): AMatrix<T> {
         require(a.row == b.row)
         return AMatrix(a.row, a.column + b.column) { i, j ->
             if (j < a.column) a[i, j] else b[i, j - a.column]
         }
     }
 
-    fun <T> concatRow(a: GenMatrix<T>, b: GenMatrix<T>): AMatrix<T> {
+    fun <T> concatRow(a: Matrix<T>, b: Matrix<T>): AMatrix<T> {
         require(a.column == b.column)
         return AMatrix(a.row + b.row, a.column) { i, j ->
             if (i < a.row) a[i, j] else b[i - a.row, j]
@@ -876,7 +876,7 @@ object MatrixImpl {
 //    }
 
 
-    private fun <T> colVectors(A: GenMatrix<T>, model: EqualPredicate<T>): List<Vector<T>> {
+    private fun <T> colVectors(A: Matrix<T>): List<Vector<T>> {
         return A.colIndices.map { j ->
             AVector(A.row) { i -> A[i, j] }
         }
@@ -898,7 +898,7 @@ object MatrixImpl {
      * - **Distributivity** - `A ⊗ (B + C) = A ⊗ B + A ⊗ C`
      * - Mixed with matrix multiplication: `(A ⊗ B)(C ⊗ D) = (AC) ⊗ (BD)`
      */
-    fun <T> kronecker(A: GenMatrix<T>, B: GenMatrix<T>, model: Ring<T>): AMatrix<T> {
+    fun <T> kronecker(A: Matrix<T>, B: Matrix<T>, model: Ring<T>): AMatrix<T> {
         val res = zero(A.row * B.row, A.column * B.column, model)
         for (i in 0 until A.row) {
             for (j in 0 until A.column) {
@@ -915,7 +915,7 @@ object MatrixImpl {
     /*
     Statistics
      */
-    fun <T> trace(A: GenMatrix<T>, model: AddSemigroup<T>): T {
+    fun <T> trace(A: Matrix<T>, model: AddSemigroup<T>): T {
         require(A.isSquare)
         var res = A[0, 0]
         for (i in 1 until A.row) {
@@ -924,12 +924,12 @@ object MatrixImpl {
         return res
     }
 
-    fun <T> diag(A: GenMatrix<T>): AVector<T> {
+    fun <T> diag(A: Matrix<T>): AVector<T> {
         require(A.isSquare)
         return AVector(A.row) { i -> A[i, i] }
     }
 
-    fun <T> sumAll(A: GenMatrix<T>, model: AddSemigroup<T>): T {
+    fun <T> sumAll(A: Matrix<T>, model: AddSemigroup<T>): T {
         return A.elementSequence().reduce(model::add)
     }
 
@@ -937,12 +937,12 @@ object MatrixImpl {
     Inverse
      */
 
-    fun <T> rank(A: GenMatrix<T>, model: Field<T>): Int {
+    fun <T> rank(A: Matrix<T>, model: Field<T>): Int {
         val pivots = toEchelon(AMatrix.copyOf(A), model)
         return pivots.size
     }
 
-    fun <T> columnSpace(A: GenMatrix<T>, model: Field<T>): VectorSpace<T> {
+    fun <T> columnSpace(A: Matrix<T>, model: Field<T>): VectorSpace<T> {
         val mutable = AMatrix.copyOf(A)
         val pivots = toUpperTriangle(mutable, model)
         val indepVectors = pivots.map { mutable.colAt(it) }
@@ -964,7 +964,7 @@ object MatrixImpl {
      *
      * This method can be used to compute the modular inverse of a matrix on `Z/Zn`, where n is not necessarily a prime.
      */
-    fun <T> inverseInRing(M: GenMatrix<T>, model: UnitRing<T>): AMatrix<T> {
+    fun <T> inverseInRing(M: Matrix<T>, model: UnitRing<T>): AMatrix<T> {
         val (p, adj) = charPolyAndAdj(M, model)
         val det = p.getOrNull(0) ?: model.zero
         if (!model.isUnit(det)) throw ArithmeticException("The determinant is not invertible")
@@ -973,7 +973,7 @@ object MatrixImpl {
     }
 
 
-    private fun <T> buildAugmentedI(m: GenMatrix<T>, model: UnitRing<T>): AMatrix<T> {
+    private fun <T> buildAugmentedI(m: Matrix<T>, model: UnitRing<T>): AMatrix<T> {
         val n = m.row
         val aug = zero(n, 2 * n, model)
         aug.setAll(0, 0, m)
@@ -984,7 +984,7 @@ object MatrixImpl {
         return aug
     }
 
-    fun <T> inverseInField(m: GenMatrix<T>, model: Field<T>): AMatrix<T> {
+    fun <T> inverseInField(m: Matrix<T>, model: Field<T>): AMatrix<T> {
         val n = m.row
         val aug = buildAugmentedI(m, model)
         val pivots = toEchelon(aug, model, column = n)
@@ -999,7 +999,7 @@ object MatrixImpl {
 //     *
 //     * It is required that the calculator of `M` is an instance of EUDCalculator.
 //     */
-//    fun <T> inverseInEUD(M: GenMatrix<T>, mc: EuclideanDomain<T>): Matrix<T> {
+//    fun <T> inverseInEUD(M: Matrix<T>, mc: EuclideanDomain<T>): Matrix<T> {
 //        //TODO re-implement this method
 //        M.requireSquare()
 //        val n = M.column
@@ -1051,7 +1051,7 @@ object MatrixImpl {
 //    }
 
 
-    fun <T> inverse(m: GenMatrix<T>, model: UnitRing<T>): AMatrix<T> {
+    fun <T> inverse(m: Matrix<T>, model: UnitRing<T>): AMatrix<T> {
         require(m.isSquare)
         return when (model) {
             is Field -> inverseInField(m, model)
@@ -1060,12 +1060,12 @@ object MatrixImpl {
         }
     }
 
-    fun <T> isInvertible(m: GenMatrix<T>, model: UnitRing<T>): Boolean {
+    fun <T> isInvertible(m: Matrix<T>, model: UnitRing<T>): Boolean {
         require(m.isSquare)
         return model.isUnit(det(m, model))
     }
 
-    fun <T> detSmall(m: GenMatrix<T>, model: Ring<T>): T {
+    fun <T> detSmall(m: Matrix<T>, model: Ring<T>): T {
         require(m.isSquare)
         return when (m.row) {
             1 -> m[0, 0]
@@ -1089,7 +1089,7 @@ object MatrixImpl {
      *
      * This method is provided to test the correctness of other determinant algorithms.
      */
-    fun <T> detDefinition(m: GenMatrix<T>, model: Ring<T>): T {
+    fun <T> detDefinition(m: Matrix<T>, model: Ring<T>): T {
         require(m.isSquare)
         var result = model.zero
         val n = m.row
@@ -1112,7 +1112,7 @@ object MatrixImpl {
      *
      * Complexity: `O(n^3)`
      */
-    fun <T> detGaussBareiss(matrix: GenMatrix<T>, model: UnitRing<T>): T {
+    fun <T> detGaussBareiss(matrix: Matrix<T>, model: UnitRing<T>): T {
         // Created by lyc at 2020-03-05 19:18
         // Reimplemented by lyc at 2024-09-06
         /*
@@ -1169,7 +1169,7 @@ object MatrixImpl {
         return if (positive) det else model.negate(det)
     }
 
-    fun <T> det(mat: GenMatrix<T>, mc: Ring<T>): T {
+    fun <T> det(mat: Matrix<T>, mc: Ring<T>): T {
         require(mat.isSquare)
         if (mat.row <= 3) return detSmall(mat, mc)
         if (mc is UnitRing) {
@@ -1188,7 +1188,7 @@ object MatrixImpl {
      * Gets the characteristic polynomial of the given matrix, which is defined as `det(xI - A)`,
      * and the adjugate matrix `A^*`.
      */
-    fun <T> charPolyAndAdj(matrix: GenMatrix<T>, mc: UnitRing<T>): Pair<Polynomial<T>, AMatrix<T>> {
+    fun <T> charPolyAndAdj(matrix: Matrix<T>, mc: UnitRing<T>): Pair<Polynomial<T>, AMatrix<T>> {
         /* Written by Ezrnest at 2024/9/12
         f(x) = det(xI - A) = \sum a_r x^r = \prod (x - λ_i), a_n = 1, a_{n-1} = -Tr(A),..., a_0 = (-1)^n det(A)
         Let us denote by α a multi-index with distinct elements and λ^α = λ_{α_1} λ_{α_2} ... λ_{α_k}.
@@ -1241,7 +1241,7 @@ object MatrixImpl {
      *
      *     adj(A) = C^T, where C_{i,j} = (-1)^(i+j) det(A_{i,j})
      */
-    fun <T> adjugateDefinition(matrix: GenMatrix<T>, mc: Ring<T>): AMatrix<T> {
+    fun <T> adjugateDefinition(matrix: Matrix<T>, mc: Ring<T>): AMatrix<T> {
         require(matrix.isSquare)
         val n = matrix.row
         val A = AMatrix.copyOf(matrix)
@@ -1249,14 +1249,14 @@ object MatrixImpl {
         return adj
     }
 
-    fun <T> adjugate(matrix: GenMatrix<T>, mc: Ring<T>): AMatrix<T> {
+    fun <T> adjugate(matrix: Matrix<T>, mc: Ring<T>): AMatrix<T> {
         if (mc is UnitRing) {
             return charPolyAndAdj(matrix, mc).second
         }
         return adjugateDefinition(matrix, mc)
     }
 
-    fun <T> charPolyDefinition(matrix: GenMatrix<T>, mc: UnitRing<T>): Polynomial<T> {
+    fun <T> charPolyDefinition(matrix: Matrix<T>, mc: UnitRing<T>): Polynomial<T> {
         require(matrix.isSquare)
         val polyRing = Polynomial.over(mc)
         val n = matrix.row
@@ -1268,7 +1268,7 @@ object MatrixImpl {
         return detGaussBareiss(matPoly, polyRing)
     }
 
-    fun <T> charPoly(matrix: GenMatrix<T>, mc: UnitRing<T>): Polynomial<T> {
+    fun <T> charPoly(matrix: Matrix<T>, mc: UnitRing<T>): Polynomial<T> {
 //        return charPolyDefinition(matrix, mc) //
         return charPolyAndAdj(matrix, mc).first //
     }
@@ -1276,7 +1276,7 @@ object MatrixImpl {
     /*
     Decomposition
      */
-    fun <T> decompRank(x: GenMatrix<T>, model: Field<T>): Pair<Matrix<T>, Matrix<T>> {
+    fun <T> decompRank(x: Matrix<T>, model: Field<T>): Pair<Matrix<T>, Matrix<T>> {
         val m = AMatrix.copyOf(x)
         val pivots = toEchelon(m, model)
         val L = AMatrix(x.row, pivots.size) { i, j -> x[i, pivots[j]] }
@@ -1285,10 +1285,10 @@ object MatrixImpl {
     }
 
 
-    private fun <T> decompQR0(A: GenMatrix<T>, mc: Reals<T>): Pair<AMatrix<T>, AMatrix<T>> {
+    private fun <T> decompQR0(A: Matrix<T>, mc: Reals<T>): Pair<AMatrix<T>, AMatrix<T>> {
         //Re-written by lyc at 2021-04-30 13:00
-        A.requireSquare()
-        val vs = colVectors(A, mc)
+        require(A.isSquare){ "Only square matrix is supported for QR decomposition." }
+        val vs = colVectors(A)
         val R = zero(A.row, A.column, mc)
         val ws = ArrayList<Vector<T>>(A.row)
         val Q = zero(A.row, A.column, mc)
@@ -1321,14 +1321,14 @@ object MatrixImpl {
      *
      * @return `(Q, R)` as a pair
      */
-    fun <T> decompQR(A: GenMatrix<T>, model: Reals<T>): Pair<AMatrix<T>, AMatrix<T>> {
+    fun <T> decompQR(A: Matrix<T>, model: Reals<T>): Pair<AMatrix<T>, AMatrix<T>> {
         return decompQR0(A, model)
     }
 
     /**
      *
      */
-    fun <T> decompKAN(A: GenMatrix<T>, model: Reals<T>): Triple<AMatrix<T>, Vector<T>, AMatrix<T>> {
+    fun <T> decompKAN(A: Matrix<T>, model: Reals<T>): Triple<AMatrix<T>, Vector<T>, AMatrix<T>> {
         //Created by lyc at 2021-05-11 20:25
         //TODO: re-implement this method for general cases
         val (Q, R) = decompQR0(A, model)
@@ -1341,8 +1341,10 @@ object MatrixImpl {
         return Triple(Q, d, R)
     }
 
-    private fun <T> checkSymmetric(A: GenMatrix<T>, mc: EqualPredicate<T>) {
-        A.requireSquare()
+    private fun <T> checkSymmetric(A: Matrix<T>, mc: EqualPredicate<T>) {
+        require(A.isSquare) {
+            "The given matrix is not symmetric!: $A"
+        }
         for (i in 0..<A.row) {
             for (j in 0..<i) {
                 require(mc.isEqual(A[i, j], A[j, i])) { "The given matrix is not symmetric!: $A" }
@@ -1361,7 +1363,7 @@ object MatrixImpl {
      *
      * @return
      */
-    fun <T> decompLU(m: GenMatrix<T>, mc: Field<T>): Pair<Matrix<T>, Matrix<T>> {
+    fun <T> decompLU(m: Matrix<T>, mc: Field<T>): Pair<Matrix<T>, Matrix<T>> {
         require(m.isSquare) {
             "The matrix must be square!"
         }
@@ -1388,7 +1390,7 @@ object MatrixImpl {
      *
      * @return a lower triangular matrix `L`.
      */
-    fun <T> decompCholesky(A: GenMatrix<T>, mc: Reals<T>): Matrix<T> {
+    fun <T> decompCholesky(A: Matrix<T>, mc: Reals<T>): Matrix<T> {
         require(A.isSquare) {
             "The matrix must be square!"
         }
@@ -1428,7 +1430,7 @@ object MatrixImpl {
      * @return `(L, diag(D))`, where `L` is a lower triangular matrix, `diag(D)` is a vector of diagonal elements
      * of `D`.
      */
-    fun <T> decompLDL(A: GenMatrix<T>, mc: Field<T>): Pair<Matrix<T>, Vector<T>> {
+    fun <T> decompLDL(A: Matrix<T>, mc: Field<T>): Pair<Matrix<T>, Vector<T>> {
         checkSymmetric(A, mc)
         val n = A.row
 
@@ -1566,7 +1568,7 @@ object MatrixImpl {
     /**
      * Transform this matrix to (row) Hermit Form.
      */
-    fun <T> toHermitForm(A: GenMatrix<T>, mc: Integers<T>): Matrix<T> {
+    fun <T> toHermitForm(A: Matrix<T>, mc: Integers<T>): Matrix<T> {
         val M = AMatrix.copyOf(A)
         toHermitForm0(M, mc)
         return M
@@ -1584,7 +1586,7 @@ object MatrixImpl {
      *
      * @param A The matrix to be transformed
      */
-    fun <T> toSmithForm(A: GenMatrix<T>, mc: EuclideanDomain<T>): AMatrix<T> {
+    fun <T> toSmithForm(A: Matrix<T>, mc: EuclideanDomain<T>): AMatrix<T> {
         val factors = invariantFactors(A, mc)
         // build a diagonal matrix
         val M = zero(A.row, A.column, mc)
@@ -1599,12 +1601,12 @@ object MatrixImpl {
      *
      * The `i`-th invariant factors are the greatest common divisors of all `i x i` minors of the matrix.
      */
-    fun <T> invariantFactors(A: GenMatrix<T>, mc: EuclideanDomain<T>): List<T> {
+    fun <T> invariantFactors(A: Matrix<T>, mc: EuclideanDomain<T>): List<T> {
         return toSmithForm0(AMatrix.copyOf(A), mc)
     }
 
 
-    fun <T> detDivisors(A: GenMatrix<T>, mc: EuclideanDomain<T>): List<T> {
+    fun <T> detDivisors(A: Matrix<T>, mc: EuclideanDomain<T>): List<T> {
         val invFactors = invariantFactors(A, mc)
         // d_k = a_k * a_{k-1} * ... * a_1
         val result = ArrayList<T>(invFactors.size)
@@ -1762,7 +1764,7 @@ object MatrixImpl {
      *
      * @return A pair `(Λ, P)` where `Λ` is the diagonal matrix and `P` is the transformation matrix.
      */
-    fun <T> toCongDiagonalForm(A: GenMatrix<T>, mc: Field<T>): Pair<AVector<T>, AMatrix<T>> {
+    fun <T> toCongDiagonalForm(A: Matrix<T>, mc: Field<T>): Pair<AVector<T>, AMatrix<T>> {
         //Re-written by lyc at 2021-04-30 13:00
         checkSymmetric(A, mc)
         val n = A.row
@@ -1808,7 +1810,7 @@ object MatrixImpl {
     }
 
 
-    fun <T> toHessenberg(matrix: GenMatrix<T>, mc: Field<T>): Matrix<T> {
+    fun <T> toHessenberg(matrix: Matrix<T>, mc: Field<T>): Matrix<T> {
         require(matrix.isSquare)
         val H = AMatrix.copyOf(matrix)
         val n = matrix.row
@@ -1840,7 +1842,7 @@ object MatrixImpl {
 
 
     private fun <T> nullSpaceOf(
-        expanded: GenMatrix<T>, column: Int, pivots: List<Int>, mc: Field<T>
+        expanded: Matrix<T>, column: Int, pivots: List<Int>, mc: Field<T>
     ): VectorSpace<T> {
 
         val k = column - pivots.size
@@ -1862,7 +1864,7 @@ object MatrixImpl {
         return DVectorSpace(mc, column, basis)
     }
 
-    private fun <T> specialSolutionOf(expanded: GenMatrix<T>, column: Int, pivots: List<Int>, mc: Field<T>): Matrix<T> {
+    private fun <T> specialSolutionOf(expanded: Matrix<T>, column: Int, pivots: List<Int>, mc: Field<T>): Matrix<T> {
         val special = zero(column, expanded.column - column, mc)
         for (k in pivots.indices) {
             val pk = pivots[k]
@@ -1892,7 +1894,7 @@ object MatrixImpl {
         return special to basis
     }
 
-    fun <T> solveLinear(A: GenMatrix<T>, B: GenMatrix<T>, model: Field<T>): Pair<Matrix<T>, VectorSpace<T>>? {
+    fun <T> solveLinear(A: Matrix<T>, B: Matrix<T>, model: Field<T>): Pair<Matrix<T>, VectorSpace<T>>? {
         require(A.row == B.row)
         val aug = concatCol(A, B)
         val (special, basis) = solveLinear(aug, A.column, model)
@@ -1902,7 +1904,7 @@ object MatrixImpl {
     /**
      * Solves the linear equation `Ax = b` with the given matrix `A` and vector `b`.
      */
-    fun <T> solveLinear(A: GenMatrix<T>, b: Vector<T>, model: Field<T>): LinearEquationSolution<T>? {
+    fun <T> solveLinear(A: Matrix<T>, b: Vector<T>, model: Field<T>): LinearEquationSolution<T>? {
         require(A.row == b.size)
         val col = A.column
         val augmented = zero(A.row, col + 1, model)
@@ -1915,7 +1917,7 @@ object MatrixImpl {
     /**
      * Solves the homogeneous linear equation `Ax = 0` with the given matrix `A`.
      */
-    fun <T> solveHomo(A: GenMatrix<T>, model: Field<T>): VectorSpace<T> {
+    fun <T> solveHomo(A: Matrix<T>, model: Field<T>): VectorSpace<T> {
         val expanded = AMatrix.copyOf(A)
         val pivots = toEchelon(expanded, model)
         return nullSpaceOf(expanded, A.column, pivots, model)

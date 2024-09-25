@@ -29,8 +29,8 @@ fun computingDeterminantSymbolic() {
 
 fun matrixMultiplication() {
     val ℤ = NumberModels.integers()
-    val n = 3
     with(Matrix.over(ℤ)) {
+        val n = 3
         val A = Matrix(n) { i, j -> (5 * cos(i + 2.0 * j)).toInt() } // generate a non-singular matrix
         println("Matrix A:")
         println(A)
@@ -43,11 +43,22 @@ fun matrixMultiplication() {
 }
 
 
+fun matCharPoly(){
+    val ℤ = NumberModels.integers()
+    val n = 4
+    with(Matrix.over(ℤ,n)){
+        val A = Matrix(n) { i, j -> i + 2 * j }
+        val p = A.charPoly() // the characteristic polynomial of A, p(λ) = det(λI - A)
+        println(p.toString(ch = "λ"))
+        println("Substitute A into the polynomial, is it zero?")
+        println(isZero(p.substitute(A, this@with))) // p(A) = 0, a matrix of zeros
+    }
+}
+
 fun matrixCharacteristicPolynomials() {
     val ℤ = NumberModels.integers()
-    val Z44 = Matrix.over(ℤ, 4)
-    with(Z44) {
-        val n = 4
+    val n = 4
+    with(Matrix.over(ℤ, n)) {
         val A = Matrix(n) { i, j -> i + 2 * j }
         println("Matrix A:")
         println(A)
@@ -74,9 +85,8 @@ fun matrixCharacteristicPolynomials() {
         println(p2.toString(ch = "λ"))
 
         println("Substitute A into the polynomial, is it zero?")
-        println(isZero(p.substitute(A, Z44))) // p(A) = 0, a matrix of zeros
+        println(isZero(p.substitute(A, this@with))) // p(A) = 0, a matrix of zeros
     }
-
 }
 
 fun matrixCharacteristicPolynomialsComplexExample() {

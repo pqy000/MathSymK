@@ -2,6 +2,8 @@ package io.github.ezrnest.linear
 
 import io.github.ezrnest.model.Polynomial
 import io.github.ezrnest.structure.*
+import io.github.ezrnest.util.IterUtils
+import kotlin.math.min
 
 /**
  * Represents a mathematical matrix of elements of type [T].
@@ -10,17 +12,66 @@ import io.github.ezrnest.structure.*
  * scalar operations, and determinant computation.
  *
  *
- * For additional operations, see extension functions in [MatrixExt].
  *
  * @param T the type of the elements in the matrix, which must belong to a ring or a field.
- * @see MatrixExt
+ * @see Matrix.over
  * @see Vector
  */
-interface Matrix<T> : GenMatrix<T> {
+interface Matrix<T> : GenTuple<T> {
 
-    /*
-    Matrix
+
+    /**
+     * The count of rows in this matrix.
      */
+    val row: Int
+
+    /**
+     * The count of columns in this matrix.
+     */
+    val column: Int
+
+    /**
+     * The total count of elements in this matrix, which is equal to `row * column`.
+     */
+    override val size: Int
+        get() = row * column
+
+    /**
+     * Gets the shape of this matrix: `(row, column)`.
+     */
+    val shape: Pair<Int, Int>
+        get() = row to column
+
+    /**
+     * Gets the element at the `i`-th row and `j`-th column in this matrix.
+     *
+     * It is required that `0 <= i < row` and `0 <= j < column`.
+     */
+    operator fun get(i: Int, j: Int): T
+
+
+    /**
+     * Applies the given function to all elements in this matrix and returns a new matrix.
+     */
+    override fun <S> map(mapping: (T) -> S): Matrix<S> {
+        return MatrixImpl.apply1(this, mapping)
+    }
+
+
+    /**
+     * Gets the elements in this generic matrix, iterating row first and then column as:
+     * ```
+     * for(i in 0 until row){
+     *     for(j in 0 until column){
+     *         yield(this[i, j])
+     *     }
+     * }
+     * ```
+     */
+    override fun elementSequence(): Sequence<T> {
+        return IterUtils.prodIdx(intArrayOf(row, column)).map { (i, j) -> this[i, j] }
+    }
+
 
     /**
      * Gets the row at the given index as a vector.
@@ -49,42 +100,6 @@ interface Matrix<T> : GenMatrix<T> {
     fun colVectors(): List<Vector<T>> {
         return colIndices.map { colAt(it) }
     }
-
-    /**
-     * Applies the given function to all elements in this matrix and returns a new matrix.
-     */
-    override fun <S> map(mapping: (T) -> S): Matrix<S> {
-        return MatrixImpl.apply1(this, mapping)
-    }
-
-
-    /*
-    Matrix operations
-     */
-
-
-//
-//    /**
-//     * An operator function for [matmul].
-//     */
-//    operator fun times(v: Vector<T>): Vector<T> {
-//        return this.matmul(v)
-//    }
-//
-//    /**
-//     * Determines if this matrix is invertible.
-//     *
-//     * It is required that this matrix is square and the [model] is a unit ring.
-//     */
-//    override val isInvertible: Boolean
-//        get() {
-//            return MatrixImpl.isInvertible(this, model as UnitRing)
-//        }
-//
-
-//
-
-//
 
 
     /**
@@ -325,60 +340,157 @@ interface Matrix<T> : GenMatrix<T> {
         Matrix models
          */
 
-//        /**
-//         * Gets the model of `n × n` matrices over the given model.
-//         */
-//        fun <T> over(n: Int, model: UnitRing<T>): MatOverURing<T> {
-////            return SqMatOverURing(n, model)
-//            TODO()
-//        }
 
-
-        fun <T> over(model: EqualPredicate<T>): MatOverEqualPredicate<T> {
-            return MatOverEqualPredicateImpl(model)
+        fun <T> over(model: EqualPredicate<T>, row: Int, col: Int): MatOverEqualPredicate<T> {
+            return MatOverEqualPredicateImpl(model, row, col)
         }
 
-        fun <T> over(model: AddMonoid<T>): MatOverAddMonoid<T> {
-            return MatOverAddMonoidImpl(model)
+        fun <T> over(model: EqualPredicate<T>, n: Int = 0): MatOverEqualPredicate<T> {
+            return MatOverEqualPredicateImpl(model, n, n)
         }
 
-        fun <T> over(model: AddGroup<T>): MatOverAddGroup<T> {
-            return MatOverAddGroupImpl(model)
+        fun <T> over(model: AddMonoid<T>, row: Int, col: Int): MatOverAddMonoid<T> {
+            return MatOverAddMonoidImpl(model, row, col)
         }
 
-        fun <T> over(model: Ring<T>): MatOverRing<T> {
-            return MatOverRingImpl(model)
+        fun <T> over(model: AddMonoid<T>, n: Int = 0): MatOverAddMonoid<T> {
+            return MatOverAddMonoidImpl(model, n, n)
         }
 
-        fun <T> over(model: UnitRing<T>): MatOverURing<T> {
-            return MatOverURingImpl(model)
+        fun <T> over(model: AddGroup<T>, row: Int, col: Int): MatOverAddGroup<T> {
+            return MatOverAddGroupImpl(model, row, col)
         }
 
-        fun <T> over(model: UnitRing<T>, n : Int): MatOverURing<T> {
-            return MatOverURingShapedImpl(model,n,n)
+        fun <T> over(model: AddGroup<T>, n: Int = 0): MatOverAddGroup<T> {
+            return MatOverAddGroupImpl(model, n, n)
         }
 
-        fun <T> over(model: EuclideanDomain<T>): MatOverEUD<T> {
-            return MatOverEUDImpl(model)
+        fun <T> over(model: Ring<T>, row: Int, col: Int): MatOverRing<T> {
+            return MatOverRingImpl(model, row, col)
         }
 
+        fun <T> over(model: Ring<T>, n: Int = 0): MatOverRing<T> {
+            return MatOverRingImpl(model, n, n)
+        }
 
+        fun <T> over(model: UnitRing<T>, row: Int, col: Int): MatOverURing<T> {
+            return MatOverURingImpl(model, row, col)
+        }
+
+        fun <T> over(model: UnitRing<T>, n: Int = 0): MatOverURing<T> {
+            return MatOverURingImpl(model, n, n)
+        }
 
         fun <T> over(model: EuclideanDomain<T>, row: Int, col: Int): MatOverEUD<T> {
-            return MatOverEUDShapedImpl(model,row,col)
+            return MatOverEUDImpl(model, row, col)
         }
 
-        fun <T> over(model: EuclideanDomain<T>, n: Int): MatOverEUD<T> {
-            return over(model, n, n)
+        fun <T> over(model: EuclideanDomain<T>, n: Int = 0): MatOverEUD<T> {
+            return MatOverEUDImpl(model, n, n)
         }
 
-        fun <T> over(model: Field<T>): MatOverField<T> {
-            return MatOverFieldImpl(model)
+        fun <T> over(model: Field<T>, row: Int, col: Int): MatOverField<T> {
+            return MatOverFieldImpl(model, row, col)
+        }
+
+        fun <T> over(model: Field<T>, n: Int = 0): MatOverField<T> {
+            return MatOverFieldImpl(model, n, n)
         }
 
 
     }
 }
+
+/**
+ * Determines whether this matrix is the same shape as [y].
+ */
+fun Matrix<*>.shapeMatches(y: Matrix<*>): Boolean {
+    return row == y.row && column == y.column
+}
+
+/**
+ * Determines whether this matrix is a square matrix.
+ */
+inline val Matrix<*>.isSquare: Boolean get() = (row == column)
+
+/**
+ * Gets the row indices of this matrix.
+ */
+inline val Matrix<*>.rowIndices: IntRange get() = 0..<row
+
+/**
+ * Gets the column indices of this matrix.
+ */
+inline val Matrix<*>.colIndices: IntRange get() = 0..<column
+
+/**
+ * Gets a read-only-traversable sequence of the indices of this matrix, iterating row first and then column as:
+ * ```
+ * for(i in 0 until row){
+ *     for(j in 0 until column){
+ *         yield(i to j)
+ *     }
+ * }
+ * ```
+ */
+inline val Matrix<*>.indices: Sequence<Pair<Int, Int>>
+    get() = IterUtils.prod2(rowIndices, colIndices)
+
+
+fun <T, A : Appendable> Matrix<T>.joinTo(
+    buffer: A, sepRow: CharSequence = "\n ", sepCol: CharSequence = ", ",
+    prefixRow: CharSequence = "[", postfixRow: CharSequence = "]",
+    prefixCol: CharSequence = "[", postfixCol: CharSequence = "]",
+    limitRow: Int = Int.MAX_VALUE, truncatedRow: CharSequence = "...",
+    limitCol: Int = Int.MAX_VALUE, truncatedCol: CharSequence = "...",
+    transform: ((T) -> CharSequence)? = null
+): A {
+    val (row, col) = shape
+    buffer.append(prefixRow)
+    for (i in 0..<min(row, limitRow)) {
+        if (i > 0) buffer.append(sepRow)
+        buffer.append(prefixCol)
+        for (j in 0..<min(col, limitCol)) {
+            if (j > 0) buffer.append(sepCol)
+            buffer.append(transform?.invoke(this[i, j]) ?: this[i, j].toString())
+        }
+        if (col > limitCol) {
+            buffer.append(sepCol)
+            buffer.append(truncatedCol)
+        }
+        buffer.append(postfixCol)
+    }
+    if (row > limitRow) {
+        buffer.append(sepRow)
+        buffer.append(truncatedRow)
+    }
+    buffer.append(postfixRow)
+    return buffer
+}
+
+
+fun <T> Matrix<T>.joinToString(
+    sepRow: CharSequence = "\n ", sepCol: CharSequence = ", ",
+    prefixRow: CharSequence = "[", postfixRow: CharSequence = "]",
+    prefixCol: CharSequence = "[", postfixCol: CharSequence = "]",
+    limit: Int = Int.MAX_VALUE, truncated: CharSequence = "...",
+    transform: ((T) -> CharSequence)? = null
+): String {
+    val builder = StringBuilder()
+//    rowIndices.joinTo(builder, prefix = "[", postfix = "]", separator = "\n ", limit = limit) { i ->
+//        colIndices.joinTo(builder, prefix = "[", postfix = "]", separator = ", ", limit = limit) { j ->
+//            this[i, j].toString()
+//        }
+//        ""
+//    }
+    joinTo(
+        builder, sepRow, sepCol, prefixRow, postfixRow, prefixCol, postfixCol,
+        limit, truncated, limit, truncated, // limit for row and column
+        transform
+    )
+    return builder.toString()
+}
+
 
 
 ///**
@@ -451,7 +563,7 @@ interface MutableMatrix<T> : Matrix<T> {
         }
     }
 
-    fun setAll(row: Int, col: Int, matrix: GenMatrix<T>) {
+    fun setAll(row: Int, col: Int, matrix: Matrix<T>) {
         for (i in 0..<matrix.row) {
             for (j in 0..<matrix.column) {
                 this[i + row, j + col] = matrix[i, j]
@@ -472,6 +584,9 @@ interface MutableMatrix<T> : Matrix<T> {
      */
     fun swapCol(c1: Int, c2: Int, rowStart: Int = 0, rowEnd: Int = row)
 
+    /**
+     * Transforms this matrix by applying the function `f` to each element, taking the row and column indices, and the element itself.
+     */
     fun transform(f: (Int, Int, T) -> T) {
         for (i in 0 until row) {
             for (j in 0 until column) {
@@ -622,7 +737,23 @@ interface MutableMatrix<T> : Matrix<T> {
 }
 
 
-interface MatOverEqualPredicate<T> : EqualPredicate<Matrix<T>> {
+interface MatricesShaped {
+    /**
+     * The row count of the matrix considered.
+     *
+     * It can be `0` if we do not restrict the row count.
+     */
+    val row: Int
+
+    /**
+     * The column count of the matrix considered.
+     *
+     * It can be `0` if we do not restrict the column count.
+     */
+    val column: Int
+}
+
+interface MatOverEqualPredicate<T> : EqualPredicate<Matrix<T>>, MatricesShaped {
     val model: EqualPredicate<T>
 
     override fun isEqual(x: Matrix<T>, y: Matrix<T>): Boolean {
@@ -635,9 +766,13 @@ interface MatOverEqualPredicate<T> : EqualPredicate<Matrix<T>> {
 interface MatOverAddMonoid<T> : MatOverEqualPredicate<T>, AddMonoid<Matrix<T>> {
 
     override val model: AddMonoid<T>
-
+    /**
+     * Gets the zero matrix of the prescribed shape [row] and [column].
+     *
+     * Use `zero(row, col)` or `zero(n)` instead.
+     */
     override val zero: Matrix<T>
-        get() = throw UnsupportedOperationException("Use `zero(row, column)` instead")
+        get() = Matrix.zero(row, column, model)
 
     override fun contains(x: Matrix<T>): Boolean {
         return true
@@ -729,7 +864,7 @@ interface MatOverRing<T> : MatOverAddGroup<T>, Ring<Matrix<T>>, RingModule<T, Ma
         get() = model
 
     override val zero: Matrix<T>
-        get() = throw UnsupportedOperationException("Use `zero(row, column)` instead")
+        get() = Matrix.zero(row, column, model)
 
     override fun contains(x: Matrix<T>): Boolean {
         return true
@@ -803,11 +938,11 @@ interface MatOverRing<T> : MatOverAddGroup<T>, Ring<Matrix<T>>, RingModule<T, Ma
         return this.matmul(m)
     }
 
-    infix fun RowVector<T>.matmul(v : Vector<T>) : T{
-        return VectorImpl.inner(this.v,v,model)
+    infix fun RowVector<T>.matmul(v: Vector<T>): T {
+        return VectorImpl.inner(this.v, v, model)
     }
 
-    operator fun RowVector<T>.times(v : Vector<T>) : T{
+    operator fun RowVector<T>.times(v: Vector<T>): T {
         return this.matmul(v)
     }
 
@@ -894,9 +1029,17 @@ interface MatOverRing<T> : MatOverAddGroup<T>, Ring<Matrix<T>>, RingModule<T, Ma
 interface MatOverURing<T> : MatOverRing<T>, UnitRing<Matrix<T>>, UnitRingModule<T, Matrix<T>> {
     override val model: UnitRing<T>
 
-
+    /**
+     * Returns the identity matrix with the prescribed shape.
+     * It is required that [row] `==` [column], otherwise an exception is thrown.
+     *
+     * Use `eye(n)` instead.
+     */
     override val one: Matrix<T>
-        get() = throw UnsupportedOperationException("Use `eye(n)` instead")
+        get() {
+            require(row == column) { "The matrix must be square" }
+            return Matrix.identity(row, model)
+        }
 
     /**
      * Returns the identity matrix of size `n` with diagonal elements being `1`.
@@ -1249,47 +1392,32 @@ interface MatOverReals<T> : MatOverField<T> {
 
 }
 
-interface MatricesShaped<T> : MatOverEqualPredicate<T> {
-    val row: Int
-    val column: Int
-}
+internal open class MatricesShapedImpl(
+    override val row: Int,
+    override val column: Int
+) : MatricesShaped
 
-interface MatOverAddMonoidShaped<T> : MatOverAddMonoid<T>, MatricesShaped<T> {
-    override val zero: Matrix<T>
-        get() = zero(row, column)
-}
+internal open class MatOverEqualPredicateImpl<T>(override val model: EqualPredicate<T>, row: Int, column: Int) :
+    MatricesShapedImpl(row, column), MatOverEqualPredicate<T>
 
-interface MatOverURingShaped<T> : MatOverURing<T>, MatOverAddMonoidShaped<T> {
-    override val one: Matrix<T>
-        get() {
-            require(row == column)
-            return Matrix.identity(row, model)
-        }
+internal open class MatOverAddMonoidImpl<T>(override val model: AddMonoid<T>, row: Int, column: Int) :
+    MatricesShapedImpl(row, column), MatOverAddMonoid<T>
 
-    override val zero: Matrix<T>
-        get() = zero(row, column)
-}
+internal open class MatOverAddGroupImpl<T>(override val model: AddGroup<T>, row: Int, column: Int) :
+    MatricesShapedImpl(row, column), MatOverAddGroup<T>
 
+internal open class MatOverRingImpl<T>(override val model: Ring<T>, row: Int, column: Int) :
+    MatricesShapedImpl(row, column), MatOverRing<T>
 
-internal data class MatOverEqualPredicateImpl<T>(override val model: EqualPredicate<T>) : MatOverEqualPredicate<T>
+internal open class MatOverURingImpl<T>(override val model: UnitRing<T>, row: Int, column: Int) :
+    MatricesShapedImpl(row, column), MatOverURing<T>
 
-internal data class MatOverAddMonoidImpl<T>(override val model: AddMonoid<T>) : MatOverAddMonoid<T>
+internal open class MatOverEUDImpl<T>(override val model: EuclideanDomain<T>, row: Int, column: Int) :
+    MatricesShapedImpl(row, column), MatOverEUD<T>
 
-internal data class MatOverAddGroupImpl<T>(override val model: AddGroup<T>) : MatOverAddGroup<T>
+internal open class MatOverFieldImpl<T>(override val model: Field<T>, row: Int, column: Int) :
+    MatricesShapedImpl(row, column), MatOverField<T>
 
-internal data class MatOverRingImpl<T>(override val model: Ring<T>) : MatOverRing<T>
-
-internal data class MatOverURingImpl<T>(override val model: UnitRing<T>) : MatOverURing<T>
-
-internal data class MatOverURingShapedImpl<T>(override val model: UnitRing<T>, override val row: Int, override val column: Int)
-    : MatOverURingShaped<T>
-
-internal data class MatOverEUDImpl<T>(override val model: EuclideanDomain<T>) : MatOverEUD<T>
-
-internal data class MatOverEUDShapedImpl<T>(override val model: EuclideanDomain<T>, override val row: Int, override val column: Int)
-    : MatOverEUD<T>, MatOverURingShaped<T>
-
-internal data class MatOverFieldImpl<T>(override val model: Field<T>) : MatOverField<T>
 
 //
 //open class GeneralLinearGroup<T>(val n: Int, override val model: UnitRing<T>) :

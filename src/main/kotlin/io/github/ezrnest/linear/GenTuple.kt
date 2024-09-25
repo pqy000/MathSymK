@@ -5,7 +5,6 @@ import io.github.ezrnest.util.IterUtils
 import io.github.ezrnest.util.MathUtils
 import java.util.*
 import kotlin.collections.ArrayList
-import kotlin.math.min
 
 
 /*
@@ -34,7 +33,6 @@ interface GenTuple<T> : Mappable<T> {
      * @see elementSequence
      */
     fun flattenToList(): List<T> {
-        val size = this.size
         val data = ArrayList<T>(size)
         for (s in elementSequence()) {
             data += s
@@ -43,9 +41,8 @@ interface GenTuple<T> : Mappable<T> {
     }
 
     /**
-     * Returns a new tuple of the same type as the result of applying the given function to each element in this.
+     * Returns a new tuple of the same type as the result of applying the given function to each element in `this`.
      */
-//    fun <S> applyAll(f: (T) -> S): GenTuple<T>
     override fun <S> map(mapping: (T) -> S): GenTuple<S>
 
 }
@@ -123,94 +120,6 @@ inline val GenTensor<*>.indices: Sequence<Index>
 /**
  * Generic matrix-like container.
  */
-interface GenMatrix<T> : GenTuple<T> {
-
-    /**
-     * The count of rows in this matrix.
-     */
-    val row: Int
-
-    /**
-     * The count of columns in this matrix.
-     */
-    val column: Int
-
-    /**
-     * The total count of elements in this matrix, which is equal to `row * column`.
-     */
-    override val size: Int
-        get() = row * column
-
-    /**
-     * Gets the shape of this matrix: `(row, column)`.
-     */
-    val shape: Pair<Int, Int>
-        get() = row to column
-
-    /**
-     * Gets the element at the `i`-th row and `j`-th column in this matrix.
-     *
-     * It is required that `0 <= i < row` and `0 <= j < column`.
-     */
-    operator fun get(i: Int, j: Int): T
-
-    override fun <S> map(mapping: (T) -> S): GenMatrix<S>
-
-    /**
-     * Gets the elements in this generic matrix, iterating row first and then column as:
-     * ```
-     * for(i in 0 until row){
-     *     for(j in 0 until column){
-     *         yield(this[i, j])
-     *     }
-     * }
-     * ```
-     */
-    override fun elementSequence(): Sequence<T> {
-        return IterUtils.prodIdx(intArrayOf(row, column)).map { (i, j) -> this[i, j] }
-    }
-
-
-
-}
-
-/**
- * Determines whether this matrix is the same shape as [y].
- */
-fun GenMatrix<*>.shapeMatches(y: GenMatrix<*>): Boolean {
-    return row == y.row && column == y.column
-}
-
-/**
- * Determines whether this matrix is a square matrix.
- */
-inline val GenMatrix<*>.isSquare: Boolean get() = (row == column)
-
-fun GenMatrix<*>.requireSquare() {
-    require(isSquare) {
-        "This matrix should be square! Row=$row, Column=$column."
-    }
-}
-
-
-inline val GenMatrix<*>.rowIndices: IntRange
-    get() = 0..<row
-
-inline val GenMatrix<*>.colIndices: IntRange
-    get() = 0..<column
-
-/**
- * Gets a read-only-traversable sequence of the indices of this matrix, iterating row first and then column as:
- * ```
- * for(i in 0 until row){
- *     for(j in 0 until column){
- *         yield(i to j)
- *     }
- * }
- * ```
- */
-inline val GenMatrix<*>.indices: Sequence<Pair<Int, Int>>
-    get() = IterUtils.prod2(rowIndices, colIndices)
 
 
 fun <T, A : Appendable> GenTensor<T>.joinToL(
@@ -292,61 +201,6 @@ fun <T> GenTensor<T>.joinToString(
     val limits = IntArray(dim) { limit }
     return this.joinTo(StringBuilder(), separator, prefix, postfix, limits, truncated, transform).toString()
 }
-
-fun <T, A : Appendable> GenMatrix<T>.joinTo(
-    buffer: A, sepRow: CharSequence = "\n ", sepCol: CharSequence = ", ",
-    prefixRow: CharSequence = "[", postfixRow: CharSequence = "]",
-    prefixCol: CharSequence = "[", postfixCol: CharSequence = "]",
-    limitRow: Int = Int.MAX_VALUE, truncatedRow: CharSequence = "...",
-    limitCol: Int = Int.MAX_VALUE, truncatedCol: CharSequence = "...",
-    transform: ((T) -> CharSequence)? = null
-): A {
-    val (row, col) = shape
-    buffer.append(prefixRow)
-    for (i in 0..<min(row, limitRow)) {
-        if (i > 0) buffer.append(sepRow)
-        buffer.append(prefixCol)
-        for (j in 0..<min(col, limitCol)) {
-            if (j > 0) buffer.append(sepCol)
-            buffer.append(transform?.invoke(this[i, j]) ?: this[i, j].toString())
-        }
-        if (col > limitCol) {
-            buffer.append(sepCol)
-            buffer.append(truncatedCol)
-        }
-        buffer.append(postfixCol)
-    }
-    if (row > limitRow) {
-        buffer.append(sepRow)
-        buffer.append(truncatedRow)
-    }
-    buffer.append(postfixRow)
-    return buffer
-}
-
-
-fun <T> GenMatrix<T>.joinToString(
-    sepRow: CharSequence = "\n ", sepCol: CharSequence = ", ",
-    prefixRow: CharSequence = "[", postfixRow: CharSequence = "]",
-    prefixCol: CharSequence = "[", postfixCol: CharSequence = "]",
-    limit: Int = Int.MAX_VALUE, truncated: CharSequence = "...",
-    transform: ((T) -> CharSequence)? = null
-): String {
-    val builder = StringBuilder()
-//    rowIndices.joinTo(builder, prefix = "[", postfix = "]", separator = "\n ", limit = limit) { i ->
-//        colIndices.joinTo(builder, prefix = "[", postfix = "]", separator = ", ", limit = limit) { j ->
-//            this[i, j].toString()
-//        }
-//        ""
-//    }
-    joinTo(
-        builder, sepRow, sepCol, prefixRow, postfixRow, prefixCol, postfixCol,
-        limit, truncated, limit, truncated, // limit for row and column
-        transform
-    )
-    return builder.toString()
-}
-
 
 fun <T, A : Appendable> Vector<T>.joinTo(
     buffer: A,
