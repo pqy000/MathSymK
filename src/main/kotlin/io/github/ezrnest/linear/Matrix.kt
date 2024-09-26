@@ -1085,7 +1085,7 @@ interface MatOverRing<T> : MatOverAddGroup<T>, Ring<Matrix<T>>, RingModule<T, Ma
     }
 
     /**
-     * Returns the kronecker product `C = A ⊗ B` of `A = this` and `B = other`.
+     * Returns the kronecker product `C = A ⊗ B`.
      * The result matrix `C` has the shape `(A.row * B.row, A.column * B.column)` and its elements are computed as:
      * ```
      * C[i1 * B.row + i2, j1 * B.column + j2] = A[i1, j1] * B[i2, j2]
@@ -1102,12 +1102,12 @@ interface MatOverRing<T> : MatOverAddGroup<T>, Ring<Matrix<T>>, RingModule<T, Ma
      *
      *
      */
-    fun Matrix<T>.kronecker(other: Matrix<T>): Matrix<T> {
-        return MatrixImpl.kronecker(this, other, model)
+    fun kronecker(A : Matrix<T>, B: Matrix<T>): Matrix<T> {
+        return MatrixImpl.kronecker(A,B, model)
     }
 
     /**
-     * Alias for [Matrix.kronecker].
+     * Alias for [kronecker].
      */
     infix fun Matrix<T>.kron(other: Matrix<T>): Matrix<T> {
         return MatrixImpl.kronecker(this, other, model)
@@ -1123,6 +1123,9 @@ interface MatOverRing<T> : MatOverAddGroup<T>, Ring<Matrix<T>>, RingModule<T, Ma
 
     // row and column operations
 
+    /**
+     * Multiplies the row `r` by `k` within the given column range `[colStart, colEnd)`.
+     */
     fun MutableMatrix<T>.mulRow(r: Int, k: T, colStart: Int = 0, colEnd: Int = column) {
         if (this is AMatrix) {
             this.mulRow(r, k, colStart, colEnd, model)
@@ -1133,6 +1136,9 @@ interface MatOverRing<T> : MatOverAddGroup<T>, Ring<Matrix<T>>, RingModule<T, Ma
         }
     }
 
+    /**
+     * Multiplies the column `c` by `k` within the given row range `[rowStart, rowEnd)`.
+     */
     fun MutableMatrix<T>.mulCol(c: Int, k: T, rowStart: Int = 0, rowEnd: Int = row) {
         for (i in rowStart until rowEnd) {
             this[i, c] = model.multiply(this[i, c], k)
