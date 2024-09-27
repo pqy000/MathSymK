@@ -1,5 +1,6 @@
 package io.github.ezrnest.model
 
+import io.github.ezrnest.Mappable
 import io.github.ezrnest.structure.*
 import java.util.function.Function
 
@@ -8,42 +9,7 @@ import java.util.function.Function
 Created by liyicheng 2020/2/24
 */
 
-///**
-// * Describes the expanded complex including the infinity point.
-// */
-//sealed class ComplexE<T> constructor(mc: Field<T>) : AbstractMathObject<T, Field<T>>(mc) {
-//
-//    abstract fun isInf(): Boolean
-//
-//    abstract override fun <N> mapTo(newCalculator: EqualPredicate<N>, mapper: Function<T, N>): ComplexE<N>
-//}
-//
-//class ComplexInf<T> internal constructor(mc: Field<T>) : ComplexE<T>(mc) {
-//
-//    override fun isInf(): Boolean {
-//        return true
-//    }
-//
-//    override fun <N> mapTo(newCalculator: EqualPredicate<N>, mapper: Function<T, N>): ComplexInf<N> {
-//        return ComplexInf(newCalculator as Field)
-//    }
-//
-//    override fun valueEquals(obj: IMathObject<T>): Boolean {
-//        return obj is ComplexInf
-//    }
-//
-//    override fun toString(nf: NumberFormatter<T>): String {
-//        return "Inf"
-//    }
-//
-//    override fun equals(other: Any?): Boolean {
-//        return other is ComplexInf<*>
-//    }
-//
-//    override fun hashCode(): Int {
-//        return 0
-//    }
-//}
+
 
 /**
  * Defines the complex number, which is a number that can be written as `a+bi`, where `a` is the real part and `b` is the imaginary part.
@@ -54,38 +20,41 @@ Created by liyicheng 2020/2/24
  *
  */
 @JvmRecord
-data class Complex<T>(val a: T, val b: T) {
+data class Complex<T>(val re: T, val im: T) : Mappable<T> {
     /*
     Created by lyc at 2024/8/29
      */
 
     override fun toString(): String {
-        return "$a+${b}i"
+        return "$re+${im}i"
     }
 
+    override fun <S> map(mapping: (T) -> S): Complex<S> {
+        return Complex(mapping(re), mapping(im))
+    }
 
     fun <N> mapTo(mapper: Function<T, N>): Complex<N> {
-        return Complex(mapper.apply(a), mapper.apply(b))
+        return Complex(mapper.apply(re), mapper.apply(im))
     }
 
     companion object {
 
-
-        fun <T> over(model: UnitRing<T>): ComplexOverUnitRing<T> {
-            return ComplexOverUnitRing(model)
+        fun <T> over(model: UnitRing<T>): ComplexOverURingStd<T> {
+            return ComplexOverURingStd(model)
         }
 
-        fun <T> over(model: Field<T>): ComplexOnField<T> {
-            return ComplexOnField(model)
+        fun <T> over(model: Field<T>): ComplexOnFieldStd<T> {
+            return ComplexOnFieldStd(model)
         }
 
-        fun <T> over(reals: Reals<T>) : ComplexFromReals<T>{
-            return ComplexFromReals(reals)
+        fun <T> over(reals: Reals<T>): ComplexFromRealsStd<T> {
+            return ComplexFromRealsStd(reals)
         }
     }
 }
 
-open class ComplexOverUnitRing<T>(_model: UnitRing<T>) : UnitRing<Complex<T>>,Module<T, Complex<T>> {
+
+open class ComplexOverURingStd<T>(_model: UnitRing<T>) : ComplexOverURing<T, Complex<T>> {
     override val scalars: UnitRing<T> = _model
 
     final override val zero: Complex<T> = Complex(_model.zero, _model.zero)
@@ -93,33 +62,37 @@ open class ComplexOverUnitRing<T>(_model: UnitRing<T>) : UnitRing<Complex<T>>,Mo
     final override val one: Complex<T>
         get() = Complex(scalars.one, scalars.zero)
 
-
-    inline val T.i: Complex<T>
-        get() = ofImag(this)
-
-    fun of(a: T, b: T): Complex<T> {
+    override fun complexOf(a: T, b: T): Complex<T> {
         return Complex(a, b)
     }
-    
-    fun ofReal(a: T): Complex<T> {
+
+    override fun ofReal(a: T): Complex<T> {
         return Complex(a, scalars.zero)
     }
-    fun ofImag(b: T): Complex<T> {
+
+    override fun ofImag(b: T): Complex<T> {
         return Complex(scalars.zero, b)
     }
 
+    override fun re(z: Complex<T>): T {
+        return z.re
+    }
+
+    override fun im(z: Complex<T>): T {
+        return z.im
+    }
+
     final override fun contains(x: Complex<T>): Boolean {
-        return scalars.contains(x.a) && scalars.contains(x.b)
+        return scalars.contains(x.re) && scalars.contains(x.im)
     }
 
     final override fun isEqual(x: Complex<T>, y: Complex<T>): Boolean {
-        return scalars.isEqual(x.a, y.a) && scalars.isEqual(x.b, y.b)
+        return scalars.isEqual(x.re, y.re) && scalars.isEqual(x.im, y.im)
     }
 
     final override fun isZero(x: Complex<T>): Boolean {
-        return scalars.isZero(x.a) && scalars.isZero(x.b)
+        return scalars.isZero(x.re) && scalars.isZero(x.im)
     }
-
 
 
     /*
@@ -128,24 +101,24 @@ open class ComplexOverUnitRing<T>(_model: UnitRing<T>) : UnitRing<Complex<T>>,Mo
 
 
     final override fun add(x: Complex<T>, y: Complex<T>): Complex<T> {
-        return Complex(scalars.add(x.a, y.a), scalars.add(x.b, y.b))
+        return Complex(scalars.add(x.re, y.re), scalars.add(x.im, y.im))
     }
 
     final override fun negate(x: Complex<T>): Complex<T> {
-        return Complex(scalars.negate(x.a), scalars.negate(x.b))
+        return Complex(scalars.negate(x.re), scalars.negate(x.im))
     }
 
     final override fun subtract(x: Complex<T>, y: Complex<T>): Complex<T> {
-        return scalars.eval { of(x.a - y.a, x.b - y.b) }
+        return scalars.eval { Complex(x.re - y.re, x.im - y.im) }
     }
 
 
     final override fun scalarMul(k: T, v: Complex<T>): Complex<T> {
-        return Complex(scalars.multiply(k, v.a), scalars.multiply(k, v.b))
+        return Complex(scalars.multiply(k, v.re), scalars.multiply(k, v.im))
     }
 
-    fun modSq(z: Complex<T>): T {
-        return scalars.eval { z.a * z.a + z.b * z.b }
+    override fun modSq(z: Complex<T>): T {
+        return scalars.eval { z.re * z.re + z.im * z.im }
     }
 
     inline val Complex<T>.modSq: T
@@ -153,35 +126,34 @@ open class ComplexOverUnitRing<T>(_model: UnitRing<T>) : UnitRing<Complex<T>>,Mo
             return modSq(this)
         }
 
-    fun conj(z: Complex<T>): Complex<T> {
-        return Complex(z.a, scalars.negate(z.b))
+    override fun conj(z: Complex<T>): Complex<T> {
+        return Complex(z.re, scalars.negate(z.im))
     }
 
     inline val Complex<T>.conj: Complex<T>
         get() {
-            return scalars.eval { of(a, -b) }
+            return scalars.eval { Complex(re, -im) }
         }
 
     final override fun multiply(x: Complex<T>, y: Complex<T>): Complex<T> {
-        return scalars.eval { of(x.a * y.a - x.b * y.b, x.a * y.b + x.b * y.a) }
+        return scalars.eval { Complex(x.re * y.re - x.im * y.im, x.re * y.im + x.im * y.re) }
     }
 
 
-
     final override fun multiplyN(x: Complex<T>, n: Long): Complex<T> {
-        return scalars.eval { of(x.a * n, x.b * n) }
+        return scalars.eval { Complex(x.re * n, x.im * n) }
     }
 
     final override fun sum(elements: List<Complex<T>>): Complex<T> {
         return scalars.eval {
-            val a = scalars.sum(elements.map { it.a })
-            val b = scalars.sum(elements.map { it.b })
-            of(a, b)
+            val a = scalars.sum(elements.map { it.re })
+            val b = scalars.sum(elements.map { it.im })
+            Complex(a, b)
         }
     }
 
     /*
-    Operator overloading
+    Operator overloading, possible since we can use the concrete class Complex
      */
     operator fun Complex<T>.plus(y: T): Complex<T> {
         return add(this, ofReal(y))
@@ -209,33 +181,27 @@ open class ComplexOverUnitRing<T>(_model: UnitRing<T>) : UnitRing<Complex<T>>,Mo
 }
 
 
-
-open class ComplexOnField<T>(override val scalars: Field<T>) :
-    ComplexOverUnitRing<T>(scalars), Field<Complex<T>>,
-    Algebra<T, Complex<T>> {
-
-
-
-    override val characteristic: Long?
-        get() = scalars.characteristic
+open class ComplexOnFieldStd<T>(override val scalars: Field<T>) :
+    ComplexOverURingStd<T>(scalars),
+    ComplexOverField<T, Complex<T>> {
 
 
     final override fun reciprocal(x: Complex<T>): Complex<T> {
-        val d = scalars.eval { x.a * x.a + x.b * x.b }
-        return scalars.eval { of(x.a / d, -x.b / d) }
+        val d = scalars.eval { x.re * x.re + x.im * x.im }
+        return scalars.eval { Complex(x.re / d, -x.im / d) }
     }
 
     final override fun divide(x: Complex<T>, y: Complex<T>): Complex<T> {
-        val d = scalars.eval { y.a * y.a + y.b * y.b }
+        val d = scalars.eval { y.re * y.re + y.im * y.im }
         return scalars.eval {
-            val t1 = x.a * y.a + x.b * y.b
-            val t2 = x.b * y.a - x.a * y.b
-            of(t1 / d, t2 / d)
+            val t1 = x.re * y.re + x.im * y.im
+            val t2 = x.im * y.re - x.re * y.im
+            Complex(t1 / d, t2 / d)
         }
     }
 
     final override fun scalarDiv(x: Complex<T>, k: T): Complex<T> {
-        return scalars.eval { of(x.a / k, x.b / k) }
+        return scalars.eval { Complex(x.re / k, x.im / k) }
     }
 
     /*
@@ -250,25 +216,10 @@ open class ComplexOnField<T>(override val scalars: Field<T>) :
     }
 }
 
-open class ComplexFromReals<T>(override val reals: Reals<T>) : ComplexOnField<T>(reals), ComplexNumbers<T, Complex<T>> {
+open class ComplexFromRealsStd<T>(override val reals: Reals<T>) : ComplexOnFieldStd<T>(reals),
+    ComplexNumbers<T, Complex<T>> {
+
     override val scalars: Reals<T>
         get() = reals
-
-    override val characteristic: Long
-        get() = 0
-
-    override fun re(z: Complex<T>): T {
-        return z.a
-    }
-
-    override fun im(z: Complex<T>): T {
-        return z.b
-    }
-
-    override fun abs(z: Complex<T>): T {
-        return reals.eval { sqrt(z.a * z.a + z.b * z.b) }
-    }
-
-    //TODO implement special functions
 
 }

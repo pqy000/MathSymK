@@ -519,22 +519,7 @@ fun <T> Matrix<T>.joinToString(
 }
 
 
-///**
-// * Returns the transpose conjugate of this matrix.
-// *
-// * It is required that this matrix is a matrix of complex numbers with a model of [ComplexNumbers].
-// */
-//fun <K> Matrix<Complex<K>>.transposeConjugate(): Matrix<Complex<K>> {
-//    TODO()
-////    return TransposedMatrixView(this).map(model::conj)
-//}
-//
-///**
-// * The same as [transposeConjugate].
-// *
-// * @see transposeConjugate
-// */
-//val <K> Matrix<Complex<K>>.H: Matrix<Complex<K>> get() = transposeConjugate()
+
 
 
 @JvmRecord
@@ -1145,6 +1130,8 @@ interface MatOverRing<T> : MatOverAddGroup<T>, Ring<Matrix<T>>, RingModule<T, Ma
         }
     }
 }
+
+
 
 interface MatOverURing<T> : MatOverRing<T>, UnitRing<Matrix<T>>, UnitRingModule<T, Matrix<T>> {
     override val model: UnitRing<T>

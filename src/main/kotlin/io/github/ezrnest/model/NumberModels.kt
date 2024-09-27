@@ -343,7 +343,7 @@ object BigIntegerAsIntegers : Integers<BigInteger> {
     }
 
 
-    override fun of(n: Long): BigInteger {
+    override fun ofN(n: Long): BigInteger {
         return BigInteger.valueOf(n)
     }
 

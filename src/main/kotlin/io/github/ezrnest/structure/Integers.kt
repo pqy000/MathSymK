@@ -520,7 +520,7 @@ interface Integers<T> : EuclideanDomain<T>, OrderedRing<T> {
 
 
     val Long.v: T
-        get() = of(this)
+        get() = ofN(this)
 
     /**
      * Converts a value of type T to long, throws [UnsupportedOperationException] if
@@ -618,7 +618,7 @@ interface Integers<T> : EuclideanDomain<T>, OrderedRing<T> {
      * @return `true` if it is an even number, otherwise `false`.
      */
     fun isEven(x: T): Boolean {
-        val two = of(2)
+        val two = ofN(2)
         return isZero(mod(x, two))
     }
 

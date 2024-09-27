@@ -228,6 +228,9 @@ data class Polynomial<T> internal constructor(
             return result
         }
 
+        /**
+         * Applies this polynomial to a value `x` and returns the result.
+         */
         fun <T, M> Polynomial<T>.substitute(x: M, model: UnitRingModule<T, M>): M {
             return computeGeneral(this, x, model::zero, model::fromScalar, model::add, model::multiply, model::power)
         }

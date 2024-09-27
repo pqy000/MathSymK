@@ -205,8 +205,8 @@ class QuotientField<T>(val domain: EuclideanDomain<T>, val p: T) : Field<T> {
     }
 
 
-    override fun of(n: Long): T {
-        return domain.eval { mod(of(n), p) }
+    override fun ofN(n: Long): T {
+        return domain.eval { mod(ofN(n), p) }
     }
 
 

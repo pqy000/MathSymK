@@ -1,18 +1,18 @@
 package samples
 
 import io.github.ezrnest.model.Complex
-import io.github.ezrnest.model.ComplexD
-import io.github.ezrnest.model.ComplexD.Companion.exp
+import io.github.ezrnest.model.Complex128
+import io.github.ezrnest.model.Complex128.Companion.exp
 import io.github.ezrnest.model.NumberModels
 
 
 fun basicDoubleComplex(){
-    val z1 = ComplexD(1.0, 2.0)
-    val z2 = ComplexD(3.0, 4.0)
+    val z1 = Complex128(1.0, 2.0)
+    val z2 = Complex128(3.0, 4.0)
     println(listOf(z1 + z2, z1 - z2, z1 * z2, z1 / z2)) // (4.0, 6.0), (-2.0, -2.0), (-5.0, 10.0), (0.44, 0.08)
     println(listOf(z2.mod,z2.arg)) // 5.0, 0.93
     val π = Math.PI
-    val i = ComplexD.I
+    val i = Complex128.I
     println(String.format("%.2s",exp(i * π))) // -1.0
 
 }

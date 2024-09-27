@@ -45,7 +45,7 @@ interface UnitRing<T> : Ring<T>, MulMonoid<T> {
     /**
      * Returns element in this ring that represents `one * n`, namely adding `one` for `n` times.
      */
-    fun of(n: Long): T {
+    fun ofN(n: Long): T {
         return multiplyN(one, n)
     }
 
@@ -71,7 +71,7 @@ interface UnitRing<T> : Ring<T>, MulMonoid<T> {
 }
 
 fun <T> UnitRing<T>.exactDiv(a: T, n: Long): T {
-    return exactDiv(a, of(n))
+    return exactDiv(a, ofN(n))
 }
 
 interface CommutativeRing<T> : Ring<T>{
@@ -109,14 +109,14 @@ interface DivisionRing<T> : UnitRing<T>, MulGroup<T> {
         if (n == 0L) {
             throw ArithmeticException("Divided by zero")
         }
-        return divide(x, of(n))
+        return divide(x, ofN(n))
     }
 
     /**
      * Returns the element in this division that represents the given fraction, `of(q.nume)/of(q.deno)`.
      */
     fun of(q : Fraction): T {
-        return of(q.nume) / of(q.deno)
+        return ofN(q.nume) / ofN(q.deno)
     }
 
     override fun T.div(y: T): T {

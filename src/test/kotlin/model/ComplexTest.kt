@@ -19,28 +19,28 @@ class ComplexTest {
     @Test
     fun testAdd() {
         with(complex1) {
-            val a = of(1, 2)
-            val b = of(3, 4)
+            val a = complexOf(1, 2)
+            val b = complexOf(3, 4)
             val c = a + b
-            assertEquals(of(4, 6), c)
+            assertEquals(complexOf(4, 6), c)
         }
     }
 
     @Test
     fun testSubtract() {
         with(complex1) {
-            val a = of(1, 2)
-            val b = of(3, 4)
+            val a = complexOf(1, 2)
+            val b = complexOf(3, 4)
             val c = a - b
-            assertTrue(isEqual(of(-2, -2), c))
+            assertTrue(isEqual(complexOf(-2, -2), c))
         }
     }
 
     @Test
     fun additionWithZero() {
         with(complex1) {
-            val a = of(1, 2)
-            val zero = of(0, 0)
+            val a = complexOf(1, 2)
+            val zero = complexOf(0, 0)
             val result = a + zero
             assertEquals(a, result)
         }
@@ -49,8 +49,8 @@ class ComplexTest {
     @Test
     fun subtractionWithZero() {
         with(complex1) {
-            val a = of(1, 2)
-            val zero = of(0, 0)
+            val a = complexOf(1, 2)
+            val zero = complexOf(0, 0)
             val result = a - zero
             assertEquals(a, result)
         }
@@ -59,8 +59,8 @@ class ComplexTest {
     @Test
     fun multiplicationWithZero() {
         with(complex1) {
-            val a = of(1, 2)
-            val zero = of(0, 0)
+            val a = complexOf(1, 2)
+            val zero = complexOf(0, 0)
             val result = a * zero
             assertEquals(zero, result)
         }
@@ -69,8 +69,8 @@ class ComplexTest {
     @Test
     fun divisionByOne() {
         with(complex1) {
-            val a = of(1, 2)
-            val one = of(1, 0)
+            val a = complexOf(1, 2)
+            val one = complexOf(1, 0)
             val result = a / one
             assertEquals(a, result)
         }
@@ -79,8 +79,8 @@ class ComplexTest {
     @Test
     fun divisionByZeroThrowsException() {
         with(complex1) {
-            val a = of(1, 2)
-            val zero = of(0, 0)
+            val a = complexOf(1, 2)
+            val zero = complexOf(0, 0)
             assertThrows<ArithmeticException> {
                 println(a / zero)
             }
@@ -90,16 +90,16 @@ class ComplexTest {
     @Test
     fun conjugateOfComplexNumber() {
         with(complex1) {
-            val a = of(1, 2)
+            val a = complexOf(1, 2)
             val conjugate = a.conj
-            assertTrue { isEqual(of(1, -2), conjugate) }
+            assertTrue { isEqual(complexOf(1, -2), conjugate) }
         }
     }
 
     @Test
     fun modulusOfComplexNumber() {
         with(complex1) {
-            val a = of(3, 4)
+            val a = complexOf(3, 4)
             val modulus = a.modSq
             assertEquals(25, modulus)
         }
@@ -108,7 +108,7 @@ class ComplexTest {
 //    @Test
 //    fun argumentOfComplexNumber() {
 //        with(complex1) {
-//            val a = of(1, 1)
+//            val a = complexOf(1, 1)
 //            val argument = a.arg
 //            assertEquals(Math.PI / 4, argument)
 //        }
@@ -116,7 +116,7 @@ class ComplexTest {
 }
 
 //fun main() {
-//    val l = listOf(0,0)
+//    val l = listcomplexOf(0,0)
 //    val a : Int = l[0]
 //    val b : Int = l[1]
 //    println(l[0] / l[1])
