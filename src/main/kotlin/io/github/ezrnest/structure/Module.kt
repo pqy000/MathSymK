@@ -138,7 +138,7 @@ interface Algebra<K,V> : LinearSpace<K,V>, RingModule<K,V> {
 }
 
 /**
- * Describes an algebra with a unit ring.
+ * Describes an algebra which is also a unit ring.
  *
  *
  * Created at 2024/9/11

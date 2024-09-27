@@ -1,14 +1,12 @@
 package io.github.ezrnest.linear
 
-import io.github.ezrnest.ModeledMathObject
-import io.github.ezrnest.ValueEquatable
 import io.github.ezrnest.discrete.Permutation
-import io.github.ezrnest.model.struct.AlgebraModel
 import io.github.ezrnest.structure.*
 import io.github.ezrnest.util.IterUtils
 import io.github.ezrnest.util.MathUtils
 import java.util.*
-import java.util.function.Function
+import kotlin.sequences.all
+import kotlin.times
 
 
 /*
@@ -38,9 +36,8 @@ import java.util.function.Function
  * the number of dimensions.
  *
  *
- * Note: this implementation is not intentioned for fast numeric computation.
  */
-interface Tensor<T> : ModeledMathObject<T, EqualPredicate<T>>, AlgebraModel<T, Tensor<T>>, GenTensor<T> {
+interface Tensor<T> : GenTensor<T> {
     //Created by lyc at 2021-04-06 22:12
 
     /**
@@ -82,161 +79,19 @@ interface Tensor<T> : ModeledMathObject<T, EqualPredicate<T>>, AlgebraModel<T, T
     Math operations:
      */
 
-    /**
-     * Returns the element-wise sum of this tensor and `y`.
-     *
-     * The sum of two tensor `x,y` has the
-     * shape of `max(x.shape, y.shape)`, here `max` means element-wise maximum of two arrays.
-     */
-    override fun plus(y: Tensor<T>): Tensor<T> {
-        return TensorImpl.add(this, y, model as AddSemigroup<T>)
-    }
 
-    /**
-     * Returns the negation of this tensor as a new tensor.
-     *
-     */
-    override fun unaryMinus(): Tensor<T> {
-        return TensorImpl.negate(this, model as AddGroup<T>)
-    }
+//    /**
+//     * Returns the **element-wise** division of this tensor and `y`.
+//     *
+//     * @throws ArithmeticException if zero-division happens
+//     */
+//    fun div(y: Tensor<T>): Tensor<T> {
+//        return TensorImpl.divide(this, y, model as MulGroup<T>)
+//    }
 
-    /**
-     * Returns the sum of this tensor and `y`.
-     *
-     * The sum of two tensor `x,y` has the
-     * shape of `max(x.shape, y.shape)`, here `max` means element-wise maximum of two arrays.
-     */
-    override fun minus(y: Tensor<T>): Tensor<T> {
-        return TensorImpl.subtract(this, y, model as AddGroup<T>)
-    }
-
-    /**
-     * Returns the result of multiplying this tensor with a scalar as a new tensor.
-     */
-    override fun scalarMul(k: T): Tensor<T> {
-        return TensorImpl.multiply(this, k, model as MulSemigroup<T>)
-    }
-
-    override fun timesLong(n: Long): Tensor<T> {
-        return TensorImpl.multiplyLong(this, n, model as AddSemigroup<T>)
-    }
-
-    /**
-     * Returns the result of dividing this tensor with a scalar as a new tensor.
-     */
-    override fun scalarDiv(k: T): Tensor<T> {
-        return TensorImpl.divide(this, k, model as MulGroup<T>)
-    }
-
-    /**
-     * Returns the **element-wise** product of this tensor and `y`.
-     *
-     */
-    override fun times(y: Tensor<T>): Tensor<T> {
-        return TensorImpl.multiply(this, y, model as MulSemigroup<T>)
-    }
-
-    /**
-     * Returns the **element-wise** division of this tensor and `y`.
-     *
-     * @throws ArithmeticException if zero-division happens
-     */
-    fun div(y: Tensor<T>): Tensor<T> {
-        return TensorImpl.divide(this, y, model as MulGroup<T>)
-    }
-
-
-    /**
-     * Returns the wedge product of this tensor and [y].
-     *
-     * The tensor product of two tensor `z = x⊗y` has the
-     * shape of `x.shape + y.shape`, here `+` means concatenation of two arrays.
-     *
-     * The `[i,j]` element of `z` is equal to the scalar product of `x[ i ]` and `y[ j ]`, that is,
-     *
-     *     z[i,j] = x[i] * y[j]
-     *
-     *
-     * @see times
-     * @see inner
-     * @see matmul
-     * @see einsum
-     */
-    infix fun wedge(y: Tensor<T>): Tensor<T> {
-        return TensorImpl.wedge(this, y, model as Ring<T>)
-    }
-
-    /**
-     * Returns the inner product of this tensor and [y], which is the sum of the element-wise product of this and `y`.
-     *
-     * @see times
-     * @see wedge
-     * @see matmul
-     * @see einsum
-     */
-    infix fun inner(y: Tensor<T>): T {
-        return TensorImpl.inner(this, y, model as Ring<T>)
-    }
-
-    /**
-     * Returns the matrix multiplication of this and [y].
-     *
-     * To perform matrix multiplication of rank `r` for two tensors `x,y`, first it is
-     * required that the last `r` dimensions of `x` and first `r` dimensions of `y` have
-     * the same shape.
-     * The resulting tensor `z` has the shape of `x.shape[:-r] + y.shape[r:]`.
-     *
-     * Denote `i, j, k` indices of length `x.dim-r, y.dim-r, r` respectively, the following
-     * equation is satisfied:
-     *
-     *     z[i,j] = sum(k, x[i,k] * y[k,j])
-     *
-     * @see times
-     * @see wedge
-     * @see inner
-     * @see einsum
-     *
-     */
-    fun matmul(y: Tensor<T>, r: Int = 1): Tensor<T> {
-        return TensorImpl.matmul(this, y, r)
-    }
 
 //    fun tensorDot()
 
-
-    /**
-     * Returns the sum of all the elements in this tensor.
-     */
-    fun sumAll(): T {
-        val mc = model as AddSemigroup<T>
-        return elementSequence().reduce(mc::add)
-    }
-
-    /**
-     * Returns the sum of elements in the given axis(axes). If the given axes is empty, then it will
-     * return the sum of all the elements as a scalar tensor.
-     *
-     * For example, assume the tensor `t = [[0,1,2],[2,3,4]]`, then `t.sum(0) = [2,4,6]`.
-     *
-     * @param axes the axes to sum, negative indices are allowed to indicate axes from the last.
-     *
-     */
-    fun sum(vararg axes: Int): Tensor<T> {
-        return TensorImpl.sum(this, axes.asList())
-    }
-
-    /**
-     * Returns a tensor containing the sums of diagonal elements in this tensor.
-     *
-     * This method is generally equivalent to
-     *
-     *     diagonal(offset,axis1,axis2).sum(-1)
-     *
-     * @see diagonal
-     */
-    fun trace(offset: Int = 0, axis1: Int = -2, axis2: Int = -1): Tensor<T> {
-        return diagonal(offset, axis1, axis2).sum(-1)
-    }
 
     /**
      * Returns a tensor view of diagonal elements in the given two axes with offsets.
@@ -291,7 +146,7 @@ interface Tensor<T> : ModeledMathObject<T, EqualPredicate<T>>, AlgebraModel<T, T
     /**
      * Returns a new tensor of applying the given function to this tensor element-wise.
      */
-    override fun <S> map(mapping: (T) -> S): Tensor<S>{
+    override fun <S> map(mapping: (T) -> S): Tensor<S> {
         TODO()
     }
 
@@ -420,58 +275,6 @@ interface Tensor<T> : ModeledMathObject<T, EqualPredicate<T>>, AlgebraModel<T, T
     }
 
 
-    /**
-     * Returns `true` if all elements in this tensor match the given [predicate].
-     *
-     */
-    fun all(predicate: (T) -> Boolean): Boolean {
-        return elementSequence().all(predicate)
-    }
-
-    /**
-     * Returns true if at least one element in this tensor matches the given predicate.
-     *
-     */
-    fun any(predicate: (T) -> Boolean): Boolean {
-        return elementSequence().any(predicate)
-    }
-
-
-    /*
-    Vector model for T:
-     */
-
-
-    override fun isLinearRelevant(v: Tensor<T>): Boolean {
-        return TensorImpl.isLinearDependent(this, v, model as Field)
-    }
-
-    /*
-    Math object
-     */
-
-    override fun <N> mapTo(newModel: EqualPredicate<N>, mapping: Function<T, N>): Tensor<N> {
-        return ATensor.buildFromSequence(newModel, shape, elementSequence().map { mapping.apply(it) })
-    }
-
-    override fun valueEquals(obj: ValueEquatable<T>): Boolean {
-        if (obj !is Tensor) {
-            return false
-        }
-        val mc = model
-        if (!this.isSameShape(obj)) {
-            return false
-        }
-        return elementSequence().zip(obj.elementSequence()).all { (a, b) -> mc.isEqual(a, b) }
-    }
-
-//    override fun toString(nf: NumberFormatter<T>): String {
-//        return joinTo(StringBuilder()) {
-//            nf.format(it)
-//        }.toString()
-//    }
-
-
     companion object {
 
         /**
@@ -486,12 +289,14 @@ interface Tensor<T> : ModeledMathObject<T, EqualPredicate<T>>, AlgebraModel<T, T
 
         private fun checkValidShape(shape: IntArray) {
             require(shape.isNotEmpty())
-            require(shape.all { s -> s > 0 })
+            require(shape.all { s -> s >= 0 })
         }
 
         fun <T> checkShape(x: Tensor<T>, y: Tensor<T>) {
             if (!x.isSameShape(y)) {
-                throw IllegalArgumentException("Shape mismatch: ${x.shape.contentToString()} and ${y.shape.contentToString()}.")
+                throw IllegalArgumentException(
+                    "Shape mismatch: ${x.shape.contentToString()} and ${y.shape.contentToString()}."
+                )
             }
         }
 
@@ -500,8 +305,8 @@ interface Tensor<T> : ModeledMathObject<T, EqualPredicate<T>>, AlgebraModel<T, T
          *
          * @param shape a non-empty array of positive integers
          */
-        fun <T> zeros(mc: Ring<T>, vararg shape: Int): MutableTensor<T> {
-            return constants(mc.zero, mc, *shape)
+        fun <T> zeros(mc: AddMonoid<T>, vararg shape: Int): MutableTensor<T> {
+            return constants(mc.zero, *shape)
         }
 
         /**
@@ -510,7 +315,7 @@ interface Tensor<T> : ModeledMathObject<T, EqualPredicate<T>>, AlgebraModel<T, T
          * @param shape a non-empty array of positive integers
          */
         fun <T> ones(mc: UnitRing<T>, vararg shape: Int): MutableTensor<T> {
-            return constants(mc.one, mc, *shape)
+            return constants(mc.one, *shape)
         }
 
         /**
@@ -518,9 +323,9 @@ interface Tensor<T> : ModeledMathObject<T, EqualPredicate<T>>, AlgebraModel<T, T
          *
          * @param shape a non-empty array of positive integers
          */
-        fun <T> constants(c: T, mc: EqualPredicate<T>, vararg shape: Int): MutableTensor<T> {
+        fun <T> constants(c: T, vararg shape: Int): MutableTensor<T> {
             checkValidShape(shape)
-            return ATensor.constant(c, shape.clone(), mc)
+            return ATensor.constant(c, shape.clone())
         }
 
         /**
@@ -528,9 +333,9 @@ interface Tensor<T> : ModeledMathObject<T, EqualPredicate<T>>, AlgebraModel<T, T
          *
          * @param shape a non-empty array of positive integers
          */
-        fun <T> of(shape: IntArray, mc: EqualPredicate<T>, supplier: (Index) -> T): MutableTensor<T> {
+        fun <T> of(shape: IntArray, supplier: (Index) -> T): MutableTensor<T> {
             checkValidShape(shape)
-            return ATensor.buildFromSequence(mc, shape.clone(), IterUtils.prodIdxN(shape).map(supplier))
+            return ATensor.buildFromSequence(shape.clone(), IterUtils.prodIdxN(shape).map(supplier))
         }
 
         /**
@@ -538,11 +343,8 @@ interface Tensor<T> : ModeledMathObject<T, EqualPredicate<T>>, AlgebraModel<T, T
          *
          * @see of
          */
-        operator fun <T> invoke(
-            shape: IntArray, mc: EqualPredicate<T>,
-            supplier: (Index) -> T
-        ): MutableTensor<T> {
-            return of(shape, mc, supplier)
+        operator fun <T> invoke(shape: IntArray, supplier: (Index) -> T): MutableTensor<T> {
+            return of(shape, supplier)
         }
 
         /**
@@ -553,38 +355,38 @@ interface Tensor<T> : ModeledMathObject<T, EqualPredicate<T>>, AlgebraModel<T, T
          *
          */
         inline fun <reified T> of(elements: List<Any>, mc: EqualPredicate<T>): MutableTensor<T> {
-            return ATensor.fromNestingList(elements, mc, T::class.java)
+            return ATensor.fromNestingList(elements, T::class.java)
         }
 
         /**
          * Creates a tensor of the given [shape] with its [elements], it is required that the length of
          * [elements] is equal to the product of [shape].
          */
-        fun <T> of(shape: IntArray, mc: EqualPredicate<T>, vararg elements: T): MutableTensor<T> {
+        fun <T> of(shape: IntArray, vararg elements: T): MutableTensor<T> {
             checkValidShape(shape)
             val size = MathUtils.product(shape)
             require(elements.size == size) {
                 "$size elements expected but ${elements.size} is given!"
             }
             val data = Arrays.copyOf(elements, size, Array<Any>::class.java)
-            return ATensor(mc, shape, data)
+            return ATensor(shape, data)
         }
 
         /**
          * Creates a tensor of the given [shape] with a sequence of elements, it is required that the size of
          * [elements] not smaller than the product of [shape].
          */
-        fun <T> of(shape: IntArray, mc: EqualPredicate<T>, elements: Sequence<T>): MutableTensor<T> {
+        fun <T> of(shape: IntArray, elements: Sequence<T>): MutableTensor<T> {
             checkValidShape(shape)
-            return ATensor.buildFromSequence(mc, shape, elements)
+            return ATensor.buildFromSequence(shape, elements)
         }
 
         /**
          * Creates a tensor of the given [shape] with an iterable of elements, it is required that the size of
          * [elements] not smaller than the product of [shape].
          */
-        fun <T> of(shape: IntArray, mc: EqualPredicate<T>, elements: Iterable<T>): MutableTensor<T> {
-            return of(shape, mc, elements.asSequence())
+        fun <T> of(shape: IntArray, elements: Iterable<T>): MutableTensor<T> {
+            return of(shape, elements.asSequence())
         }
 
 //        /**
@@ -602,39 +404,12 @@ interface Tensor<T> : ModeledMathObject<T, EqualPredicate<T>>, AlgebraModel<T, T
             return ATensor.copyOf(t)
         }
 
-        /**
-         * Returns the einsum of several tensors defined by the given expression.
-         *
-         *
-         * Examples:
-         *
-         *      | Expression | Required Shapes | Result Shape | Description                 | Equivalent Method
-         *      |------------|-----------------|--------------|-----------------------------|-------------------------
-         *      | i->i       | (a)             | (a)          | identity                    | x
-         *      | i->        | (a)             | (1)          | sum                         | x.sum()
-         *      | ij->ji     | (a,b)           | (b,a)        | transpose                   | x.transpose()
-         *      | ii         | (a,a)           | (1)          | trace                       | x.trace()
-         *      | ii->i      | (a,a)           | (a)          | diagonal                    | x.diagonal()
-         *      | ij,ij->ij  | (a,b),(a,b)     | (a,b)        | element-wise multiplication | x.multiply(y)
-         *      | ij,jk->ik  | (a,b),(b,c)     | (a,c)        | matrix multiplication       | x.matmul(y)
-         *
-         *
-         *
-         * @see times
-         * @see wedge
-         * @see inner
-         * @see matmul
-         */
-        fun <T> einsum(expr: String, vararg tensors: Tensor<T>): MutableTensor<T> {
-            return TensorImpl.einsum(tensors.asList(), expr)
-        }
-
 
         /**
          * Returns a tensor of shape `(1)` that represents the given scalar.
          */
-        fun <T> scalar(x: T, mc: EqualPredicate<T>): MutableTensor<T> {
-            return constants(x, mc, 1)
+        fun <T> scalar(x: T): MutableTensor<T> {
+            return constants(x, 1)
         }
 
         /**
@@ -749,12 +524,10 @@ operator fun <T> Tensor<T>.get(vararg idx: Int): T {
 /**
  * The operator-overloading version of the method [Tensor.slice], providing a more concise way to slice a tensor.
  */
-operator fun <T> Tensor<T>.get(vararg slices : Any?) : Tensor<T> {
+operator fun <T> Tensor<T>.get(vararg slices: Any?): Tensor<T> {
     return slice(slices.asList())
 }
 
-infix fun <T> Tensor<T>.matmul(y: Tensor<T>): Tensor<T> = this.matmul(y, r = 1)
-infix fun <T> MutableTensor<T>.matmul(y: Tensor<T>): MutableTensor<T> = this.matmul(y, r = 1)
 
 ///**
 // * Converts this tensor to a matrix. It is required that `dim == 2`.
@@ -793,39 +566,7 @@ interface MutableTensor<T> : Tensor<T> {
     }
 
 
-    operator fun plusAssign(y: Tensor<T>) {
-        val mc = model as AddSemigroup<T>
-        val y1 = y.broadcastTo(*shape)
-        for (idx in indices) {
-            this[idx] = mc.add(this[idx], y1[idx])
-        }
-    }
-
-    operator fun minusAssign(y: Tensor<T>) {
-        val mc = model as AddGroup<T>
-        val y1 = y.broadcastTo(*shape)
-        for (idx in indices) {
-            this[idx] = mc.subtract(this[idx], y1[idx])
-        }
-    }
-
-    operator fun timesAssign(y: Tensor<T>) {
-        val mc = model as Ring<T>
-        val y1 = y.broadcastTo(*shape)
-        for (idx in indices) {
-            this[idx] = mc.multiply(this[idx], y1[idx])
-        }
-    }
-
-    operator fun divAssign(y: Tensor<T>) {
-        val mc = model as DivisionRing<T>
-        val y1 = y.broadcastTo(*shape)
-        for (idx in indices) {
-            this[idx] = mc.divide(this[idx], y1[idx])
-        }
-    }
-
-    override fun <S> map(mapping: (T) -> S): MutableTensor<S>{
+    override fun <S> map(mapping: (T) -> S): MutableTensor<S> {
         TODO()
     }
 
@@ -837,48 +578,6 @@ interface MutableTensor<T> : Tensor<T> {
      */
     fun transform(f: (T) -> T) {
         indices.forEach { idx -> this[idx] = f(this[idx]) }
-    }
-
-    override fun plus(y: Tensor<T>): MutableTensor<T> {
-        return TensorImpl.add(this, y, model as AddSemigroup<T>)
-    }
-
-    override fun unaryMinus(): MutableTensor<T> {
-        return TensorImpl.negate(this, model as AddGroup<T>)
-    }
-
-    override fun minus(y: Tensor<T>): MutableTensor<T> {
-        return TensorImpl.subtract(this, y, model as AddGroup<T>)
-    }
-
-    override fun scalarMul(k: T): MutableTensor<T> {
-        return TensorImpl.multiply(this, k, model as MulSemigroup<T>)
-    }
-
-    override fun scalarDiv(k: T): MutableTensor<T> {
-        return TensorImpl.multiply(this, k, model as MulGroup<T>)
-    }
-
-    override fun times(y: Tensor<T>): MutableTensor<T> {
-        return TensorImpl.multiply(this, y, model as MulSemigroup<T>)
-    }
-
-    override fun div(y: Tensor<T>): MutableTensor<T> {
-        return TensorImpl.divide(this, y, model as MulGroup<T>)
-    }
-
-
-    override infix fun wedge(y: Tensor<T>): MutableTensor<T> {
-        return TensorImpl.wedge(this, y, model as Ring<T>)
-    }
-
-
-    override fun matmul(y: Tensor<T>, r: Int): MutableTensor<T> {
-        return TensorImpl.matmul(this, y, r)
-    }
-
-    override fun sum(vararg axes: Int): MutableTensor<T> {
-        return TensorImpl.sum(this, axes.asList())
     }
 
     override fun diagonal(offset: Int, axis1: Int, axis2: Int): MutableTensor<T> {
@@ -959,86 +658,332 @@ interface MutableTensor<T> : Tensor<T> {
         return ATensor.copyOf(this)
     }
 
-    override fun <N> mapTo(newModel: EqualPredicate<N>, mapping: Function<T, N>): MutableTensor<N> {
-        return ATensor.buildFromSequence(newModel, shape, elementSequence().map { mapping.apply(it) })
+}
+
+
+interface TensorsShaped {
+    // created on 2024/9/27
+    /**
+     * The prescribed dimension, `dim = shape.size`.
+     */
+    val dim: Int
+        get() = shape.size
+
+    /**
+     * The prescribed shape.
+     */
+    val shape: IntArray
+}
+
+interface TensorOverEqualPredicate<T> : EqualPredicate<Tensor<T>>, TensorsShaped {
+    val model: EqualPredicate<T>
+
+    override fun isEqual(x: Tensor<T>, y: Tensor<T>): Boolean {
+        require(x.shape.contentEquals(y.shape))
+        return x.elementSequence().zip(y.elementSequence()).all { (a, b) -> model.isEqual(a, b) }
+    }
+}
+
+interface TensorOverAddMonoid<T> : TensorOverEqualPredicate<T>, AddMonoid<Tensor<T>> {
+    override val model: AddMonoid<T>
+
+    override fun contains(x: Tensor<T>): Boolean = true
+
+
+    /**
+     * Returns the zero tensor of the prescribed [shape].
+     */
+    override val zero: Tensor<T>
+        get() = Tensor.zeros(model, *shape)
+
+    override fun isZero(x: Tensor<T>): Boolean {
+        return x.all { model.isZero(it) }
+    }
+
+    /**
+     * Gets a zero tensor with the given shape.
+     */
+    fun zeros(vararg shape: Int): Tensor<T> {
+        return Tensor.zeros(model, *shape)
+    }
+
+    /**
+     * Gets a zero tensor with the same shape as `x`.
+     */
+    fun zerosLike(x: Tensor<T>): Tensor<T> {
+        return Tensor.zeros(model, *x.shape)
+    }
+
+    /**
+     * Returns the sum of this tensor and `y` with automatic broadcasting.
+     *
+     * The sum of two tensor `x,y` has the
+     * shape of `max(x.shape, y.shape)`, here `max` means element-wise maximum of two arrays.
+     */
+    override fun add(x: Tensor<T>, y: Tensor<T>): Tensor<T> {
+        return TensorImpl.add(x, y, model)
+    }
+
+    /**
+     * Returns the element-wise sum of this tensor and `y` with automatic broadcasting.
+     */
+    override fun Tensor<T>.plus(y: Tensor<T>): Tensor<T> {
+        return add(this, y)
+    }
+
+    override fun sum(elements: List<Tensor<T>>): Tensor<T> {
+        return super.sum(elements)
+//        return TensorImpl.sum(elements, model) TODO
+    }
+
+    override fun multiplyN(x: Tensor<T>, n: Long): Tensor<T> {
+        return TensorImpl.multiplyN(x, n, model)
+    }
+
+    /**
+     * Returns the sum of all the elements in this tensor.
+     */
+    fun Tensor<T>.sumAll(): T {
+        return TensorImpl.sumAll(this, model)
+    }
+
+    /**
+     * Returns the sum of elements in the given axis(axes). If the given axes is empty, then it will
+     * return the sum of all the elements as a scalar tensor.
+     *
+     * For example, assume the tensor `t = [[0,1,2],[2,3,4]]`, then `t.sum(0) = [2,4,6]`.
+     *
+     * @param axes the axes to sum, negative indices are allowed to indicate axes from the last.
+     *
+     */
+    fun Tensor<T>.sum(vararg axes: Int): Tensor<T> {
+        return TensorImpl.sum(this, axes.asList(), model)
+    }
+
+    /**
+     * Returns a tensor containing the sums of diagonal elements in this tensor.
+     *
+     * This method is generally equivalent to
+     *
+     *     diagonal(offset,axis1,axis2).sum(-1)
+     *
+     * @see Tensor.diagonal
+     */
+    fun Tensor<T>.trace(offset: Int = 0, axis1: Int = -2, axis2: Int = -1): Tensor<T> {
+        return diagonal(offset, axis1, axis2).sum(-1)
+    }
+
+}
+
+interface TensorOverAddGroup<T> : TensorOverAddMonoid<T>, AddGroup<Tensor<T>> {
+    override val model: AddGroup<T>
+
+    override fun negate(x: Tensor<T>): Tensor<T> {
+        return TensorImpl.negate(x, model)
+    }
+
+    /**
+     * Returns the difference of this tensor and `y` with automatic broadcasting.
+     */
+    override fun subtract(x: Tensor<T>, y: Tensor<T>): Tensor<T> {
+        return TensorImpl.subtract(x, y, model)
+    }
+
+    /**
+     * Returns the element-wise difference of this tensor and `y` with automatic broadcasting.
+     */
+    override fun Tensor<T>.minus(y: Tensor<T>): Tensor<T> {
+        return subtract(this, y)
+    }
+
+    override fun multiplyN(x: Tensor<T>, n: Long): Tensor<T> {
+        return TensorImpl.multiplyN(x, n, model)
+    }
+
+    operator fun MutableTensor<T>.minusAssign(y: Tensor<T>) {
+        TODO()
+//        return TensorImpl.subtractInPlace(this, y, model)
+    }
+}
+
+interface TensorOverRing<T> : TensorOverAddGroup<T>, Ring<Tensor<T>>, RingModule<T, Tensor<T>> {
+    override val model: Ring<T>
+
+    override fun contains(x: Tensor<T>): Boolean = true
+
+    override val scalars: Ring<T>
+        get() = model
+
+    override val zero: Tensor<T>
+        get() = Tensor.zeros(model, *shape)
+
+    override fun scalarMul(k: T, v: Tensor<T>): Tensor<T> {
+        return TensorImpl.multiplyScalar(v, k, model)
+    }
+
+    /**
+     * Returns the **element-wise** product of `x` and `y` with automatic broadcasting.
+     */
+    override fun multiply(x: Tensor<T>, y: Tensor<T>): Tensor<T> {
+        return TensorImpl.multiply(x, y, model)
+    }
+
+    /**
+     * Returns the **element-wise** multiplication of this tensor and `y` with automatic broadcasting.
+     */
+    override fun Tensor<T>.times(y: Tensor<T>): Tensor<T> {
+        return multiply(this, y)
+    }
+
+
+    /**
+     * Returns the matrix multiplication of this and [y].
+     *
+     * To perform matrix multiplication of rank `r` for two tensors `x,y`, first it is
+     * required that the last `r` dimensions of `x` and first `r` dimensions of `y` have
+     * the same shape.
+     * The resulting tensor `z` has the shape of `x.shape[:-r] + y.shape[r:]`.
+     *
+     * Denote `i, j, k` indices of length `x.dim-r, y.dim-r, r` respectively, the following
+     * equation is satisfied:
+     * ```
+     *     z[i,j] = sum(k, x[i,k] * y[k,j])
+     * ```
+     *
+     * @see times
+     * @see wedge
+     * @see inner
+     * @see einsum
+     *
+     */
+    fun Tensor<T>.matmul(y: Tensor<T>, r: Int): Tensor<T> {
+        return TensorImpl.matmul(this, y, r,model)
+    }
+
+    /**
+     * Returns the matrix multiplication of this and [y] of rank 1.
+     *
+     * It is required that the last dimension of this tensor is equal to the first dimension of `y`.
+     * The resulting tensor `z` has the shape of `this.shape[:-1] + y.shape[1:]`.
+     * Denote `i, j, k` indices of length `x.dim-1, y.dim-1, 1` respectively, we have
+     * ```
+     *     z[i,j] = sum(k, x[i,k] * y[k,j])
+     * ```
+     *
+     * @see times
+     * @see wedge
+     * @see inner
+     * @see einsum
+     *
+     */
+    infix fun Tensor<T>.matmul(y: Tensor<T>): Tensor<T> {
+        return TensorImpl.matmul(this, y, 1,model)
+    }
+
+
+    /**
+     * Returns the wedge product of this tensor and [y].
+     *
+     * The tensor product of two tensor `z = x⊗y` has the
+     * shape of `x.shape + y.shape`, here `+` means concatenation of two arrays.
+     *
+     * The `[i,j]` element of `z` is equal to the scalar product of `x[ i ]` and `y[ j ]`, that is,
+     *
+     *     z[i,j] = x[i] * y[j]
+     *
+     *
+     * @see times
+     * @see inner
+     * @see matmul
+     * @see einsum
+     */
+    infix fun Tensor<T>.wedge(y: Tensor<T>): Tensor<T> {
+        return TensorImpl.wedge(this, y, model)
+    }
+
+    /**
+     * Returns the inner product of this tensor and [y], which is the sum of the element-wise product of this and `y`.
+     *
+     * @see times
+     * @see wedge
+     * @see matmul
+     * @see einsum
+     */
+    infix fun Tensor<T>.inner(y: Tensor<T>): T {
+        return TensorImpl.inner(this, y, model)
+    }
+
+    /**
+     * Returns the einsum of several tensors defined by the given expression.
+     *
+     *
+     * Examples:
+     *
+     *      | Expression | Required Shapes | Result Shape | Description                 | Equivalent Method
+     *      |------------|-----------------|--------------|-----------------------------|-------------------------
+     *      | i->i       | (a)             | (a)          | identity                    | x
+     *      | i->        | (a)             | (1)          | sum                         | x.sum()
+     *      | ij->ji     | (a,b)           | (b,a)        | transpose                   | x.transpose()
+     *      | ii         | (a,a)           | (1)          | trace                       | x.trace()
+     *      | ii->i      | (a,a)           | (a)          | diagonal                    | x.diagonal()
+     *      | ij,ij->ij  | (a,b),(a,b)     | (a,b)        | element-wise multiplication | x.multiply(y)
+     *      | ij,jk->ik  | (a,b),(b,c)     | (a,c)        | matrix multiplication       | x.matmul(y)
+     *
+     *
+     *
+     * @see times
+     * @see wedge
+     * @see inner
+     * @see matmul
+     */
+    fun einsum(expr: String, vararg tensors: Tensor<T>): MutableTensor<T> {
+        return TensorImpl.einsum(tensors.asList(), expr, model)
+    }
+}
+
+interface TensorOverURing<T> : TensorOverRing<T>, UnitRingModule<T, Tensor<T>> {
+    override val model: UnitRing<T>
+
+    /**
+     * Gets the tensor of all ones in the prescribed shape.
+     *
+     * It is the unit element with respect to the element-wise multiplication.
+     */
+    override val one: Tensor<T>
+        get() = Tensor.ones(model, *shape)
+
+    /**
+     * Gets a tensor of all ones with the given shape.
+     */
+    fun ones(vararg shape: Int): Tensor<T> {
+        return Tensor.ones(model, *shape)
+    }
+
+    /**
+     * Gets a tensor of all ones with the same shape as `x`.
+     */
+    fun onesLike(x: Tensor<T>): Tensor<T> {
+        return Tensor.ones(model, *x.shape)
+    }
+}
+
+// Tensor over Field Interface
+interface TensorOverField<T> : TensorOverRing<T>, Field<Tensor<T>>, UnitAlgebra<T, Tensor<T>> {
+    override val model: Field<T>
+
+
+
+    override val one: Tensor<T>
+        get() = Tensor.ones(model, *shape)
+
+    /**
+     * Returns the **element-wise** multiplication of `x` and `y` with automatic broadcasting.
+     */
+    override fun divide(x: Tensor<T>, y: Tensor<T>): Tensor<T> {
+        return TensorImpl.divide(x, y, model)
     }
 
 
 }
 
 
-//fun main() {
-//    val mc = Calculators.integer()
-//    val shape = intArrayOf(2, 2)
-//    val shape2 = intArrayOf(2)
-////    val v = Tensor.zeros(mc, *shape)
-////    val w = Tensor.ones(mc, *shape)
-//    val a = Tensor.of((0..3).toList(),mc).reshape(2,2)
-//    println(a)
-//    println(a.diagonal())
-//    println(a.diagonal(3))
-//    val u = Tensor(shape, mc) { idx -> idx.withIndex().sumBy { (1 + it.index) * it.value } }
-//    val w = Tensor(shape2, mc) { it[0] + 1 }
-////    Tensor.
-//    println(u wedge w)
-//    println(w)
-//
-//    println(u + w)
-//    println()
-//    val z = u.slice(0..1, null).reshape(4, -1)
-//    println(z)
-//    z[1, 1..2] = 18
-//    println(u)
-//    val v = u.slice(DOTS, 0..0)
-//    println(u.slice(NEW_AXIS, DOTS).shape.contentToString())
-//    println(v.shape.contentToString())
-//    println(v)
-//    val v1 = v.slice(0, null)
-//    v1.setAll(1)
-//    println(u)
-//    println(w)
-//    println(w.newAxisAt())
-
-//    println(u.sumAll() + w.sumAll())
-//    println(v.sumAll())
-//    println(Tensor.einsum("ij->j", u))
-//    println(u.sum())
-//    println(Tensor.einsum("ijk->ij", u))
-//    println(u.sum(-1))
-//    println(Tensor.einsum("ijk->k", u))
-//    println(u.sum(0, 1))
-//    val r = TensorUtils.einsum(listOf(u, w),
-//            intArrayOf(3, 3, 3, 3),
-//            intArrayOf(1),
-//            listOf(intArrayOf(0, 1), intArrayOf(2, 3)),
-//            listOf(intArrayOf(), intArrayOf()),
-////            listOf(intArrayOf(0,0), intArrayOf(0,1)),
-//            mc)
-//    println(r)
-//    println(r.valueEquals(u.wedge(w)))
-
-//    println(Tensor.einsum("ii", u)) // trace
-//    println(Tensor.einsum("ij->", u)) // sum
-//    println(Tensor.einsum("ii->i", u)) // diagonal
-//    println(Tensor.einsum("ij->ji", u)) // transpose
-//
-//    println(Tensor.einsum("ij,ij->ij", u, w)) // element-wise multiplication
-//
-//    println(Tensor.einsum("ij,jk->ik", u, w)) // matrix multiplication
-
-//
-//    println()
-//    println(u.sum())
-//    println("u[0,0,0]=")
-//    val w0 = u.slice(0, 0, 2 downTo 1, null, Tensor.NEW_AXIS)
-//    println()
-////    val w = u.permute(1, 0)
-////    println(w)
-//    val w2 = u.slice(0, 0)
-//    println(w2)
-//    println(u.permute(intArrayOf(1,0))[0])
-//    u += w
-//    println(u)
-
-
-//}

@@ -46,11 +46,20 @@ interface GenTuple<T> : Mappable<T> {
 
 }
 
+/**
+ * Returns `true` if all elements in this tuple match the given [predicate].
+ *
+ */
 inline fun <T> GenTuple<T>.all(predicate: (T) -> Boolean): Boolean {
-    for (e in elementSequence()) {
-        if (!predicate(e)) return false
-    }
-    return true
+    return elementSequence().all(predicate)
+}
+
+/**
+ * Returns true if at least one element in this tuple matches the given predicate.
+ *
+ */
+inline fun <T> Tensor<T>.any(predicate: (T) -> Boolean): Boolean {
+    return elementSequence().any(predicate)
 }
 
 typealias Index = IntArray
