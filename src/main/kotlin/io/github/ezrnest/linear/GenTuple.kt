@@ -4,7 +4,6 @@ import io.github.ezrnest.Mappable
 import io.github.ezrnest.util.IterUtils
 import io.github.ezrnest.util.MathUtils
 import java.util.*
-import kotlin.collections.ArrayList
 
 
 /*
@@ -77,10 +76,8 @@ interface GenTensor<T> : GenTuple<T> {
      */
     val shape: IntArray
 
-
     operator fun get(idx: Index): T
 
-    //    override fun applyAll(f: (T) -> T): GenTensor<T>
     override fun <S> map(mapping: (T) -> S): GenTensor<S>
 
     /**
@@ -202,20 +199,4 @@ fun <T> GenTensor<T>.joinToString(
     return this.joinTo(StringBuilder(), separator, prefix, postfix, limits, truncated, transform).toString()
 }
 
-fun <T, A : Appendable> Vector<T>.joinTo(
-    buffer: A,
-    separator: CharSequence = ", ", prefix: CharSequence = "[", postfix: CharSequence = "]",
-    limit: Int = Int.MAX_VALUE, truncated: CharSequence = "...",
-    transform: ((T) -> CharSequence)? = null
-): A {
-    return elementSequence().joinTo(buffer, separator, prefix, postfix, limit, truncated, transform)
-}
-
-fun <T> Vector<T>.joinToString(
-    separator: CharSequence = ", ", prefix: CharSequence = "[", postfix: CharSequence = "]",
-    limit: Int = Int.MAX_VALUE, truncated: CharSequence = "...",
-    transform: ((T) -> CharSequence)? = null
-): String {
-    return elementSequence().joinToString(separator, prefix, postfix, limit, truncated, transform)
-}
 

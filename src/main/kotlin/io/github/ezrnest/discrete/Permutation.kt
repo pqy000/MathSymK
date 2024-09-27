@@ -3,12 +3,12 @@
  */
 package io.github.ezrnest.discrete
 
-import io.github.ezrnest.model.struct.Composable
-import io.github.ezrnest.structure.Group
-import io.github.ezrnest.util.IterUtils
 import io.github.ezrnest.function.BijectiveOperator
+import io.github.ezrnest.model.struct.Composable
 import io.github.ezrnest.numberTheory.NTFunctions
+import io.github.ezrnest.structure.Group
 import io.github.ezrnest.util.ArraySup
+import io.github.ezrnest.util.IterUtils
 
 
 /**

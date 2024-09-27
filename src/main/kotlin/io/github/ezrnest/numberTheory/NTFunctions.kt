@@ -1,6 +1,5 @@
 package io.github.ezrnest.numberTheory
 
-import io.github.ezrnest.structure.EuclideanDomain
 import java.math.BigInteger
 import java.util.*
 import kotlin.math.abs

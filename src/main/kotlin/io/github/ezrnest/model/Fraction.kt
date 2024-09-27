@@ -2,16 +2,15 @@ package io.github.ezrnest.model
 
 import io.github.ezrnest.model.Fraction.Companion.ONE
 import io.github.ezrnest.model.Fraction.Companion.ZERO
-import io.github.ezrnest.util.exceptions.ExceptionUtil
 import io.github.ezrnest.model.struct.FieldModel
 import io.github.ezrnest.numberTheory.NTFunctions
 import io.github.ezrnest.structure.Quotients
 import io.github.ezrnest.util.ArraySup
 import io.github.ezrnest.util.MathUtils
-
+import io.github.ezrnest.util.exceptions.ExceptionUtil
 import java.io.Serializable
-import java.lang.Math.multiplyExact
 import java.lang.Math.addExact
+import java.lang.Math.multiplyExact
 import java.lang.Math.subtractExact
 import java.util.regex.Pattern
 import kotlin.math.*

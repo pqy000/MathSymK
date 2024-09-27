@@ -14,7 +14,7 @@ import kotlin.math.*
  * @author lyc
  */
 @JvmRecord
-data class Complex128(val re: Double, val im: Double) : FieldModel<Complex128>,Formattable {
+data class Complex128(val re: Double, val im: Double) : FieldModel<Complex128>, Formattable {
     // re-written at 2024/8/29 16:57
 
     override fun toString(): String {
@@ -120,8 +120,8 @@ data class Complex128(val re: Double, val im: Double) : FieldModel<Complex128>,F
      */
     override fun div(y: Complex128): Complex128 {
         val r2 = y.re * y.re + y.im * y.im
-        val a = (re * y.re + im * y.im)/r2
-        val b = (im * y.re - re * y.im)/r2
+        val a = (re * y.re + im * y.im) / r2
+        val b = (im * y.re - re * y.im) / r2
         return Complex128(a, b)
     }
 
@@ -150,8 +150,8 @@ data class Complex128(val re: Double, val im: Double) : FieldModel<Complex128>,F
 
     override fun pow(n: Long): Complex128 {
         if (n == 0L) return ONE
-        if(n < 0) return inv().pow(-n)
-        return ModelPatterns.binaryProduce(n, this,Complex128::times)
+        if (n < 0) return inv().pow(-n)
+        return ModelPatterns.binaryProduce(n, this, Complex128::times)
     }
 
 
@@ -179,7 +179,7 @@ data class Complex128(val re: Double, val im: Double) : FieldModel<Complex128>,F
     }
 
 
-    fun pow(p : Double) : Complex128{
+    fun pow(p: Double): Complex128 {
         val arg = arg * p
         val m = mod.pow(p)
         return modArg(m, arg)
@@ -193,8 +193,6 @@ data class Complex128(val re: Double, val im: Double) : FieldModel<Complex128>,F
     fun pow(y: Complex128): Complex128 {
         return exp(y * ln(this))
     }
-
-
 
 
 //    /**
@@ -287,7 +285,7 @@ data class Complex128(val re: Double, val im: Double) : FieldModel<Complex128>,F
         }
 
 
-        fun exp(base : Double, pow: Complex128): Complex128 {
+        fun exp(base: Double, pow: Complex128): Complex128 {
             return exp(pow * ln(base))
         }
 
@@ -326,7 +324,7 @@ data class Complex128(val re: Double, val im: Double) : FieldModel<Complex128>,F
             // use the formula sin(z) = (e^(iz) - e^(-iz)) / (2i)
             val iz = iz(z)
             val t = exp(iz) - exp(-iz)
-            return Complex128(t.im/ 2.0, -t.re/ 2.0)
+            return Complex128(t.im / 2.0, -t.re / 2.0)
         }
 
         /**
@@ -385,7 +383,6 @@ data class Complex128(val re: Double, val im: Double) : FieldModel<Complex128>,F
         }
 
 
-
         //TODO: implement complex functions with multiple branches
 
 //        /**
@@ -405,10 +402,6 @@ data class Complex128(val re: Double, val im: Double) : FieldModel<Complex128>,F
 ////            val main = ln(z)
 ////            return LogResult(main.re, main.im)
 //        }
-
-
-
-
 
 
     }

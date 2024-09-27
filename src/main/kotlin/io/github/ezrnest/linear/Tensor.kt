@@ -1,7 +1,7 @@
 package io.github.ezrnest.linear
 
-import io.github.ezrnest.ValueEquatable
 import io.github.ezrnest.ModeledMathObject
+import io.github.ezrnest.ValueEquatable
 import io.github.ezrnest.discrete.Permutation
 import io.github.ezrnest.model.struct.AlgebraModel
 import io.github.ezrnest.structure.*
@@ -73,7 +73,7 @@ interface Tensor<T> : ModeledMathObject<T, EqualPredicate<T>>, AlgebraModel<T, T
     /**
      * Gets an element in this tensor according to the index.
      *
-     * @param idx the index, it is required that `0 <= idx < shape`
+     * @param idx the index, it is required that `0 <= idx < shape` (element-wise).
      */
     override operator fun get(idx: Index): T
 
@@ -833,7 +833,7 @@ interface MutableTensor<T> : Tensor<T> {
     /**
      * Performs the element-wise transformation to this mutable tensor in-place.
      *
-     * @see applyAll
+     * @see Tensor.map
      */
     fun transform(f: (T) -> T) {
         indices.forEach { idx -> this[idx] = f(this[idx]) }

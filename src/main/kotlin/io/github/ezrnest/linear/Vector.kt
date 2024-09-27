@@ -30,6 +30,24 @@ interface GenVector<T> : GenTuple<T> {
 inline val GenVector<*>.indices: IntRange
     get() = 0..<size
 
+
+fun <T, A : Appendable> GenVector<T>.joinTo(
+    buffer: A,
+    separator: CharSequence = ", ", prefix: CharSequence = "[", postfix: CharSequence = "]",
+    limit: Int = Int.MAX_VALUE, truncated: CharSequence = "...",
+    transform: ((T) -> CharSequence)? = null
+): A {
+    return elementSequence().joinTo(buffer, separator, prefix, postfix, limit, truncated, transform)
+}
+
+fun <T> GenVector<T>.joinToString(
+    separator: CharSequence = ", ", prefix: CharSequence = "[", postfix: CharSequence = "]",
+    limit: Int = Int.MAX_VALUE, truncated: CharSequence = "...",
+    transform: ((T) -> CharSequence)? = null
+): String {
+    return elementSequence().joinToString(separator, prefix, postfix, limit, truncated, transform)
+}
+
 /**
  * Describes a mathematical vector of type `T`.
  *

@@ -1,7 +1,6 @@
 package io.github.ezrnest.linear
 
 import io.github.ezrnest.structure.Field
-import io.github.ezrnest.structure.Integers
 
 
 ///**

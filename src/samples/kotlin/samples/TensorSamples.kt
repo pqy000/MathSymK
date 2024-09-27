@@ -30,15 +30,20 @@ object TensorSamples {
         val ℤ = NumberModels.integers()
         val a = Tensor.of(intArrayOf(2, 3, 2, 5), ℤ, 0 until 60)
         println("a is a 4D tensor with shape (2, 3, 2, 5)")
-        print("a[0, 1, 2] = ") // a scalar
+        print("a[0, 1, 1, 2] = ") // a scalar
         println(a[0, 1, 1, 2]) // a scalar
         println("a[0, 1..2, null, 1..2 step 2] = ") // a vector
-        a[0,1,1,2]
         println(a[-1, 1..2, null, 0..<5 step 2]) // overloaded version of a.slice
 //        val s = a.slice(0, 1..2, null, 0..<5 step 2)
         println()
         println("a[1, ..., 1, NEW_AXIS, 2] = ") // a vector
         println(a[1, Tensor.DOTS, 1, Tensor.NEW_AXIS, 2])
+    }
+
+    fun tensorOfQ(){
+        val ℤ = NumberModels.integers()
+        val a = Tensor.of(intArrayOf(2, 3, 2, 5), ℤ, 0 until 60)
+
     }
 }
 
