@@ -1,8 +1,6 @@
 package io.github.ezrnest.linear
 
 import io.github.ezrnest.Mappable
-import io.github.ezrnest.util.IterUtils
-import io.github.ezrnest.util.MathUtils
 import java.util.*
 
 

@@ -162,6 +162,11 @@ data class AMatrix<T> internal constructor(
             return AMatrix(row, col, data)
         }
 
+        fun <T> fromFlattenList(row: Int, col: Int, data: List<T>): AMatrix<T> {
+            require(row * col == data.size)
+            return AMatrix(row, col, data.toTypedArray())
+        }
+
 
         internal inline operator fun <T> invoke(
             row: Int, column: Int, init: (Int, Int) -> T,

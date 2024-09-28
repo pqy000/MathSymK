@@ -16,7 +16,6 @@ import io.github.ezrnest.util.IterUtils
 import io.github.ezrnest.util.MathUtils
 import java.util.*
 import kotlin.sequences.all
-import kotlin.times
 
 
 /**
@@ -47,7 +46,8 @@ typealias Index = IntArray
  *
  */
 interface Tensor<T> : GenTuple<T> {
-    //Created by lyc at 2021-04-06 22:12
+    // Created by lyc at 2021-04-06 22:12
+    // Updated by lyc at 2024/9/27
 
     /**
      * The dimension of this tensor, which is equal to the length of [shape].
@@ -55,14 +55,19 @@ interface Tensor<T> : GenTuple<T> {
     val dim: Int get() = shape.size
 
     /**
-     * The total count of elements in this tensor, which is the product of all elements in [shape].
+     * The total count of elements in this tensor, which is the product of all the elements in [shape].
      */
     override val size: Int
         get() = MathUtils.product(shape)
 
 
     /**
-     * Gets a copy the shape array of this tensor.
+     * Gets the shape of this tensor as an array of integers, whose length is equal to the [dimension][Tensor.dim] of this tensor.
+     *
+     * **Note**: Users should not modify the returned array.
+     *
+     * @see dim
+     * @see size
      */
     val shape: IntArray
 
@@ -564,10 +569,6 @@ inline val Tensor<*>.indices: Sequence<Index>
     get() = IterUtils.prodIdxN(shape)
 
 
-/**
- * Generic matrix-like container.
- */
-
 
 fun <T, A : Appendable> Tensor<T>.joinToL(
     buffer: A, separators: List<CharSequence>, prefixes: List<CharSequence>, postfixes: List<CharSequence>,
@@ -659,14 +660,16 @@ inline fun Tensor<*>.isSameShape(y: Tensor<*>): Boolean {
 }
 
 
-///**
-// * Converts this tensor to a matrix. It is required that `dim == 2`.
-// */
-//fun <T> Tensor<T>.toMatrix(): Matrix<T> {
-//    require(dim == 2)
-//    val (row, column) = shape
-//    return Matrix.of(row, column, calculator as RealCalculator<T>, flattenToList())
-//}
+/**
+ * Returns a copy of this tensor as a matrix.
+ *
+ * It is required that this tensor is 2-dimensional.
+ */
+fun <T> Tensor<T>.toMatrix(): Matrix<T> {
+    require(dim == 2)
+    val (row, column) = shape
+    return Matrix.fromFlat(row, column, flattenToList())
+}
 
 interface MutableTensor<T> : Tensor<T> {
 
@@ -794,6 +797,9 @@ interface MutableTensor<T> : Tensor<T> {
     }
 }
 
+fun <T> Tensor<T>.toMutable(): MutableTensor<T> {
+    return ATensor.copyOf(this)
+}
 
 interface TensorsShaped {
     // created on 2024/9/27
@@ -866,8 +872,15 @@ interface TensorOverAddMonoid<T> : TensorOverEqualPredicate<T>, AddMonoid<Tensor
     }
 
     override fun sum(elements: List<Tensor<T>>): Tensor<T> {
-        return super.sum(elements)
-//        return TensorImpl.sum(elements, model) TODO
+//        return super.sum(elements)
+        if(elements.isEmpty()) {
+            return zero
+        }
+        val res = elements[0].toMutable()
+        for(i in 1 until elements.size) {
+            res += elements[i]
+        }
+        return res
     }
 
     override fun multiplyN(x: Tensor<T>, n: Long): Tensor<T> {
@@ -907,6 +920,13 @@ interface TensorOverAddMonoid<T> : TensorOverEqualPredicate<T>, AddMonoid<Tensor
         return diagonal(offset, axis1, axis2).sum(-1)
     }
 
+    /*
+    Mutable tensor
+     */
+
+    operator fun MutableTensor<T>.plusAssign(y: Tensor<T>) {
+        TensorImpl.inPlaceAdd(this, y, model)
+    }
 }
 
 interface TensorOverAddGroup<T> : TensorOverAddMonoid<T>, AddGroup<Tensor<T>> {

@@ -1,6 +1,5 @@
 package io.github.ezrnest.linear
 
-import io.github.ezrnest.model.NumberModels
 import io.github.ezrnest.numberTheory.NTFunctions
 import io.github.ezrnest.structure.*
 import io.github.ezrnest.util.IterUtils
@@ -10,21 +9,15 @@ import kotlin.math.min
 
 
 abstract class AbstractTensor<T>(
-    /**
-     * The shape of the tensor, it should not be modified
-     */
-    protected val sh: IntArray
+    override val shape: IntArray
 ) : Tensor<T> {
 
     //Created by lyc at 2021-03-31 20:39
 
 
-    override val shape: IntArray
-        get() = sh.clone()
-
-    override fun lengthAt(axis: Int): Int {
+    final override fun lengthAt(axis: Int): Int {
         require(axis in 0 until dim)
-        return sh[axis]
+        return shape[axis]
     }
 
 
@@ -32,7 +25,7 @@ abstract class AbstractTensor<T>(
         val sb = StringBuilder()
         val dim = dim
 
-        sb.append("Tensor(").append(sh.joinToString()).append("): \n")
+        sb.append("Tensor(").append(shape.joinToString()).append("): \n")
         val limits = IntArray(dim) { 1 }
         limits[dim - 1] = 10
         if (dim >= 2) limits[dim - 2] = 10
@@ -41,7 +34,7 @@ abstract class AbstractTensor<T>(
     }
 
 
-    final override val dim: Int get() = sh.size
+    final override val dim: Int get() = shape.size
 
 
     override val size: Int
@@ -59,10 +52,10 @@ abstract class AbstractTensor<T>(
             "Dim mismatch: required $dim, given ${idx.size}"
         }
         for (i in 0 until dim) {
-            if (!(0 <= idx[i] && idx[i] < sh[i])) {
+            if (!(0 <= idx[i] && idx[i] < shape[i])) {
                 throw IndexOutOfBoundsException(
                     "Tensor index out of bound at axis $i: " +
-                            "Shape=${sh.contentToString()}, Index=${idx.contentToString()}"
+                            "Shape=${shape.contentToString()}, Index=${idx.contentToString()}"
                 )
             }
         }
@@ -164,7 +157,7 @@ internal constructor(shape: IntArray, val data: Array<Any?>) :
     }
 
     override fun copy(): ATensor<T> {
-        return ATensor(sh, data.clone())
+        return ATensor(shape, data.clone())
     }
 
     override fun <S> map(mapping: (T) -> S): ATensor<S> {
@@ -180,7 +173,18 @@ internal constructor(shape: IntArray, val data: Array<Any?>) :
         Arrays.fill(data, v)
     }
 
-    private inline fun inlineApplyAll(f: (T) -> T): ATensor<T> {
+
+
+
+    internal inline fun <S> apply1(f: (T) -> S): ATensor<S> {
+        val ndata = Array<Any?>(size) {
+            @Suppress("UNCHECKED_CAST")
+            f(data[it] as T)
+        }
+        return ATensor(shape, ndata)
+    }
+
+    internal inline fun inPlaceApply1(f: (T) -> T): ATensor<T> {
         for (i in 0 until size) {
             @Suppress("UNCHECKED_CAST")
             data[i] = f(data[i] as T)
@@ -188,20 +192,11 @@ internal constructor(shape: IntArray, val data: Array<Any?>) :
         return this
     }
 
-
     override fun transform(f: (T) -> T) {
-        inlineApplyAll(f)
+        inPlaceApply1(f)
     }
 
-    internal inline fun <S> apply1(f: (T) -> S): ATensor<S> {
-        val ndata = Array<Any?>(size) {
-            @Suppress("UNCHECKED_CAST")
-            f(data[it] as T)
-        }
-        return ATensor(sh, ndata)
-    }
-
-    internal inline fun <S> apply2InPlace(y: Tensor<S>, f: (T, S) -> T) {
+    internal inline fun <S> inPlaceApply2(y: Tensor<S>, f: (T, S) -> T) {
         if (y is ATensor) {
             val d1 = data
             val d2 = y.data
@@ -259,15 +254,15 @@ internal constructor(shape: IntArray, val data: Array<Any?>) :
                 @Suppress("UNCHECKED_CAST")
                 f(d1[it] as T1, d2[it] as T2)
             }
-            return ATensor(x.sh, ndata)
+            return ATensor(x.shape, ndata)
         }
 
         fun <T> copyOf(tensor: Tensor<T>): ATensor<T> {
-            val shape = tensor.shape
+
             if (tensor is ATensor) {
                 return tensor.copy()
             }
-            return buildFromSequence(shape, tensor.elementSequence())
+            return buildFromSequence(tensor.shape, tensor.elementSequence())
         }
 
         fun <T> constant(c: T, shape: IntArray): ATensor<T> {
@@ -383,6 +378,26 @@ internal object TensorImpl {
         return ATensor.buildFromSeqMap2(x1.shape, x1.elementSequence(), y1.elementSequence(), f)
     }
 
+    private inline fun <T,S> inPlaceApply1(x: MutableTensor<T>, f: (T) -> T){
+        if(x is ATensor){
+            x.inPlaceApply1(f)
+        }else{
+            for(idx in x.indices){
+                x[idx] = f(x[idx])
+            }
+        }
+    }
+
+    private inline fun <T> inPlaceApply2(x: MutableTensor<T>, y_: Tensor<T>, f: (T, T) -> T){
+        val y = broadcastTo(y_, x.shape) // broadcast y to x's shape
+        if(x is ATensor && y is ATensor){
+            x.inPlaceApply2(y, f)
+        }else{
+            for(idx in x.indices){
+                x[idx] = f(x[idx], y[idx])
+            }
+        }
+    }
 
     fun <T> add(x: Tensor<T>, y: Tensor<T>, mc: AddSemigroup<T>): ATensor<T> {
         return apply2(x, y, mc::add)
@@ -447,6 +462,17 @@ internal object TensorImpl {
     fun <T> divide(x0: Tensor<T>, y0: Tensor<T>, mc: MulGroup<T>): ATensor<T> {
         return apply2(x0, y0, mc::divide)
     }
+
+    fun <T> inPlaceAdd(x: MutableTensor<T>, y: Tensor<T>, mc: AddSemigroup<T>) {
+        inPlaceApply2(x, y, mc::add)
+    }
+
+
+
+
+
+
+
 
     fun <T> inner(x: Tensor<T>, y: Tensor<T>, mc: Ring<T>): T {
         require(x.isSameShape(y)) {
@@ -937,6 +963,10 @@ internal object TensorImpl {
         }
     }
 
+
+    /**
+     * Broadcasts the given tensor [t] to the given shape [ns].
+     */
     fun <T> broadcastTo(t: Tensor<T>, ns: IntArray): Tensor<T> {
         if (t.shape.contentEquals(ns)) {
             return t
@@ -1180,8 +1210,8 @@ internal object TensorImpl {
 }
 
 
-fun main() {
-    val t1 = Tensor(1) { 1 } // a
-    val t2 = Tensor(1, 2, 3) { 1 }
-    println(TensorImpl.add(t1, t2, NumberModels.integers()))
-}
+//fun main() {
+//    val t1 = Tensor(1) { 1 } // a
+//    val t2 = Tensor(1, 2, 3) { 1 }
+//    println(TensorImpl.add(t1, t2, integers()))
+//}

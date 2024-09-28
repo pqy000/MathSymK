@@ -160,7 +160,7 @@ class MutableSliceView<T>(
             am[i] = axisMap[am[i]]
         }
         val (newAxisMap, newRanges) = composeSliceTo(am, ranges)
-        return MutableSliceView(this.t, newRanges, newAxisMap, sh)
+        return MutableSliceView(this.t, newRanges, newAxisMap, shape)
     }
 
 

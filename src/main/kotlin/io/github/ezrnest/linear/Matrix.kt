@@ -235,6 +235,15 @@ interface Matrix<T> : GenTuple<T> {
             return AMatrix.of(row, col, *elements)
         }
 
+        fun <T> fromFlat(row: Int, col: Int, elements: List<T>): Matrix<T> {
+            require(row * col == elements.size)
+            return AMatrix.fromFlattenList(row, col, elements)
+        }
+
+        fun <T> fromFlat(row : Int, col : Int, init : (Int) -> T) : Matrix<T>{
+            return AMatrix.ofFlatten(row, col, init)
+        }
+
 
         /**
          * Creates a new matrix from a list of column vectors.
