@@ -131,7 +131,7 @@ interface ComplexOverURing<T, C> : UnitRing<C>, Module<T, C> {
 }
 
 
-interface ComplexOverField<T, C> : Field<C>, UnitAlgebra<T, C>, ComplexOverURing<T, C> {
+interface ComplexOverField<T, C> : Field<C>, DivisionAlgebra<T, C>, ComplexOverURing<T, C> {
     override val characteristic: Long?
         get() = scalars.characteristic
 
@@ -190,9 +190,9 @@ interface ComplexNumbers<R, C> : Field<C>, UnitAlgebra<R, C>, ComplexOverField<R
         get() = complexOf(scalars.zero, scalars.one)
 
     /**
-     * Returns `a + bi`, the complex number with the given real and imaginary parts.
+     * Returns the complex number with the given real and imaginary parts.
      */
-    override fun complexOf(a: R, b: R): C
+    override fun complexOf(re: R, im: R): C
 
 
     /**

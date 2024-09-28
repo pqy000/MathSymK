@@ -1,9 +1,6 @@
 package io.github.ezrnest.model
 
-import io.github.ezrnest.structure.Algebra
-import io.github.ezrnest.structure.DivisionRing
-import io.github.ezrnest.structure.Field
-import io.github.ezrnest.structure.eval
+import io.github.ezrnest.structure.*
 
 
 /**
@@ -31,7 +28,7 @@ data class Quaternion<T>(val a: T, val b: T, val c: T, val d: T) {
     }
 }
 
-class QuaternionNumbers<T>(val field: Field<T>) : DivisionRing<Quaternion<T>>, Algebra<T, Quaternion<T>> {
+class QuaternionNumbers<T>(val field: Field<T>) : DivisionAlgebra<T, Quaternion<T>> {
     /**
      * The quaternion numbers are not commutative.
      */

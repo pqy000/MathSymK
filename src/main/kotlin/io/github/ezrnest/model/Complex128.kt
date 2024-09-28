@@ -419,8 +419,8 @@ class ComplexDModel(dev: Double) : ComplexNumbers<Double, Complex128> {
         return reals.isEqual(x.re, y.re) && reals.isEqual(x.im, y.im)
     }
 
-    override fun complexOf(a: Double, b: Double): Complex128 {
-        return Complex128(a, b)
+    override fun complexOf(re: Double, im: Double): Complex128 {
+        return Complex128(re, im)
     }
 
     override fun re(z: Complex128): Double {

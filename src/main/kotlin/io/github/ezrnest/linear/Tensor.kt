@@ -147,6 +147,13 @@ interface Tensor<T> : GenTuple<T> {
         return ATensor.buildFromSequence(shape, elementSequence().map(mapping))
     }
 
+    /**
+     * Returns an independent copy of this tensor.
+     */
+    fun copy(): Tensor<T> {
+        return ATensor.copyOf(this)
+    }
+
 
     /**
      * Returns a view of this tensor according to the given slicing parameters.
@@ -569,7 +576,6 @@ inline val Tensor<*>.indices: Sequence<Index>
     get() = IterUtils.prodIdxN(shape)
 
 
-
 fun <T, A : Appendable> Tensor<T>.joinToL(
     buffer: A, separators: List<CharSequence>, prefixes: List<CharSequence>, postfixes: List<CharSequence>,
     limits: IntArray, truncated: List<CharSequence>, transform: (T) -> CharSequence
@@ -790,9 +796,9 @@ interface MutableTensor<T> : Tensor<T> {
     }
 
     /**
-     * Returns a copy of this mutable tensor as a mutable tensor.
+     * Returns an independent copy of this mutable tensor as a mutable tensor.
      */
-    fun copy(): MutableTensor<T> {
+    override fun copy(): MutableTensor<T> {
         return ATensor.copyOf(this)
     }
 }
@@ -816,6 +822,9 @@ interface TensorsShaped {
 }
 
 interface TensorOverEqualPredicate<T> : EqualPredicate<Tensor<T>>, TensorsShaped {
+    /**
+     * The model of the elements in this tensor.
+     */
     val model: EqualPredicate<T>
 
     override fun isEqual(x: Tensor<T>, y: Tensor<T>): Boolean {
@@ -843,14 +852,14 @@ interface TensorOverAddMonoid<T> : TensorOverEqualPredicate<T>, AddMonoid<Tensor
     /**
      * Gets a zero tensor with the given shape.
      */
-    fun zeros(vararg shape: Int): Tensor<T> {
+    fun zeros(vararg shape: Int): MutableTensor<T> {
         return Tensor.zeros(model, *shape)
     }
 
     /**
      * Gets a zero tensor with the same shape as `x`.
      */
-    fun zerosLike(x: Tensor<T>): Tensor<T> {
+    fun zerosLike(x: Tensor<T>): MutableTensor<T> {
         return Tensor.zeros(model, *x.shape)
     }
 
@@ -873,11 +882,11 @@ interface TensorOverAddMonoid<T> : TensorOverEqualPredicate<T>, AddMonoid<Tensor
 
     override fun sum(elements: List<Tensor<T>>): Tensor<T> {
 //        return super.sum(elements)
-        if(elements.isEmpty()) {
+        if (elements.isEmpty()) {
             return zero
         }
         val res = elements[0].toMutable()
-        for(i in 1 until elements.size) {
+        for (i in 1 until elements.size) {
             res += elements[i]
         }
         return res
@@ -885,6 +894,28 @@ interface TensorOverAddMonoid<T> : TensorOverEqualPredicate<T>, AddMonoid<Tensor
 
     override fun multiplyN(x: Tensor<T>, n: Long): Tensor<T> {
         return TensorImpl.multiplyN(x, n, model)
+    }
+
+    /**
+     * Adds a scalar to this tensor element-wise.
+     */
+    fun addScalar(x: Tensor<T>, k: T): Tensor<T> {
+        return TensorImpl.addScalar(x, k, model)
+    }
+
+    /**
+     * Adds a scalar to this tensor element-wise.
+     */
+    fun addScalar(k: T, x: Tensor<T>): Tensor<T> {
+        return TensorImpl.addScalar(k, x, model)
+    }
+
+    operator fun Tensor<T>.plus(k: T): Tensor<T> {
+        return addScalar(this, k)
+    }
+
+    operator fun T.plus(x: Tensor<T>): Tensor<T> {
+        return addScalar(this, x)
     }
 
     /**
@@ -927,6 +958,10 @@ interface TensorOverAddMonoid<T> : TensorOverEqualPredicate<T>, AddMonoid<Tensor
     operator fun MutableTensor<T>.plusAssign(y: Tensor<T>) {
         TensorImpl.inPlaceAdd(this, y, model)
     }
+
+    operator fun MutableTensor<T>.timesAssign(n: Long) {
+        TensorImpl.inPlaceMultiplyN(this, n, model)
+    }
 }
 
 interface TensorOverAddGroup<T> : TensorOverAddMonoid<T>, AddGroup<Tensor<T>> {
@@ -955,8 +990,7 @@ interface TensorOverAddGroup<T> : TensorOverAddMonoid<T>, AddGroup<Tensor<T>> {
     }
 
     operator fun MutableTensor<T>.minusAssign(y: Tensor<T>) {
-        TODO()
-//        return TensorImpl.subtractInPlace(this, y, model)
+        return TensorImpl.inPlaceSubtract(this, y, model)
     }
 }
 
@@ -987,6 +1021,14 @@ interface TensorOverRing<T> : TensorOverAddGroup<T>, Ring<Tensor<T>>, RingModule
      */
     override fun Tensor<T>.times(y: Tensor<T>): Tensor<T> {
         return multiply(this, y)
+    }
+
+    operator fun Tensor<T>.times(k: T): Tensor<T> {
+        return TensorImpl.multiplyScalar(this, k, model)
+    }
+
+    operator fun T.times(x: Tensor<T>): Tensor<T> {
+        return TensorImpl.multiplyScalar(x, this, model)
     }
 
 
@@ -1093,6 +1135,14 @@ interface TensorOverRing<T> : TensorOverAddGroup<T>, Ring<Tensor<T>>, RingModule
     fun einsum(expr: String, vararg tensors: Tensor<T>): MutableTensor<T> {
         return TensorImpl.einsum(tensors.asList(), expr, model)
     }
+
+    operator fun MutableTensor<T>.timesAssign(k: T) {
+        TensorImpl.inPlaceMultiplyScalar(this, k, model)
+    }
+
+    operator fun MutableTensor<T>.timesAssign(y: Tensor<T>) {
+        TensorImpl.inPlaceMultiply(this, y, model)
+    }
 }
 
 interface TensorOverURing<T> : TensorOverRing<T>, UnitRingModule<T, Tensor<T>> {
@@ -1109,19 +1159,19 @@ interface TensorOverURing<T> : TensorOverRing<T>, UnitRingModule<T, Tensor<T>> {
     /**
      * Gets a tensor of all ones with the given shape.
      */
-    fun ones(vararg shape: Int): Tensor<T> {
+    fun ones(vararg shape: Int): MutableTensor<T> {
         return Tensor.ones(model, *shape)
     }
 
     /**
      * Gets a tensor of all ones with the same shape as `x`.
      */
-    fun onesLike(x: Tensor<T>): Tensor<T> {
+    fun onesLike(x: Tensor<T>): MutableTensor<T> {
         return Tensor.ones(model, *x.shape)
     }
 }
 
-interface TensorOverField<T> : TensorOverRing<T>, Field<Tensor<T>>, UnitAlgebra<T, Tensor<T>> {
+interface TensorOverField<T> : TensorOverURing<T>, Field<Tensor<T>>, UnitAlgebra<T, Tensor<T>> {
     override val model: Field<T>
 
     override val scalars: Field<T>
@@ -1130,9 +1180,6 @@ interface TensorOverField<T> : TensorOverRing<T>, Field<Tensor<T>>, UnitAlgebra<
     override val characteristic: Long?
         get() = model.characteristic
 
-
-    override val one: Tensor<T>
-        get() = Tensor.ones(model, *shape)
 
     /**
      * Returns the **element-wise** multiplication of `x` and `y` with automatic broadcasting.
@@ -1146,6 +1193,26 @@ interface TensorOverField<T> : TensorOverRing<T>, Field<Tensor<T>>, UnitAlgebra<
      */
     override fun reciprocal(x: Tensor<T>): Tensor<T> {
         return TensorImpl.reciprocal(x, model)
+    }
+
+    fun divide(x: T, y: Tensor<T>): Tensor<T> {
+        return TensorImpl.divideScalarBy(x, y, model)
+    }
+
+    operator fun Tensor<T>.div(k: T): Tensor<T> {
+        return TensorImpl.divideScalar(this, k, model)
+    }
+
+    operator fun T.div(x: Tensor<T>): Tensor<T> {
+        return TensorImpl.divideScalarBy(this, x, model)
+    }
+
+    operator fun MutableTensor<T>.divAssign(y: Tensor<T>) {
+        TensorImpl.inPlaceDivide(this, y, model)
+    }
+
+    operator fun MutableTensor<T>.divAssign(k: T) {
+        TensorImpl.inPlaceDivideScalar(this, k, model)
     }
 }
 

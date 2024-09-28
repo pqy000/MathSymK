@@ -35,24 +35,23 @@ interface Module<R, V> : AddGroup<V> {
     fun scalarMul(k: R, v: V): V
 
 
-    fun rAdd(r1: R, r2: R): R {
-        return scalars.add(r1, r2)
-    }
-
-    fun rSubtract(r1: R, r2: R): R {
-        return scalars.subtract(r1, r2)
-    }
-
-    fun rNegate(r: R): R {
-        return scalars.negate(r)
-    }
-
-    fun rMultiply(r1: R, r2: R): R {
-        return scalars.multiply(r1, r2)
-    }
-
-    val rZero: R
-        get() = scalars.zero
+//    fun rAdd(r1: R, r2: R): R {
+//        return scalars.add(r1, r2)
+//    }
+//
+//    fun rSubtract(r1: R, r2: R): R {
+//        return scalars.subtract(r1, r2)
+//    }
+//
+//    fun rNegate(r: R): R {
+//        return scalars.negate(r)
+//    }
+//
+//    fun rMultiply(r1: R, r2: R): R {
+//        return scalars.multiply(r1, r2)
+//    }
+//    val rZero: R
+//        get() = scalars.zero
 
 //    not possible to define this function because of JVM overloading rules
 //    operator fun R.times(v: V): V {
@@ -62,6 +61,21 @@ interface Module<R, V> : AddGroup<V> {
     fun sumWeighted(weights : List<R>, elements :List<V>): V {
         require(weights.size == elements.size)
         return weights.indices.fold(zero) { acc, i -> add(acc, scalarMul(weights[i], elements[i]) ) }
+    }
+}
+
+
+interface RightModule<R, V> : AddGroup<V>{
+    val scalars: Ring<R>
+
+    /**
+     * Returns the result of the scalar (right) multiplication of `v * k`.
+     */
+    fun scalarMulR(v: V, k: R): V
+
+    fun sumWeightedR(weights : List<R>, elements :List<V>): V {
+        require(weights.size == elements.size)
+        return weights.indices.fold(zero) { acc, i -> add(acc, scalarMulR(elements[i], weights[i]) ) }
     }
 }
 
@@ -141,13 +155,17 @@ interface Algebra<K,V> : LinearSpace<K,V>, RingModule<K,V> {
  * Describes an algebra which is also a unit ring.
  *
  *
- * Created at 2024/9/11
- * @author  liyicheng
+ * @author  liyicheng, 2024/9/11
  */
 interface UnitAlgebra<K,V> : Algebra<K,V>, UnitRingModule<K,V> {
     /*
-    Rewritten at 2024/9/11
+    Created on 2024/9/11
      */
 
+}
 
+interface DivisionAlgebra<K,V> : UnitAlgebra<K,V>, DivisionRing<V> {
+    /*
+    Created on 2024/9/28
+     */
 }

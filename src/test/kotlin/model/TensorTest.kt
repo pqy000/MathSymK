@@ -6,6 +6,7 @@ import io.github.ezrnest.model.*
 import io.github.ezrnest.linear.TensorImpl
 import io.github.ezrnest.linear.all
 import io.github.ezrnest.linear.get
+import io.github.ezrnest.model.NumberModels.fractions
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
@@ -262,7 +263,7 @@ class TensorTest {
 
             val b = Tensor.of<Int>((0..7).toList()).reshape(2, 2, 2)
             assertEquals(
-                Tensor.of(intArrayOf(2, 2),  0, 6, 1, 7),
+                Tensor.of(intArrayOf(2, 2), 0, 6, 1, 7),
                 b.diagonal(0, 0, 1)
             )
         }
@@ -286,6 +287,22 @@ class TensorTest {
                 b.diagonal(0, 0, -1).sum(-1),
                 b.trace(0, 0, -1)
             )
+        }
+    }
+
+    @Test
+    fun testFunctionalities() {
+        val ℤ = NumberModels.integers()
+        val ℚ = fractions()
+        val tZ = Tensor.over(ℤ)
+        val tQ = Tensor.over(ℚ)
+        with(tZ) {
+            val t1 = ones(2, 3)
+            val t2 = zerosLike(t1)
+            assertEquals(t2,t1 * t2)
+
+            t2 += t1
+
         }
     }
 

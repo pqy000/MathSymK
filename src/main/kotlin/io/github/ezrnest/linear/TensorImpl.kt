@@ -258,7 +258,6 @@ internal constructor(shape: IntArray, val data: Array<Any?>) :
         }
 
         fun <T> copyOf(tensor: Tensor<T>): ATensor<T> {
-
             if (tensor is ATensor) {
                 return tensor.copy()
             }
@@ -378,7 +377,7 @@ internal object TensorImpl {
         return ATensor.buildFromSeqMap2(x1.shape, x1.elementSequence(), y1.elementSequence(), f)
     }
 
-    private inline fun <T,S> inPlaceApply1(x: MutableTensor<T>, f: (T) -> T){
+    private inline fun <T> inPlaceApply1(x: MutableTensor<T>, f: (T) -> T){
         if(x is ATensor){
             x.inPlaceApply1(f)
         }else{
@@ -403,6 +402,14 @@ internal object TensorImpl {
         return apply2(x, y, mc::add)
     }
 
+    fun <T> addScalar(x: Tensor<T>, c: T, mc: AddSemigroup<T>): ATensor<T> {
+        return apply1(x) { mc.add(it, c) }
+    }
+    fun <T> addScalar(c: T, x: Tensor<T>, mc: AddSemigroup<T>): ATensor<T> {
+        return apply1(x) { mc.add(c, it) }
+    }
+
+
     /**
      * Returns the negation of this tensor.
      *
@@ -421,12 +428,19 @@ internal object TensorImpl {
         return apply2(x0, y0) { a, b -> model.subtract(a, b) }
     }
 
+    fun <T> subtractScalar(x: Tensor<T>, c: T, mc: AddGroup<T>): ATensor<T> {
+        return apply1(x) { mc.subtract(it, c) }
+    }
+
     /**
      * Returns the result of multiplying this tensor with a scalar.
      */
     fun <T> multiplyScalar(x: Tensor<T>, k: T, mc: MulSemigroup<T>): ATensor<T> {
-//        return ATensor.buildFromSequence(x.shape, x.indices.map { idx -> mc.multiply(k, x[idx]) })
-        return apply1(x) { mc.multiply(k, it) }
+        return apply1(x) { mc.multiply(it, k) }
+    }
+
+    fun <T> multiplyScalar(k: T, x: Tensor<T>, mc: MulSemigroup<T>): ATensor<T> {
+        return apply1(x) { mc.multiply(k,it) }
     }
 
     fun <T> multiplyN(x: Tensor<T>, k: Long, mc: AddSemigroup<T>): ATensor<T> {
@@ -441,6 +455,16 @@ internal object TensorImpl {
 //        return ATensor.buildFromSequence(x.shape, x.indices.map { idx -> mc.divide(k, x[idx]) })
         return apply1(x) { mc.divide(it, k) }
     }
+
+    fun <T> divideScalar(x: Tensor<T>, c: T, mc: MulGroup<T>): ATensor<T> {
+        return apply1(x) { mc.divide(it, c) }
+    }
+
+    fun <T> divideScalarBy(c : T, x: Tensor<T>, mc: MulGroup<T>): ATensor<T> {
+        return apply1(x) { mc.divide(c, it) }
+    }
+
+
 
     /**
      * Returns the **element-wise** product of this tensor and `y`.
@@ -467,8 +491,29 @@ internal object TensorImpl {
         inPlaceApply2(x, y, mc::add)
     }
 
+    fun <T> inPlaceSubtract(x: MutableTensor<T>, y: Tensor<T>, mc: AddGroup<T>) {
+        inPlaceApply2(x, y, mc::subtract)
+    }
 
+    fun <T> inPlaceMultiplyScalar(x: MutableTensor<T>, k: T, mc: MulSemigroup<T>) {
+        inPlaceApply1(x) { mc.multiply(k, it) }
+    }
 
+    fun <T> inPlaceMultiplyN(x: MutableTensor<T>, k: Long, mc: AddSemigroup<T>) {
+        inPlaceApply1(x) { mc.multiplyN(it, k) }
+    }
+
+    fun <T> inPlaceMultiply(x: MutableTensor<T>, y: Tensor<T>, mc: MulSemigroup<T>) {
+        inPlaceApply2(x, y, mc::multiply)
+    }
+
+    fun <T> inPlaceDivideScalar(x: MutableTensor<T>, k: T, mc: MulGroup<T>) {
+        inPlaceApply1(x) { mc.divide(it, k) }
+    }
+
+    fun <T> inPlaceDivide(x: MutableTensor<T>, y: Tensor<T>, mc: MulGroup<T>) {
+        inPlaceApply2(x, y, mc::divide)
+    }
 
 
 

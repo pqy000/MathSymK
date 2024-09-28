@@ -59,3 +59,11 @@ inline fun <T> GenTuple<T>.all(predicate: (T) -> Boolean): Boolean {
 inline fun <T> GenTuple<T>.any(predicate: (T) -> Boolean): Boolean {
     return elementSequence().any(predicate)
 }
+
+///**
+// * Returns the first element matching the given [predicate], or `null` if no such element was found.
+// */
+//inline fun <T> GenTuple<T>.find(predicate: (T) -> Boolean): T? {
+//    return elementSequence().firstOrNull(predicate)
+//}
+
