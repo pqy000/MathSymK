@@ -24,7 +24,7 @@ open class SlicedView<T>(
      */
     protected val axisMap: IntArray,
     shape: IntArray,
-) : AbstractTensor<T>(tensor.model, shape) {
+) : AbstractTensor<T>(shape) {
 
     protected open val t = tensor
 
@@ -182,10 +182,6 @@ class MutableSliceView<T>(
         originalIndicesNoOrder.forEach { idx -> t[idx] = v }
     }
 
-    override fun sumAll(): T {
-        val mc = model as AddSemigroup
-        return originalIndicesNoOrder.map { idx -> t[idx] }.reduce(mc::add) // no order here
-    }
 
     override fun transform(f: (T) -> T) {
         originalIndicesNoOrder.forEach { idx -> t[idx] = f(t[idx]) }
@@ -193,26 +189,8 @@ class MutableSliceView<T>(
 
 }
 
-abstract class CombinedView<T>(tensors: List<Tensor<T>>, shape: IntArray) : AbstractTensor<T>(tensors[0].model, shape) {
+abstract class CombinedView<T>(tensors: List<Tensor<T>>, shape: IntArray) : AbstractTensor<T>(shape) {
     open val ts: List<Tensor<T>> = tensors
-
-
-    override fun sumAll(): T {
-        val mc = model as AddSemigroup
-        return ts.asSequence().map { it.sumAll() }.reduce(mc::add)
-    }
-
-
-    override val isZero: Boolean
-        get() = ts.all { it.isZero }
-
-    override fun all(predicate: (T) -> Boolean): Boolean {
-        return ts.all { it.all(predicate) }
-    }
-
-    override fun any(predicate: (T) -> Boolean): Boolean {
-        return ts.any { it.any(predicate) }
-    }
 
 }
 
@@ -271,15 +249,6 @@ open class StackView<T>(val axis: Int, tensors: List<Tensor<T>>, shape: IntArray
         val nIdx = transIdx(idx)
         return ts[k][nIdx]
     }
-
-    override fun sumAll(): T {
-        val mc = model as AddSemigroup
-        return ts.asSequence().map { it.sumAll() }.reduce(mc::add)
-    }
-
-    override val isZero: Boolean
-        get() = ts.all { it.isZero }
-
 }
 
 class MutableStackView<T>(axis: Int, tensors: List<MutableTensor<T>>, shape: IntArray) :
@@ -300,7 +269,7 @@ class MutableStackView<T>(axis: Int, tensors: List<MutableTensor<T>>, shape: Int
 }
 
 
-open class ReshapedView<T>(tensor: Tensor<T>, shape: IntArray) : AbstractTensor<T>(tensor.model, shape) {
+open class ReshapedView<T>(tensor: Tensor<T>, shape: IntArray) : AbstractTensor<T>(shape) {
 
     open val t: Tensor<T> = tensor
 
@@ -349,9 +318,7 @@ open class ReshapedView<T>(tensor: Tensor<T>, shape: IntArray) : AbstractTensor<
         return t[tIdx]
     }
 
-    override fun sumAll(): T {
-        return t.sumAll()
-    }
+
 
     override fun elementSequence(): Sequence<T> {
         return t.elementSequence()
@@ -371,14 +338,6 @@ open class ReshapedView<T>(tensor: Tensor<T>, shape: IntArray) : AbstractTensor<
         } else {
             t.ravel()
         }
-    }
-
-    override fun all(predicate: (T) -> Boolean): Boolean {
-        return t.all(predicate)
-    }
-
-    override fun any(predicate: (T) -> Boolean): Boolean {
-        return t.any(predicate)
     }
 }
 
@@ -419,7 +378,7 @@ class BroadcastView<T>(
     val d: Int,
     private val extendedAxes: IntArray,
 //                             val newAxes: IntArray
-) : AbstractTensor<T>(t.model, shape) {
+) : AbstractTensor<T>(shape) {
     /*
      * originAxes[i]
      */
@@ -443,15 +402,6 @@ class BroadcastView<T>(
 //        return t[tIdx]
 //    }
 //
-    override fun sumAll(): T {
-        val re = t.sumAll()
-        var k = 1L
-        for (ax in 0 until d) {
-            k *= sh[ax]
-        }
-        val mc = model as AddSemigroup
-        return mc.multiplyN(re, k)
-    }
 
 }
 
@@ -465,7 +415,7 @@ open class IndexMapView<T>(
     val am: IntArray,
     val offsets: IntArray,
     shape: IntArray
-) : AbstractTensor<T>(tensor.model, shape) {
+) : AbstractTensor<T>(shape) {
 
     protected fun mapIdx(idx: Index): IntArray {
         val tIdx = offsets.clone()

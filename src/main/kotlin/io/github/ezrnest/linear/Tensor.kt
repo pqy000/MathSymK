@@ -1,5 +1,15 @@
 package io.github.ezrnest.linear
 
+/*
+ * Created at 2019/9/12 11:11
+ *
+ * Specified by lyc at 2021-03-31 22:26
+ *
+ * Updated by lyc on 2024/9/27
+ *
+ * @author  lyc
+ */
+
 import io.github.ezrnest.discrete.Permutation
 import io.github.ezrnest.structure.*
 import io.github.ezrnest.util.IterUtils
@@ -9,12 +19,11 @@ import kotlin.sequences.all
 import kotlin.times
 
 
-/*
- * Created at 2019/9/12 11:11
- *
- * Specified by lyc at 2021-03-31 22:26
- * @author  lyc
+/**
+ * The type of the index in a tensor, which is an array of integers.
  */
+typealias Index = IntArray
+
 
 /**
  * ## Mathematical Description
@@ -37,13 +46,25 @@ import kotlin.times
  *
  *
  */
-interface Tensor<T> : GenTensor<T> {
+interface Tensor<T> : GenTuple<T> {
     //Created by lyc at 2021-04-06 22:12
+
+    /**
+     * The dimension of this tensor, which is equal to the length of [shape].
+     */
+    val dim: Int get() = shape.size
+
+    /**
+     * The total count of elements in this tensor, which is the product of all elements in [shape].
+     */
+    override val size: Int
+        get() = MathUtils.product(shape)
+
 
     /**
      * Gets a copy the shape array of this tensor.
      */
-    override val shape: IntArray
+    val shape: IntArray
 
     /**
      * Returns the length of this tensor at the given axis.
@@ -53,44 +74,21 @@ interface Tensor<T> : GenTensor<T> {
         return shape[axis]
     }
 
-    /**
-     * Determines whether this tensor has the same shape as `y`.
-     */
-    fun isSameShape(y: Tensor<*>): Boolean {
-        return shape.contentEquals(y.shape)
-    }
-
-
-    /**
-     * Gets the number of elements in this tensor, which is equal to the product of [shape].
-     */
-    override val size: Int
-
 
     /**
      * Gets an element in this tensor according to the index.
      *
      * @param idx the index, it is required that `0 <= idx < shape` (element-wise).
      */
-    override operator fun get(idx: Index): T
+    operator fun get(idx: Index): T
 
+    override fun elementSequence(): Sequence<T> {
+        return indices.map { get(it) }
+    }
 
     /*
-    Math operations:
+    Array-like operations:
      */
-
-
-//    /**
-//     * Returns the **element-wise** division of this tensor and `y`.
-//     *
-//     * @throws ArithmeticException if zero-division happens
-//     */
-//    fun div(y: Tensor<T>): Tensor<T> {
-//        return TensorImpl.divide(this, y, model as MulGroup<T>)
-//    }
-
-
-//    fun tensorDot()
 
 
     /**
@@ -116,11 +114,6 @@ interface Tensor<T> : GenTensor<T> {
         return TensorImpl.diagonal(this, axis1, axis2, offset)
     }
 
-
-    /*
-    Array-like operations:
-     */
-
 //    /**
 //     * Gets the elements in this tensor as a sequence. The order is the same as [indices].
 //     *
@@ -142,12 +135,11 @@ interface Tensor<T> : GenTensor<T> {
         return data
     }
 
-
     /**
      * Returns a new tensor of applying the given function to this tensor element-wise.
      */
     override fun <S> map(mapping: (T) -> S): Tensor<S> {
-        TODO()
+        return ATensor.buildFromSequence(shape, elementSequence().map(mapping))
     }
 
 
@@ -292,13 +284,6 @@ interface Tensor<T> : GenTensor<T> {
             require(shape.all { s -> s >= 0 })
         }
 
-        fun <T> checkShape(x: Tensor<T>, y: Tensor<T>) {
-            if (!x.isSameShape(y)) {
-                throw IllegalArgumentException(
-                    "Shape mismatch: ${x.shape.contentToString()} and ${y.shape.contentToString()}."
-                )
-            }
-        }
 
         /**
          * Creates a tensor with all zeros.
@@ -333,18 +318,23 @@ interface Tensor<T> : GenTensor<T> {
          *
          * @param shape a non-empty array of positive integers
          */
-        fun <T> of(shape: IntArray, supplier: (Index) -> T): MutableTensor<T> {
+        fun <T> of(vararg shape: Int, supplier: (Index) -> T): MutableTensor<T> {
+            return ofShaped(shape, supplier)
+        }
+
+        private fun <T> ofShaped(shape: IntArray, supplier: (Index) -> T): MutableTensor<T> {
             checkValidShape(shape)
             return ATensor.buildFromSequence(shape.clone(), IterUtils.prodIdxN(shape).map(supplier))
         }
+
 
         /**
          * A constructor-like version of creating a tensor from a supplier.
          *
          * @see of
          */
-        operator fun <T> invoke(shape: IntArray, supplier: (Index) -> T): MutableTensor<T> {
-            return of(shape, supplier)
+        operator fun <T> invoke(vararg shape: Int, supplier: (Index) -> T): MutableTensor<T> {
+            return ofShaped(shape, supplier)
         }
 
         /**
@@ -354,7 +344,7 @@ interface Tensor<T> : GenTensor<T> {
          *
          *
          */
-        inline fun <reified T> of(elements: List<Any>, mc: EqualPredicate<T>): MutableTensor<T> {
+        inline fun <reified T> of(elements: List<Any>): MutableTensor<T> {
             return ATensor.fromNestingList(elements, T::class.java)
         }
 
@@ -504,6 +494,36 @@ interface Tensor<T> : GenTensor<T> {
             return stackM(ts.asList(), axis)
         }
 
+
+        /*
+        Models
+         */
+
+        fun <T> over(mc: EqualPredicate<T>, vararg shape: Int): TensorOverEqualPredicate<T> {
+            return TensorOverEqualPredicateImpl(mc, shape)
+        }
+
+        fun <T> over(mc: AddMonoid<T>, vararg shape: Int): TensorOverAddMonoid<T> {
+            return TensorOverAddMonoidImpl(mc, shape)
+        }
+
+        fun <T> over(mc: AddGroup<T>, vararg shape: Int): TensorOverAddGroup<T> {
+            return TensorOverAddGroupImpl(mc, shape)
+        }
+
+        fun <T> over(mc: Ring<T>, vararg shape: Int): TensorOverRing<T> {
+            return TensorOverRingImpl(mc, shape)
+        }
+
+        fun <T> over(mc: UnitRing<T>, vararg shape: Int): TensorOverURing<T> {
+            return TensorOverURingImpl(mc, shape)
+        }
+
+        fun <T> over(mc: Field<T>, vararg shape: Int): TensorOverField<T> {
+            return TensorOverFieldImpl(mc, shape)
+        }
+
+
     }
 
 }
@@ -526,6 +546,116 @@ operator fun <T> Tensor<T>.get(vararg idx: Int): T {
  */
 operator fun <T> Tensor<T>.get(vararg slices: Any?): Tensor<T> {
     return slice(slices.asList())
+}
+
+
+val Tensor<*>.shapeString: String
+    get() = shape.contentToString()
+
+/**
+ * Gets a read-only-traversable sequence of the indices of this tensor,
+ * iterating from the first dimension to the last as.
+ *
+ * This method is generally equal to `IterUtils.prodIdxN(shape)`
+ *
+ * @see IterUtils.prodIdxN
+ */
+inline val Tensor<*>.indices: Sequence<Index>
+    get() = IterUtils.prodIdxN(shape)
+
+
+/**
+ * Generic matrix-like container.
+ */
+
+
+fun <T, A : Appendable> Tensor<T>.joinToL(
+    buffer: A, separators: List<CharSequence>, prefixes: List<CharSequence>, postfixes: List<CharSequence>,
+    limits: IntArray, truncated: List<CharSequence>, transform: (T) -> CharSequence
+): A {
+    val dim = this.dim
+    val shape = this.shape
+    val idx = IntArray(shape.size)
+    var level = 0
+    Outer@
+    while (true) {
+        while (idx[level] == shape[level]) {
+            buffer.append(postfixes[level])
+            idx[level] = 0
+            level--
+            if (level < 0) {
+                break@Outer
+            }
+            idx[level]++
+        }
+        if (idx[level] + 1 > limits[level] && idx[level] < shape[level] - 1) {
+            buffer.append(separators[level])
+            buffer.append(truncated[level])
+            idx[level] = shape[level] - 1
+        }
+
+
+        if (idx[level] == 0) {
+            buffer.append(prefixes[level])
+        } else {
+            buffer.append(separators[level])
+        }
+        if (level == dim - 1) {
+            buffer.append(transform(this[idx]))
+            idx[level]++
+        } else {
+            level++
+            continue
+        }
+    }
+    return buffer
+}
+
+
+fun <T, A : Appendable> Tensor<T>.joinTo(
+    buffer: A, separator: CharSequence = ", ", prefix: CharSequence = "[", postfix: CharSequence = "]",
+    limits: IntArray = IntArray(dim) { Int.MAX_VALUE }, truncated: CharSequence = "...",
+    transform: ((T) -> CharSequence)? = null
+): A {
+    val dim = this.dim
+    val seps = run {
+        val t = ArrayList<CharSequence>(dim)
+
+        val spaces = " ".repeat(prefix.length)
+        var padded = "\n\n"
+        for (i in 1 until dim - 1) {
+            padded += spaces
+            t += padded
+        }
+        if (dim > 1) {
+            t += padded.substring(1) + spaces
+        }
+        t += separator
+        t
+    }
+
+    val pres = Collections.nCopies(dim, prefix)
+    val posts = Collections.nCopies(dim, postfix)
+    val truns = Collections.nCopies(dim, truncated)
+    val trans = transform ?: Any?::toString
+    return this.joinToL(buffer, seps, pres, posts, limits, truns, trans)
+}
+
+fun <T> Tensor<T>.joinToString(
+    separator: CharSequence = ", ", prefix: CharSequence = "[", postfix: CharSequence = "]",
+    limit: Int = Int.MAX_VALUE, truncated: CharSequence = "...", transform: ((T) -> CharSequence)? = null
+): String {
+    val limits = IntArray(dim) { limit }
+    return this.joinTo(StringBuilder(), separator, prefix, postfix, limits, truncated, transform).toString()
+}
+
+
+/**
+ * Determines whether this tensor has the same shape as `y`.
+ */
+@Suppress("NOTHING_TO_INLINE")
+inline fun Tensor<*>.isSameShape(y: Tensor<*>): Boolean {
+    return shape.contentEquals(y.shape)
 }
 
 
@@ -565,9 +695,11 @@ interface MutableTensor<T> : Tensor<T> {
         }
     }
 
-
+    /**
+     * Returns a new mutable tensor of applying the given function to this tensor element-wise.
+     */
     override fun <S> map(mapping: (T) -> S): MutableTensor<S> {
-        TODO()
+        return ATensor.buildFromSequence(shape, elementSequence().map(mapping))
     }
 
 
@@ -654,10 +786,12 @@ interface MutableTensor<T> : Tensor<T> {
         return reshape(-1)
     }
 
+    /**
+     * Returns a copy of this mutable tensor as a mutable tensor.
+     */
     fun copy(): MutableTensor<T> {
         return ATensor.copyOf(this)
     }
-
 }
 
 
@@ -857,7 +991,7 @@ interface TensorOverRing<T> : TensorOverAddGroup<T>, Ring<Tensor<T>>, RingModule
      *
      */
     fun Tensor<T>.matmul(y: Tensor<T>, r: Int): Tensor<T> {
-        return TensorImpl.matmul(this, y, r,model)
+        return TensorImpl.matmul(this, y, r, model)
     }
 
     /**
@@ -877,7 +1011,7 @@ interface TensorOverRing<T> : TensorOverAddGroup<T>, Ring<Tensor<T>>, RingModule
      *
      */
     infix fun Tensor<T>.matmul(y: Tensor<T>): Tensor<T> {
-        return TensorImpl.matmul(this, y, 1,model)
+        return TensorImpl.matmul(this, y, 1, model)
     }
 
 
@@ -967,10 +1101,14 @@ interface TensorOverURing<T> : TensorOverRing<T>, UnitRingModule<T, Tensor<T>> {
     }
 }
 
-// Tensor over Field Interface
 interface TensorOverField<T> : TensorOverRing<T>, Field<Tensor<T>>, UnitAlgebra<T, Tensor<T>> {
     override val model: Field<T>
 
+    override val scalars: Field<T>
+        get() = model
+
+    override val characteristic: Long?
+        get() = model.characteristic
 
 
     override val one: Tensor<T>
@@ -983,7 +1121,36 @@ interface TensorOverField<T> : TensorOverRing<T>, Field<Tensor<T>>, UnitAlgebra<
         return TensorImpl.divide(x, y, model)
     }
 
-
+    /**
+     * Returns the **element-wise** inverse of `x`.
+     */
+    override fun reciprocal(x: Tensor<T>): Tensor<T> {
+        return TensorImpl.reciprocal(x, model)
+    }
 }
 
+internal open class TensorShapedImpl(shape: IntArray) : TensorsShaped {
+    final override val shape: IntArray = if (shape.isEmpty()) {
+        intArrayOf(1) // as a scalar
+    } else {
+        shape.clone()
+    }
+}
 
+internal class TensorOverEqualPredicateImpl<T>(override val model: EqualPredicate<T>, shape: IntArray) :
+    TensorShapedImpl(shape), TensorOverEqualPredicate<T>
+
+internal class TensorOverAddMonoidImpl<T>(override val model: AddMonoid<T>, shape: IntArray) :
+    TensorShapedImpl(shape), TensorOverAddMonoid<T>
+
+internal class TensorOverAddGroupImpl<T>(override val model: AddGroup<T>, shape: IntArray) :
+    TensorShapedImpl(shape), TensorOverAddGroup<T>
+
+internal class TensorOverRingImpl<T>(override val model: Ring<T>, shape: IntArray) :
+    TensorShapedImpl(shape), TensorOverRing<T>
+
+internal class TensorOverURingImpl<T>(override val model: UnitRing<T>, shape: IntArray) :
+    TensorShapedImpl(shape), TensorOverURing<T>
+
+internal class TensorOverFieldImpl<T>(override val model: Field<T>, shape: IntArray) :
+    TensorShapedImpl(shape), TensorOverField<T>

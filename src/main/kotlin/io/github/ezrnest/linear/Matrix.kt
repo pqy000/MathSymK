@@ -1504,25 +1504,25 @@ internal open class MatricesShapedImpl(
     override val column: Int
 ) : MatricesShaped
 
-internal open class MatOverEqualPredicateImpl<T>(override val model: EqualPredicate<T>, row: Int, column: Int) :
+internal class MatOverEqualPredicateImpl<T>(override val model: EqualPredicate<T>, row: Int, column: Int) :
     MatricesShapedImpl(row, column), MatOverEqualPredicate<T>
 
-internal open class MatOverAddMonoidImpl<T>(override val model: AddMonoid<T>, row: Int, column: Int) :
+internal class MatOverAddMonoidImpl<T>(override val model: AddMonoid<T>, row: Int, column: Int) :
     MatricesShapedImpl(row, column), MatOverAddMonoid<T>
 
-internal open class MatOverAddGroupImpl<T>(override val model: AddGroup<T>, row: Int, column: Int) :
+internal class MatOverAddGroupImpl<T>(override val model: AddGroup<T>, row: Int, column: Int) :
     MatricesShapedImpl(row, column), MatOverAddGroup<T>
 
 internal open class MatOverRingImpl<T>(override val model: Ring<T>, row: Int, column: Int) :
     MatricesShapedImpl(row, column), MatOverRing<T>
 
-internal open class MatOverURingImpl<T>(override val model: UnitRing<T>, row: Int, column: Int) :
+internal class MatOverURingImpl<T>(override val model: UnitRing<T>, row: Int, column: Int) :
     MatricesShapedImpl(row, column), MatOverURing<T>
 
-internal open class MatOverEUDImpl<T>(override val model: EuclideanDomain<T>, row: Int, column: Int) :
+internal class MatOverEUDImpl<T>(override val model: EuclideanDomain<T>, row: Int, column: Int) :
     MatricesShapedImpl(row, column), MatOverEUD<T>
 
-internal open class MatOverFieldImpl<T>(override val model: Field<T>, row: Int, column: Int) :
+internal class MatOverFieldImpl<T>(override val model: Field<T>, row: Int, column: Int) :
     MatricesShapedImpl(row, column), MatOverField<T>
 
 

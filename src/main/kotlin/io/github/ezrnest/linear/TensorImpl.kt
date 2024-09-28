@@ -1,6 +1,6 @@
 package io.github.ezrnest.linear
 
-import io.github.ezrnest.linear.Tensor.Companion.checkShape
+import io.github.ezrnest.model.NumberModels
 import io.github.ezrnest.numberTheory.NTFunctions
 import io.github.ezrnest.structure.*
 import io.github.ezrnest.util.IterUtils
@@ -27,12 +27,6 @@ abstract class AbstractTensor<T>(
         return sh[axis]
     }
 
-    override fun isSameShape(y: Tensor<*>): Boolean {
-        if (y is AbstractTensor) {
-            return sh.contentEquals(y.sh)
-        }
-        return sh.contentEquals(y.shape)
-    }
 
     override fun toString(): String {
         val sb = StringBuilder()
@@ -174,7 +168,7 @@ internal constructor(shape: IntArray, val data: Array<Any?>) :
     }
 
     override fun <S> map(mapping: (T) -> S): ATensor<S> {
-        return apply1(this, mapping)
+        return apply1(mapping)
     }
 
     override fun set(idx: Index, v: T) {
@@ -199,15 +193,21 @@ internal constructor(shape: IntArray, val data: Array<Any?>) :
         inlineApplyAll(f)
     }
 
+    internal inline fun <S> apply1(f: (T) -> S): ATensor<S> {
+        val ndata = Array<Any?>(size) {
+            @Suppress("UNCHECKED_CAST")
+            f(data[it] as T)
+        }
+        return ATensor(sh, ndata)
+    }
 
-    internal inline fun apply2InPlace(y: Tensor<T>, f: (T, T) -> T) {
-        checkShape(this, y)
+    internal inline fun <S> apply2InPlace(y: Tensor<S>, f: (T, S) -> T) {
         if (y is ATensor) {
             val d1 = data
             val d2 = y.data
             for (i in 0 until size) {
                 @Suppress("UNCHECKED_CAST")
-                d1[i] = f(d1[i] as T, d2[i] as T)
+                d1[i] = f(d1[i] as T, d2[i] as S)
             }
         } else {
             var pos = 0
@@ -231,27 +231,33 @@ internal constructor(shape: IntArray, val data: Array<Any?>) :
     companion object {
 
         fun <T> buildFromSequence(shape: IntArray, sequence: Sequence<T>): ATensor<T> {
+            return buildFromSeqMap(shape, sequence) { it }
+        }
+
+        internal inline fun <T, S> buildFromSeqMap(shape: IntArray, sequence: Sequence<T>, f: (T) -> S): ATensor<S> {
             val size = MathUtils.product(shape)
             val seqIt = sequence.iterator()
-            val data = Array<Any?>(size) { seqIt.next() }
+            val data = Array<Any?>(size) { f(seqIt.next()) }
             return ATensor(shape, data)
         }
 
-        internal inline fun <T> apply2(x: ATensor<T>, y: ATensor<T>, f: (T, T) -> T): ATensor<T> {
-            checkShape(x, y)
+        internal inline fun <T1, T2, S> buildFromSeqMap2(
+            shape: IntArray, s1: Sequence<T1>, s2: Sequence<T2>, f: (T1, T2) -> S
+        ): ATensor<S> {
+            val size = MathUtils.product(shape)
+            val it1 = s1.iterator()
+            val it2 = s2.iterator()
+            val data = Array<Any?>(size) { f(it1.next(), it2.next()) }
+            return ATensor(shape, data)
+        }
+
+
+        internal inline fun <T1, T2, S> apply2(x: ATensor<T1>, y: ATensor<T2>, f: (T1, T2) -> S): ATensor<S> {
             val d1 = x.data
             val d2 = y.data
             val ndata = Array<Any?>(x.size) {
                 @Suppress("UNCHECKED_CAST")
-                f(d1[it] as T, d2[it] as T)
-            }
-            return ATensor(x.sh, ndata)
-        }
-
-        internal inline fun <T, S> apply1(x: ATensor<T>, f: (T) -> S): ATensor<S> {
-            val ndata = Array<Any?>(x.size) {
-                @Suppress("UNCHECKED_CAST")
-                f(x.data[it] as T)
+                f(d1[it] as T1, d2[it] as T2)
             }
             return ATensor(x.sh, ndata)
         }
@@ -274,20 +280,6 @@ internal constructor(shape: IntArray, val data: Array<Any?>) :
         fun <T> zeros(shape: IntArray, mc: AddMonoid<T>): ATensor<T> {
             return constant(mc.zero, shape)
         }
-
-//        fun <T> fromMatrix(m: AbstractMatrix<T>): ATensor<T> {
-//            var pos = 0
-//            val r = m.row
-//            val c = m.column
-//            val data = arrayOfNulls<Any>(r * c)
-//            for (i in 0 until r) {
-//                for (j in 0 until c) {
-//                    data[pos++] = m[i, j]
-//                }
-//            }
-//            @Suppress("UNCHECKED_CAST")
-//            return ATensor(m.calculator, intArrayOf(r, c), data as Array<T>)
-//        }
 
         fun <T> wedge(x: ATensor<T>, y: ATensor<T>, mc: Ring<T>): ATensor<T> {
             val shape = x.shape + y.shape
@@ -361,6 +353,12 @@ internal constructor(shape: IntArray, val data: Array<Any?>) :
 
 internal object TensorImpl {
 
+    internal fun checkShape(x: Tensor<*>, y: Tensor<*>) {
+        require(x.shape.contentEquals(y.shape)) {
+            "Shape mismatch: ${x.shape.contentToString()} and ${y.shape.contentToString()}."
+        }
+    }
+
     fun addIfNegative(a: Int, m: Int): Int {
         return if (a < 0) {
             a + m
@@ -370,17 +368,32 @@ internal object TensorImpl {
     }
 
 
-    fun <T> add(_x: Tensor<T>, _y: Tensor<T>, mc: AddSemigroup<T>): MutableTensor<T> {
-        val (x, y) = broadcast(_x, _y)
-        return ATensor.buildFromSequence(x.shape, x.indices.map { idx -> mc.add(x[idx], y[idx]) })
+    private inline fun <T, S> apply1(x: Tensor<T>, f: (T) -> S): ATensor<S> {
+        if (x is ATensor) {
+            return x.apply1(f)
+        }
+        return ATensor.buildFromSeqMap(x.shape, x.elementSequence(), f)
+    }
+
+    private inline fun <T1, T2, S> apply2(x: Tensor<T1>, y: Tensor<T2>, f: (T1, T2) -> S): ATensor<S> {
+        if (x is ATensor && y is ATensor && x.isSameShape(y)) {
+            return ATensor.apply2(x, y, f)
+        }
+        val (x1, y1) = broadcast(x, y)
+        return ATensor.buildFromSeqMap2(x1.shape, x1.elementSequence(), y1.elementSequence(), f)
+    }
+
+
+    fun <T> add(x: Tensor<T>, y: Tensor<T>, mc: AddSemigroup<T>): ATensor<T> {
+        return apply2(x, y, mc::add)
     }
 
     /**
      * Returns the negation of this tensor.
      *
      */
-    fun <T> negate(x: Tensor<T>, mc: AddGroup<T>): MutableTensor<T> {
-        return ATensor.buildFromSequence(x.shape, x.indices.map { idx -> mc.negate(x[idx]) })
+    fun <T> negate(x: Tensor<T>, mc: AddGroup<T>): ATensor<T> {
+        return apply1(x) { mc.negate(it) }
     }
 
     /**
@@ -389,36 +402,41 @@ internal object TensorImpl {
      * The sum of two tensor `x,y` has the
      * shape of `max(x.shape, y.shape)`, here `max` means element-wise maximum of two arrays.
      */
-    fun <T> subtract(x0: Tensor<T>, y0: Tensor<T>, model: AddGroup<T>): MutableTensor<T> {
-        val (x, y) = broadcast(x0, y0)
-        return ATensor.buildFromSequence(x.shape, x.indices.map { idx -> model.subtract(x[idx], y[idx]) })
+    fun <T> subtract(x0: Tensor<T>, y0: Tensor<T>, model: AddGroup<T>): ATensor<T> {
+        return apply2(x0, y0) { a, b -> model.subtract(a, b) }
     }
 
     /**
      * Returns the result of multiplying this tensor with a scalar.
      */
-    fun <T> multiplyScalar(x: Tensor<T>, k: T, mc: MulSemigroup<T>): MutableTensor<T> {
-        return ATensor.buildFromSequence(x.shape, x.indices.map { idx -> mc.multiply(k, x[idx]) })
+    fun <T> multiplyScalar(x: Tensor<T>, k: T, mc: MulSemigroup<T>): ATensor<T> {
+//        return ATensor.buildFromSequence(x.shape, x.indices.map { idx -> mc.multiply(k, x[idx]) })
+        return apply1(x) { mc.multiply(k, it) }
     }
 
-    fun <T> multiplyN(x: Tensor<T>, k: Long, mc: AddSemigroup<T>): MutableTensor<T> {
-        return ATensor.buildFromSequence(x.shape, x.indices.map { idx -> mc.multiplyN(x[idx], k) })
+    fun <T> multiplyN(x: Tensor<T>, k: Long, mc: AddSemigroup<T>): ATensor<T> {
+//        return ATensor.buildFromSequence(x.shape, x.indices.map { idx -> mc.multiplyN(x[idx], k) })
+        return apply1(x) { mc.multiplyN(it, k) }
     }
 
     /**
      * Returns the result of dividing this tensor with a scalar.
      */
-    fun <T> divide(x: Tensor<T>, k: T, mc: MulGroup<T>): MutableTensor<T> {
-        return ATensor.buildFromSequence(x.shape, x.indices.map { idx -> mc.divide(k, x[idx]) })
+    fun <T> divide(x: Tensor<T>, k: T, mc: MulGroup<T>): ATensor<T> {
+//        return ATensor.buildFromSequence(x.shape, x.indices.map { idx -> mc.divide(k, x[idx]) })
+        return apply1(x) { mc.divide(it, k) }
     }
 
     /**
      * Returns the **element-wise** product of this tensor and `y`.
      *
      */
-    fun <T> multiply(x0: Tensor<T>, y0: Tensor<T>, mc: MulSemigroup<T>): MutableTensor<T> {
-        val (x, y) = broadcast(x0, y0)
-        return ATensor.buildFromSequence(x.shape, x.indices.map { idx -> mc.multiply(x[idx], y[idx]) })
+    fun <T> multiply(x0: Tensor<T>, y0: Tensor<T>, mc: MulSemigroup<T>): ATensor<T> {
+        return apply2(x0, y0, mc::multiply)
+    }
+
+    fun <T> reciprocal(x: Tensor<T>, mc: Field<T>): ATensor<T> {
+        return apply1(x) { mc.reciprocal(it) }
     }
 
     /**
@@ -426,9 +444,8 @@ internal object TensorImpl {
      *
      * @throws ArithmeticException if zero-division happens
      */
-    fun <T> divide(x0: Tensor<T>, y0: Tensor<T>, mc: MulGroup<T>): MutableTensor<T> {
-        val (x, y) = broadcast(x0, y0)
-        return ATensor.buildFromSequence(x.shape, x.indices.map { idx -> mc.divide(x[idx], y[idx]) })
+    fun <T> divide(x0: Tensor<T>, y0: Tensor<T>, mc: MulGroup<T>): ATensor<T> {
+        return apply2(x0, y0, mc::divide)
     }
 
     fun <T> inner(x: Tensor<T>, y: Tensor<T>, mc: Ring<T>): T {
@@ -441,7 +458,7 @@ internal object TensorImpl {
         }
     }
 
-    fun <T> wedge(x: Tensor<T>, y: Tensor<T>, mc: Ring<T>): MutableTensor<T> {
+    fun <T> wedge(x: Tensor<T>, y: Tensor<T>, mc: Ring<T>): ATensor<T> {
         if (x is ATensor && y is ATensor) {
             return ATensor.wedge(x, y, mc)
         }
@@ -946,36 +963,38 @@ internal object TensorImpl {
         return BroadcastView(t, ns, d, extendedAxes.toIntArray())
     }
 
-    private fun <T> broadcast0(t1: Tensor<T>, t2: Tensor<T>): Pair<Tensor<T>, Tensor<T>> {
-        val nDim = t2.dim
-        val newShape = IntArray(nDim)
-        val d2 = t2.dim - t1.dim
+
+    private fun <T1, T2> broadcast0(t1: Tensor<T1>, t2: Tensor<T2>): Pair<Tensor<T1>, Tensor<T2>> {
+        val newShape = IntArray(t2.dim)
+        val diff = t2.dim - t1.dim
         val s1 = t1.shape
         val s2 = t2.shape
         val extended1 = arrayListOf<Int>()
         val extended2 = arrayListOf<Int>()
         for (l in s1.lastIndex downTo 0) {
-            if (s1[l] == s2[l + d2]) {
-                newShape[l + d2] = s1[l]
+            val dim1 = s1[l]
+            val dim2 = s2[l + diff]
+            if(dim1 == dim2) {
+                newShape[l + diff] = dim1
                 continue
             }
-            if (s1[l] == 1) {
-                newShape[l + d2] = s2[l]
+            if (dim1 == 1) {
+                newShape[l + diff] = dim2
                 extended1.add(l)
                 continue
             }
-            if (s2[l + d2] == 1) {
-                newShape[l + d2] = s1[l]
-                extended2.add(l + d2)
+            if (dim2 == 1) {
+                newShape[l + diff] = dim1
+                extended2.add(l + diff)
                 continue
             }
             throw IllegalArgumentException(
                 "Cannot broadcast ${s1.contentToString()} with ${s2.contentToString()}, " +
-                        "shape mismatch at axis ${l} ."
+                        "shape mismatch at axis $l ."
             )
         }
-        s2.copyInto(newShape, endIndex = d2)
-        val r1 = BroadcastView(t1, newShape, d2, extended1.toIntArray())
+        s2.copyInto(newShape, endIndex = diff)
+        val r1 = BroadcastView(t1, newShape, diff, extended1.toIntArray())
         val r2 = if (extended2.isEmpty()) {
             t2
         } else {
@@ -986,14 +1005,14 @@ internal object TensorImpl {
 
     }
 
-    fun <T> broadcast(t1: Tensor<T>, t2: Tensor<T>): Pair<Tensor<T>, Tensor<T>> {
+    fun <T1, T2> broadcast(t1: Tensor<T1>, t2: Tensor<T2>): Pair<Tensor<T1>, Tensor<T2>> {
         if (t1.isSameShape(t2)) {
             return t1 to t2
         }
         return if (t1.dim <= t2.dim) {
             broadcast0(t1, t2)
         } else {
-            broadcast0(t2, t1)
+            broadcast0(t2, t1).let { it.second to it.first }
         }
 
     }
@@ -1158,4 +1177,11 @@ internal object TensorImpl {
         val (am, offsets, shape) = prepareDiag(x, axis1, axis2, offset)
         return MutableIndexMapView(x, am, offsets, shape)
     }
+}
+
+
+fun main() {
+    val t1 = Tensor(1) { 1 } // a
+    val t2 = Tensor(1, 2, 3) { 1 }
+    println(TensorImpl.add(t1, t2, NumberModels.integers()))
 }
