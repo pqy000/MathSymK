@@ -1,7 +1,6 @@
 package io.github.ezrnest.linear
 
 import io.github.ezrnest.discrete.Permutation
-import io.github.ezrnest.structure.AddSemigroup
 import io.github.ezrnest.util.ArraySup
 import io.github.ezrnest.util.IterUtils
 

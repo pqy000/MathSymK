@@ -642,7 +642,7 @@ internal object TensorImpl {
             ns.add(shape[l])
             l++
         }
-        if (ns.isEmpty) {
+        if (ns.isEmpty()) {
             // return a 1-d tensor instead
             am.add(-1)
             ns.add(1)
