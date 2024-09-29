@@ -36,7 +36,7 @@ object IterUtils {
 
         }
 
-        protected fun prepareNext() {
+        fun prepareNext() {
             if (ready != UNKNOWN) {
                 return
             }
@@ -106,9 +106,9 @@ object IterUtils {
     }
 
     private abstract class IdxIteratorTemplate(val n: Int) : Iterator<IntArray> {
-        protected var state: EnumState = UNKNOWN // 0: non-determined, 1: ready, 2: exhausted
-        protected val indices = IntArray(n)
-        protected abstract fun prepareNext()
+        var state: EnumState = UNKNOWN // 0: non-determined, 1: ready, 2: exhausted
+        val indices = IntArray(n)
+        abstract fun prepareNext()
 
         override fun hasNext(): Boolean {
             prepareNext()

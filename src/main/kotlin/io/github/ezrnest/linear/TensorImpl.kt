@@ -642,11 +642,11 @@ internal object TensorImpl {
             ns.add(shape[l])
             l++
         }
-        if (ns.isEmpty()) {
-            // return a 1-d tensor instead
-            am.add(-1)
-            ns.add(1)
-        }
+//        if (ns.isEmpty()) {
+//            // return a 1-d tensor instead
+//            am.add(-1)
+//            ns.add(1)
+//        }
         return Triple(am.toIntArray(), ranges, ns.toIntArray())
     }
 
@@ -1276,6 +1276,7 @@ fun main() {
         val t1 = zero
         val t2 = Tensor(1, 2, 3) { 1 }
         println(t1)
+        println(t2.slice(0,0,0))
 //        println(t1 + t2)
 //        one.sumAll()
 //        println(one.slice(Tensor.NEW_AXIS, Tensor.NEW_AXIS))

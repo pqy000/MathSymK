@@ -177,10 +177,10 @@ interface Tensor<T> : GenTuple<T> {
      *    to indicate zero or more omitted axes that will be kept the same.
      *    These axes are computed according to other slicing parameters.
      *
-     * Special case: If all the slicing parameters are integers, then the result tensor will be a 1-D tensor with shape `(1)`.
+     * Special case: If all the axes are selected with an index, then the result tensor will be a 0-D scalar tensor.
      *
      * An extension function is provided to make the slicing more concise.
-     * Import [get][io.github.ezrnest.linear.get] (with overloads) to use it.
+     * Import an overload of [get][io.github.ezrnest.linear.get] with `io.github.ezrnest.linear.get` to use it.
      */
     fun slice(vararg slices: Any?): Tensor<T> {
         return slice(slices.asList())

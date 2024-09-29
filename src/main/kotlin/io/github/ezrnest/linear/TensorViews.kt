@@ -10,6 +10,15 @@ import io.github.ezrnest.util.IterUtils
  */
 
 
+/**
+ * A view for a slice of a tensor.
+ *
+ * @param T the element type
+ * @property tensor the backing tensor `t`
+ * @property ranges the ranges in t. `ranges.size = t.dim`
+ * @property axisMap maps the axis to t's axis. `axisMap.size = this.dim`
+ * @property shape the shape of the view
+ */
 open class SlicedView<T>(
     tensor: Tensor<T>,
     /**
@@ -118,11 +127,17 @@ open class SlicedView<T>(
 
 }
 
+/**
+ * A mutable view for a slice of a tensor.
+ *
+ * @param T the element type
+ * @property tensor the backing tensor `t`
+ * @property ranges the ranges in t. `ranges.size = t.dim`
+ * @property axisMap maps the axis to t's axis. `axisMap.size = this.dim`
+ * @property shape the shape of the view
+ */
 class MutableSliceView<T>(
     tensor: MutableTensor<T>, ranges: List<IntProgression>,
-    /**
-     * maps the axis to t's axis. `axisMap.size = this.dim`
-     */
     axisMap: IntArray,
 
     shape: IntArray,
