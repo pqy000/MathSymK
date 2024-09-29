@@ -44,6 +44,10 @@ typealias Index = IntArray
  * the number of dimensions.
  *
  *
+ *
+ *
+ *
+ *
  */
 interface Tensor<T> : GenTuple<T> {
     // Created by lyc at 2021-04-06 22:12
@@ -87,44 +91,21 @@ interface Tensor<T> : GenTuple<T> {
      */
     operator fun get(idx: Index): T
 
+    /**
+     * Returns a sequence of elements in this tensor, iterating from the first dimension to the last.
+     * See the following code:
+     * ```
+     * for (i0 in 0 until shape[0]) {
+     *     for (i1 in 0 until shape[1]) {
+     *         ...
+     *         yield(get(i0, i1, ...))
+     *     }
+     * }
+     * ```
+     */
     override fun elementSequence(): Sequence<T> {
         return indices.map { get(it) }
     }
-
-    /*
-    Array-like operations:
-     */
-
-
-    /**
-     * Returns a tensor view of diagonal elements in the given two axes with offsets.
-     * Assume the given axes are the last two, then formally we have
-     *
-     *     result[..., i] = this[..., i, i + offset]
-     *
-     * The shape of the resulting tensor is determined by removing the two axes in the
-     * original tensor and add a new axis at the end. The length of the new axis is
-     * the same as the size of the resulting diagonals.
-     *
-     * If this tensor is 2-D, then this method is generally the same as selecting the
-     * diagonal of a matrix.
-     *
-     * The default parameter returns the diagonal elements in the last two axes with no offset.
-     *
-     * @param offset the offset of the diagonal. If `offset > 0`, the main diagonal is returned. If `offset > 0`,
-     * then the resulting diagonal is above the main diagonal.
-     *
-     */
-    fun diagonal(offset: Int = 0, axis1: Int = -2, axis2: Int = -1): Tensor<T> {
-        return TensorImpl.diagonal(this, axis1, axis2, offset)
-    }
-
-//    /**
-//     * Gets the elements in this tensor as a sequence. The order is the same as [indices].
-//     *
-//     * @see flattenToList
-//     */
-//    override fun elementSequence(): Sequence<T>
 
     /**
      * Flatten this tensor to a list. The order of the elements is the same as [elementSequence].
@@ -152,6 +133,35 @@ interface Tensor<T> : GenTuple<T> {
      */
     fun copy(): Tensor<T> {
         return ATensor.copyOf(this)
+    }
+
+
+    /*
+    Tensor structure operations
+     */
+
+
+    /**
+     * Returns a tensor view of diagonal elements in the given two axes with offsets.
+     * Assume the given axes are the last two, then formally we have
+     *
+     *     result[..., i] = this[..., i, i + offset]
+     *
+     * The shape of the resulting tensor is determined by removing the two axes in the
+     * original tensor and add a new axis at the end. The length of the new axis is
+     * the same as the size of the resulting diagonals.
+     *
+     * If this tensor is 2-D, then this method is generally the same as selecting the
+     * diagonal of a matrix.
+     *
+     * The default parameter returns the diagonal elements in the last two axes with no offset.
+     *
+     * @param offset the offset of the diagonal. If `offset > 0`, the main diagonal is returned. If `offset > 0`,
+     * then the resulting diagonal is above the main diagonal.
+     *
+     */
+    fun diagonal(offset: Int = 0, axis1: Int = -2, axis2: Int = -1): Tensor<T> {
+        return TensorImpl.diagonal(this, axis1, axis2, offset)
     }
 
 
@@ -223,6 +233,16 @@ interface Tensor<T> : GenTuple<T> {
         return reshape(-1)
     }
 
+    /**
+     * Squeezes the tensor by removing all the axes of length 1 if [axis] is not specified,
+     * or removing the given [axis] if its length is 1.
+     *
+     * @throws IllegalArgumentException [axis] is given and the length at the given [axis] is not 1.
+     */
+    fun squeeze(axis: Int = -1): Tensor<T> {
+        return TensorImpl.squeeze(this, axis)
+    }
+
 
     /**
      * Broadcasts this tensor to the given shape.
@@ -231,15 +251,12 @@ interface Tensor<T> : GenTuple<T> {
         return TensorImpl.broadcastTo(this, newShape)
     }
 
-
-//    /**
-//     * The operator-overloading version of the method [slice].
-//     *
-//     * @see [slice]
-//     */
-//    operator fun get(vararg ranges: Any?): Tensor<T>{
-//    return slice(ranges.asList())
-//    }
+    /**
+     * Broadcasts this tensor to the shape of `y`.
+     */
+    fun broadcastTo(y: Tensor<T>): Tensor<T> {
+        return TensorImpl.broadcastTo(this, y.shape)
+    }
 
 
     /**
@@ -271,11 +288,14 @@ interface Tensor<T> : GenTuple<T> {
     fun transpose(axis1: Int = -1, axis2: Int = -2): Tensor<T> {
         return permute(
             Permutation.swap(
-                dim,
-                TensorImpl.addIfNegative(axis1, dim),
-                TensorImpl.addIfNegative(axis2, dim)
+                dim, TensorImpl.addIfNegative(axis1, dim), TensorImpl.addIfNegative(axis2, dim)
             )
         )
+    }
+
+
+    fun argWhere(predicate: (T) -> Boolean): List<Index> {
+        return indices.filter { predicate(get(it)) }.toList()
     }
 
 
@@ -292,8 +312,8 @@ interface Tensor<T> : GenTuple<T> {
         const val DOTS = "..."
 
         private fun checkValidShape(shape: IntArray) {
-            require(shape.isNotEmpty())
-            require(shape.all { s -> s >= 0 })
+//            require(shape.isNotEmpty())
+            require(shape.all { s -> s > 0 })
         }
 
 
@@ -303,7 +323,7 @@ interface Tensor<T> : GenTuple<T> {
          * @param shape a non-empty array of positive integers
          */
         fun <T> zeros(mc: AddMonoid<T>, vararg shape: Int): MutableTensor<T> {
-            return constants(mc.zero, *shape)
+            return fill(mc.zero, *shape)
         }
 
         /**
@@ -312,7 +332,7 @@ interface Tensor<T> : GenTuple<T> {
          * @param shape a non-empty array of positive integers
          */
         fun <T> ones(mc: UnitRing<T>, vararg shape: Int): MutableTensor<T> {
-            return constants(mc.one, *shape)
+            return fill(mc.one, *shape)
         }
 
         /**
@@ -320,9 +340,19 @@ interface Tensor<T> : GenTuple<T> {
          *
          * @param shape a non-empty array of positive integers
          */
-        fun <T> constants(c: T, vararg shape: Int): MutableTensor<T> {
+        fun <T> fill(c: T, vararg shape: Int): MutableTensor<T> {
             checkValidShape(shape)
             return ATensor.constant(c, shape.clone())
+        }
+
+        /**
+         * Returns a tensor of shape `()` that represents the given scalar.
+         *
+         * The tensor will have `dim == 0` and `size == 1`.
+         *
+         */
+        fun <T> scalar(x: T): MutableTensor<T> {
+            return fill(x)
         }
 
         /**
@@ -336,7 +366,7 @@ interface Tensor<T> : GenTuple<T> {
 
         private fun <T> ofShaped(shape: IntArray, supplier: (Index) -> T): MutableTensor<T> {
             checkValidShape(shape)
-            return ATensor.buildFromSequence(shape.clone(), IterUtils.prodIdxN(shape).map(supplier))
+            return ATensor.buildFromSequence(shape.clone(), IterUtils.prodIdxNoCopy(shape).map(supplier))
         }
 
 
@@ -406,13 +436,6 @@ interface Tensor<T> : GenTuple<T> {
             return ATensor.copyOf(t)
         }
 
-
-        /**
-         * Returns a tensor of shape `(1)` that represents the given scalar.
-         */
-        fun <T> scalar(x: T): MutableTensor<T> {
-            return constants(x, 1)
-        }
 
         /**
          * Concatenate several tensors as a view.
@@ -566,20 +589,25 @@ val Tensor<*>.shapeString: String
 
 /**
  * Gets a read-only-traversable sequence of the indices of this tensor,
- * iterating from the first dimension to the last as.
+ * iterating from the first dimension to the last as the order described in [Tensor.elementSequence].
  *
- * This method is generally equal to `IterUtils.prodIdxN(shape)`
+ * This method is generally equal to `IterUtils.prodIdxNoCopy(shape)`
  *
- * @see IterUtils.prodIdxN
+ * @see IterUtils.prodIdxNoCopy
+ * @see Tensor.elementSequence
  */
 inline val Tensor<*>.indices: Sequence<Index>
-    get() = IterUtils.prodIdxN(shape)
+    get() = IterUtils.prodIdxNoCopy(shape)
 
 
 fun <T, A : Appendable> Tensor<T>.joinToL(
     buffer: A, separators: List<CharSequence>, prefixes: List<CharSequence>, postfixes: List<CharSequence>,
     limits: IntArray, truncated: List<CharSequence>, transform: (T) -> CharSequence
 ): A {
+    if (this.dim == 0) {
+        buffer.append(transform(this[intArrayOf()]))
+        return buffer
+    }
     val dim = this.dim
     val shape = this.shape
     val idx = IntArray(shape.size)
@@ -1216,12 +1244,7 @@ interface TensorOverField<T> : TensorOverURing<T>, Field<Tensor<T>>, UnitAlgebra
     }
 }
 
-internal open class TensorShapedImpl(shape: IntArray) : TensorsShaped {
-    final override val shape: IntArray = if (shape.isEmpty()) {
-        intArrayOf(1) // as a scalar
-    } else {
-        shape.clone()
-    }
+internal open class TensorShapedImpl(final override val shape: IntArray) : TensorsShaped {
 }
 
 internal class TensorOverEqualPredicateImpl<T>(override val model: EqualPredicate<T>, shape: IntArray) :
@@ -1241,3 +1264,4 @@ internal class TensorOverURingImpl<T>(override val model: UnitRing<T>, shape: In
 
 internal class TensorOverFieldImpl<T>(override val model: Field<T>, shape: IntArray) :
     TensorShapedImpl(shape), TensorOverField<T>
+

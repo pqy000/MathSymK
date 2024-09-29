@@ -1,5 +1,6 @@
 package io.github.ezrnest.linear
 
+import io.github.ezrnest.model.NumberModels.integers
 import io.github.ezrnest.numberTheory.NTFunctions
 import io.github.ezrnest.structure.*
 import io.github.ezrnest.util.IterUtils
@@ -27,7 +28,7 @@ abstract class AbstractTensor<T>(
 
         sb.append("Tensor(").append(shape.joinToString()).append("): \n")
         val limits = IntArray(dim) { 1 }
-        limits[dim - 1] = 10
+        if (dim >= 1) limits[dim - 1] = 10
         if (dim >= 2) limits[dim - 2] = 10
         this.joinTo(sb, limits = limits)
         return sb.toString()
@@ -172,8 +173,6 @@ internal constructor(shape: IntArray, val data: Array<Any?>) :
     override fun setAll(v: T) {
         Arrays.fill(data, v)
     }
-
-
 
 
     internal inline fun <S> apply1(f: (T) -> S): ATensor<S> {
@@ -377,22 +376,22 @@ internal object TensorImpl {
         return ATensor.buildFromSeqMap2(x1.shape, x1.elementSequence(), y1.elementSequence(), f)
     }
 
-    private inline fun <T> inPlaceApply1(x: MutableTensor<T>, f: (T) -> T){
-        if(x is ATensor){
+    private inline fun <T> inPlaceApply1(x: MutableTensor<T>, f: (T) -> T) {
+        if (x is ATensor) {
             x.inPlaceApply1(f)
-        }else{
-            for(idx in x.indices){
+        } else {
+            for (idx in x.indices) {
                 x[idx] = f(x[idx])
             }
         }
     }
 
-    private inline fun <T> inPlaceApply2(x: MutableTensor<T>, y_: Tensor<T>, f: (T, T) -> T){
+    private inline fun <T> inPlaceApply2(x: MutableTensor<T>, y_: Tensor<T>, f: (T, T) -> T) {
         val y = broadcastTo(y_, x.shape) // broadcast y to x's shape
-        if(x is ATensor && y is ATensor){
+        if (x is ATensor && y is ATensor) {
             x.inPlaceApply2(y, f)
-        }else{
-            for(idx in x.indices){
+        } else {
+            for (idx in x.indices) {
                 x[idx] = f(x[idx], y[idx])
             }
         }
@@ -405,6 +404,7 @@ internal object TensorImpl {
     fun <T> addScalar(x: Tensor<T>, c: T, mc: AddSemigroup<T>): ATensor<T> {
         return apply1(x) { mc.add(it, c) }
     }
+
     fun <T> addScalar(c: T, x: Tensor<T>, mc: AddSemigroup<T>): ATensor<T> {
         return apply1(x) { mc.add(c, it) }
     }
@@ -440,7 +440,7 @@ internal object TensorImpl {
     }
 
     fun <T> multiplyScalar(k: T, x: Tensor<T>, mc: MulSemigroup<T>): ATensor<T> {
-        return apply1(x) { mc.multiply(k,it) }
+        return apply1(x) { mc.multiply(k, it) }
     }
 
     fun <T> multiplyN(x: Tensor<T>, k: Long, mc: AddSemigroup<T>): ATensor<T> {
@@ -460,10 +460,9 @@ internal object TensorImpl {
         return apply1(x) { mc.divide(it, c) }
     }
 
-    fun <T> divideScalarBy(c : T, x: Tensor<T>, mc: MulGroup<T>): ATensor<T> {
+    fun <T> divideScalarBy(c: T, x: Tensor<T>, mc: MulGroup<T>): ATensor<T> {
         return apply1(x) { mc.divide(c, it) }
     }
-
 
 
     /**
@@ -514,9 +513,6 @@ internal object TensorImpl {
     fun <T> inPlaceDivide(x: MutableTensor<T>, y: Tensor<T>, mc: MulGroup<T>) {
         inPlaceApply2(x, y, mc::divide)
     }
-
-
-
 
 
     fun <T> inner(x: Tensor<T>, y: Tensor<T>, mc: Ring<T>): T {
@@ -646,7 +642,7 @@ internal object TensorImpl {
             ns.add(shape[l])
             l++
         }
-        if (ns.isEmpty()) {
+        if (ns.isEmpty) {
             // return a 1-d tensor instead
             am.add(-1)
             ns.add(1)
@@ -711,7 +707,7 @@ internal object TensorImpl {
         val data = result.data
         val tIdxList = Array(ts.size) { IntArray(ts[it].dim) }
 
-        val mIndices = IterUtils.prodIdxN(mulShape)
+        val mIndices = IterUtils.prodIdxNoCopy(mulShape)
         fun placeIdx(partIdx: Index, tToPartList: List<List<Pair<Int, Int>>>) {
             for (k in 0 until n) {
                 val tToPart = tToPartList[k]
@@ -893,7 +889,7 @@ internal object TensorImpl {
         }
 
         var pos = 0
-        val sumIndices = IterUtils.prodIdxN(sumShape)
+        val sumIndices = IterUtils.prodIdxNoCopy(sumShape)
         for (idx in result.indices) {
             placeIdx(idx, remAxes)
             var re = model.zero
@@ -934,28 +930,28 @@ internal object TensorImpl {
     fun <T> prepareConcat(ts: List<Tensor<T>>, axis: Int): Pair<Int, IntArray> {
         require(ts.isNotEmpty())
         val dim = ts[0].dim
-        val shape = ts[0].shape
+        val resShape = ts[0].shape.clone()
         val ax = addIfNegative(axis, dim)
         require(ax in 0 until dim) {
             "Axis $axis out of bound."
         }
-        shape[axis] = 0
+        resShape[axis] = 0
         for ((k, t) in ts.withIndex()) {
             require(t.dim == dim) {
                 "Tensor dim mismatch for ${k + 1}-th tensor: required dim=$dim, but ${t.dim} is given."
             }
-            for (l in shape.indices) {
+            for (l in resShape.indices) {
                 if (l == ax) {
-                    shape[l] += t.lengthAt(l)
+                    resShape[l] += t.lengthAt(l)
                 } else {
-                    require(shape[l] == t.lengthAt(l)) {
+                    require(resShape[l] == t.lengthAt(l)) {
                         "Tensor shape mismatch for ${k + 1}-th tensor at axis ${l}: " +
-                                "required length=${shape[l]}, but ${t.lengthAt(l)} is given."
+                                "required length=${resShape[l]}, but ${t.lengthAt(l)} is given."
                     }
                 }
             }
         }
-        return ax to shape
+        return ax to resShape
     }
 
 
@@ -973,7 +969,6 @@ internal object TensorImpl {
         return ax to ns
     }
 
-    //    fun <T> reshape(x : T)
     fun prepareNewShape(t: Tensor<*>, ns: IntArray) {
         val size = t.size
         require(ns.isNotEmpty())
@@ -1049,7 +1044,7 @@ internal object TensorImpl {
         for (l in s1.lastIndex downTo 0) {
             val dim1 = s1[l]
             val dim2 = s2[l + diff]
-            if(dim1 == dim2) {
+            if (dim1 == dim2) {
                 newShape[l + diff] = dim1
                 continue
             }
@@ -1092,6 +1087,26 @@ internal object TensorImpl {
 
     }
 
+    fun <T> squeeze(t: Tensor<T>, axis: Int): Tensor<T> {
+        if (axis == -1) {
+
+        } else {
+
+        }
+        TODO()
+//        val ax = addIfNegative(axis, t.dim)
+//        require(ax in 0 until t.dim) {
+//            "Axis $axis out of bound."
+//        }
+//        if (t.lengthAt(ax) != 1) {
+//            return t.toMutableTensor()
+//        }
+//        val shape = IntArray(t.dim - 1)
+//        t.shape.copyInto(shape, 0, 0, ax)
+//        t.shape.copyInto(shape, ax, ax + 1)
+//        return ATensor.buildFromSeqMap(shape, t.elementSequence())
+    }
+
     /**
      * Returns the matrix multiplication of [x] and [y].
      *
@@ -1124,7 +1139,7 @@ internal object TensorImpl {
         val data = result.data
         val xIdx = IntArray(dim1)
         val yIdx = IntArray(dim2)
-        val mIndices = IterUtils.prodIdxN(mShape)
+        val mIndices = IterUtils.prodIdxNoCopy(mShape)
         var pos = 0
         for (rIdx in result.indices) {
             rIdx.copyInto(xIdx, endIndex = dim1 - r)
@@ -1174,7 +1189,7 @@ internal object TensorImpl {
         val data = result.data
         val xIdx = IntArray(dim1)
         val yIdx = IntArray(dim2)
-        val mIndices = IterUtils.prodIdxN(mShape)
+        val mIndices = IterUtils.prodIdxNoCopy(mShape)
         var pos = 0
         for (rIdx in result.indices) {
             rIdx.copyInto(xIdx, endIndex = rem1)
@@ -1255,8 +1270,15 @@ internal object TensorImpl {
 }
 
 
-//fun main() {
-//    val t1 = Tensor(1) { 1 } // a
-//    val t2 = Tensor(1, 2, 3) { 1 }
-//    println(TensorImpl.add(t1, t2, integers()))
-//}
+fun main() {
+    val Z = integers()
+    with(Tensor.over(Z)) {
+        val t1 = zero
+        val t2 = Tensor(1, 2, 3) { 1 }
+        println(t1)
+//        println(t1 + t2)
+//        one.sumAll()
+//        println(one.slice(Tensor.NEW_AXIS, Tensor.NEW_AXIS))
+//        println(one.reshape(1))
+    }
+}

@@ -374,10 +374,8 @@ class MutableReshapedView<T>(tensor: MutableTensor<T>, shape: IntArray) : Reshap
 
 class BroadcastView<T>(
     val t: Tensor<T>, shape: IntArray,
-//                             val originAxes: IntArray,
     val d: Int,
     private val extendedAxes: IntArray,
-//                             val newAxes: IntArray
 ) : AbstractTensor<T>(shape) {
     /*
      * originAxes[i]
@@ -390,19 +388,6 @@ class BroadcastView<T>(
         }
         return t[tIdx]
     }
-
-    //    override fun getChecked(idx: Index): T {
-//        val tIdx = IntArray(t.dim)
-//        for (i in originAxes.indices) {
-//            tIdx[i] = idx[originAxes[i]]
-//        }
-//        for (ax in extendedAxes) {
-//            tIdx[ax] = 0
-//        }
-//        return t[tIdx]
-//    }
-//
-
 }
 
 open class IndexMapView<T>(

@@ -1,7 +1,8 @@
-package model
+package linear
 
 import TestUtils.assertEquals
 import io.github.ezrnest.linear.Tensor
+import io.github.ezrnest.linear.Tensor.Companion.invoke
 import io.github.ezrnest.model.*
 import io.github.ezrnest.linear.TensorImpl
 import io.github.ezrnest.linear.all
@@ -209,10 +210,8 @@ class TensorTest {
 
     @Test
     fun testConcat() {
-        val shape = intArrayOf(3, 2)
-        val shape2 = intArrayOf(3, 3)
-        val u = Tensor.of(*shape) { idx -> idx.withIndex().sumOf { (1 + it.index) * it.value } }
-        val w = Tensor.of(*shape2) { it[0] }
+        val u = Tensor.of(3, 2) { idx -> idx.withIndex().sumOf { (1 + it.index) * it.value } }
+        val w = Tensor.of(3, 3) { it[0] }
 
         with(tenZ) {
             val v = Tensor.concatM(u, w, axis = 1)
@@ -259,7 +258,7 @@ class TensorTest {
 
         with(tenZ) {
             assertEquals(Tensor.of(listOf(0, 3)), a.diagonal())
-            assertEquals(Tensor.scalar(1), a.diagonal(1))
+            assertEquals(Tensor.fill(c=1,1), a.diagonal(1))
 
             val b = Tensor.of<Int>((0..7).toList()).reshape(2, 2, 2)
             assertEquals(
@@ -271,12 +270,11 @@ class TensorTest {
 
     @Test
     fun testTrace() {
-        val a = Tensor.of<Int>((0..3).toList()).reshape(2, 2)
-        val t = Tensor.of<Int>(listOf(3))
+        val a = Tensor.of(intArrayOf(2,2),0 .. 3)
 
         with(tenZ) {
             val tr = a.trace()
-            assertEquals(t, tr)
+            assertEquals(Tensor.scalar(3), tr)
 
             val b = Tensor.of<Int>((0..7).toList()).reshape(2, 2, 2)
             assertEquals(

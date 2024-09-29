@@ -170,6 +170,8 @@ object IterUtils {
      * The last dimension is iterated over first.
      *
      *
+     * If the given [ranges] is empty, the resulting sequence will contain a single empty array.
+     *
      * @param copy whether to directly return the backing int array in the sequence iterator or make a
      * copy of it. If `copy = false`, the resulting sequence is read-only-traversable.
      * That is, each element in the sequence should only be used before subsequent invocations of `next()` and `hasNext()`.
@@ -177,7 +179,7 @@ object IterUtils {
      */
     fun prodIdx(ranges: List<IntProgression>, copy: Boolean = true): Sequence<IntArray> {
         if (ranges.isEmpty()) {
-            return emptySequence()
+            return listOf(intArrayOf()).asSequence()
         }
         val seq = Sequence { IndexIteratorNoCopy(ranges) }
         return if (copy) {
@@ -204,23 +206,27 @@ object IterUtils {
      *
      *  @see prodIdx
      */
-    fun prodIdxN(vararg ranges: IntProgression): Sequence<IntArray> {
+    fun prodIdxNoCopy(vararg ranges: IntProgression): Sequence<IntArray> {
         return prodIdx(ranges.asList(), copy = false)
     }
 
     /**
-     * Returns the cartesian product of `[0,bounds[i ])`.
+     * Returns the cartesian product of `[0, bounds[i ])`.
      */
     fun prodIdx(bounds: IntArray): Sequence<IntArray> {
         return prodIdx(bounds.map { b -> 0 until b })
     }
 
     /**
-     * Returns the cartesian product of `[0,bounds[i ])`.
+     * Returns the cartesian product of `[0, bounds[i ])`.
+     *
+     * If the given [bounds] is empty, the resulting sequence will contain a single empty array.
      *
      * This method is a no-copy version of the corresponding `prodIdx` method.
+     *
+     * @see prodIdx
      */
-    fun prodIdxN(bounds: IntArray): Sequence<IntArray> {
+    fun prodIdxNoCopy(bounds: IntArray): Sequence<IntArray> {
         return prodIdx(bounds.map { b -> 0 until b }, copy = false)
     }
 

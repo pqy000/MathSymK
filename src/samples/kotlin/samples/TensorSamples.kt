@@ -14,7 +14,7 @@ object TensorSamples {
         val b = Tensor.of(intArrayOf(4, 3, 2), ℤ, 0 until 24)
         // The following three ways give the same result:
         val res0 = Tensor.zeros(ℤ, 5, 2)
-        for ((i, j, k, n) in IterUtils.prodIdxN(intArrayOf(5, 2, 3, 4))) {
+        for ((i, j, k, n) in IterUtils.prodIdxNoCopy(intArrayOf(5, 2, 3, 4))) {
             res0[i, j] += a[k, n, i] * b[n, k, j] // direct computation
         }
         println(res0)
