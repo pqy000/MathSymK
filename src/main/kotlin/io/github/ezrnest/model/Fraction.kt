@@ -850,7 +850,7 @@ data class Fraction internal constructor(
          *
          */
         @JvmStatic
-        val asQuotient: FractionAsQuotients
+        val model: FractionAsQuotients
             get() = FractionAsQuotients
 
     }

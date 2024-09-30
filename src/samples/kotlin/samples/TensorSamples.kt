@@ -3,16 +3,18 @@ package cn.mathsymk.samples
 import io.github.ezrnest.linear.*
 import io.github.ezrnest.linear.get
 import io.github.ezrnest.model.Fraction
+import io.github.ezrnest.model.Multinomial
 import io.github.ezrnest.model.NumberModels
 import io.github.ezrnest.model.NumberModels.fractions
 import io.github.ezrnest.util.IterUtils
+import kotlin.system.measureTimeMillis
 
 
 object TensorSamples {
 
-    fun tensorExample1(){
-        with(Tensor.over(fractions())){
-            val a = zeros(2,3)
+    fun tensorExample1() {
+        with(Tensor.over(fractions())) {
+            val a = zeros(2, 3)
             a += ones(3)
             a /= Fraction(3)
             a += ones(2)
@@ -23,8 +25,8 @@ object TensorSamples {
     fun tensorDot() {
         val ℤ = NumberModels.integers()
         with(Tensor.over(ℤ)) {
-            val a = Tensor.of(intArrayOf(3, 4, 5),  0 until 60)
-            val b = Tensor.of(intArrayOf(4, 3, 2),  0 until 24)
+            val a = Tensor.of(intArrayOf(3, 4, 5), 0 until 60)
+            val b = Tensor.of(intArrayOf(4, 3, 2), 0 until 24)
             // The following three ways give the same result:
             val res0 = Tensor.zeros(ℤ, 5, 2)
             for ((i, j, k, n) in IterUtils.prodIdxNoCopy(intArrayOf(5, 2, 3, 4))) {
@@ -53,8 +55,55 @@ object TensorSamples {
         println(a[1, Tensor.DOTS, 1, Tensor.NEW_AXIS, 2])
     }
 
+
+    fun tensorMap() {
+        val a = Tensor(2, 3) { (i, j) -> i + j }
+        val b = a.map { it > 0 }
+        println(a)
+        println(b)
+
+        val c = a.map(Fraction::of)
+        with(Tensor.over(fractions())) {
+            c /= Fraction(2)
+            println(c)
+        }
+    }
+
+    fun tensorExample2() {
+        val ℤ = NumberModels.integers()
+        val multiZ = Multinomial.over(ℤ)
+        with(multiZ) {
+            with(Tensor.over(multiZ)) {
+                val a = Tensor(2, 3) { (i, j) -> i * x + j * y }
+                println(a)
+                println(a.sum(0))
+                println(a.sumAll())
+                val b = Tensor.like(a) { it.sum() }.map { it * z }
+                println(b)
+                println(a + b)
+            }
+
+        }
+    }
+
+    fun tensorTimeCost() {
+        // can be improved in the future version with specialized implementation for primitive types including Int and Double
+        val ℤ = NumberModels.integers()
+        with(Tensor.over(ℤ)) {
+            measureTimeMillis {
+                val a = zeros(1000, 1000, 100)
+                a += 0
+            }.also { println("Time cost: $it ms") }
+
+            measureTimeMillis {
+                val a = zeros(1000, 1000, 100)
+                // can be improved in the future
+                a += a
+            }.also { println("Time cost: $it ms") }
+        }
+    }
 }
 
 fun main() {
-    TensorSamples.tensorExample1()
+    TensorSamples.tensorExample2()
 }

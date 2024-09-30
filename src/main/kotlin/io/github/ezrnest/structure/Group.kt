@@ -87,7 +87,7 @@ interface Group<T> : Monoid<T> {
  * An Abelian semigroup calculator defines an associative and commutative operation [add], which
  * we usually denote as `+`.
  *
- * The elements form a semi-group with respect to this calculator.
+ * The elements form a semigroup with respect to this calculator.
  *
  * This interface is generally isomorphic to [Semigroup] where the operation is commutative,
  * but the method names differ and extra operator functions are provided.
@@ -141,13 +141,13 @@ interface AddSemigroup<T> : EqualPredicate<T> {
     }
 
     /**
-     * Operator function for [T].
+     * Operator function for [multiplyN].
      * @see multiplyN
      */
     operator fun Long.times(x: T): T = multiplyN(x, this)
 
     /**
-     * Operator function for [T].
+     * Operator function for [multiplyN].
      * @see multiplyN
      */
     operator fun T.times(n: Long) = multiplyN(this, n)

@@ -376,6 +376,10 @@ internal object TensorImpl {
         return ATensor.buildFromSeqMap2(x1.shape, x1.elementSequence(), y1.elementSequence(), f)
     }
 
+    fun <T1, T2, S> map2(x: Tensor<T1>, y: Tensor<T2>, f: (T1, T2) -> S): ATensor<S> {
+        return apply2(x, y, f)
+    }
+
     private inline fun <T> inPlaceApply1(x: MutableTensor<T>, f: (T) -> T) {
         if (x is ATensor) {
             x.inPlaceApply1(f)
@@ -681,7 +685,7 @@ internal object TensorImpl {
         return Triple(am, ranges, ns)
     }
 
-    fun <T> prepareSqueezeAll(t : Tensor<T>) : Triple<IntArray, List<IntProgression>, IntArray> {
+    fun <T> prepareSqueezeAll(t: Tensor<T>): Triple<IntArray, List<IntProgression>, IntArray> {
         val dim = t.dim
         val nsList = arrayListOf<Int>()
         val rangesList = ArrayList<IntProgression>(dim)
@@ -698,7 +702,7 @@ internal object TensorImpl {
         return Triple(axisMapList.toIntArray(), rangesList, nsList.toIntArray())
     }
 
-    fun <T> prepareSqueeze(t: Tensor<T>, axis_: Int):  Triple<IntArray, List<IntProgression>, IntArray> {
+    fun <T> prepareSqueeze(t: Tensor<T>, axis_: Int): Triple<IntArray, List<IntProgression>, IntArray> {
         val axis = addIfNegative(axis_, t.dim)
         require(axis in 0 until t.dim) {
             "Axis $axis_ out of bound."
@@ -710,7 +714,7 @@ internal object TensorImpl {
         val ns = IntArray(shape.size - 1)
         val ranges = ArrayList<IntProgression>(shape.size)
         val am = IntArray(shape.size - 1)
-        for(i in 0 until axis) {
+        for (i in 0 until axis) {
             ns[i] = shape[i]
             ranges.add(0 until shape[i])
             am[i] = i
@@ -883,8 +887,6 @@ internal object TensorImpl {
         }
 
     }
-
-
 
 
     /**
@@ -1305,23 +1307,23 @@ internal object TensorImpl {
     }
 }
 
-
-fun main() {
-    val Z = integers()
-
-    val x = Tensor.zeros(Z,1,3,1)
-    println(x.squeeze())
-    println(x.squeeze(0))
-    println(x.squeeze())
-    println(Tensor.scalar(1).ravel().reshape())
-//    with(Tensor.over(Z)) {
-//        val t1 = zero
-//        val t2 = Tensor(1, 2, 3) { 1 }
-//        println(t1)
-//        println(t2.slice(0,0,0))
-////        println(t1 + t2)
-////        one.sumAll()
-////        println(one.slice(Tensor.NEW_AXIS, Tensor.NEW_AXIS))
-////        println(one.reshape(1))
-//    }
-}
+//
+//fun main() {
+//    val Z = integers()
+//
+//    val x = Tensor.zeros(Z,1,3,1)
+//    println(x.squeeze())
+//    println(x.squeeze(0))
+//    println(x.squeeze())
+//    println(Tensor.scalar(1).ravel().reshape())
+////    with(Tensor.over(Z)) {
+////        val t1 = zero
+////        val t2 = Tensor(1, 2, 3) { 1 }
+////        println(t1)
+////        println(t2.slice(0,0,0))
+//////        println(t1 + t2)
+//////        one.sumAll()
+//////        println(one.slice(Tensor.NEW_AXIS, Tensor.NEW_AXIS))
+//////        println(one.reshape(1))
+////    }
+//}

@@ -11,7 +11,7 @@ import kotlin.test.assertEquals
 
 
 class PolynomialTest {
-    private val fractions = Fraction.asQuotient
+    private val fractions = Fraction.model
     private val ints = NumberModels.integers()
     private val Zx = Polynomial.over(ints)
     val Qx = Polynomial.over(fractions)

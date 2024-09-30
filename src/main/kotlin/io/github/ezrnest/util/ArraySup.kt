@@ -714,67 +714,7 @@ object ArraySup {
 //    }
 
 
-//    /**
-//     * Test that this array contains no `null` element.
-//     */
-//    fun <T> notEmpty(arr: Array<T>): Array<T> {
-//        for (anArr in arr) {
-//            if (anArr == null) {
-//                throw NullPointerException()
-//            }
-//        }
-//        return arr
-//    }
 
-    /**
-     * Copies the given array.
-     *
-     * @param arr
-     * @return
-     */
-    fun <T> deepCopy(arr: Array<T>): Array<T> {
-        if (arr.size == 0) {
-            return arr.copyOf()
-        }
-        return deepCopy0(arr)
-    }
-
-    @Suppress("UNCHECKED_CAST")
-    fun <T> deepCopy0(arr: Array<T>): Array<T> {
-        val result = java.lang.reflect.Array.newInstance(arr.javaClass.componentType, arr.size) as Array<Any>
-        for (i in arr.indices) {
-            val element = arr[i]
-            if (element is Array<*> && element.isArrayOf<Any>()) result[i] = deepCopy0(arr[i] as Array<Any>)
-            else if (element is ByteArray) {
-                val t = arr[i] as ByteArray
-                result[i] = t.copyOf()
-            } else if (element is ShortArray) {
-                val t = arr[i] as ShortArray
-                result[i] = t.copyOf()
-            } else if (element is IntArray) {
-                val t = arr[i] as IntArray
-                result[i] = t.copyOf()
-            } else if (element is LongArray) {
-                val t = arr[i] as LongArray
-                result[i] = t.copyOf()
-            } else if (element is CharArray) {
-                val t = arr[i] as CharArray
-                result[i] = t.copyOf()
-            } else if (element is FloatArray) {
-                val t = arr[i] as FloatArray
-                result[i] = t.copyOf()
-            } else if (element is DoubleArray) {
-                val t = arr[i] as DoubleArray
-                result[i] = t.copyOf()
-            } else if (element is BooleanArray) {
-                val t = arr[i] as BooleanArray
-                result[i] = t.copyOf()
-            } else {
-                result[i] = arr[i] as Array<Any>
-            }
-        }
-        return result as Array<T>
-    }
 
     /**
      * Modifies all the non-null elements in the array and replace the original elements.

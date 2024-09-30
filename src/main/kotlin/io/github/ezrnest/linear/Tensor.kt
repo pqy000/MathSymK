@@ -25,29 +25,22 @@ typealias Index = IntArray
 
 
 /**
- * ## Mathematical Description
+ * Represents a tensor, namely a multidimensional array, of elements of type [T].
+ * The tensor's [shape] contains the length of each dimension and [dim]` == shape.size` is the number of dimensions,
+ * while [size] is the total number of elements in this tensor.
+ * The elements in a tensor can be got by a multidimensional [Index], which is an array of integers.
  *
- * A tensor is an element in the tensor product space of several (finite dimensional) linear spaces `V_1,...,V_m` on
- * a field `T`. Denote `V = V_1⊗...⊗V_m` the tensor product space, then `V` is also a linear space on `T`.
- *
- * Assume `dim V_i = n_i`, and `v(i,1),...,v(i,n_i)` are the basis of `V_i`.
- * We have `dim V = n_1*...*n_m`, and the basis of `V` are `v(1,r_1)⊗v(2,r_2)⊗...⊗v(m,r_m)`,
- * and each element in `V` can be written as their linear combination.
- *
- * We call the dimensions of the component linear spaces `(n_1,...,n_m)` the shape of the tensor,
- * and `m` the dimension of the tensor.
- *
- * ## Programming Description
- *
- * A tensor can be viewed as a multidimensional array of type `T`. Its shape is the lengths of arrays in the
- * corresponding dimensions. We call each of the dimension an 'axis' and also use 'dimension' to indicate
- * the number of dimensions.
+ * The interface [Tensor] itself serves only for the data structure and the basic structure operations like slicing, reshaping, etc.,
+ * but it does not provide arithmetic operations since it depends on the underlying model.
+ * To perform arithmetic operations, one should use [Tensor.over] to create a context for tensor operations with a specific model.
  *
  *
  *
  *
  *
  *
+ * @see MutableTensor
+ * @see Tensor.over
  */
 interface Tensor<T> : GenTuple<T> {
     // Created by lyc at 2021-04-06 22:12
@@ -129,6 +122,13 @@ interface Tensor<T> : GenTuple<T> {
     }
 
     /**
+     * Returns a new tensor of applying the given function to this tensor element-wise with the index.
+     */
+    fun <S> mapIndexed(mapping: (Index, T) -> S): Tensor<S> {
+        return ATensor.buildFromSequence(shape, indices.zip(elementSequence()).map { (idx, t) -> mapping(idx, t) })
+    }
+
+    /**
      * Returns an independent copy of this tensor.
      */
     fun copy(): Tensor<T> {
@@ -156,7 +156,7 @@ interface Tensor<T> : GenTuple<T> {
      *
      * The default parameter returns the diagonal elements in the last two axes with no offset.
      *
-     * @param offset the offset of the diagonal. If `offset > 0`, the main diagonal is returned. If `offset > 0`,
+     * @param offset the offset of the diagonal. If `offset == 0`, the main diagonal is returned. If `offset > 0`,
      * then the resulting diagonal is above the main diagonal.
      *
      */
@@ -452,6 +452,22 @@ interface Tensor<T> : GenTuple<T> {
             return ATensor.copyOf(t)
         }
 
+        /**
+         * Creates a tensor of the same shape as `t` with elements initialized by the given function.
+         */
+        fun <T> like(t : Tensor<*>, init: (Index) -> T): MutableTensor<T> {
+            return ofShaped(t.shape, init)
+        }
+
+        /**
+         * Applies the given function to the elements in the two tensors element-wise.
+         *
+         * @see Tensor.map
+         */
+        fun <T1, T2, S> map2(t1: Tensor<T1>, t2: Tensor<T2>, f: (T1, T2) -> S): Tensor<S> {
+            return TensorImpl.map2(t1, t2, f)
+        }
+
 
         /**
          * Concatenate several tensors as a view.
@@ -550,28 +566,35 @@ interface Tensor<T> : GenTuple<T> {
         Models
          */
 
-        fun <T> over(mc: EqualPredicate<T>, vararg shape: Int): TensorOverEqualPredicate<T> {
-            return TensorOverEqualPredicateImpl(mc, shape)
+        /**
+         * Creates a context for tensor operations with a specific model.
+         * This method has several overloads for different models.
+         *
+         * @param model the model of the elements in the tensor
+         * @param shape (optional) the prescribed shape of the tensors
+         */
+        fun <T> over(model: EqualPredicate<T>, vararg shape: Int): TensorOverEqualPredicate<T> {
+            return TensorOverEqualPredicateImpl(model, shape)
         }
 
-        fun <T> over(mc: AddMonoid<T>, vararg shape: Int): TensorOverAddMonoid<T> {
-            return TensorOverAddMonoidImpl(mc, shape)
+        fun <T> over(model: AddMonoid<T>, vararg shape: Int): TensorOverAddMonoid<T> {
+            return TensorOverAddMonoidImpl(model, shape)
         }
 
-        fun <T> over(mc: AddGroup<T>, vararg shape: Int): TensorOverAddGroup<T> {
-            return TensorOverAddGroupImpl(mc, shape)
+        fun <T> over(model: AddGroup<T>, vararg shape: Int): TensorOverAddGroup<T> {
+            return TensorOverAddGroupImpl(model, shape)
         }
 
-        fun <T> over(mc: Ring<T>, vararg shape: Int): TensorOverRing<T> {
-            return TensorOverRingImpl(mc, shape)
+        fun <T> over(model: Ring<T>, vararg shape: Int): TensorOverRing<T> {
+            return TensorOverRingImpl(model, shape)
         }
 
-        fun <T> over(mc: UnitRing<T>, vararg shape: Int): TensorOverURing<T> {
-            return TensorOverURingImpl(mc, shape)
+        fun <T> over(model: UnitRing<T>, vararg shape: Int): TensorOverURing<T> {
+            return TensorOverURingImpl(model, shape)
         }
 
-        fun <T> over(mc: Field<T>, vararg shape: Int): TensorOverField<T> {
-            return TensorOverFieldImpl(mc, shape)
+        fun <T> over(model: Field<T>, vararg shape: Int): TensorOverField<T> {
+            return TensorOverFieldImpl(model, shape)
         }
 
 
@@ -755,6 +778,13 @@ interface MutableTensor<T> : Tensor<T> {
         return ATensor.buildFromSequence(shape, elementSequence().map(mapping))
     }
 
+    /**
+     * Returns a new mutable tensor of applying the given function to this tensor element-wise with the index.
+     */
+    override fun <S> mapIndexed(mapping: (Index, T) -> S): MutableTensor<S> {
+        return ATensor.buildFromSequence(shape, indices.zip(elementSequence()).map { (idx, t) -> mapping(idx, t) })
+    }
+
 
     /**
      * Performs the element-wise transformation to this mutable tensor in-place.
@@ -849,6 +879,7 @@ interface MutableTensor<T> : Tensor<T> {
         val (am, ranges, ns) = TensorImpl.prepareSqueeze(this, axis)
         return MutableSliceView(this, ranges, am, ns)
     }
+
 
     /**
      * Returns an independent copy of this mutable tensor as a mutable tensor.
