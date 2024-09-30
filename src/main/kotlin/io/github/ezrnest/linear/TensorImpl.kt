@@ -494,6 +494,15 @@ internal object TensorImpl {
         inPlaceApply2(x, y, mc::subtract)
     }
 
+    fun <T> inPlaceAddScalar(x: MutableTensor<T>, c: T, mc: AddSemigroup<T>) {
+        inPlaceApply1(x) { mc.add(it, c) }
+    }
+
+    fun <T> inPlaceSubtractScalar(x: MutableTensor<T>, c: T, mc: AddGroup<T>) {
+        inPlaceApply1(x) { mc.subtract(it, c) }
+    }
+
+
     fun <T> inPlaceMultiplyScalar(x: MutableTensor<T>, k: T, mc: MulSemigroup<T>) {
         inPlaceApply1(x) { mc.multiply(k, it) }
     }

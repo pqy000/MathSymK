@@ -831,6 +831,9 @@ interface MutableTensor<T> : Tensor<T> {
     }
 }
 
+/**
+ * Returns a mutable copy of this tensor.
+ */
 fun <T> Tensor<T>.toMutable(): MutableTensor<T> {
     return ATensor.copyOf(this)
 }
@@ -985,6 +988,10 @@ interface TensorOverAddMonoid<T> : TensorOverEqualPredicate<T>, AddMonoid<Tensor
 
     operator fun MutableTensor<T>.plusAssign(y: Tensor<T>) {
         TensorImpl.inPlaceAdd(this, y, model)
+    }
+
+    operator fun MutableTensor<T>.plusAssign(k: T) {
+        TensorImpl.inPlaceAddScalar(this, k, model)
     }
 
     operator fun MutableTensor<T>.timesAssign(n: Long) {
