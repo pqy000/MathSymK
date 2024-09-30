@@ -118,7 +118,7 @@ data class TermChs(val data: Array<ChPow>, val totalPow: Int = data.sumOf { it.p
     }
 
     fun reorderedBy(chComp: Comparator<String>): TermChs {
-        val newChs = data.clone()
+        val newChs = data.copyOf()
         Arrays.sort(newChs) { o1, o2 -> chComp.compare(o1.ch, o2.ch) }
         return TermChs(newChs)
     }

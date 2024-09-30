@@ -72,7 +72,7 @@ data class AMatrix<T> internal constructor(
 
 
     override fun copy(): AMatrix<T> {
-        return AMatrix(row, column, data.clone())
+        return AMatrix(row, column, data.copyOf())
     }
 
     override fun set(i: Int, j: Int, value: T) {

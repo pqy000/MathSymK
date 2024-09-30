@@ -14,7 +14,7 @@ import io.github.ezrnest.util.IterUtils
  * A view for a slice of a tensor.
  *
  * @param T the element type
- * @property tensor the backing tensor `t`
+ * @property t the backing tensor `t`
  * @property ranges the ranges in t. `ranges.size = t.dim`
  * @property axisMap maps the axis to t's axis. `axisMap.size = this.dim`
  * @property shape the shape of the view
@@ -22,7 +22,7 @@ import io.github.ezrnest.util.IterUtils
 open class SlicedView<T>(
     tensor: Tensor<T>,
     /**
-     * The ranges in t. `ranges.size = t.dim`.
+     * The ranges in `t`: `ranges.size = t.dim`.
      */
     protected val ranges: List<IntProgression>,
     /**
@@ -131,7 +131,7 @@ open class SlicedView<T>(
  * A mutable view for a slice of a tensor.
  *
  * @param T the element type
- * @property tensor the backing tensor `t`
+ * @property t the backing tensor `t`
  * @property ranges the ranges in t. `ranges.size = t.dim`
  * @property axisMap maps the axis to t's axis. `axisMap.size = this.dim`
  * @property shape the shape of the view
@@ -139,7 +139,6 @@ open class SlicedView<T>(
 class MutableSliceView<T>(
     tensor: MutableTensor<T>, ranges: List<IntProgression>,
     axisMap: IntArray,
-
     shape: IntArray,
 ) : SlicedView<T>(tensor, ranges, axisMap, shape), MutableTensor<T> {
     override val t: MutableTensor<T> = tensor
@@ -417,7 +416,7 @@ open class IndexMapView<T>(
 ) : AbstractTensor<T>(shape) {
 
     protected fun mapIdx(idx: Index): IntArray {
-        val tIdx = offsets.clone()
+        val tIdx = offsets.copyOf()
         for (i in tIdx.indices) {
             tIdx[i] += idx[am[i]]
         }

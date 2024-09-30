@@ -139,7 +139,7 @@ internal class ArrPermutation(protected val parr: IntArray) : AbstractPermutatio
 
 
     override fun getArray(): IntArray {
-        return parr.clone()
+        return parr.copyOf()
     }
 
     override fun toString(): String {

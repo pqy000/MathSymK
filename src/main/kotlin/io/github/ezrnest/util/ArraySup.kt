@@ -385,8 +385,8 @@ object ArraySup {
         return arr
     }
 
-    private  fun <T> reverse0(arr: Array<T>, flipLen: Int) {
-        var flipLen = flipLen
+    private  fun <T> reverse0(arr: Array<T>, flipLen_: Int) {
+        var flipLen = flipLen_
         var length = arr.size
         var start = 0
         var exchangeSize: Int
@@ -734,7 +734,7 @@ object ArraySup {
      */
     fun <T> deepCopy(arr: Array<T>): Array<T> {
         if (arr.size == 0) {
-            return arr.clone()
+            return arr.copyOf()
         }
         return deepCopy0(arr)
     }
@@ -747,28 +747,28 @@ object ArraySup {
             if (element is Array<*> && element.isArrayOf<Any>()) result[i] = deepCopy0(arr[i] as Array<Any>)
             else if (element is ByteArray) {
                 val t = arr[i] as ByteArray
-                result[i] = t.clone()
+                result[i] = t.copyOf()
             } else if (element is ShortArray) {
                 val t = arr[i] as ShortArray
-                result[i] = t.clone()
+                result[i] = t.copyOf()
             } else if (element is IntArray) {
                 val t = arr[i] as IntArray
-                result[i] = t.clone()
+                result[i] = t.copyOf()
             } else if (element is LongArray) {
                 val t = arr[i] as LongArray
-                result[i] = t.clone()
+                result[i] = t.copyOf()
             } else if (element is CharArray) {
                 val t = arr[i] as CharArray
-                result[i] = t.clone()
+                result[i] = t.copyOf()
             } else if (element is FloatArray) {
                 val t = arr[i] as FloatArray
-                result[i] = t.clone()
+                result[i] = t.copyOf()
             } else if (element is DoubleArray) {
                 val t = arr[i] as DoubleArray
-                result[i] = t.clone()
+                result[i] = t.copyOf()
             } else if (element is BooleanArray) {
                 val t = arr[i] as BooleanArray
-                result[i] = t.clone()
+                result[i] = t.copyOf()
             } else {
                 result[i] = arr[i] as Array<Any>
             }

@@ -158,7 +158,7 @@ internal constructor(shape: IntArray, val data: Array<Any?>) :
     }
 
     override fun copy(): ATensor<T> {
-        return ATensor(shape, data.clone())
+        return ATensor(shape, data.copyOf())
     }
 
     override fun <S> map(mapping: (T) -> S): ATensor<S> {
@@ -216,7 +216,7 @@ internal constructor(shape: IntArray, val data: Array<Any?>) :
 
 
     override fun reshape(vararg newShape: Int): MutableTensor<T> {
-        val sh = newShape.clone()
+        val sh = newShape.copyOf()
         TensorImpl.prepareNewShape(this, sh)
         return ATensor(sh, data)
     }
@@ -681,6 +681,212 @@ internal object TensorImpl {
         return Triple(am, ranges, ns)
     }
 
+    fun <T> prepareSqueezeAll(t : Tensor<T>) : Triple<IntArray, List<IntProgression>, IntArray> {
+        val dim = t.dim
+        val nsList = arrayListOf<Int>()
+        val rangesList = ArrayList<IntProgression>(dim)
+        val axisMapList = arrayListOf<Int>()
+        for (i in 0 until dim) {
+            if (t.shape[i] == 1) {
+                rangesList.add(0 until 1)
+                continue
+            }
+            nsList.add(t.shape[i])
+            rangesList.add(0 until t.shape[i])
+            axisMapList.add(i)
+        }
+        return Triple(axisMapList.toIntArray(), rangesList, nsList.toIntArray())
+    }
+
+    fun <T> prepareSqueeze(t: Tensor<T>, axis_: Int):  Triple<IntArray, List<IntProgression>, IntArray> {
+        val axis = addIfNegative(axis_, t.dim)
+        require(axis in 0 until t.dim) {
+            "Axis $axis_ out of bound."
+        }
+        require(t.shape[axis] == 1) {
+            "Cannot squeeze axis $axis with length ${t.shape[axis]} != 1."
+        }
+        val shape = t.shape
+        val ns = IntArray(shape.size - 1)
+        val ranges = ArrayList<IntProgression>(shape.size)
+        val am = IntArray(shape.size - 1)
+        for(i in 0 until axis) {
+            ns[i] = shape[i]
+            ranges.add(0 until shape[i])
+            am[i] = i
+        }
+        ranges.add(0 until 1)
+        for (i in (axis + 1) until shape.size) {
+            ns[i - 1] = shape[i]
+            ranges.add(0 until shape[i])
+            am[i - 1] = i
+        }
+        return Triple(am, ranges, ns)
+    }
+
+    fun <T> prepareConcat(ts: List<Tensor<T>>, axis: Int): Pair<Int, IntArray> {
+        require(ts.isNotEmpty())
+        val dim = ts[0].dim
+        val resShape = ts[0].shape.copyOf()
+        val ax = addIfNegative(axis, dim)
+        require(ax in 0 until dim) {
+            "Axis $axis out of bound."
+        }
+        resShape[axis] = 0
+        for ((k, t) in ts.withIndex()) {
+            require(t.dim == dim) {
+                "Tensor dim mismatch for ${k + 1}-th tensor: required dim=$dim, but ${t.dim} is given."
+            }
+            for (l in resShape.indices) {
+                if (l == ax) {
+                    resShape[l] += t.lengthAt(l)
+                } else {
+                    require(resShape[l] == t.lengthAt(l)) {
+                        "Tensor shape mismatch for ${k + 1}-th tensor at axis ${l}: " +
+                                "required length=${resShape[l]}, but ${t.lengthAt(l)} is given."
+                    }
+                }
+            }
+        }
+        return ax to resShape
+    }
+
+
+    fun <T> prepareStack(ts: List<Tensor<T>>, axis: Int): Pair<Int, IntArray> {
+        require(ts.isNotEmpty())
+        require(ts.all { it.isSameShape(ts[0]) }) {
+            "Cannot stack tensors of shapes: ${ts.joinToString { it.shape.contentToString() }}"
+        }
+        val ax = addIfNegative(axis, ts[0].dim)
+        val shape = ts[0].shape
+        val ns = IntArray(shape.size + 1)
+        shape.copyInto(ns, endIndex = ax)
+        shape.copyInto(ns, ax + 1, ax)
+        ns[ax] = ts.size
+        return ax to ns
+    }
+
+    fun prepareNewShape(t: Tensor<*>, ns: IntArray) {
+        val size = t.size
+//        require(ns.isNotEmpty())
+        var n1Idx = -1
+        var s = 1
+        for (i in ns.indices) {
+            val len = ns[i]
+            if (len == -1) {
+                if (n1Idx != -1) {
+                    throw IllegalArgumentException(
+                        "Only one -1 is allowed in the shape array: ${ns.contentToString()}!"
+                    )
+                }
+                n1Idx = i
+            } else {
+                require(len > 0) {
+                    "Shape must be positive: ${ns.contentToString()}!"
+                }
+                s *= len
+            }
+        }
+        if (n1Idx >= 0) {
+            val len = size / s
+            require(s * len == size) {
+                "The given shape ${ns.contentToString()} does not fit the original shape ${t.shape.contentToString()}."
+            }
+            ns[n1Idx] = len
+        } else {
+            require(s == size) {
+                "The given shape ${ns.contentToString()} does not fit the original shape ${t.shape.contentToString()}."
+            }
+        }
+    }
+
+
+    /**
+     * Broadcasts the given tensor [t] to the given shape [ns].
+     */
+    fun <T> broadcastTo(t: Tensor<T>, ns: IntArray): Tensor<T> {
+        if (t.shape.contentEquals(ns)) {
+            return t
+        }
+        require(t.dim <= ns.size) {
+            "Cannot broad cast ${t.shape.contentToString()} to ${ns.contentToString()}!"
+        }
+        val extendedAxes = arrayListOf<Int>()
+        val shape = t.shape
+        val d = ns.size - t.dim
+        for (l in shape.lastIndex downTo 0) {
+            if (shape[l] == ns[d + l]) {
+                continue
+            }
+            if (shape[l] == 1) {
+                extendedAxes.add(l)
+                continue
+            }
+            throw IllegalArgumentException(
+                "Cannot broadcast ${t.shape.contentToString()} to ${ns.contentToString()}, shape mismatch" +
+                        "at axis ${l + d}."
+            )
+        }
+        return BroadcastView(t, ns, d, extendedAxes.toIntArray())
+    }
+
+
+    private fun <T1, T2> broadcast0(t1: Tensor<T1>, t2: Tensor<T2>): Pair<Tensor<T1>, Tensor<T2>> {
+        val newShape = IntArray(t2.dim)
+        val diff = t2.dim - t1.dim
+        val s1 = t1.shape
+        val s2 = t2.shape
+        val extended1 = arrayListOf<Int>()
+        val extended2 = arrayListOf<Int>()
+        for (l in s1.lastIndex downTo 0) {
+            val dim1 = s1[l]
+            val dim2 = s2[l + diff]
+            if (dim1 == dim2) {
+                newShape[l + diff] = dim1
+                continue
+            }
+            if (dim1 == 1) {
+                newShape[l + diff] = dim2
+                extended1.add(l)
+                continue
+            }
+            if (dim2 == 1) {
+                newShape[l + diff] = dim1
+                extended2.add(l + diff)
+                continue
+            }
+            throw IllegalArgumentException(
+                "Cannot broadcast ${s1.contentToString()} with ${s2.contentToString()}, " +
+                        "shape mismatch at axis $l ."
+            )
+        }
+        s2.copyInto(newShape, endIndex = diff)
+        val r1 = BroadcastView(t1, newShape, diff, extended1.toIntArray())
+        val r2 = if (extended2.isEmpty()) {
+            t2
+        } else {
+            BroadcastView(t2, newShape, 0, extended2.toIntArray())
+        }
+        return r1 to r2
+//        val newAxes2 = intArrayOf()
+
+    }
+
+    fun <T1, T2> broadcast(t1: Tensor<T1>, t2: Tensor<T2>): Pair<Tensor<T1>, Tensor<T2>> {
+        if (t1.isSameShape(t2)) {
+            return t1 to t2
+        }
+        return if (t1.dim <= t2.dim) {
+            broadcast0(t1, t2)
+        } else {
+            broadcast0(t2, t1).let { it.second to it.first }
+        }
+
+    }
+
+
+
+
     /**
      * Returns the general einsum of several tensors, assume `R = resShape.size`,
      * `M = mulShape.size`, then the general formula is
@@ -936,185 +1142,6 @@ internal object TensorImpl {
         return sumInAxes(t, sumAxes.toIntArray(), remAxes.toIntArray(), model)
     }
 
-    fun <T> prepareConcat(ts: List<Tensor<T>>, axis: Int): Pair<Int, IntArray> {
-        require(ts.isNotEmpty())
-        val dim = ts[0].dim
-        val resShape = ts[0].shape.clone()
-        val ax = addIfNegative(axis, dim)
-        require(ax in 0 until dim) {
-            "Axis $axis out of bound."
-        }
-        resShape[axis] = 0
-        for ((k, t) in ts.withIndex()) {
-            require(t.dim == dim) {
-                "Tensor dim mismatch for ${k + 1}-th tensor: required dim=$dim, but ${t.dim} is given."
-            }
-            for (l in resShape.indices) {
-                if (l == ax) {
-                    resShape[l] += t.lengthAt(l)
-                } else {
-                    require(resShape[l] == t.lengthAt(l)) {
-                        "Tensor shape mismatch for ${k + 1}-th tensor at axis ${l}: " +
-                                "required length=${resShape[l]}, but ${t.lengthAt(l)} is given."
-                    }
-                }
-            }
-        }
-        return ax to resShape
-    }
-
-
-    fun <T> prepareStack(ts: List<Tensor<T>>, axis: Int): Pair<Int, IntArray> {
-        require(ts.isNotEmpty())
-        require(ts.all { it.isSameShape(ts[0]) }) {
-            "Cannot stack tensors of shapes: ${ts.joinToString { it.shape.contentToString() }}"
-        }
-        val ax = addIfNegative(axis, ts[0].dim)
-        val shape = ts[0].shape
-        val ns = IntArray(shape.size + 1)
-        shape.copyInto(ns, endIndex = ax)
-        shape.copyInto(ns, ax + 1, ax)
-        ns[ax] = ts.size
-        return ax to ns
-    }
-
-    fun prepareNewShape(t: Tensor<*>, ns: IntArray) {
-        val size = t.size
-        require(ns.isNotEmpty())
-        var n1Idx = -1
-        var s = 1
-        for (i in ns.indices) {
-            val len = ns[i]
-            if (len == -1) {
-                if (n1Idx != -1) {
-                    throw IllegalArgumentException(
-                        "Only one -1 is allowed in the shape array: ${ns.contentToString()}!"
-                    )
-                }
-                n1Idx = i
-            } else {
-                require(len > 0) {
-                    "Shape must be positive: ${ns.contentToString()}!"
-                }
-                s *= len
-            }
-        }
-        if (n1Idx >= 0) {
-            val len = size / s
-            require(s * len == size) {
-                "The given shape ${ns.contentToString()} does not fit the original shape ${t.shape.contentToString()}."
-            }
-            ns[n1Idx] = len
-        } else {
-            require(s == size) {
-                "The given shape ${ns.contentToString()} does not fit the original shape ${t.shape.contentToString()}."
-            }
-        }
-    }
-
-
-    /**
-     * Broadcasts the given tensor [t] to the given shape [ns].
-     */
-    fun <T> broadcastTo(t: Tensor<T>, ns: IntArray): Tensor<T> {
-        if (t.shape.contentEquals(ns)) {
-            return t
-        }
-        require(t.dim <= ns.size) {
-            "Cannot broad cast ${t.shape.contentToString()} to ${ns.contentToString()}!"
-        }
-        val extendedAxes = arrayListOf<Int>()
-        val shape = t.shape
-        val d = ns.size - t.dim
-        for (l in shape.lastIndex downTo 0) {
-            if (shape[l] == ns[d + l]) {
-                continue
-            }
-            if (shape[l] == 1) {
-                extendedAxes.add(l)
-                continue
-            }
-            throw IllegalArgumentException(
-                "Cannot broadcast ${t.shape.contentToString()} to ${ns.contentToString()}, shape mismatch" +
-                        "at axis ${l + d}."
-            )
-        }
-        return BroadcastView(t, ns, d, extendedAxes.toIntArray())
-    }
-
-
-    private fun <T1, T2> broadcast0(t1: Tensor<T1>, t2: Tensor<T2>): Pair<Tensor<T1>, Tensor<T2>> {
-        val newShape = IntArray(t2.dim)
-        val diff = t2.dim - t1.dim
-        val s1 = t1.shape
-        val s2 = t2.shape
-        val extended1 = arrayListOf<Int>()
-        val extended2 = arrayListOf<Int>()
-        for (l in s1.lastIndex downTo 0) {
-            val dim1 = s1[l]
-            val dim2 = s2[l + diff]
-            if (dim1 == dim2) {
-                newShape[l + diff] = dim1
-                continue
-            }
-            if (dim1 == 1) {
-                newShape[l + diff] = dim2
-                extended1.add(l)
-                continue
-            }
-            if (dim2 == 1) {
-                newShape[l + diff] = dim1
-                extended2.add(l + diff)
-                continue
-            }
-            throw IllegalArgumentException(
-                "Cannot broadcast ${s1.contentToString()} with ${s2.contentToString()}, " +
-                        "shape mismatch at axis $l ."
-            )
-        }
-        s2.copyInto(newShape, endIndex = diff)
-        val r1 = BroadcastView(t1, newShape, diff, extended1.toIntArray())
-        val r2 = if (extended2.isEmpty()) {
-            t2
-        } else {
-            BroadcastView(t2, newShape, 0, extended2.toIntArray())
-        }
-        return r1 to r2
-//        val newAxes2 = intArrayOf()
-
-    }
-
-    fun <T1, T2> broadcast(t1: Tensor<T1>, t2: Tensor<T2>): Pair<Tensor<T1>, Tensor<T2>> {
-        if (t1.isSameShape(t2)) {
-            return t1 to t2
-        }
-        return if (t1.dim <= t2.dim) {
-            broadcast0(t1, t2)
-        } else {
-            broadcast0(t2, t1).let { it.second to it.first }
-        }
-
-    }
-
-    fun <T> squeeze(t: Tensor<T>, axis: Int): Tensor<T> {
-        if (axis == -1) {
-
-        } else {
-
-        }
-        TODO()
-//        val ax = addIfNegative(axis, t.dim)
-//        require(ax in 0 until t.dim) {
-//            "Axis $axis out of bound."
-//        }
-//        if (t.lengthAt(ax) != 1) {
-//            return t.toMutableTensor()
-//        }
-//        val shape = IntArray(t.dim - 1)
-//        t.shape.copyInto(shape, 0, 0, ax)
-//        t.shape.copyInto(shape, ax, ax + 1)
-//        return ATensor.buildFromSeqMap(shape, t.elementSequence())
-    }
 
     /**
      * Returns the matrix multiplication of [x] and [y].
@@ -1281,14 +1308,20 @@ internal object TensorImpl {
 
 fun main() {
     val Z = integers()
-    with(Tensor.over(Z)) {
-        val t1 = zero
-        val t2 = Tensor(1, 2, 3) { 1 }
-        println(t1)
-        println(t2.slice(0,0,0))
-//        println(t1 + t2)
-//        one.sumAll()
-//        println(one.slice(Tensor.NEW_AXIS, Tensor.NEW_AXIS))
-//        println(one.reshape(1))
-    }
+
+    val x = Tensor.zeros(Z,1,3,1)
+    println(x.squeeze())
+    println(x.squeeze(0))
+    println(x.squeeze())
+    println(Tensor.scalar(1).ravel().reshape())
+//    with(Tensor.over(Z)) {
+//        val t1 = zero
+//        val t2 = Tensor(1, 2, 3) { 1 }
+//        println(t1)
+//        println(t2.slice(0,0,0))
+////        println(t1 + t2)
+////        one.sumAll()
+////        println(one.slice(Tensor.NEW_AXIS, Tensor.NEW_AXIS))
+////        println(one.reshape(1))
+//    }
 }

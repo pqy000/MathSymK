@@ -197,8 +197,8 @@ interface Tensor<T> : GenTuple<T> {
     }
 
     /**
-     * Inserts a new axis of length 1 at the last of this tensor. The result is
-     * a view.
+     * Inserts a new axis of length 1 at the last of this tensor.
+     * The result is a view.
      *
      */
     fun newAxisAt(axis: Int = -1): Tensor<T> {
@@ -208,18 +208,24 @@ interface Tensor<T> : GenTuple<T> {
 
 
     /**
-     * Reshapes this tensor to be a view of the given shape.
+     * Reshapes this tensor to be a view of the given shape. The resulting tensor will have the same element sequence as this tensor.
      *
      * At most one `-1` can appear in the given new shape
      * indicating the length of this dimension should be computed accordingly.
      *
-     * The resulting tensor will have the same element sequence as this tensor.
      *
-     * @param newShape a non-empty array containing positive integers
-     * except at most one element to be `-1`. Its product should be a divisor of the size of this tensor.
+     * @param newShape an array containing positive integers except at most one `-1`.
+     * If no `-1` is given, then the product of the new shape should be equal to the size of this tensor;
+     * otherwise, the product of the new shape should be a divisor of the size of this tensor.
+     * An empty array is allowed, which will reshape this tensor to a scalar tensor provided that the size of this tensor is 1.
+     *
+     * @throws IllegalArgumentException if the given shape is invalid.
+     *
+     * @see ravel
+     * @see squeeze
      */
     fun reshape(vararg newShape: Int): Tensor<T> {
-        val sh = newShape.clone()
+        val sh = newShape.copyOf()
         TensorImpl.prepareNewShape(this, sh)
         return ReshapedView(this, sh)
     }
@@ -228,19 +234,29 @@ interface Tensor<T> : GenTuple<T> {
      * Reshapes this tensor to be 1-d tensor. This method is equal to `this.reshape(-1)`.
      *
      * @see reshape
+     * @see squeeze
      */
     fun ravel(): Tensor<T> {
         return reshape(-1)
     }
 
     /**
-     * Squeezes the tensor by removing all the axes of length 1 if [axis] is not specified,
-     * or removing the given [axis] if its length is 1.
-     *
-     * @throws IllegalArgumentException [axis] is given and the length at the given [axis] is not 1.
+     * Squeezes the tensor by removing all the axes of length 1.
      */
-    fun squeeze(axis: Int = -1): Tensor<T> {
-        return TensorImpl.squeeze(this, axis)
+    fun squeeze(): Tensor<T> {
+        if (this.dim == 0) return this
+        val (am, ranges, ns) = TensorImpl.prepareSqueezeAll(this)
+        return SlicedView(this, ranges, am, ns)
+    }
+
+    /**
+     * Squeezes the tensor by removing the given [axis] provided that its length is 1.
+     *
+     * @throws IllegalArgumentException the length at the given [axis] is not 1.
+     */
+    fun squeeze(axis: Int): Tensor<T> {
+        val (am, ranges, ns) = TensorImpl.prepareSqueeze(this, axis)
+        return SlicedView(this, ranges, am, ns)
     }
 
 
@@ -322,8 +338,8 @@ interface Tensor<T> : GenTuple<T> {
          *
          * @param shape a non-empty array of positive integers
          */
-        fun <T> zeros(mc: AddMonoid<T>, vararg shape: Int): MutableTensor<T> {
-            return fill(mc.zero, *shape)
+        fun <T> zeros(model: AddMonoid<T>, vararg shape: Int): MutableTensor<T> {
+            return fill(model.zero, *shape)
         }
 
         /**
@@ -331,8 +347,8 @@ interface Tensor<T> : GenTuple<T> {
          *
          * @param shape a non-empty array of positive integers
          */
-        fun <T> ones(mc: UnitRing<T>, vararg shape: Int): MutableTensor<T> {
-            return fill(mc.one, *shape)
+        fun <T> ones(model: UnitRing<T>, vararg shape: Int): MutableTensor<T> {
+            return fill(model.one, *shape)
         }
 
         /**
@@ -342,7 +358,7 @@ interface Tensor<T> : GenTuple<T> {
          */
         fun <T> fill(c: T, vararg shape: Int): MutableTensor<T> {
             checkValidShape(shape)
-            return ATensor.constant(c, shape.clone())
+            return ATensor.constant(c, shape.copyOf())
         }
 
         /**
@@ -366,7 +382,7 @@ interface Tensor<T> : GenTuple<T> {
 
         private fun <T> ofShaped(shape: IntArray, supplier: (Index) -> T): MutableTensor<T> {
             checkValidShape(shape)
-            return ATensor.buildFromSequence(shape.clone(), IterUtils.prodIdxNoCopy(shape).map(supplier))
+            return ATensor.buildFromSequence(shape.copyOf(), IterUtils.prodIdxNoCopy(shape).map(supplier))
         }
 
 
@@ -814,13 +830,24 @@ interface MutableTensor<T> : Tensor<T> {
 
 
     override fun reshape(vararg newShape: Int): MutableTensor<T> {
-        val sh = newShape.clone()
+        val sh = newShape.copyOf()
         TensorImpl.prepareNewShape(this, sh)
         return MutableReshapedView(this, sh)
     }
 
     override fun ravel(): MutableTensor<T> {
         return reshape(-1)
+    }
+
+    override fun squeeze(): MutableTensor<T> {
+        if (this.dim == 0) return this
+        val (am, ranges, ns) = TensorImpl.prepareSqueezeAll(this)
+        return MutableSliceView(this, ranges, am, ns)
+    }
+
+    override fun squeeze(axis: Int): MutableTensor<T> {
+        val (am, ranges, ns) = TensorImpl.prepareSqueeze(this, axis)
+        return MutableSliceView(this, ranges, am, ns)
     }
 
     /**

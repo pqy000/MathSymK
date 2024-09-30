@@ -183,7 +183,7 @@ object IterUtils {
         }
         val seq = Sequence { IndexIteratorNoCopy(ranges) }
         return if (copy) {
-            seq.map { it.clone() }
+            seq.map { it.copyOf() }
         } else {
             seq
         }
@@ -347,7 +347,7 @@ object IterUtils {
         if (!copy) {
             return seq
         }
-        return seq.map { it.clone() }
+        return seq.map { it.copyOf() }
     }
 
 
@@ -483,7 +483,7 @@ object IterUtils {
         }
         val seq = Iterable { PermutationIterNoCopy(n, m) }
         if (copy) {
-            return seq.map { it.clone() }
+            return seq.map { it.copyOf() }
         }
         return seq
     }
@@ -560,7 +560,7 @@ object IterUtils {
         }
         val seq = Sequence { PermutationIterRevNoCopy(n) }
         if (copy) {
-            return seq.map { it.first.clone() to it.second }
+            return seq.map { it.first.copyOf() to it.second }
         }
         return seq
     }

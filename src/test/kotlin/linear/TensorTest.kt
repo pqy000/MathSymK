@@ -9,6 +9,7 @@ import io.github.ezrnest.linear.all
 import io.github.ezrnest.linear.get
 import io.github.ezrnest.model.NumberModels.fractions
 import org.junit.jupiter.api.Assertions.assertArrayEquals
+import org.junit.jupiter.api.assertThrows
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
@@ -45,6 +46,20 @@ class TensorTest {
             assertEquals(4, v.slice(0, 0 until 8 step 2).size)
         }
 
+    }
+
+    @Test
+    fun testReshape() {
+        val u = Tensor.of(2, 3) { it.sum() }
+        assertContentEquals(intArrayOf(2, 3), u.shape)
+        assertContentEquals(intArrayOf(3, 2), u.reshape(3, 2).shape)
+        assertThrows<IllegalArgumentException> { u.reshape(3, 3) }
+        assertTrue { u.elementSequence().zip(u.reshape(3, 2).elementSequence()).all { it.first == it.second } }
+
+        val w = Tensor(1) { 1 }
+        assertTrue { w.reshape()[intArrayOf()] == 1 }
+        assertContentEquals(intArrayOf(), w.squeeze().shape)
+        assertContentEquals(intArrayOf(1),w.squeeze().ravel().shape)
     }
 
     @Test
@@ -258,7 +273,7 @@ class TensorTest {
 
         with(tenZ) {
             assertEquals(Tensor.of(listOf(0, 3)), a.diagonal())
-            assertEquals(Tensor.fill(c=1,1), a.diagonal(1))
+            assertEquals(Tensor.fill(c = 1, 1), a.diagonal(1))
 
             val b = Tensor.of<Int>((0..7).toList()).reshape(2, 2, 2)
             assertEquals(
@@ -270,7 +285,7 @@ class TensorTest {
 
     @Test
     fun testTrace() {
-        val a = Tensor.of(intArrayOf(2,2),0 .. 3)
+        val a = Tensor.of(intArrayOf(2, 2), 0..3)
 
         with(tenZ) {
             val tr = a.trace()
@@ -297,7 +312,7 @@ class TensorTest {
         with(tZ) {
             val t1 = ones(2, 3)
             val t2 = zerosLike(t1)
-            assertEquals(t2,t1 * t2)
+            assertEquals(t2, t1 * t2)
 
             t2 += t1
 
