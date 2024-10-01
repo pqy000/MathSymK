@@ -45,33 +45,14 @@ data class Polynomial<T> internal constructor(
      */
 
     /**
-     * Returns the coefficient of the term with the specified [index].
+     * Returns the coefficient of the term with the specified [pow].
      */
-    fun getOrNull(index: Int): T? {
-        //TODO better design
-        return terms.binarySearchBy(index) { it.pow }.let {
-            if (it >= 0) {
-                terms[it].value
-            } else {
-                null
-            }
+    fun getOrNull(pow: Int): PTerm<T>? {
+        return terms.binarySearchBy(pow) { it.pow }.let {
+            if (it >= 0) terms[it] else null
         }
     }
 
-
-//    /**
-//     * Returns a list of coefficients of this polynomial.
-//     * The coefficient of the term with index `i` is at the position `i` in the list.
-//     * The size of the list is `degree + 1`.
-//     * If the polynomial is zero, then the list is empty.
-//     */
-//    fun coefficientList(): List<T> {
-//        val result = MutableList(degree + 1) { model.zero }
-//        for ((index, value) in terms) {
-//            result[index] = value
-//        }
-//        return result
-//    }
 
     /**
      * Returns the leading term of this polynomial.
@@ -93,9 +74,11 @@ data class Polynomial<T> internal constructor(
     val leadCoef: T
         get() = leadTerm.value
 
-
-//    val constantTerm: PTerm<T>
-//        get() = terms.firstOrNull() ?: PTerm(0, model.zero)
+    /**
+     * Returns the constant term of this polynomial if it exists.
+     */
+    val constantTerm: PTerm<T>?
+        get() = getOrNull(0)
 
 
     val isZero: Boolean
@@ -291,11 +274,7 @@ interface PolyOps<T> : EqualPredicate<Polynomial<T>> {
      */
     operator fun Polynomial<T>.get(index: Int): T {
         return terms.binarySearchBy(index) { it.pow }.let {
-            if (it >= 0) {
-                terms[it].value
-            } else {
-                model.zero
-            }
+            if (it >= 0) terms[it].value else model.zero
         }
     }
 
@@ -317,9 +296,11 @@ interface PolyOps<T> : EqualPredicate<Polynomial<T>> {
     /**
      * Gets the coefficient of the constant term of this polynomial.
      */
-    val Polynomial<T>.constantCoef: T
-        get() = terms.firstOrNull()?.value ?: model.zero
+    val Polynomial<T>.constantCoef: T get() = this[0]
 
+    /**
+     * Returns the zero polynomial.
+     */
     val zero: Polynomial<T>
 
     /**
@@ -859,7 +840,6 @@ open class PolyOverUnitRing<T>(_model: UnitRing<T>) : PolyOverRing<T>(_model), U
     }
 
 
-
     protected fun divideAndRemainder0(x: Polynomial<T>, y: Polynomial<T>): Pair<Polynomial<T>, Polynomial<T>> {
         if (y.isZero) throw ArithmeticException("Division by zero")
         if (x.isZero) return x to x
@@ -1132,10 +1112,3 @@ open class PolyOverField<T>(override val model: Field<T>) : PolyOverUFD<T>(model
 }
 
 
-//fun main() {
-////    val Z = NumberModels.intModP(97)
-////    val p = Polynomial.of(Z, -1, 2, 3, -6)
-////    val q = Polynomial.of(Z, 1, 2, 3)
-////    println(p.sylvesterMatrix(q).det())
-////    println(Polynomial.resultant(p, q, Z))
-//}

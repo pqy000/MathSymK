@@ -581,9 +581,13 @@ internal object TensorImpl {
             "Two tensor must have the same shape for inner!" +
                     "Given shapes: ${x.shape.contentToString()}, ${y.shape.contentToString()}."
         }
-        return x.elementSequence().zip(y.elementSequence()).fold(mc.zero) { re, (a, b) ->
-            mc.eval { re + a * b }
+        val it1 = x.elementSequence().iterator()
+        val it2 = y.elementSequence().iterator()
+        var re = mc.zero
+        while (it1.hasNext()) {
+            mc.eval { re += it1.next() * it2.next() }
         }
+        return re
     }
 
     fun <T> wedge(x: Tensor<T>, y: Tensor<T>, mc: Ring<T>): ATensor<T> {

@@ -8,6 +8,7 @@ import io.github.ezrnest.linear.TensorImpl
 import io.github.ezrnest.linear.all
 import io.github.ezrnest.linear.get
 import io.github.ezrnest.model.Models.fractions
+import io.github.ezrnest.model.Models.ints
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.assertThrows
 import kotlin.test.Test
@@ -60,6 +61,18 @@ class TensorTest {
         assertTrue { w.reshape()[intArrayOf()] == 1 }
         assertContentEquals(intArrayOf(), w.squeeze().shape)
         assertContentEquals(intArrayOf(1),w.squeeze().ravel().shape)
+    }
+
+    @Test
+    fun testBroadcast() {
+        val u = Tensor(2, 3) { it.sum() }
+        val r = u.broadcastTo(3,2,3)
+        assertContentEquals(intArrayOf(3,2,3), r.shape)
+        with(Tensor.over(ints())){
+            assertEquals(u, r.slice(0))
+            assertEquals(u, r.slice(1))
+            assertEquals(u, r.slice(2))
+        }
     }
 
     @Test
@@ -211,16 +224,14 @@ class TensorTest {
         val t2 = Tensor(3, 4) { it.sum() }
         val t3 = Tensor(3, 4, 5) { it.sum() }
 
-        with(tenZ) {
-            val r = TensorImpl.einsum(
-                listOf(t1, t2, t3),
-                resShape = intArrayOf(2, 5), mulShape = intArrayOf(3, 4),
-                tToResList = listOf(listOf(0 to 0), listOf(), listOf(2 to 1)),
-                tToMulList = listOf(listOf(1 to 0), listOf(0 to 0, 1 to 1), listOf(0 to 0, 1 to 1)),
-                mc
-            )
-            assertContentEquals(intArrayOf(2, 5), r.shape)
-        }
+        val r = TensorImpl.einsum(
+            listOf(t1, t2, t3),
+            resShape = intArrayOf(2, 5), mulShape = intArrayOf(3, 4),
+            tToResList = listOf(listOf(0 to 0), listOf(), listOf(2 to 1)),
+            tToMulList = listOf(listOf(1 to 0), listOf(0 to 0, 1 to 1), listOf(0 to 0, 1 to 1)),
+            mc
+        )
+        assertContentEquals(intArrayOf(2, 5), r.shape)
     }
 
     @Test
@@ -228,14 +239,12 @@ class TensorTest {
         val u = Tensor.of(3, 2) { idx -> idx.withIndex().sumOf { (1 + it.index) * it.value } }
         val w = Tensor.of(3, 3) { it[0] }
 
-        with(tenZ) {
-            val v = Tensor.concatM(u, w, axis = 1)
-            assertArrayEquals(intArrayOf(3, 5), v.shape)
-            val v1 = v.slice(0, null)
-            v1.setAll(1)
-            assertTrue(u.slice(0).all { it == 1 })
-            assertTrue(w.slice(0).all { it == 1 })
-        }
+        val v = Tensor.concatM(u, w, axis = 1)
+        assertArrayEquals(intArrayOf(3, 5), v.shape)
+        val v1 = v.slice(0, null)
+        v1.setAll(1)
+        assertTrue(u.slice(0).all { it == 1 })
+        assertTrue(w.slice(0).all { it == 1 })
     }
 
     @Test
@@ -306,16 +315,13 @@ class TensorTest {
     @Test
     fun testFunctionalities() {
         val ℤ = Models.ints()
-        val ℚ = fractions()
         val tZ = Tensor.over(ℤ)
-        val tQ = Tensor.over(ℚ)
         with(tZ) {
             val t1 = ones(2, 3)
             val t2 = zerosLike(t1)
             assertEquals(t2, t1 * t2)
-
             t2 += t1
-
+            assertEquals(t1, t2)
         }
     }
 

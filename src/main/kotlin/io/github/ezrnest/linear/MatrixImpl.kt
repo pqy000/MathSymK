@@ -851,7 +851,7 @@ object MatrixImpl {
      */
     fun <T> inverseInRing(M: Matrix<T>, model: UnitRing<T>): AMatrix<T> {
         val (p, adj) = charPolyAndAdj(M, model)
-        val det = p.getOrNull(0) ?: model.zero
+        val det = p.getOrNull(0).let { t -> if (t != null) t.value else model.zero }
         if (!model.isUnit(det)) throw ArithmeticException("The determinant is not invertible")
         adj.divAssign(det, model)
         return adj

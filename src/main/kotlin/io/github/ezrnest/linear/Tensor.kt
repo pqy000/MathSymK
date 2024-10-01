@@ -34,6 +34,15 @@ typealias Index = IntArray
  * but it does not provide arithmetic operations since it depends on the underlying model.
  * To perform arithmetic operations, one should use [Tensor.over] to create a context for tensor operations with a specific model.
  *
+ * ### Broadcasting
+ *
+ * Broadcasting is a mechanism that allows tensors of different shapes to be combined in element-wise operations.
+ * The broadcasting rule is as follows:
+ *
+ * 1. If the two tensors have a different number of dimensions, the shape of the tensor with fewer dimensions is padded with ones on its left side.
+ * 2. If the shape of the two tensors does not match in any dimension, the tensor with shape equal to 1 in that dimension is stretched to match the other tensor's shape.
+ * 3. If in any dimension the sizes disagree and neither is equal to 1, an exception is raised.
+ *
  *
  *
  *
@@ -261,7 +270,13 @@ interface Tensor<T> : GenTuple<T> {
 
 
     /**
-     * Broadcasts this tensor to the given shape.
+     * Broadcasts this tensor to the given [newShape].
+     * The rule is as follows:
+     *
+     * 1. Pad the shape of this tensor with ones on the left side to make it have the same dimension as the given shape.
+     * 2. For each axis, if the length of this tensor is 1, then stretch it to the length of the given shape.
+     * 3. If the length of this tensor is not 1 and not equal to the length of the given shape, an exception is raised.
+     *
      */
     fun broadcastTo(vararg newShape: Int): Tensor<T> {
         return TensorImpl.broadcastTo(this, newShape)
@@ -269,6 +284,8 @@ interface Tensor<T> : GenTuple<T> {
 
     /**
      * Broadcasts this tensor to the shape of `y`.
+     *
+     * See the overload [broadcastTo] for the broadcasting rule.
      */
     fun broadcastTo(y: Tensor<T>): Tensor<T> {
         return TensorImpl.broadcastTo(this, y.shape)

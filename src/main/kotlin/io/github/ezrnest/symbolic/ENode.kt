@@ -1,5 +1,7 @@
 package io.github.ezrnest.symbolic
 
+// created at 2024/10/01
+
 import java.math.BigInteger
 
 sealed interface ENode {
@@ -138,6 +140,16 @@ data class ENodeNImpl(
 
 
 object NodeBuilderScope {
+    val x = "x".s
+    val y = "y".s
+    val z = "z".s
+    val a = "a".s
+    val b = "b".s
+
+
+    val Int.e: ENode get() = EInteger(BigInteger.valueOf(this.toLong()))
+
+    val String.s: ENode get() = ESymbol(this)
 
     fun add(nodes: List<ENode>): ENode {
         return ENodeNImpl("+", nodes)
@@ -166,6 +178,8 @@ object NodeBuilderScope {
 
 }
 
-fun main() {
-
-}
+//fun main() {
+//    with(NodeBuilderScope) {
+//        (1.e + "x".s).treeToString().let(::println)
+//    }
+//}
