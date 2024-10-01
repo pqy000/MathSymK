@@ -81,7 +81,8 @@ open class SlicedView<T>(
         return pos
     }
 
-    override fun getChecked(idx: Index): T {
+    override fun get(idx: Index): T {
+        checkIdx(idx)
         val pos = mapIdx(idx)
         return t[pos]
     }
@@ -220,7 +221,8 @@ open class ConcatView<T>(val axis: Int, tensors: List<Tensor<T>>, shape: IntArra
         }
     }
 
-    override fun getChecked(idx: Index): T {
+    override fun get(idx: Index): T {
+        checkIdx(idx)
         val k = ArraySup.binarySearchFloor(axisLevels, 0, axisLevels.size, idx[axis])
         val nIdx = idx.copyOf()
         nIdx[axis] -= axisLevels[k]
@@ -257,7 +259,8 @@ open class StackView<T>(val axis: Int, tensors: List<Tensor<T>>, shape: IntArray
         return nIdx
     }
 
-    override fun getChecked(idx: Index): T {
+    override fun get(idx: Index): T {
+        checkIdx(idx)
         val k = idx[axis]
         val nIdx = transIdx(idx)
         return ts[k][nIdx]
@@ -325,7 +328,8 @@ open class ReshapedView<T>(tensor: Tensor<T>, shape: IntArray) : AbstractTensor<
         return idx
     }
 
-    override fun getChecked(idx: Index): T {
+    override fun get(idx: Index): T {
+        checkIdx(idx)
         val pos = toPos(idx)
         val tIdx = toIdx(pos)
         return t[tIdx]
@@ -394,7 +398,8 @@ class BroadcastView<T>(
      * originAxes[i]
      */
 
-    override fun getChecked(idx: Index): T {
+    override fun get(idx: Index): T {
+        checkIdx(idx)
         val tIdx = idx.copyOfRange(d, idx.size)
         for (ax in extendedAxes) {
             tIdx[ax] = 0
@@ -423,7 +428,8 @@ open class IndexMapView<T>(
         return tIdx
     }
 
-    override fun getChecked(idx: Index): T {
+    override fun get(idx: Index): T {
+        checkIdx(idx)
         val tIdx = mapIdx(idx)
         return tensor[tIdx]
     }

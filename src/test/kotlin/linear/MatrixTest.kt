@@ -1,10 +1,9 @@
 package linear
 
 import TestUtils.assertEquals
-import TestUtils.assertValueEquals
 import io.github.ezrnest.linear.*
 import io.github.ezrnest.model.Multinomial
-import io.github.ezrnest.model.NumberModels
+import io.github.ezrnest.model.Models
 import io.github.ezrnest.model.Polynomial
 import io.github.ezrnest.model.Polynomial.Companion.substitute
 import io.github.ezrnest.numberTheory.NTFunctions
@@ -18,9 +17,9 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class MatrixTest {
-    val Z = NumberModels.integers()
-    val Zmod7 = NumberModels.intModP(7)
-    val Zmod97 = NumberModels.intModP(97)
+    val Z = Models.ints()
+    val Zmod7 = Models.intModP(7)
+    val Zmod97 = Models.intModP(97)
     val matZ = Matrix.over(Z)
     val matZmod7 = Matrix.over(Zmod7)
     val matZmod97 = Matrix.over(Zmod97)
@@ -113,7 +112,7 @@ class MatrixTest {
 
     @Test
     fun testMatrixCharPoly() {
-        val ℤ = NumberModels.integers()
+        val ℤ = Models.ints()
         val Zx = Polynomial.over(ℤ)
         val n = 4
         val Z44 = Matrix.over(Z,n)
@@ -158,7 +157,7 @@ class MatrixTest {
     @Test
     fun testInvariantFactorsOverIntegers() {
         // 3x3 matrix over integers
-        val Z = NumberModels.integers()
+        val Z = Models.ints()
         val n = 4
 //    val A = Matrix(n, Z) { i, j -> (i + 1) * (j + 2) }
         with(matZ) {

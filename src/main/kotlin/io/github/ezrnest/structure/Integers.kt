@@ -484,7 +484,7 @@ interface EuclideanDomain<T> : UniqueFactorizationDomain<T> {
  *
  * @see EuclideanDomain
  * @see UnitRing
- * @see io.github.ezrnest.model.NumberModels
+ * @see io.github.ezrnest.model.Models
  * @author liyicheng 2017-09-09 20:33
  */
 interface Integers<T> : EuclideanDomain<T>, OrderedRing<T> {

@@ -5,7 +5,7 @@ import io.github.ezrnest.model.*
 import kotlin.test.*
 
 class MultinomialTest {
-    val intModP = NumberModels.intModP(97, cached = true)
+    val intModP = Models.intModP(97, cached = true)
     val mult = Multinomial.over(intModP)
 
     @Test

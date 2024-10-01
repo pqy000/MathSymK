@@ -74,20 +74,18 @@ We provide a few examples to demonstrate the usage of this library.
 ```kotlin
 val a = Fraction(1, 2)
 val b = Fraction(1, 3)
-println(
-    listOf(a + b, a - b, a * b, a / b) // 5/6, 1/6, 1/6, 3/2
-)
-println(listOf(a.pow(2), a.pow(-1))) // 1/4, 2
+listOf(a + b, a - b, a * b, a / b) // 5/6, 1/6, 1/6, 3/2
+listOf(a.pow(2), a.pow(-1)) // 1/4, 2
 ```
 
 #### Fraction fields:
 ```kotlin
 // First example: fractions over integers, just as plain fractions
-val Z = NumberModels.integers()
+val Z = Models.ints()
 with(RFraction.over(Z)) {
     val f1 = frac(3, 4)
     val f2 = frac(1, 2)
-    println(f1 + f2) // 5/4
+    f1 + f2 // 5/4
 }
 
 // Second example: fractions over polynomials
@@ -96,14 +94,14 @@ with(polyF) {
     with(RFraction.over(polyF)) { // Fraction of polynomials over Z
         val f1 = (1 + x) / (1 + 2.x) // an overloaded operator `/` to create a fraction
         val f2 = (2 + 3.x) / (1 + 2.x)
-        println(f1 + f2) // (3 + 4x)/(1 + 2x)
-        println(f1 / f2) // (1 + x)/(2 + 3x)
+        f1 + f2 // (3 + 4x)/(1 + 2x)
+        f1 / f2 // (1 + x)/(2 + 3x)
 
         val f3 = x / (1 + 2.x)
-        println(f1 + f3) // 1
+        f1 + f3 // 1
 
         val f4 = (1 + x) / (1 + 3.x)
-        println(f1 + f4) // (5*x^2 + 7*x + 2)/(6*x^2 + 5*x + 1)
+        f1 + f4 // (5*x^2 + 7*x + 2)/(6*x^2 + 5*x + 1)
     }
 }
 ```
@@ -115,27 +113,27 @@ with(polyF) {
 ```kotlin
 val z1 = Complex128(1.0, 2.0)
 val z2 = Complex128(3.0, 4.0)
-println(listOf(z1 + z2, z1 - z2, z1 * z2, z1 / z2)) // (4.0, 6.0), (-2.0, -2.0), (-5.0, 10.0), (0.44, 0.08)
-println(listOf(z2.mod,z2.arg)) // 5.0, 0.93
+listOf(z1 + z2, z1 - z2, z1 * z2, z1 / z2) // (4.0, 6.0), (-2.0, -2.0), (-5.0, 10.0), (0.44, 0.08)
+listOf(z2.mod,z2.arg) // 5.0, 0.93
 ```
 
 #### Complex over Various Models:
 ```kotlin
-val Z = NumberModels.integers()
+val Z = Models.ints()
 val GaussianInt = Complex.over(Z)
 with(GaussianInt){
     val z1 = 1 + 2.i
     val z2 = 3 + 4.i
-    println(listOf(z1 + z2, z1 - z2, z1 * z2)) // (4, 6), (-2, -2), (-5, 10)
+    listOf(z1 + z2, z1 - z2, z1 * z2) // (4, 6), (-2, -2), (-5, 10)
 }
 
-val Q = NumberModels.fractions()
-val complexR = Complex.over(Q) // Complex numbers with rational components
+val Q = Models.fractions()
+val complexQ = Complex.over(Q) // Complex numbers with rational components
 with(Q){
-    with(complexR) {
+    with(complexQ) {
         val z1 = frac(1, 2) + frac(1, 3).i
         val z2 = frac(1, 4) + frac(1, 5).i
-        println(listOf(z1 + z2, z1 - z2, z1 * z2)) 
+        listOf(z1 + z2, z1 - z2, z1 * z2)
         // (3/4, 8/15), (1/4, 2/15), (7/120, 11/60)
     }
 }
@@ -143,17 +141,14 @@ with(Q){
 
 ### Polynomial
 ```kotlin
-val Z97 = NumberModels.intModP(97) // Integers mod 97, Z/97Z, a field
+val Z97 = Models.intModP(97) // Integers mod 97, Z/97Z, a field
 val polyZ = Polynomial.over(Z97) // Polynomials over Z/97Z
 with(polyZ) {
     val f = x+1 // predefined variable x polyZ
     val g = x-1
     val p1 = f * g // x^2 - 1
     val p2 = f pow 2 // (x+1)^2 = x^2 + 2x + 1
-    println("p1 = $p1")
-    println("p2 = $p2")
-    val h = gcd(p1,p2).toMonic()
-    println("gcd(p1,p2) = $h") // x + 1
+    gcd(p1,p2).toMonic() // x + 1 
 }
 ```
 
@@ -164,22 +159,20 @@ with(polyZ) {
 
 ### Matrix and vector
 ```kotlin
-val ℤ = NumberModels.integers()
+val ℤ = Models.ints()
 with(Matrix.over(ℤ)) {
   val n = 3
   val A = Matrix(n) { i, j -> (5 * cos(i + 2.0 * j)).toInt() } // generate a non-singular matrix
-  println("Matrix A:")
-  println(A)
-  val B = A * A.T // Matrix multiplication and transpose
-  println("det(A) = ${A.det()}; det(A*A.T) = ${B.det()}") // determinant
+  A.det() // determinant
   val u = Vector(n) { i -> i + 1 }
-  println(A * u) // matrix-vector multiplication
-  println(u.T * B * u) // quadratic form
+  A * u // matrix-vector multiplication
+  val B = A * A.T // Matrix multiplication and transpose
+  u.T * B * u // quadratic form
 }
 ```
 #### Characteristic polynomial
 ```kotlin
-val ℤ = NumberModels.integers()
+val ℤ = Models.ints()
 val n = 4
 with(Matrix.over(ℤ,n)){
   val A = Matrix(n) { i, j -> i + 2 * j }
@@ -195,8 +188,8 @@ with(Matrix.over(ℤ,n)){
 
 #### Basic usage
 ```kotlin
-val ℤ = NumberModels.integers()
-val a = Tensor.of(intArrayOf(2, 3, 2, 5), ℤ, 0 until 60) // create a 4D tensor
+val a = Tensor(2, 3, 2, 5) { (i, j, k, l) -> i + j } // create a 4D tensor with shape (2, 3, 2, 5)
+val b = Tensor.ofFlat(intArrayOf(2,3,2,5), 0 until 60) // another way to create a tensor
 // a is a 4D tensor with shape (2, 3, 2, 5)
 a[intArrayOf(1, 2, 1, 3)] // get a single element
 a[0, 1, 1, 2] // get a single element, operator overloaded version, need `import io.github.ezrnest.linear.get`
@@ -205,18 +198,21 @@ a.slice(-1, 1..2, null, 0..<5 step 2) // slicing, another way
 a[1, Tensor.DOTS, 1, Tensor.NEW_AXIS, 2] // support omitting some axes and adding new axes
 ```
 
-#### Multiplication
+#### Tensor Multiplication
 ```kotlin
-val ℤ = NumberModels.integers()
-val a = Tensor.of(intArrayOf(3, 4, 5), ℤ, 0 until 60)
-val b = Tensor.of(intArrayOf(4, 3, 2), ℤ, 0 until 24)
-// The following three ways give the same result:
-val res0 = Tensor.zeros(ℤ, 5, 2)
-for ((i, j, k, n) in IterUtils.prodIdxN(intArrayOf(5, 2, 3, 4))) {
-  res0[i, j] += a[k, n, i] * b[n, k, j] // direct computation
+with(Tensor.over(Models.ints())) {
+  val a = Tensor.ofFlat(intArrayOf(3, 4, 5), 0 until 60)
+  val b = Tensor.ofFlat(intArrayOf(4, 3, 2), 0 until 24)
+  // The following three ways give the same result:
+  val res0 = zeros(5, 2).also { res0 ->
+    for ((i, j, k, n) in IterUtils.prodIdx(intArrayOf(5, 2, 3, 4))) {
+      res0[i, j] += a[k, n, i] * b[n, k, j] // direct computation
+    }
+  }
+  val res1 = a.permute(2, 1, 0).matmul(b, 2) // matmul at the last 2 axes
+  val res2 = einsum("kni,nkj->ij", a, b) // einsum
 }
-val res1 = a.permute(2, 1, 0).matmul(b, 2) // matmul at the last 2 axes
-val res2 = Tensor.einsum("kni,nkj->ij", a, b) // einsum
+
 ```
 
 #### More samples can be found in the `samples` directory.

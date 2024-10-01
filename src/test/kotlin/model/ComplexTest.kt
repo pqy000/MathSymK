@@ -2,7 +2,7 @@ package model
 
 import io.github.ezrnest.model.Complex
 import io.github.ezrnest.model.Fraction
-import io.github.ezrnest.model.NumberModels
+import io.github.ezrnest.model.Models
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import kotlin.test.assertEquals
@@ -13,7 +13,7 @@ class ComplexTest {
     val ℚ = Fraction.model
     val ℂ = Complex.over(ℚ)
 
-    val intP = NumberModels.intModP(97)
+    val intP = Models.intModP(97)
     val complex1 = Complex.over(intP)
 
     @Test

@@ -389,7 +389,7 @@ interface Tensor<T> : GenTuple<T> {
         /**
          * A constructor-like version of creating a tensor from a supplier.
          *
-         * @see of
+         * @see ofFlat
          */
         operator fun <T> invoke(vararg shape: Int, supplier: (Index) -> T): MutableTensor<T> {
             return ofShaped(shape, supplier)
@@ -402,7 +402,7 @@ interface Tensor<T> : GenTuple<T> {
          *
          *
          */
-        inline fun <reified T> of(elements: List<Any>): MutableTensor<T> {
+        inline fun <reified T> ofNested(elements: List<Any>): MutableTensor<T> {
             return ATensor.fromNestingList(elements, T::class.java)
         }
 
@@ -410,7 +410,7 @@ interface Tensor<T> : GenTuple<T> {
          * Creates a tensor of the given [shape] with its [elements], it is required that the length of
          * [elements] is equal to the product of [shape].
          */
-        fun <T> of(shape: IntArray, vararg elements: T): MutableTensor<T> {
+        fun <T> ofFlat(shape: IntArray, vararg elements: T): MutableTensor<T> {
             checkValidShape(shape)
             val size = MathUtils.product(shape)
             require(elements.size == size) {
@@ -424,7 +424,7 @@ interface Tensor<T> : GenTuple<T> {
          * Creates a tensor of the given [shape] with a sequence of elements, it is required that the size of
          * [elements] not smaller than the product of [shape].
          */
-        fun <T> of(shape: IntArray, elements: Sequence<T>): MutableTensor<T> {
+        fun <T> ofFlat(shape: IntArray, elements: Sequence<T>): MutableTensor<T> {
             checkValidShape(shape)
             return ATensor.buildFromSequence(shape, elements)
         }
@@ -433,8 +433,8 @@ interface Tensor<T> : GenTuple<T> {
          * Creates a tensor of the given [shape] with an iterable of elements, it is required that the size of
          * [elements] not smaller than the product of [shape].
          */
-        fun <T> of(shape: IntArray, elements: Iterable<T>): MutableTensor<T> {
-            return of(shape, elements.asSequence())
+        fun <T> ofFlat(shape: IntArray, elements: Iterable<T>): MutableTensor<T> {
+            return ofFlat(shape, elements.asSequence())
         }
 
 //        /**

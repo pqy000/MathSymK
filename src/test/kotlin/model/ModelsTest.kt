@@ -1,16 +1,16 @@
 package model
 
-import io.github.ezrnest.model.NumberModels
+import io.github.ezrnest.model.Models
 import io.github.ezrnest.model.Polynomial
 import org.junit.jupiter.api.assertThrows
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class NumberModelsTest {
+class ModelsTest {
 
     @Test
     fun testDoubleAsReals() {
-        val real = NumberModels.doubles()
+        val real = Models.doubles()
         assert(real.contains(1.0))
         assertEquals(0.0, real.zero)
         assertEquals(2.0, real.add(1.0, 1.0))
@@ -21,7 +21,7 @@ class NumberModelsTest {
 
     @Test
     fun testIntAsIntegers() {
-        val int = NumberModels.integers()
+        val int = Models.ints()
         assert(int.contains(1))
         assertEquals(0, int.zero)
         assertEquals(2, int.add(1, 1))
@@ -38,7 +38,7 @@ class NumberModelsTest {
 
     @Test
     fun testGCD() {
-        val int = NumberModels.integers()
+        val int = Models.ints()
         with(int) {
             val (a, b) = 12 to 30
             val (g, u, v) = int.gcdUV(a, b)
@@ -55,7 +55,7 @@ class NumberModelsTest {
 
     @Test
     fun testGCDPoly() {
-        val frac = NumberModels.fractions()
+        val frac = Models.fractions()
         val polyF = Polynomial.over(frac)
         with(frac) {
             with(polyF) {
@@ -77,7 +77,7 @@ class NumberModelsTest {
 
     @Test
     fun testIntModP() {
-        with(NumberModels.intModP(97)) {
+        with(Models.intModP(97)) {
             assertEquals(3, add(1, 2))
             assertEquals(96, subtract(1, 2))
             assertEquals(2, multiply(1, 2))
@@ -89,7 +89,7 @@ class NumberModelsTest {
 
     @Test
     fun testBigInteger() {
-        with(NumberModels.bigIntegers()) {
+        with(Models.bigIntegers()) {
             assertEquals(0.toBigInteger(), zero)
             assertEquals(2.toBigInteger(), add(1.toBigInteger(), 1.toBigInteger()))
             assertEquals((-1).toBigInteger(), negate(1.toBigInteger()))
@@ -100,7 +100,7 @@ class NumberModelsTest {
 
     @Test
     fun testBigFrac() {
-        val bigFrac = NumberModels.fractionBig()
+        val bigFrac = Models.fractionBig()
         with(bigFrac) {
             val f1 = bfrac(1, 2)
             val f2 = bfrac(1, 3)
@@ -110,18 +110,18 @@ class NumberModelsTest {
 
     @Test
     fun testIntModN() {
-        with(NumberModels.intModN(97)) {
+        with(Models.intModN(97)) {
             assertEquals(3, add(1, 2))
             assertEquals(96, subtract(1, 2))
             assertEquals(2, multiply(1, 2))
         }
-        with(NumberModels.intModN(Int.MAX_VALUE)) {
+        with(Models.intModN(Int.MAX_VALUE)) {
             assertEquals(3, add(1, 2))
             assertEquals(Int.MAX_VALUE - 1, subtract(1, 2))
             assertEquals(2, multiply(1, 2))
             assertEquals(9, add(Int.MAX_VALUE - 1, 10))
         }
-        with(NumberModels.intModN(Int.MAX_VALUE / 2 - 1)) {
+        with(Models.intModN(Int.MAX_VALUE / 2 - 1)) {
             val n = Int.MAX_VALUE / 2L - 1
             assertEquals(3, add(1, 2))
             assertEquals(46341L * 46341 % n, multiply(46341, 46341).toLong())

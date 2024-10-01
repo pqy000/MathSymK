@@ -409,7 +409,7 @@ data class Complex128(val re: Double, val im: Double) : FieldModel<Complex128>, 
 
 
 class ComplexDModel(dev: Double) : ComplexNumbers<Double, Complex128> {
-    override val reals: Reals<Double> = NumberModels.doubles(dev)
+    override val reals: Reals<Double> = Models.doubles(dev)
 
     override fun contains(x: Complex128): Boolean {
         return true

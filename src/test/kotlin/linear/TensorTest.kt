@@ -7,7 +7,7 @@ import io.github.ezrnest.model.*
 import io.github.ezrnest.linear.TensorImpl
 import io.github.ezrnest.linear.all
 import io.github.ezrnest.linear.get
-import io.github.ezrnest.model.NumberModels.fractions
+import io.github.ezrnest.model.Models.fractions
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.assertThrows
 import kotlin.test.Test
@@ -16,7 +16,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class TensorTest {
-    val mc = NumberModels.integers()
+    val mc = Models.ints()
     val tenZ = Tensor.over(mc)
 
     @Test
@@ -91,8 +91,8 @@ class TensorTest {
     @Test
     fun testSum() {
         with(tenZ) {
-            val t = Tensor.of(intArrayOf(2, 3), 0, 1, 2, 2, 3, 4)
-            val re = Tensor.of(intArrayOf(3), 2, 4, 6)
+            val t = Tensor.ofFlat(intArrayOf(2, 3), 0, 1, 2, 2, 3, 4)
+            val re = Tensor.ofFlat(intArrayOf(3), 2, 4, 6)
 
             assertEquals(re, t.sum(0))
         }
@@ -254,7 +254,7 @@ class TensorTest {
 
     @Test
     fun testCreate() {
-        val t = Tensor.of<Int>(
+        val t = Tensor.ofNested<Int>(
             listOf(
                 listOf(1, 2, 3),
                 listOf(3, 4, 5)
@@ -269,15 +269,15 @@ class TensorTest {
 
     @Test
     fun testDiag() {
-        val a = Tensor.of<Int>((0..3).toList()).reshape(2, 2)
+        val a = Tensor.ofNested<Int>((0..3).toList()).reshape(2, 2)
 
         with(tenZ) {
-            assertEquals(Tensor.of(listOf(0, 3)), a.diagonal())
+            assertEquals(Tensor.ofNested(listOf(0, 3)), a.diagonal())
             assertEquals(Tensor.fill(c = 1, 1), a.diagonal(1))
 
-            val b = Tensor.of<Int>((0..7).toList()).reshape(2, 2, 2)
+            val b = Tensor.ofNested<Int>((0..7).toList()).reshape(2, 2, 2)
             assertEquals(
-                Tensor.of(intArrayOf(2, 2), 0, 6, 1, 7),
+                Tensor.ofFlat(intArrayOf(2, 2), 0, 6, 1, 7),
                 b.diagonal(0, 0, 1)
             )
         }
@@ -285,15 +285,15 @@ class TensorTest {
 
     @Test
     fun testTrace() {
-        val a = Tensor.of(intArrayOf(2, 2), 0..3)
+        val a = Tensor.ofFlat(intArrayOf(2, 2), 0..3)
 
         with(tenZ) {
             val tr = a.trace()
             assertEquals(Tensor.scalar(3), tr)
 
-            val b = Tensor.of<Int>((0..7).toList()).reshape(2, 2, 2)
+            val b = Tensor.ofNested<Int>((0..7).toList()).reshape(2, 2, 2)
             assertEquals(
-                Tensor.of(listOf(5, 9)),
+                Tensor.ofNested(listOf(5, 9)),
                 b.trace(0, 0)
             )
             assertEquals(
@@ -305,7 +305,7 @@ class TensorTest {
 
     @Test
     fun testFunctionalities() {
-        val ℤ = NumberModels.integers()
+        val ℤ = Models.ints()
         val ℚ = fractions()
         val tZ = Tensor.over(ℤ)
         val tQ = Tensor.over(ℚ)

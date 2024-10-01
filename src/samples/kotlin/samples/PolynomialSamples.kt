@@ -1,6 +1,6 @@
 package samples
 
-import io.github.ezrnest.model.NumberModels
+import io.github.ezrnest.model.Models
 import io.github.ezrnest.model.Polynomial
 
 //object PolynomialExamples{
@@ -9,7 +9,7 @@ import io.github.ezrnest.model.Polynomial
 
 fun polynomial() {
 //    val Z = NumberModels.intAsIntegers() // Integers, Z
-    val Z97 = NumberModels.intModP(97) // Integers mod 97, Z/97Z, a field
+    val Z97 = Models.intModP(97) // Integers mod 97, Z/97Z, a field
     val polyZ = Polynomial.over(Z97) // Polynomials over Z/97Z
     with(polyZ) {
         val f = x + 1

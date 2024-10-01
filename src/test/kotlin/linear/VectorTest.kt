@@ -4,14 +4,13 @@ import TestUtils.assertEquals
 import io.github.ezrnest.linear.T
 import io.github.ezrnest.linear.Vector
 import io.github.ezrnest.linear.Vector.Companion.vec
-import io.github.ezrnest.model.NumberModels
+import io.github.ezrnest.model.Models
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 class VectorTest {
-    val ints = NumberModels.integers()
-    val reals = NumberModels.doubles(1E-7)
+    val ints = Models.ints()
+    val reals = Models.doubles(1E-7)
     val R3 = Vector.over(reals, 3)
     val Z3 = Vector.over(ints, 3)
 

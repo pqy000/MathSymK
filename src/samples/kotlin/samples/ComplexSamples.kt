@@ -3,7 +3,7 @@ package samples
 import io.github.ezrnest.model.Complex
 import io.github.ezrnest.model.Complex128
 import io.github.ezrnest.model.Complex128.Companion.exp
-import io.github.ezrnest.model.NumberModels
+import io.github.ezrnest.model.Models
 
 
 fun basicDoubleComplex(){
@@ -18,7 +18,7 @@ fun basicDoubleComplex(){
 }
 
 fun variousDoubleModels(){
-    val Z = NumberModels.integers()
+    val Z = Models.ints()
     val GaussianInt = Complex.over(Z)
     with(GaussianInt){
         val z1 = 1 + 2.i
@@ -26,7 +26,7 @@ fun variousDoubleModels(){
         println(listOf(z1 + z2, z1 - z2, z1 * z2)) // (4, 6), (-2, -2), (-5, 10)
     }
 
-    val Q = NumberModels.fractions()
+    val Q = Models.fractions()
     val complex2 = Complex.over(Q) // Complex numbers with rational components
     with(Q){
         with(complex2) {

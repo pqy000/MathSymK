@@ -1,14 +1,14 @@
 package model
 
 import TestUtils.assertEquals
-import io.github.ezrnest.model.NumberModels
+import io.github.ezrnest.model.Models
 import io.github.ezrnest.model.Quaternion
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class QuaternionTest {
-    val intModP = NumberModels.intModP(97)
+    val intModP = Models.intModP(97)
     val quaterion = Quaternion.from(intModP)
 
     @Test

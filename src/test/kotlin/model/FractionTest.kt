@@ -1,11 +1,9 @@
 package model
 
 import io.github.ezrnest.model.Fraction
-import io.github.ezrnest.model.NumberModels
 import io.github.ezrnest.model.toFrac
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
-import kotlin.system.measureTimeMillis
 import kotlin.test.assertEquals
 
 class FractionTest {

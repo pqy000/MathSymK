@@ -631,7 +631,10 @@ object BigFractionAsQuotients : RFracOverIntDom<BigInteger>(BigIntegerAsIntegers
 }
 
 
-object NumberModels {
+/**
+ * Provides basic number models.
+ */
+object Models {
     /**
      * Gets a group calculator on the GroupNumberModel.
      */
@@ -651,12 +654,12 @@ object NumberModels {
      *
      * @see Integers
      */
-    fun integers(): Integers<Int> = IntAsIntegers
+    fun ints(): Integers<Int> = IntAsIntegers
 
     /**
      * Gets the model of integers with type `Long`.
      */
-    fun integersLong(): Integers<Long> = LongAsIntegers
+    fun longs(): Integers<Long> = LongAsIntegers
 
     /**
      * Gets the model of integers with type `BigInteger`.

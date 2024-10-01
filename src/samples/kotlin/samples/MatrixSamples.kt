@@ -2,7 +2,7 @@ package samples
 
 import io.github.ezrnest.linear.*
 import io.github.ezrnest.model.Multinomial
-import io.github.ezrnest.model.NumberModels
+import io.github.ezrnest.model.Models
 import io.github.ezrnest.model.Polynomial
 import io.github.ezrnest.model.Polynomial.Companion.substitute
 import io.github.ezrnest.numberTheory.NTFunctions
@@ -13,7 +13,7 @@ import kotlin.math.cos
 import kotlin.random.Random
 
 fun computingDeterminantSymbolic() {
-    val ℤ = NumberModels.integers()
+    val ℤ = Models.ints()
     val mult = Multinomial.over(ℤ)
     with(Matrix.over(mult)) {
         val A = Matrix(3) { i, j ->
@@ -28,7 +28,7 @@ fun computingDeterminantSymbolic() {
 }
 
 fun matrixMultiplication() {
-    val ℤ = NumberModels.integers()
+    val ℤ = Models.ints()
     with(Matrix.over(ℤ)) {
         val n = 3
         val A = Matrix(n) { i, j -> (5 * cos(i + 2.0 * j)).toInt() } // generate a non-singular matrix
@@ -44,7 +44,7 @@ fun matrixMultiplication() {
 
 
 fun matCharPoly(){
-    val ℤ = NumberModels.integers()
+    val ℤ = Models.ints()
     val n = 4
     with(Matrix.over(ℤ,n)){
         val A = Matrix(n) { i, j -> i + 2 * j }
@@ -56,7 +56,7 @@ fun matCharPoly(){
 }
 
 fun matrixCharacteristicPolynomials() {
-    val ℤ = NumberModels.integers()
+    val ℤ = Models.ints()
     val n = 4
     with(Matrix.over(ℤ, n)) {
         val A = Matrix(n) { i, j -> i + 2 * j }
@@ -92,7 +92,7 @@ fun matrixCharacteristicPolynomials() {
 fun matrixCharacteristicPolynomialsComplexExample() {
     // this example show the flexibility of the library
     // now we work with multinomials over integers
-    val ℤ = NumberModels.integers()
+    val ℤ = Models.ints()
     val multiOverZ = Multinomial.over(ℤ)
     val n = 4
     val mat = Matrix.over(multiOverZ, n)
@@ -129,7 +129,7 @@ fun matrixCharacteristicPolynomialsComplexExample() {
 }
 
 fun computeInvariantFactors() {
-    val Z = NumberModels.integers()
+    val Z = Models.ints()
     val n = 5
     with(Matrix.over(Z)) {
         val rng = Random(11)

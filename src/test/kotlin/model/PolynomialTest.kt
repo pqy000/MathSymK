@@ -1,7 +1,7 @@
 package model
 
 import io.github.ezrnest.model.Fraction
-import io.github.ezrnest.model.NumberModels
+import io.github.ezrnest.model.Models
 import io.github.ezrnest.model.PTerm
 import io.github.ezrnest.model.Polynomial
 import io.github.ezrnest.structure.sum
@@ -12,7 +12,7 @@ import kotlin.test.assertEquals
 
 class PolynomialTest {
     private val fractions = Fraction.model
-    private val ints = NumberModels.integers()
+    private val ints = Models.ints()
     private val Zx = Polynomial.over(ints)
     val Qx = Polynomial.over(fractions)
 

@@ -1,6 +1,5 @@
 package io.github.ezrnest.linear
 
-import io.github.ezrnest.model.NumberModels.integers
 import io.github.ezrnest.numberTheory.NTFunctions
 import io.github.ezrnest.structure.*
 import io.github.ezrnest.util.IterUtils
@@ -61,48 +60,12 @@ abstract class AbstractTensor<T>(
             }
         }
     }
-
-    /**
-     * Gets the element in this tensor. The index is already checked valid.
-     * The index should not be modified.
-     */
-    protected abstract fun getChecked(idx: Index): T
-
-
-    /**
-     * Gets an element in this tensor according to the index.
-     *
-     * @param idx the index, it is required that `0 <= idx < shape`
-     */
-    override operator fun get(idx: Index): T {
-        checkIdx(idx)
-        return getChecked(idx)
-    }
-
-    /*
-    Math operations:
-     */
-
-
-    //    override fun permute(p: Permutation): Tensor<T> {
-//        require(p.size() == dim)
-//        val sh = this.shape
-//        val ranges = shape.map { 0 until it }
-//        return SlicedView(this, ranges, p.array, p.apply(sh))
-//    }
-
-
-    /*
-    General methods for MathObject
-     */
-
-//    override fun <N> mapTo(newCalculator: EqualPredicate<N>, mapper: Function<T, N>): Tensor<N> {
-//        return ATensor.buildFromSequence(newCalculator, sh, elementSequence().map { mapper.apply(it) })
-//    }
 }
 
 abstract class AbstractMutableTensor<T>(shape: IntArray) : AbstractTensor<T>(shape),
     MutableTensor<T> {
+
+
 
     override fun permute(vararg reorderedAxes: Int): MutableTensor<T> {
         return super<MutableTensor>.permute(*reorderedAxes)
@@ -114,13 +77,8 @@ abstract class AbstractMutableTensor<T>(shape: IntArray) : AbstractTensor<T>(sha
 }
 
 
-/**
- * An array-implementation of tensor.
- */
-class ATensor<T>
-internal constructor(shape: IntArray, val data: Array<Any?>) :
-    AbstractMutableTensor<T>(shape) {
-    private val shifts: IntArray = IntArray(dim)
+abstract class AbstractTensorFromArray<T>(shape: IntArray) : AbstractMutableTensor<T>(shape) {
+    protected val shifts = IntArray(dim)
 
     init {
         var s = 1
@@ -130,19 +88,27 @@ internal constructor(shape: IntArray, val data: Array<Any?>) :
         }
     }
 
-    override val size: Int
-        get() = data.size
-
-    private fun toPos(idx: Index): Int {
+    protected fun toPos(idx: Index): Int {
         var pos = 0
         for (i in 0 until dim) {
             pos += idx[i] * shifts[i]
         }
         return pos
     }
+}
 
+/**
+ * An array-implementation of tensor.
+ */
+class ATensor<T>
+internal constructor(shape: IntArray, val data: Array<Any?>) :
+    AbstractTensorFromArray<T>(shape) {
 
-    override fun getChecked(idx: Index): T {
+    override val size: Int
+        get() = data.size
+
+    override fun get(idx: Index): T {
+        checkIdx(idx)
         @Suppress("UNCHECKED_CAST")
         return data[toPos(idx)] as T
     }
@@ -164,6 +130,7 @@ internal constructor(shape: IntArray, val data: Array<Any?>) :
     override fun <S> map(mapping: (T) -> S): ATensor<S> {
         return apply1(mapping)
     }
+
 
     override fun set(idx: Index, v: T) {
         checkIdx(idx)
@@ -340,9 +307,90 @@ internal constructor(shape: IntArray, val data: Array<Any?>) :
             return ATensor(shape, data)
         }
     }
-
 }
 
+//class DoubleTensor(shape: IntArray, val data: DoubleArray) : AbstractTensorFromArray<Double>(shape) {
+//    init {
+//        require(data.size == size) {
+//            "Data size mismatch: required ${size}, but ${data.size} is given."
+//        }
+//    }
+//
+//    override fun get(idx: Index): Double {
+//        checkIdx(idx)
+//        return data[toPos(idx)]
+//    }
+//
+//    override fun set(idx: Index, v: Double) {
+//        checkIdx(idx)
+//        data[toPos(idx)] = v
+//    }
+//
+//    override fun setAll(v: Double) {
+//        Arrays.fill(data, v)
+//    }
+//
+//    override fun elementSequence(): Sequence<Double> {
+//        return data.asSequence()
+//    }
+//
+//    override fun flattenToList(): List<Double> {
+//        return data.asList()
+//    }
+//
+//    override fun copy(): DoubleTensor {
+//        return DoubleTensor(shape, data.copyOf())
+//    }
+//
+//    fun mapDouble(mapping: DoubleUnaryOperator): DoubleTensor {
+//        return apply1 { mapping.applyAsDouble(it) }
+////        val ndata = DoubleArray(size) {
+////            mapping.applyAsDouble(data[it])
+////        }
+////        return DoubleTensor(shape, ndata)
+//    }
+//
+//    override fun <S> map(mapping: (Double) -> S): MutableTensor<S> {
+//        return ATensor.buildFromSequence(shape, elementSequence().map { mapping(it) })
+//    }
+//
+//    override fun transform(f: (Double) -> Double) {
+//        for (i in 0 until size) {
+//            data[i] = f(data[i])
+//        }
+//    }
+//
+//    fun transformDouble(f: DoubleUnaryOperator) {
+//        inPlaceApply1 { f.applyAsDouble(it) }
+//    }
+//
+//    private inline fun apply1(f: (Double) -> Double): DoubleTensor {
+//        val ndata = DoubleArray(size) {
+//            f(data[it])
+//        }
+//        return DoubleTensor(shape, ndata)
+//    }
+//
+//    private inline fun inPlaceApply1(f: (Double) -> Double) {
+//        for (i in 0 until size) {
+//            data[i] = f(data[i])
+//        }
+//    }
+//
+//    companion object{
+//
+//        private inline fun apply2(x: DoubleTensor, y: DoubleTensor, f: (Double, Double) -> Double): DoubleTensor {
+//            val d1 = x.data
+//            val d2 = y.data
+//            val ndata = DoubleArray(x.size) {
+//                f(d1[it], d2[it])
+//            }
+//            return DoubleTensor(x.shape, ndata)
+//        }
+//
+//
+//    }
+//}
 
 internal object TensorImpl {
 
