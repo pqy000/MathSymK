@@ -3,6 +3,7 @@ package io.github.ezrnest.model
 import io.github.ezrnest.linear.Matrix
 import io.github.ezrnest.linear.MutableMatrix
 import io.github.ezrnest.model.Polynomial.Companion.computeGeneral
+import io.github.ezrnest.model.Polynomial.Companion.over
 import io.github.ezrnest.structure.*
 import io.github.ezrnest.util.DataStructureUtil
 import java.util.Comparator
@@ -101,7 +102,9 @@ data class Polynomial<T> internal constructor(
     }
 
     fun toString(ch: String): String {
-        return terms.asReversed().joinToString(separator = " + ") { "${it.value}$ch^${it.pow}" }
+        return terms.asReversed().joinToString(separator = " + ") {
+            if (it.pow > 0) "${it.value}$ch^${it.pow}" else it.value.toString()
+        }
     }
 
     /*
@@ -115,45 +118,6 @@ data class Polynomial<T> internal constructor(
     internal inline fun mapTermsNonZero(crossinline transform: (T) -> T): Polynomial<T> {
         return mapTermsNonZeroT { PTerm(it.pow, transform(it.value)) }
     }
-
-
-//    /**
-//     * Returns the greatest common divisor of this polynomial and another polynomial.
-//     *
-//     * It is required that the [model] is either a [Field] or a [UniqueFactorizationDomain].
-//     */
-//    override fun gcd(y: Polynomial<T>): Polynomial<T> {
-//        if (model is Field) {
-//            return super.gcd(y) // Euclidean Method
-//        }
-//        if (model is UniqueFactorizationDomain) {
-//            return subResultantGCD(this, y)
-//        }
-//        throw UnsupportedOperationException("The model is not a field or a UFD.")
-//    }
-//
-//    override fun gcdUV(y: Polynomial<T>): Triple<Polynomial<T>, Polynomial<T>, Polynomial<T>> {
-//        require(model is Field<T>) { "The model is not a field." }
-//        return EuclidDomainModel.gcdUVForModel(this, y, zero(model), one(model))
-//    }
-//
-//
-//    /**
-//     * Returns the result `(q, r)` of dividing `this` by `y` and the remainder.
-//     * It is guaranteed that `this = q * y + r` and `r.degree < y.degree`.
-//     *
-//     * It is required that either of the following conditions is satisfied:
-//     * - The [model] is a [Field].
-//     * - The [model] is a [UniqueFactorizationDomain] and every division is exact.
-//     */
-//    override fun divideAndRemainder(y: Polynomial<T>): Pair<Polynomial<T>, Polynomial<T>> {
-//        return divideAndRemainder(this, y, model as UnitRing)
-//    }
-
-
-    /*
-    Extra algebraic operations for polynomials
-     */
 
 
     companion object {
@@ -261,6 +225,7 @@ data class Polynomial<T> internal constructor(
         /*
         Methods for number theory
          */
+
 
     }
 }
@@ -818,6 +783,7 @@ open class PolyOverUnitRing<T>(_model: UnitRing<T>) : PolyOverRing<T>(_model), U
         return q
     }
 
+
     fun Polynomial<T>.scalarExactDiv(k: T): Polynomial<T> {
         val model = model
         return mapTermsPossiblyZero(terms, model) { model.exactDiv(it, k) }
@@ -997,6 +963,7 @@ open class PolyOverField<T>(override val model: Field<T>) : PolyOverUFD<T>(model
 
     operator fun Polynomial<T>.div(k: T): Polynomial<T> = scalarDiv(this, k)
 
+
     override fun gcd(a: Polynomial<T>, b: Polynomial<T>): Polynomial<T> {
         return super<PolyOverUFD>.gcd(a, b)
     }
@@ -1004,6 +971,7 @@ open class PolyOverField<T>(override val model: Field<T>) : PolyOverUFD<T>(model
     override fun exactDiv(a: Polynomial<T>, b: Polynomial<T>): Polynomial<T> {
         return super<PolyOverUFD>.exactDiv(a, b)
     }
+
 
     override fun divideAndRem(a: Polynomial<T>, b: Polynomial<T>): Pair<Polynomial<T>, Polynomial<T>> {
         return divideAndRemainder0(a, b)
@@ -1108,6 +1076,166 @@ open class PolyOverField<T>(override val model: Field<T>) : PolyOverUFD<T>(model
         }
 
         return res
+    }
+
+
+    /**
+     * Maps a polynomial `f(x^p)` to `f(x)`
+     */
+    private fun <T> polynomialChDiv(f: Polynomial<T>, p: Int): Polynomial<T> {
+        require(f.degree % p == 0)
+        return f.mapTermsNonZeroT { PTerm(it.pow / p, it.value) }
+    }
+
+
+    fun squareFreeFactorizeChP(A: Polynomial<T>, p: Int)
+            : List<Pair<Polynomial<T>, Int>> {
+        //Created by lyc at 2021-04-15 22:19
+        /*
+        Reference:
+        Algorithm 3.4.2, page 126 of
+        'A Course in Computational Algebraic Number Theory', Henri Cohen
+
+
+        Explanation:
+        Assume A = prod(r,A_r^r) is the squarefree factorization,
+
+
+        In zero-characteristic field, we have that T = (A,A') = prod(r,A_r^{r-1})
+        are the duplicated parts in A, so if we divide A by it, we get A_1.
+        Repeat the process and we can get all A_r.
+
+
+        In finite field Z mod p, assume A = prod(r, A_r^r), then
+
+        A' = \sum{k} ( \prod{r != k} A_r^r) k A_k^{k-1}
+
+        here if p | k, the term in the sum is zero,
+        so the degree of A_k in A' is still k.
+        (the degree should have been subtracted by 1, but the corresponding coefficient is zero)
+        So we can obtain the formula:
+
+        T = (A,A') = \prod{p !| r} A_r^{r-1} \prod{p | r} A_r^r
+
+        So we can get all the A_k for p !| k in A/T.
+        To get the remaining polynomials, we repeat the T=gcd(A, A'), A = A/T
+        process until A is a constant, then all the
+        terms A_k in T satisfies p | k, and we have T = U(X)^p = U(X^p) (property of Z_p)
+        Then, we can factorize U(X) using the same process, while
+        marking the power.
+
+
+         */
+        var e = 1 // record the power extracted
+        var T0 = A // the remaining polynomial
+        val result = arrayListOf<Pair<Polynomial<T>, Int>>()
+        while (!T0.isConstant) {
+            var T = gcd(T0, T0.derivative()).toMonic()
+            // T contains: A_k^{k-1}, p !| k
+            //             A_k^k, p | k
+            var V = T0 / T
+            // V   contains: A_k, p !| k
+            var r = 0
+            while (!V.isConstant) {
+                /*
+                if V is a constant, then T only contains A_k, p | k
+
+                we have to reduce and extract the terms in T and V
+                remaining:
+                T: A_k^{k-1-r}, p !| k; A_k^{k}, p | k
+                V: A_k, p !| k, k >= r
+                */
+                r++
+                if (r % p == 0) {
+                    // p | r, we can only extract p !| k, so here we
+                    // eliminate those p !| l and leave p|k the same.
+                    T /= V
+                    // reduce power by one for all
+                    // A_k p !| k, k >= r
+                    r++ //next r must be p !| r
+                }
+                val W = gcd(T, V).toMonic()
+                // W: A_k^{k-1-r}, p !| k, k >= r+1
+                val Ar = V / W
+                // A_r is the remaining one, report it
+                if (!Ar.isConstant) {
+                    result += Ar to e * r
+                }
+                // V,T should be reduced
+                V = W
+                T /= V
+            }
+            //now V is a constant,
+            //T only contains A_k, p | k
+            //reduce the power and record it to e
+            T0 = polynomialChDiv(T, p)
+            e *= p
+        }
+        return result
+
+    }
+
+    fun squareFreeFactorizeCh0(p: Polynomial<T>): List<Pair<Polynomial<T>, Int>> {
+        if (p.degree < 1) {
+            return emptyList()
+        }
+        if (p.degree == 1) {
+            return listOf(p to 1)
+        }
+        /*
+        Explanation:
+        Assume p = \prod{r} p_r^r is the square-free factorization, then
+            p' = \sum{k} (\prod{r!=k} p_r^r) k p_k^{k-1},
+        so
+            f_1 = (p, p') = \prod{r >= 2} p_r^{r-1}
+            g_1 = p / f_1 = \prod{r} p_r
+        denote g_k = \prod{r >= k} p_k and f_k = \prod{r >= k+1} p_r^{r-k},
+        then we have
+            g_{k+1} = (g_k, f_k),
+            f_{k+1} = f_k / g_{k+1}
+            p_k     = g_k / g_{k+1}
+        we use the formula above to get all p_k
+         */
+        val result = arrayListOf<Pair<Polynomial<T>, Int>>()
+        var k = 1
+        var f = gcd(p, p.derivative()).toMonic() // f_k
+        var g = p.div(f) // g_k
+        while (g.degree > 0) {
+            val h = gcd(g, f).toMonic() //g_{k+1} = (g_k, f_k)
+            val pk = g.div(h) //  p_k = g_k / g_{k+1}
+            if (pk.degree > 0) {
+                result += pk to k
+            }
+            f = f.div(h) // f_{k+1} = f_k / g_{k+1}
+            g = h
+            k++
+        }
+
+        return result
+    }
+
+    /**
+     * Calculates the square-free factorization for a polynomial in a field of characteristic zero or `p`.
+     *
+     * The square-free factorization of a polynomial `f` is
+     * ```
+     *     f = prod(r, f_r^r),     where f_r is square-free and co-prime.
+     * ```
+     * For example, polynomial `x^2 + 2x + 1` is factorized to be `(x+1)^2`, and the
+     * result of this method will be a list containing only one element `(2, x+1)`.
+     *
+     * It is required that the characteristic of the field [model] is known.
+     *
+     * @return a list containing all the non-constant square-free factors with their degree `this`.
+     */
+    fun Polynomial<T>.squareFreeFactorize(): List<Pair<Polynomial<T>, Int>> {
+        val p = Math.toIntExact(model.characteristic!!)
+        val m = this.toMonic()
+        return if (p == 0) {
+            squareFreeFactorizeCh0(m)
+        } else {
+            squareFreeFactorizeChP(m, p)
+        }
     }
 }
 

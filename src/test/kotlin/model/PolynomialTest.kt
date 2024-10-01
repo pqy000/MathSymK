@@ -596,6 +596,21 @@ class PolynomialTest {
             assertEquals(4, result)
         }
     }
+
+    @Test
+    fun squareFreeFact(){
+        with(Qx) {
+            val a = ofF(1,1)
+            val p = a pow 2
+            val result = p.squareFreeFactorize()
+            assertEquals(listOf(a to 2), result)
+        }
+        with(Polynomial.over(Models.intModP(7))){
+            val f = x + x.pow(8) // x + x^8 = x (1 + x^7) = x (1 + x)^7
+            val result = f.squareFreeFactorize()
+            assertEquals(f, result.fold(one){acc, pair -> acc * pair.first.pow(pair.second.toLong())})
+        }
+    }
 //
 //    @Test
 //    fun reverse() {
