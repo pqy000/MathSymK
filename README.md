@@ -20,13 +20,23 @@ Currently, it includes
 - Interfaces for algebraic structures, such as `Group`, `Ring`, `Field`, etc.
 - Basic implementations of algebraic structures 
   - `Fraction`, `Complex`, etc.
-  - `Polynomial`: Algebraic operations, `gcd`, etc. 
+  - `Polynomial`: 
+    - Algebraic operations
+    - gcd, factorization, etc.
   - `Multinomial`: Algebraic operations
 - Linear algebra
-  - `Vector`
+  - `Vector`: Algebraic operations, dot product, cross product, etc.
   - `Matrix`
+    - Algebraic operations, matrix multiplication
+    - Determinant, inverse, etc
+    - LU decomposition, Smith normal form, etc.
   - `Tensor`
+    - Basic operations, slicing, broadcasting, etc.
+    - Algebraic operations, einsum, etc.
 - Utilities for number theory and combinatorics
+  - `gcd`, `lcm`, `chineseRemainder`, `powMod`, etc.
+  - Iterating over permutations, combinations, etc.
+  - `Permutation`: cyclic decomposition, reverse count, etc.
 
 # Installation
 
@@ -241,14 +251,21 @@ One can easily build up a matrix of integers or a matrix of polynomials over a f
 
 # Development
 
-Currently, this project will be migrated and redesigned from my other math lib [Ancono](https://github.com/140378476/Ancono).
+Currently, this project will be migrated and redesigned from my legacy math lib [Ancono](https://github.com/140378476/Ancono),
+but the new project will be more modular and flexible.
 
 I am very glad to receive any feedback or suggestions.
 Please feel free to open an issue or pull request.
 Any contribution is welcome.
 
-## Roadmap
-- [ ] Linear algebra related
+## Next Steps
+- Preliminary implementation of symbolic calculation
+- Quotient rings and fields
+- Finite fields
+- Geometry 2D and 3D
+
+
+## Future Roadmap
 - [ ] Preliminary implementation of symbolic calculation
 - [ ] Geometry related
 - [ ] Implement more algebraic structures

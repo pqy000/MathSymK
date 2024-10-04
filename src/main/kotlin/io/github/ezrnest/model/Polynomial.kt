@@ -2,8 +2,6 @@ package io.github.ezrnest.model
 
 import io.github.ezrnest.linear.Matrix
 import io.github.ezrnest.linear.MutableMatrix
-import io.github.ezrnest.model.Polynomial.Companion.computeGeneral
-import io.github.ezrnest.model.Polynomial.Companion.over
 import io.github.ezrnest.structure.*
 import io.github.ezrnest.util.DataStructureUtil
 import java.util.Comparator
@@ -438,7 +436,7 @@ open class PolyOverRing<T>(protected val modelRing: Ring<T>) :
      * Apply this polynomial to a value `x` and returns the result.
      */
     fun Polynomial<T>.apply(x: T): T {
-        return computeGeneral(this, x, model::zero, { it }, model::add, model::multiply, model::power)
+        return Polynomial.computeGeneral(this, x, model::zero, { it }, model::add, model::multiply, model::power)
     }
 
 
