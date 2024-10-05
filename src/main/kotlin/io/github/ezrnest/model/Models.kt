@@ -591,7 +591,10 @@ class BigDecimalAsReals(val mc: MathContext = MathContext.DECIMAL128) : Reals<Bi
 
 typealias BigFraction = RFraction<BigInteger>
 
-object BigFractionAsQuotients : RFracOverIntDom<BigInteger>(BigIntegerAsIntegers), Quotients<BigFraction> {
+object BigFractionAsQuotients : RFracOverIntDom<BigInteger>(BigIntegerAsIntegers), Quotients<BigInteger,BigFraction> {
+    override val integers: Integers<BigInteger>
+        get() = BigIntegerAsIntegers
+
     override fun simplifyFrac(nume: BigInteger, deno: BigInteger): RFraction<BigInteger> {
         val r = super.simplifyFrac(nume, deno)
         if (r.deno < BigInteger.ZERO) {
@@ -612,11 +615,18 @@ object BigFractionAsQuotients : RFracOverIntDom<BigInteger>(BigIntegerAsIntegers
         return frac(n, d)
     }
 
+    fun fromBigInt(n: BigInteger): BigFraction {
+        return frac(n, BigInteger.ONE)
+    }
+
     val Int.bfrac: BigFraction
         get() = this.toBigInteger().f
 
     val Long.bfrac: BigFraction
         get() = this.toBigInteger().f
+
+    val BigInteger.bfrac: BigFraction
+        get() = this.f
 
     override val characteristic: Long
         get() = super<Quotients>.characteristic
@@ -627,7 +637,17 @@ object BigFractionAsQuotients : RFracOverIntDom<BigInteger>(BigIntegerAsIntegers
         return (a.nume * b.deno).compareTo(b.nume * a.deno)
     }
 
+    override fun isInteger(x: BigFraction): Boolean {
+        return x.deno == BigInteger.ONE
+    }
 
+    override fun numerator(x: BigFraction): BigInteger {
+        return x.nume
+    }
+
+    override fun denominator(x: BigFraction): BigInteger {
+        return x.deno
+    }
 }
 
 

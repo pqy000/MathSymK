@@ -6,6 +6,7 @@ import io.github.ezrnest.model.Fraction
 import io.github.ezrnest.model.Multinomial
 import io.github.ezrnest.model.Models
 import io.github.ezrnest.model.Models.fractions
+import io.github.ezrnest.model.Models.ints
 import io.github.ezrnest.util.IterUtils
 import kotlin.system.measureTimeMillis
 
@@ -83,6 +84,13 @@ object TensorSamples {
         }
     }
 
+    fun tensorExample3(){
+        with(Tensor.over(ints())) {
+            val a = zeros(2,3,5)
+            println(a.sum())
+        }
+    }
+
     fun tensorTimeCost() {
         // can be improved in the future version with specialized implementation for primitive types including Int and Double
         val ℤ = Models.ints()
@@ -102,5 +110,5 @@ object TensorSamples {
 }
 
 fun main() {
-    TensorSamples.slice()
+    TensorSamples.tensorExample3()
 }

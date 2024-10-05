@@ -4,6 +4,7 @@ import io.github.ezrnest.model.Fraction.Companion.ONE
 import io.github.ezrnest.model.Fraction.Companion.ZERO
 import io.github.ezrnest.model.struct.FieldModel
 import io.github.ezrnest.numberTheory.NTFunctions
+import io.github.ezrnest.structure.Integers
 import io.github.ezrnest.structure.Quotients
 import io.github.ezrnest.util.ArraySup
 import io.github.ezrnest.util.MathUtils
@@ -860,7 +861,10 @@ data class Fraction internal constructor(
 /**
  * A model for fractions, which is a subclass of [Quotients].
  */
-object FractionAsQuotients : Quotients<Fraction> {
+object FractionAsQuotients : Quotients<Long,Fraction> {
+    override val integers: Integers<Long>
+        get() = LongAsIntegers
+
     override fun isEqual(x: Fraction, y: Fraction): Boolean {
         return x == y
     }
@@ -881,6 +885,22 @@ object FractionAsQuotients : Quotients<Fraction> {
 
     override fun contains(x: Fraction): Boolean {
         return true
+    }
+
+    override fun isInteger(x: Fraction): Boolean {
+        return x.isInteger
+    }
+
+    override fun numerator(x: Fraction): Long {
+        return x.nume
+    }
+
+    override fun denominator(x: Fraction): Long {
+        return x.deno
+    }
+
+    override fun asInteger(x: Fraction): Long {
+        return x.toLong()
     }
 
     override fun add(x: Fraction, y: Fraction): Fraction {
