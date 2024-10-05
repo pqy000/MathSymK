@@ -1,5 +1,5 @@
 package io.github.ezrnest.symbolic
-
+// created at 2024/10/05
 import io.github.ezrnest.model.Multinomial
 import kotlin.collections.plus
 
@@ -37,14 +37,6 @@ operator fun <T> Node.set(key: MetaKey<T>, value: T) = addMeta(key, value)
 
 object EMeta {
 
-
-//    val asInt = MetaKey<BigInteger?>("asInt")
-//    /**
-//     * Whether the node is a rational number.
-//     *
-//     * If the node is a rational number, the value is the rational number.
-//     */
-//    val asRational = MetaKey<Rational?>("asRational")
 
     val asMulti = MetaKey<Multi>("asMulti")
 

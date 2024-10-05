@@ -1,7 +1,5 @@
 package io.github.ezrnest.symbolic
-
 // created at 2024/10/01
-
 import io.github.ezrnest.model.BigFraction
 import io.github.ezrnest.util.all2
 import java.math.BigInteger
@@ -34,19 +32,20 @@ sealed interface Node {
     fun deepEquals(other: Node): Boolean
 
 
-
     companion object {
 
-        const val NAME_MUL = "*"
-        const val NAME_ADD = "+"
-        const val NAME_DIV = "/"
-        const val NAME_POW = "^"
 
         val ZERO = Int(BigInteger.ZERO)
 
         val ONE = Int(BigInteger.ONE)
 
         val NEG_ONE = Int(BigInteger.ONE.negate())
+
+        val PI = Symbol(Names.Symbol_PI)
+
+        val NATURAL_E = Symbol(Names.Symbol_E)
+
+        val IMAGINARY_UNIT = Symbol(Names.Symbol_I)
 
         fun Int(value: BigInteger): NRational {
             return NRational(BigFraction(value, BigInteger.ONE))
@@ -56,66 +55,31 @@ sealed interface Node {
             return NRational(value)
         }
 
+        //
         fun Symbol(name: String): Node {
             return NSymbol(name)
         }
+    }
+
+    object Names {
+        const val MUL = "*"
+        const val ADD = "+"
+        const val NAME_DIV = "/"
+        const val POW = "^"
 
 
-        fun Add(nodes: List<Node>): NodeN {
-            return NodeNImpl(NAME_ADD, nodes)
-        }
+        const val Symbol_I = "𝑖"
+        const val Symbol_E = "𝑒"
+        const val Symbol_PI = "π"
 
-        fun Add(vararg nodes: Node): NodeN {
-            return Add(nodes.asList())
-        }
-
-        fun Mul(nodes: List<Node>): NodeN {
-            return NodeNImpl(NAME_MUL, nodes)
-        }
-
-        fun Mul(vararg nodes: Node): NodeN {
-            return Mul(nodes.asList())
-        }
-
-        fun Exp(base: Node, exp: Node): Node2 {
-            return Node2Impl(NAME_POW, base, exp)
-        }
-
-        fun Int(value: Int): NRational {
-            return Int(value.toBigInteger())
-        }
-
-        fun Inv(node: Node): Node2 {
-            return Exp(node, NEG_ONE)
-        }
-
-        fun Neg(node: Node): NodeChilded {
-            return Mul(NEG_ONE, node)
-        }
-
-        fun Node1(name: String, child: Node): Node1 {
-            return Node1Impl(name, child)
-        }
-
-        fun Node2(name: String, first: Node, second: Node): Node2 {
-            return Node2Impl(name, first, second)
-        }
-
-        fun Node3(name: String, first: Node, second: Node, third: Node): Node3 {
-            return Node3Impl(name, first, second, third)
-        }
-
-        fun NodeN(name: String, children: List<Node>): NodeN {
-            return NodeNImpl(name, children)
-        }
-
-        fun NodeN(name: String, vararg children: Node): NodeN {
-            return NodeN(name, children.asList())
-        }
     }
 }
 
+
 sealed interface LeafNode : Node {
+
+    override val name: String
+        get() = ""
 
     override fun traverse(depth: Int, action: (Node) -> Unit) {
         action(this)
@@ -154,8 +118,6 @@ typealias Rational = BigFraction
 
 class NRational(val value: Rational) : AbstractNode(), LeafNode {
 
-    override val name get() = "Rational"
-
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is NRational) return false
@@ -181,8 +143,6 @@ class NRational(val value: Rational) : AbstractNode(), LeafNode {
 
 
 class NSymbol(val ch: String) : AbstractNode(), LeafNode {
-
-    override val name get() = "Symbol"
 
     override fun plainToString(): String {
         return ch
@@ -286,11 +246,6 @@ interface Node1 : NodeChilded {
         return newWithChildren(children[0])
     }
 
-    override fun <A : Appendable> treeTo(builder: A, level: Int, indent: String): A {
-        builder.append(indent).append(name).appendLine()
-        child.treeTo(builder, level + 1, "$indent  ")
-        return builder
-    }
 
     override fun deepEquals(other: Node): Boolean {
         if (this === other) return true
@@ -321,13 +276,6 @@ interface Node2 : NodeChilded {
         return newWithChildren(children[0], children[1])
     }
 
-    override fun <A : Appendable> treeTo(builder: A, level: Int, indent: String): A {
-        builder.append(indent).appendLine(name)
-        val newIndent = "$indent  "
-        first.treeTo(builder, level + 1, newIndent)
-        second.treeTo(builder, level + 1, newIndent)
-        return builder
-    }
 
     override fun deepEquals(other: Node): Boolean {
         if (this === other) return true
@@ -350,21 +298,12 @@ interface Node3 : NodeChilded {
 
     override val children: List<Node>
         get() = listOf(first, second, third)
-    
+
     fun newWithChildren(first: Node, second: Node, third: Node): Node3
-    
+
     override fun newWithChildren(children: List<Node>): NodeChilded {
         require(children.size == 3)
         return newWithChildren(children[0], children[1], children[2])
-    }
-
-    override fun <A : Appendable> treeTo(builder: A, level: Int, indent: String): A {
-        builder.append(indent).appendLine(name)
-        val newIndent = "$indent  "
-        first.treeTo(builder, level + 1, newIndent)
-        second.treeTo(builder, level + 1, newIndent)
-        third.treeTo(builder, level + 1, newIndent)
-        return builder
     }
 
     override fun deepEquals(other: Node): Boolean {
@@ -456,7 +395,7 @@ data class Node2Impl(
     override fun newWithChildren(first: Node, second: Node): Node2 {
         return Node2Impl(name, first, second)
     }
-    
+
 
     override fun recurMap(depth: Int, action: (Node) -> Node): Node {
         if (depth <= 0) return action(this)
@@ -535,6 +474,8 @@ object NodeBuilderScope {
     val a = "a".s
     val b = "b".s
 
+    val context = TestExprContext
+
 
     val Int.e: Node get() = Node.Int(BigInteger.valueOf(this.toLong()))
 
@@ -542,20 +483,32 @@ object NodeBuilderScope {
 
 
     operator fun Node.plus(other: Node): Node {
-        return Node.Add(this, other)
+        return context.Add(listOf(this, other))
+    }
+
+    operator fun Node.minus(other: Node): Node {
+        return context.Add(listOf(this, context.Mul(listOf(Node.NEG_ONE, other))))
     }
 
 
     operator fun Node.times(other: Node): Node {
-        return Node.Mul(this, other)
+        return context.Mul(listOf(this, other))
     }
 
     fun exp(base: Node, exp: Node): Node {
-        return Node.Exp(base, exp)
+        return context.Node2(Node.Names.POW, base, exp)
+    }
+
+    fun exp(x: Node): Node {
+        return exp(Node.NATURAL_E, x)
     }
 
     fun sin(node: Node): Node {
-        return Node.Node1("sin", node)
+        return context.Node1("sin", node)
+    }
+
+    fun cos(node: Node): Node {
+        return context.Node1("cos", node)
     }
 
 }

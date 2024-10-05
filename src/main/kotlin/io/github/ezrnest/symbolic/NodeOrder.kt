@@ -1,5 +1,5 @@
 package io.github.ezrnest.symbolic
-
+// created at 2024/10/05
 typealias NodeOrder = Comparator<Node>
 
 
@@ -28,10 +28,10 @@ object DefaultNodeOrder : NodeOrder {
 
 
     override fun compare(o1: Node, o2: Node): Int {
-        (nodeTypeOrdinal(o1) - nodeTypeOrdinal(o2)).let {
+        o1.name.compareTo(o2.name).let {
             if (it != 0) return it
         }
-        o1.name.compareTo(o2.name).let {
+        (nodeTypeOrdinal(o1) - nodeTypeOrdinal(o2)).let {
             if (it != 0) return it
         }
 
