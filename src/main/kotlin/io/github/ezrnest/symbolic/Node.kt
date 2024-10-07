@@ -68,6 +68,10 @@ sealed interface Node {
         const val POW = "^"
 
 
+        const val EXP = "exp"
+        const val LN = "ln"
+
+
         const val Symbol_I = "𝑖"
         const val Symbol_E = "𝑒"
         const val Symbol_PI = "π"
@@ -78,8 +82,7 @@ sealed interface Node {
 
 sealed interface LeafNode : Node {
 
-    override val name: String
-        get() = ""
+    override val name: String get() = ""
 
     override fun traverse(depth: Int, action: (Node) -> Unit) {
         action(this)
@@ -109,14 +112,14 @@ sealed interface LeafNode : Node {
 }
 
 
-sealed class AbstractNode : Node {
-    final override var meta: Map<String, Any?> = emptyMap()
+sealed class AbstractNode {
+    var meta: Map<String, Any?> = emptyMap()
 }
 
 
 typealias Rational = BigFraction
 
-class NRational(val value: Rational) : AbstractNode(), LeafNode {
+data class NRational(val value: Rational) : AbstractNode(), LeafNode {
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -142,12 +145,11 @@ class NRational(val value: Rational) : AbstractNode(), LeafNode {
 }
 
 
-class NSymbol(val ch: String) : AbstractNode(), LeafNode {
+data class NSymbol(val ch: String) : AbstractNode(), LeafNode {
 
     override fun plainToString(): String {
         return ch
     }
-
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -442,6 +444,7 @@ data class NodeNImpl(
     override val name: String,
     override var children: List<Node>
 ) : AbstractNode(), NodeN {
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is NodeNImpl) return false

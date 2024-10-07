@@ -24,11 +24,10 @@ object SimUtils {
         }
     }
 
-    fun asPositiveInt(node : Node, context: ExprContext) : BigInteger? {
+    fun asPositiveInt(node: Node, context: ExprContext): BigInteger? {
         val Q = context.rational
         return asInteger(node, Q)?.takeIf { it > BigInteger.ZERO }
     }
-
 
 
     @OptIn(ExperimentalContracts::class)
@@ -83,7 +82,15 @@ object SimUtils {
         val Q = context.rational
         if (n === Node.ONE) return Node.Rational(r)
         if (n is NRational) return Node.Rational(Q.multiply(r, n.value))
-        return if (Q.isOne(r)) n else context.Mul(listOf(Node.Rational(r), n))
+        if (Q.isZero(r)) return Node.ZERO
+        if (Q.isOne(r)) return n
+        return context.Mul(listOf(Node.Rational(r), n))
+    }
+
+    fun createMulSim(nodes: List<Node>, context: ExprContext): Node {
+        if (nodes.isEmpty()) return Node.ONE
+        if (nodes.size == 1) return nodes[0]
+        return context.simplifyNode(context.Mul(nodes))
     }
 
     data class Exponent(val base: Node, val power: Node)

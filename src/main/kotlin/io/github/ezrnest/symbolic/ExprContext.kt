@@ -15,7 +15,7 @@ interface ExprContext {
 
     val nodeOrder: NodeOrder
 
-    fun isCommutative(name: String): Boolean = false
+    fun isCommutative(name: String): Boolean
 
 
     fun sortTree(node: Node): Node {
@@ -44,11 +44,29 @@ interface ExprContext {
         return res
     }
 
-    fun simplifyFull(node: Node): Node {
-        return simplifyNode(node,Int.MAX_VALUE)
+    fun simplifyFull(root: Node): Node {
+        return simplifyNode(root, Int.MAX_VALUE)
     }
 
-    fun simplifyNode(node: Node, depth: Int = 0): Node
+    fun simplifyOne(node: Node): Node
+
+    fun simplifyNode(node: Node, depth: Int = 0): Node {
+        if (depth <= 0) return simplifyOne(node)
+        val res = when (node) {
+            is LeafNode -> node
+            is Node1 -> Node1(node.name, simplifyNode(node.child, depth - 1))
+            is Node2 -> Node2(node.name, simplifyNode(node.first, depth - 1), simplifyNode(node.second, depth - 1))
+            is Node3 -> Node3(
+                node.name,
+                simplifyNode(node.first, depth - 1),
+                simplifyNode(node.second, depth - 1),
+                simplifyNode(node.third, depth - 1)
+            )
+            is NodeN -> NodeN(node.name, node.children.map { simplifyNode(it, depth - 1) })
+        }
+        return simplifyOne(res)
+    }
+
 
     fun NodeN(name: String, children: List<Node>): Node {
         require(children.isNotEmpty())
@@ -168,11 +186,12 @@ object TestExprContext : ExprContext {
         Flatten(Node.Names.ADD),
         Flatten(Node.Names.MUL),
         MergeAdditionRational(),
+        ComputeProduct,
         MergeProduct(),
     )
 
 
-    private fun simplifyOne(node: Node): Node {
+    override fun simplifyOne(node: Node): Node {
         var res = node
         var previousRule: SimRule? = null
         while (true) {
@@ -183,15 +202,11 @@ object TestExprContext : ExprContext {
                 res = simplified
                 applied = true
                 previousRule = r
+                break
             }
             if (!applied) break
         }
         return res
     }
 
-    override fun simplifyNode(node: Node, depth: Int): Node {
-        return node.recurMap(depth) { n ->
-            simplifyOne(n)
-        }
-    }
 }

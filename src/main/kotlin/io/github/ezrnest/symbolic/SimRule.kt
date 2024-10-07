@@ -1,4 +1,7 @@
 package io.github.ezrnest.symbolic
+
+import io.github.ezrnest.symbolic.Node.Names
+
 // created at 2024/10/1
 
 interface SimRule {
@@ -30,7 +33,9 @@ class RegularizeNodeN(targetName: String) : RuleForSpecificChilded(targetName) {
 
     override fun simplifyChilded(node: NodeChilded, context: ExprContext): Node? {
         if (node is NodeN) return null
-        return context.NodeN(targetName, node.children)
+        return context.NodeN(targetName, node.children).also {
+            it[metaInfoKey] = true
+        }
     }
 }
 
@@ -62,7 +67,12 @@ class Flatten(targetName: String) : RuleForSpecificN(targetName) {
     }
 }
 
-class MergeAdditionRational : RuleForSpecificN(Node.Names.ADD) {
+/**
+ * ```
+ * a + a -> 2a
+ * ```
+ */
+class MergeAdditionRational : RuleForSpecificN(Names.ADD) {
     // created at 2024/10/05
 
 
@@ -107,7 +117,12 @@ class MergeAdditionRational : RuleForSpecificN(Node.Names.ADD) {
 
 }
 
-class MergeProduct : RuleForSpecificN(Node.Names.MUL) {
+/**
+ * ```
+ * x * x -> x^2
+ * ```
+ */
+class MergeProduct : RuleForSpecificN(Names.MUL) {
     // created at 2024/10/05
 
     override val description: String
@@ -152,3 +167,75 @@ class MergeProduct : RuleForSpecificN(Node.Names.MUL) {
 
 }
 
+
+/**
+ * ```
+ * 1 * 2 * 3 -> 6
+ * 1 * x -> x
+ * ```
+ */
+object ComputeProduct : RuleForSpecificN(Names.MUL) {
+    // created at 2024/10/05
+    override val metaInfoKey: MetaKey<Boolean> = MetaKey("Compute*")
+
+    override val description: String
+        get() = "Compute product"
+
+
+    override fun simplifyN(root: NodeN, context: ExprContext): Node? {
+        val children = root.children
+        val Q = context.rational
+        var product = Q.one
+        val nodes = ArrayList<Node>(children.size)
+        var count = 0
+        for (node in children) {
+            val r = SimUtils.asRational(node, Q)
+            if (r == null) {
+                nodes.add(node)
+            } else {
+                count++
+                product = Q.multiply(product, r)
+            }
+        }
+        if (count == 0) return null  // no rational to compute
+        if (Q.isZero(product)) return Node.ZERO
+        if (nodes.isEmpty()) return Node.Rational(product) // only rational
+        if(count == 1 && !Q.isOne(product)) return null // only one rational that can't be simplified
+        if(!Q.isOne(product)){
+            nodes.add(Node.Rational(product))
+        }
+        val res = context.Mul(nodes)
+        res[metaInfoKey] = true
+        return res
+//        return context.Mul(nodes).also {
+//            it[metaInfoKey] = true
+//        }
+    }
+
+}
+
+abstract class RuleForSpecific2(targetName: String) : RuleForSpecificChilded(targetName) {
+    final override fun simplifyChilded(node: NodeChilded, context: ExprContext): Node? {
+        if (node !is Node2) return null
+        return simplify2(node, context)
+    }
+
+    protected abstract fun simplify2(root: Node2, context: ExprContext): Node?
+}
+
+/**
+ * ```
+ * exp(exp(x,2),3) -> exp(x,6)
+ * ```
+ */
+object FlattenExp : RuleForSpecific2(Names.POW) {
+    // created at 2024/10/05
+    override val metaInfoKey: MetaKey<Boolean> = MetaKey("FlattenExp")
+
+    override val description: String
+        get() = "Flatten exp"
+
+    override fun simplify2(root: Node2, context: ExprContext): Node? {
+        TODO()
+    }
+}
