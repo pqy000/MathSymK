@@ -1,5 +1,6 @@
 package io.github.ezrnest.numberTheory
 
+import io.github.ezrnest.model.isEven
 import java.math.BigInteger
 import java.util.*
 import kotlin.math.abs
@@ -661,6 +662,81 @@ object NTFunctions {
         return true
     }
 
+    data class Factor(val prime: Long, val power: Int)
+
+    data class FactorBig(val prime: BigInteger, val power: Int)
+
+    fun factorize(n: Long): List<Factor> {
+        return factorizeEnumerate(n)
+    }
+
+    private fun factorizeEnumerate(n_: Long): List<Factor> {
+        var n = n_
+        var factors = arrayListOf<Factor>()
+        run {
+            var count = 0
+            while (n % 2 == 0L) {
+                count++
+                n /= 2
+            }
+            if (count > 0) {
+                factors.add(Factor(2, count))
+            }
+        }
+        for(i in 3..n step 2){
+            var count = 0
+            while (n % i == 0L) {
+                count++
+                n /= i
+            }
+            if (count > 0) {
+                factors.add(Factor(i, count))
+            }
+            if(i * i > n){
+                break
+            }
+        }
+        if (n > 1) {
+            factors.add(Factor(n, 1))
+        }
+        return factors
+    }
+
+    fun factorize(n: BigInteger): List<FactorBig> {
+        return factorizeEnumerate(n)
+    }
+
+    private fun factorizeEnumerate(n_ : BigInteger) : List<FactorBig>{
+        var n = n_
+        var factors = arrayListOf<FactorBig>()
+        run {
+            var count = 0
+            while (n.isEven()) {
+                count++
+                n = n.shiftRight(1)
+            }
+            if (count > 0) {
+                factors.add(FactorBig(BigInteger.TWO, count))
+            }
+        }
+        var i = BigInteger.valueOf(3)
+        do{
+            var count = 0
+            while (n % i == BigInteger.ZERO) {
+                count++
+                n /= i
+            }
+            if (count > 0) {
+                factors.add(FactorBig(i, count))
+            }
+            i += BigInteger.TWO
+        }while (i * i <= n)
+        if (n > BigInteger.ONE) {
+            factors.add(FactorBig(n, 1))
+        }
+        return factors
+    }
+
     /*
 
     /**
@@ -967,3 +1043,9 @@ object NTFunctions {
     }
      */
 }
+//
+//fun main() {
+//    BigInteger.valueOf(2 * 3 * 5 * 7 * 8).let {
+//        println(NTFunctions.factorize(it))
+//    }
+//}
