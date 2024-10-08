@@ -7,7 +7,9 @@ import kotlin.contracts.contract
 
 object SimUtils {
 
-    fun asInteger(node: Node, Q: BigFractionAsQuotients): BigInteger? {
+
+    fun asInteger(node: Node, context: ExprContext): BigInteger? {
+        val Q = context.rational
         return if (node is NRational && Q.isInteger(node.value)) {
             Q.asInteger(node.value)
         } else {
@@ -26,7 +28,7 @@ object SimUtils {
 
     fun asPositiveInt(node: Node, context: ExprContext): BigInteger? {
         val Q = context.rational
-        return asInteger(node, Q)?.takeIf { it > BigInteger.ZERO }
+        return asInteger(node, context)?.takeIf { it > BigInteger.ZERO }
     }
 
 
@@ -66,7 +68,7 @@ object SimUtils {
         return when (children.size) {
             1 -> WithRational(rational, Node.ONE)
             2 -> WithRational(rational, children[1])
-            else -> WithRational(rational, context.Mul(children.subList(1, children.size)))
+            else -> WithRational(rational, Node.Mul(children.subList(1, children.size)))
         }
     }
 
@@ -74,6 +76,9 @@ object SimUtils {
     fun asPower(node: Node, context: ExprContext): Exponent {
         if (node.name == Node.Names.POW && node is Node2)
             return Exponent(node.first, node.second)
+        if(node.name == Node.Names.EXP && node is Node1){
+            return Exponent(Node.NATURAL_E, node.child) // e^x
+        }
         return Exponent(node, Node.ONE)
     }
 
@@ -84,13 +89,13 @@ object SimUtils {
         if (n is NRational) return Node.Rational(Q.multiply(r, n.value))
         if (Q.isZero(r)) return Node.ZERO
         if (Q.isOne(r)) return n
-        return context.Mul(listOf(Node.Rational(r), n))
+        return Node.Mul(listOf(Node.Rational(r), n))
     }
 
     fun createMulSim(nodes: List<Node>, context: ExprContext): Node {
         if (nodes.isEmpty()) return Node.ONE
         if (nodes.size == 1) return nodes[0]
-        return context.simplifyNode(context.Mul(nodes))
+        return context.simplifyNode(Node.Mul(nodes))
     }
 
     data class Exponent(val base: Node, val power: Node)

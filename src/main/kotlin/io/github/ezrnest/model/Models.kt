@@ -241,6 +241,15 @@ object LongAsIntegers : Integers<Long> {
 //        }
 }
 
+
+fun BigInteger.isEven(): Boolean {
+    return !this.testBit(0)
+}
+
+fun BigInteger.isOdd(): Boolean {
+    return this.testBit(0)
+}
+
 object BigIntegerAsIntegers : Integers<BigInteger> {
 
 //        override val numberClass: Class<BigInteger>
@@ -648,6 +657,36 @@ object BigFractionAsQuotients : RFracOverIntDom<BigInteger>(BigIntegerAsIntegers
     override fun denominator(x: BigFraction): BigInteger {
         return x.deno
     }
+
+    fun power(base: BigFraction, p : BigInteger) : BigFraction{
+        if(isOne(base)) return one
+        if(isZero(base)){
+            if(p <= BigInteger.ZERO){
+                throw ArithmeticException("Cannot raise 0 to a non-positive power.")
+            }
+            return zero
+        }
+        run{
+            val m1 = negate(one)
+            if(isEqual(base, m1)){
+                if(p.isOdd()){
+                    return m1
+                }
+                return one
+            }
+        }
+        // only possible for p in int range
+        val pInt = p.intValueExact()
+        return if(pInt <= 0){
+            if(isZero(base)){
+                throw ArithmeticException("Cannot raise 0 to a non-positive power.")
+            }
+            RFraction(base.deno.pow(-pInt), base.nume.pow(-pInt))
+        }else{
+            RFraction(base.nume.pow(pInt), base.deno.pow(pInt))
+        }
+    }
+
 }
 
 

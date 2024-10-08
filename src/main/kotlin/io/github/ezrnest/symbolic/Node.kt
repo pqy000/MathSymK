@@ -59,6 +59,52 @@ sealed interface Node {
         fun Symbol(name: String): Node {
             return NSymbol(name)
         }
+
+
+        fun NodeN(name: String, children: List<Node>): Node {
+            require(children.isNotEmpty())
+            return NodeNImpl(name, children)
+        }
+
+        fun Add(nodes: List<Node>): Node {
+            if (nodes.isEmpty()) return ZERO
+            return NodeN(Names.ADD, nodes)
+        }
+
+        fun Mul(nodes: List<Node>): Node {
+            if (nodes.isEmpty()) return ONE
+            return NodeN(Names.MUL, nodes)
+        }
+
+
+        fun Node1(name: String, child: Node): Node1 {
+            return Node1Impl(name, child)
+        }
+
+        fun Node2(name: String, first: Node, second: Node): Node2 {
+            return Node2Impl(name, first, second)
+
+        }
+
+        fun Node3(name: String, first: Node, second: Node, third: Node): Node3 {
+            return Node3Impl(name, first, second, third)
+        }
+
+        fun Neg(child: Node): Node {
+            return Mul(listOf(NEG_ONE, child))
+        }
+
+        fun Inv(child: Node): Node {
+            return Pow(child, NEG_ONE)
+        }
+
+        fun Pow(base: Node, exp: Node): Node {
+            return Node2(Names.POW, base, exp)
+        }
+
+        fun Exp(exp: Node): Node {
+            return Node1(Names.EXP, exp)
+        }
     }
 
     object Names {
@@ -105,7 +151,7 @@ sealed interface LeafNode : Node {
     }
 
     override fun <A : Appendable> treeTo(builder: A, level: Int, indent: String): A {
-        builder.append(indent).append(plainToString()).append(";  Meta: ").append(meta.toString()).appendLine()
+        builder.append(indent).append(plainToString()).append(";  ").append(meta.toString()).appendLine()
         return builder
     }
 
@@ -118,6 +164,7 @@ sealed class AbstractNode {
 
 
 typealias Rational = BigFraction
+
 
 data class NRational(val value: Rational) : AbstractNode(), LeafNode {
 
@@ -173,7 +220,7 @@ sealed interface NodeChilded : Node {
     val children: List<Node>
 
     override fun <A : Appendable> treeTo(builder: A, level: Int, indent: String): A {
-        builder.append(indent).append(name).append(";  Meta: ").append(meta.toString()).appendLine()
+        builder.append(indent).append(name).append(";  ").append(meta.toString()).appendLine()
         val newIndent = "$indent|  "
         children.forEach { it.treeTo(builder, level + 1, newIndent) }
         return builder
@@ -319,6 +366,7 @@ interface Node3 : NodeChilded {
 interface NodeN : NodeChilded {
     override val children: List<Node>
 
+    override fun newWithChildren(children: List<Node>): NodeN
 }
 
 
@@ -457,7 +505,7 @@ data class NodeNImpl(
         return result
     }
 
-    override fun newWithChildren(children: List<Node>): NodeChilded {
+    override fun newWithChildren(children: List<Node>): NodeN {
         return NodeNImpl(name, children)
     }
 
@@ -486,32 +534,32 @@ object NodeBuilderScope {
 
 
     operator fun Node.plus(other: Node): Node {
-        return context.Add(listOf(this, other))
+        return Node.Add(listOf(this, other))
     }
 
     operator fun Node.minus(other: Node): Node {
-        return context.Add(listOf(this, context.Mul(listOf(Node.NEG_ONE, other))))
+        return Node.Add(listOf(this, Node.Mul(listOf(Node.NEG_ONE, other))))
     }
 
 
     operator fun Node.times(other: Node): Node {
-        return context.Mul(listOf(this, other))
+        return Node.Mul(listOf(this, other))
     }
 
     fun exp(base: Node, exp: Node): Node {
-        return context.Node2(Node.Names.POW, base, exp)
+        return Node.Node2(Node.Names.POW, base, exp)
     }
 
     fun exp(x: Node): Node {
-        return exp(Node.NATURAL_E, x)
+        return Node.Exp(x)
     }
 
     fun sin(node: Node): Node {
-        return context.Node1("sin", node)
+        return Node.Node1("sin", node)
     }
 
     fun cos(node: Node): Node {
-        return context.Node1("cos", node)
+        return Node.Node1("cos", node)
     }
 
 }

@@ -13,6 +13,34 @@ interface SimRule {
     fun simplify(node: Node, context: ExprContext): Node?
 }
 
+object RuleSort : SimRule {
+    override val description: String = "Sort"
+
+    override val metaInfoKey: MetaKey<Boolean>
+        get() = MetaKey("sorted")
+
+    private fun sort2(node: Node2, context: ExprContext): Node2 {
+        val (first, second) = node
+        if (context.nodeOrder.compare(first, second) <= 0) return node
+        return Node.Node2(node.name, second, first)
+    }
+
+
+    override fun simplify(node: Node, context: ExprContext): Node {
+        if (node !is NodeChilded) return node
+        if (!context.isCommutative(node.name)) return node
+        return when (node) {
+            is Node1 -> node
+            is Node2 -> sort2(node, context)
+            else -> {
+                val childrenSorted = node.children.sortedWith(context.nodeOrder)
+                node.newWithChildren(childrenSorted)
+            }
+        }
+    }
+
+}
+
 abstract class RuleForSpecificChilded(val targetName: String) : SimRule {
 
 
@@ -33,7 +61,7 @@ class RegularizeNodeN(targetName: String) : RuleForSpecificChilded(targetName) {
 
     override fun simplifyChilded(node: NodeChilded, context: ExprContext): Node? {
         if (node is NodeN) return null
-        return context.NodeN(targetName, node.children).also {
+        return Node.NodeN(targetName, node.children).also {
             it[metaInfoKey] = true
         }
     }
@@ -63,7 +91,7 @@ class Flatten(targetName: String) : RuleForSpecificN(targetName) {
         val newChildren = children.flatMap {
             if (it is NodeN && it.name == targetName) it.children else listOf(it)
         }
-        return context.NodeN(targetName, newChildren)
+        return Node.NodeN(targetName, newChildren)
     }
 }
 
@@ -103,7 +131,6 @@ class MergeAdditionRational : RuleForSpecificN(Names.ADD) {
             }
         }
         if (!simplified) return null
-
         if (collect.isEmpty()) return Node.ZERO
         if (collect.size == 1) {
             val (n, r) = collect.entries.first()
@@ -111,7 +138,7 @@ class MergeAdditionRational : RuleForSpecificN(Names.ADD) {
         }
 
         val newChildren = collect.entries.map { (n, r) -> SimUtils.createWithRational(r, n, context) }
-        return context.Add(newChildren)
+        return Node.Add(newChildren)
 
     }
 
@@ -131,15 +158,15 @@ class MergeProduct : RuleForSpecificN(Names.MUL) {
     override val metaInfoKey: MetaKey<Boolean> = MetaKey("Merge*")
 
     private fun buildPower(base: Node, expList: List<Node>, context: ExprContext): Node {
-        if (expList.size == 1) {
-            val exp = expList[0]
-            if (exp == Node.ONE) return base
-            return context.simplifyNode(context.Pow(base, exp), 0)
+        var exp = if (expList.size == 1) {
+            expList[0]
+        } else {
+            Node.Add(expList)
         }
-        with(context) {
-            val exp = simplifyNode(Add(expList), 0)
-            return simplifyNode(Pow(base, exp), 0)
-        }
+        exp = context.simplifyNode(exp, 0)
+        if (exp == Node.ONE) return base
+        val res = if (base == Node.NATURAL_E) Node.Exp(exp) else Node.Pow(base, exp)
+        return context.simplifyNode(res, 0)
     }
 
     override fun simplifyN(root: NodeN, context: ExprContext): Node? {
@@ -162,7 +189,7 @@ class MergeProduct : RuleForSpecificN(Names.MUL) {
             return buildPower(base, expList, context)
         }
         val newChildren = collect.entries.map { (base, expList) -> buildPower(base, expList, context) }
-        return context.Mul(newChildren)
+        return Node.Mul(newChildren)
     }
 
 }
@@ -200,16 +227,11 @@ object ComputeProduct : RuleForSpecificN(Names.MUL) {
         if (count == 0) return null  // no rational to compute
         if (Q.isZero(product)) return Node.ZERO
         if (nodes.isEmpty()) return Node.Rational(product) // only rational
-        if(count == 1 && !Q.isOne(product)) return null // only one rational that can't be simplified
-        if(!Q.isOne(product)){
+        if (count == 1 && !Q.isOne(product)) return null // only one rational that can't be simplified
+        if (!Q.isOne(product)) {
             nodes.add(Node.Rational(product))
         }
-        val res = context.Mul(nodes)
-        res[metaInfoKey] = true
-        return res
-//        return context.Mul(nodes).also {
-//            it[metaInfoKey] = true
-//        }
+        return Node.Mul(nodes).also { it[metaInfoKey] = true }
     }
 
 }
@@ -228,14 +250,45 @@ abstract class RuleForSpecific2(targetName: String) : RuleForSpecificChilded(tar
  * exp(exp(x,2),3) -> exp(x,6)
  * ```
  */
-object FlattenExp : RuleForSpecific2(Names.POW) {
+object FlattenPow : RuleForSpecific2(Names.POW) {
     // created at 2024/10/05
-    override val metaInfoKey: MetaKey<Boolean> = MetaKey("FlattenExp")
+    override val metaInfoKey: MetaKey<Boolean> = MetaKey("FlattenPow")
 
     override val description: String
-        get() = "Flatten exp"
+        get() = "Flatten pow"
 
     override fun simplify2(root: Node2, context: ExprContext): Node? {
         TODO()
+    }
+}
+
+/**
+ * ```
+ * pow(r, n) -> r^n
+ * pow(r, p/q) -> pow(r^p, 1/q)
+ * ```
+ */
+object ComputePow : RuleForSpecific2(Names.POW) {
+    // created at 2024/10/05
+    override val metaInfoKey: MetaKey<Boolean> = MetaKey("ComputePow")
+
+    override val description: String
+        get() = "Compute pow"
+
+    private fun simplifyPow(base: Rational, exp: Rational, context: ExprContext): Node {
+        val Q = context.rational
+        if (Q.isInteger(exp)) {
+            val p = Q.asInteger(exp)
+            val res = Q.power(base, p)
+            return Node.Rational(res)
+        }
+        val (nume,deno) = exp
+        TODO()
+    }
+
+    override fun simplify2(root: Node2, context: ExprContext): Node? {
+        val (base, exp) = root
+        if (base !is NRational || exp !is NRational) return null
+        return simplifyPow(base.value, exp.value, context)
     }
 }

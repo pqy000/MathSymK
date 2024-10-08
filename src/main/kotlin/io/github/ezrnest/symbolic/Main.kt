@@ -7,7 +7,7 @@ fun main() {
     val cal = TestExprContext
     with(NodeBuilderScope) {
 //        val n0 = (1.e + 2.e) * (x + y) * z + a
-        val n0 = 2.e * 2.e * a - 2.e * a * 2.e
+        val n0 = exp(x) * exp(0.e-x)
         println(n0.plainToString())
         println(n0.treeToString())
 //

@@ -1208,7 +1208,6 @@ open class PolyOverField<T>(override val model: Field<T>) : PolyOverUFD<T>(model
             g = h
             k++
         }
-
         return result
     }
 

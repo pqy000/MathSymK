@@ -189,6 +189,27 @@ object ModelPatterns {
 //        return re
 //    }
 
+    inline fun <T, S> binaryProductGen(
+        pow: S, start: T, x: T,
+        mul: (T, T) -> T,
+        isPositive: (S) -> Boolean,
+        isOdd: (S) -> Boolean,
+        shr1: (S) -> S,
+    ): T {
+        var p = pow
+        var cumulated = x
+        var r = start
+        while (isPositive(p)) {
+            if (isOdd(p)) {
+                r = mul(cumulated, r)
+            }
+            cumulated = mul(cumulated, cumulated)
+            p = shr1(p)
+        }
+        return r
+
+    }
+
     /**
      * Performs an operation like computing `exp(x,p)`.
      *
@@ -496,8 +517,8 @@ object ModelPatterns {
                 var minSplit = 0
                 var minModel: R? = null
                 for (r in 0 until d) {
-                    val modelLeft = models[i][i + r] !!
-                    val modelRight = models[i + r + 1][j] !!
+                    val modelLeft = models[i][i + r]!!
+                    val modelRight = models[i + r + 1][j]!!
                     val cost: Int = timeCost.applyAsInt(modelLeft, modelRight) + costs[i][i + r] + costs[i + r + 1][j]
                     if (minModel == null || cost < minCost) {
                         val combined: R = modelOp.apply(modelLeft, modelRight)

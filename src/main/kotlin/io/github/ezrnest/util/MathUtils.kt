@@ -1,6 +1,7 @@
 package io.github.ezrnest.util
 
 import io.github.ezrnest.util.exceptions.ExceptionUtil
+import java.math.BigInteger
 import java.util.*
 import kotlin.math.*
 
@@ -96,6 +97,7 @@ object MathUtils {
         return sqrt * sqrt == n
     }
 
+
     /**
      * Return the value of `n^p`.
      *
@@ -184,20 +186,20 @@ object MathUtils {
 
 
 
-    /**
-     * Turn the vector = (x,y) anticlockwise for `rad`.
-     */
-    fun turnRad(x: Double, y: Double, rad: Double): DoubleArray {
-        // x' = x cos - y sin
-        // y' = x sin + y cos
-
-        val sin = sin(rad)
-        val cos = cos(rad)
-        val xy = DoubleArray(2)
-        xy[0] = x * cos - y * sin
-        xy[1] = x * sin + y * cos
-        return xy
-    }
+//    /**
+//     * Turn the vector = (x,y) anticlockwise for `rad`.
+//     */
+//    fun turnRad(x: Double, y: Double, rad: Double): DoubleArray {
+//        // x' = x cos - y sin
+//        // y' = x sin + y cos
+//
+//        val sin = sin(rad)
+//        val cos = cos(rad)
+//        val xy = DoubleArray(2)
+//        xy[0] = x * cos - y * sin
+//        xy[1] = x * sin + y * cos
+//        return xy
+//    }
 
     /**
      * find the number `n` such that
@@ -672,4 +674,12 @@ object MathUtils {
 
 infix fun Int.pow(p: Int): Int {
     return MathUtils.pow(this, p).toInt()
+}
+
+infix fun Long.pow(p: Int): Long {
+    return MathUtils.pow(this, p)
+}
+
+infix fun Long.powExact(p: Int): Long {
+    return MathUtils.powExact(this, p)
 }
