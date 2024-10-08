@@ -1,6 +1,7 @@
 package io.github.ezrnest.numberTheory
 
 import io.github.ezrnest.model.isEven
+import io.github.ezrnest.util.MathUtils
 import java.math.BigInteger
 import java.util.*
 import kotlin.math.abs
@@ -52,6 +53,63 @@ object NTFunctions {
         return abs(n1)
     }
 
+    fun gcdReduce(a: Int, b: Int): Pair<Int, Int> {
+        val gcd = gcd(a, b)
+        if(a < 0){
+            return -a / gcd to -b / gcd
+        }
+        return a / gcd to b / gcd
+    }
+
+    /*
+    fun gcdUV0(a: Int, b: Int): IntArray {
+        //Re-implemented by lyc at 2020-03-03 15:57
+        /*
+        Euclid's Extended Algorithms:
+        Refer to Henri Cohen 'A course in computational algebraic number theory' Algorithm 1.3.6
+         */
+        if (b == 0) {
+            return intArrayOf(a, 1, 0)
+        }
+        /*
+        Explanation of the algorithm:
+        we want to maintain the following equation while computing the gcd using the Euclid's algorithm
+        let d0=a, d1=b, d2, d3 ... be the sequence of remainders in Euclid's algorithm,
+        then we have
+            a*1 + b*0 = d0
+            a*0 + b*1 = d1
+        let
+            u0 = 1, v0 = 0
+            u1 = 0, v1 = 1
+        then we want to build a sequence of u_i, v_i such that
+            a*u_i + b*v_i = d_i,
+        when we find the d_n = gcd(a,b), the corresponding u_n and v_n is what we want.
+        We have:
+            d_i = q_i * d_{i+1} + d_{i+2}        (by Euclid's algorithm
+        so
+            a*u_i + b*v_i = q_i * (a*u_{i+1} + b*v_{i+1}) + (a*u_{i+2} + b*v_{i+2})
+            u_i - q_i * u_{i+1} = u_{i+2}
+            v_i - q_i * v_{i+1} = v_{i+2}
+        but it is only necessary for us to record u_i, since v_i can be calculated from the equation
+            a*u_i + b*v_i = d_i
+         */
+        var d0 = a
+        var d1 = b
+        var u0 = 1
+        var u1 = 0
+        while (d1 > 0) {
+            val q = d0 / d1
+            val d2 = d0 % d1
+            d0 = d1
+            d1 = d2
+            val u2 = u0 - q * u1
+            u0 = u1
+            u1 = u2
+        }
+        val v = (d0 - a * u0) / b
+        return intArrayOf(d0, u0, v)
+    }
+     */
 
     private inline fun <T, R> gcdUV0Template(
         a: T, b: T,
@@ -110,55 +168,6 @@ object NTFunctions {
         return buildRes(d0, u0, v)
     }
 
-
-    @JvmStatic
-    fun gcdUV0(a: Int, b: Int): IntArray {
-        //Re-implemented by lyc at 2020-03-03 15:57
-        /*
-        Euclid's Extended Algorithms:
-        Refer to Henri Cohen 'A course in computational algebraic number theory' Algorithm 1.3.6
-         */
-        if (b == 0) {
-            return intArrayOf(a, 1, 0)
-        }
-        /*
-        Explanation of the algorithm:
-        we want to maintain the following equation while computing the gcd using the Euclid's algorithm
-        let d0=a, d1=b, d2, d3 ... be the sequence of remainders in Euclid's algorithm,
-        then we have
-            a*1 + b*0 = d0
-            a*0 + b*1 = d1
-        let
-            u0 = 1, v0 = 0
-            u1 = 0, v1 = 1
-        then we want to build a sequence of u_i, v_i such that
-            a*u_i + b*v_i = d_i,
-        when we find the d_n = gcd(a,b), the corresponding u_n and v_n is what we want.
-        We have:
-            d_i = q_i * d_{i+1} + d_{i+2}        (by Euclid's algorithm
-        so
-            a*u_i + b*v_i = q_i * (a*u_{i+1} + b*v_{i+1}) + (a*u_{i+2} + b*v_{i+2})
-            u_i - q_i * u_{i+1} = u_{i+2}
-            v_i - q_i * v_{i+1} = v_{i+2}
-        but it is only necessary for us to record u_i, since v_i can be calculated from the equation
-            a*u_i + b*v_i = d_i
-         */
-        var d0 = a
-        var d1 = b
-        var u0 = 1
-        var u1 = 0
-        while (d1 > 0) {
-            val q = d0 / d1
-            val d2 = d0 % d1
-            d0 = d1
-            d1 = d2
-            val u2 = u0 - q * u1
-            u0 = u1
-            u1 = u2
-        }
-        val v = (d0 - a * u0) / b
-        return intArrayOf(d0, u0, v)
-    }
 
     /**
      * Computes the greatest common divisor of two numbers and a pair of number `(u,v)` such that
@@ -222,7 +231,6 @@ object NTFunctions {
         result[2] = v1
         return result
     }
-
 
 
     /**
@@ -662,17 +670,40 @@ object NTFunctions {
         return true
     }
 
-    data class Factor(val prime: Long, val power: Int)
+    /**
+     * Describes a prime factor and its corresponding power.
+     *
+     * @param prime the prime factor
+     * @param power the power of the prime factor
+     */
+    data class Factor(val prime: Long, val power: Int) {
+        override fun toString(): String {
+            return "$prime^$power"
+        }
+    }
 
-    data class FactorBig(val prime: BigInteger, val power: Int)
+    /**
+     * Describes a prime factor and its corresponding power.
+     *
+     * @param prime the prime factor
+     * @param power the power of the prime factor
+     */
+    data class FactorBig(val prime: BigInteger, val power: Int) {
+        override fun toString(): String {
+            return "$prime^$power"
+        }
+    }
 
+    /**
+     * Factorize the number `n` into a list of prime factors and their corresponding powers.
+     */
     fun factorize(n: Long): List<Factor> {
-        return factorizeEnumerate(n)
+        return factorizeEnumerate(abs(n))
     }
 
     private fun factorizeEnumerate(n_: Long): List<Factor> {
         var n = n_
-        var factors = arrayListOf<Factor>()
+        val factors = arrayListOf<Factor>()
         run {
             var count = 0
             while (n % 2 == 0L) {
@@ -683,7 +714,7 @@ object NTFunctions {
                 factors.add(Factor(2, count))
             }
         }
-        for(i in 3..n step 2){
+        for (i in 3..n step 2) {
             var count = 0
             while (n % i == 0L) {
                 count++
@@ -692,7 +723,7 @@ object NTFunctions {
             if (count > 0) {
                 factors.add(Factor(i, count))
             }
-            if(i * i > n){
+            if (i * i > n) {
                 break
             }
         }
@@ -702,13 +733,16 @@ object NTFunctions {
         return factors
     }
 
+    /**
+     * Factorize the number `|n|` into a list of prime factors and their corresponding powers.
+     */
     fun factorize(n: BigInteger): List<FactorBig> {
-        return factorizeEnumerate(n)
+        return factorizeEnumerate(n.abs())
     }
 
-    private fun factorizeEnumerate(n_ : BigInteger) : List<FactorBig>{
+    private fun factorizeEnumerate(n_: BigInteger): List<FactorBig> {
         var n = n_
-        var factors = arrayListOf<FactorBig>()
+        val factors = arrayListOf<FactorBig>()
         run {
             var count = 0
             while (n.isEven()) {
@@ -720,7 +754,7 @@ object NTFunctions {
             }
         }
         var i = BigInteger.valueOf(3)
-        do{
+        do {
             var count = 0
             while (n % i == BigInteger.ZERO) {
                 count++
@@ -730,12 +764,151 @@ object NTFunctions {
                 factors.add(FactorBig(i, count))
             }
             i += BigInteger.TWO
-        }while (i * i <= n)
+        } while (i * i <= n)
         if (n > BigInteger.ONE) {
             factors.add(FactorBig(n, 1))
         }
         return factors
     }
+
+
+    /**
+     * The radical of n, `rad(n)`,
+     * is the product of distinct prime factors of n.
+     * For example, `504 = 2^3 × 3^2 × 7`, so `rad(504) = 2 × 3 × 7 = 42`.
+     *
+     * @return rad(n)
+     */
+    fun rad(n: Long): Long {
+        val factors = factorize(n)
+        return factors.fold(1L) { acc, factor -> acc * factor.prime }
+    }
+
+    /**
+     * Find the maximal integer `a` such that `a^n | x` and returns the pair `(a, x1 = x / a^n)`.
+     *
+     * It can be used to compute:
+     * ```
+     * x^(1/n) = a * x1^(1/n)
+     * ```
+     *
+     * If `x` is negative, then it is required that `n` is odd and `a` will also be negative.
+     */
+    fun nrootFactor(x: Long, n: Int): Pair<Long, Long> {
+        require(n > 0) { "It is required that n != 0" }
+        if (x == 0L) return 0L to 1L
+        val xAbs = if (x < 0) {
+            if (n % 2 == 0) throw ArithmeticException("x is negative and n is even")
+            -x
+        } else x
+        val factors = factorize(xAbs)
+        var a = 1L
+        for (factor in factors) {
+            val p = factor.prime
+            val k = factor.power / n
+            if(k > 0) {
+                a *= MathUtils.pow(p, k)
+            }
+        }
+        val x1 = xAbs / MathUtils.pow(a, n)
+        if(x < 0) {
+            a = -a
+        }
+        return a to x1
+    }
+
+
+    fun nrootFactor(x : BigInteger, n : Int) : Pair<BigInteger, BigInteger> {
+        require(n > 0) { "It is required that n > 0, but n = $n" }
+        if (x == BigInteger.ZERO) return BigInteger.ZERO to BigInteger.ONE
+        val xAbs = if (x.signum() < 0) {
+            if (n % 2 == 0) throw ArithmeticException("x is negative and n is even")
+            x.negate()
+        } else x
+        val factors = factorize(xAbs)
+        var a = BigInteger.ONE
+        for (factor in factors) {
+            val p = factor.prime
+            val k = factor.power / n
+            if(k > 0) {
+                a = a.multiply(p.pow(k))
+            }
+        }
+        val x1 = xAbs.divide(a.pow(n))
+        if(x.signum() < 0) {
+            a = a.negate()
+        }
+        return a to x1
+    }
+
+    /**
+     * Let `p/q = p_/q_` be the reduced form of `p/q`.
+     * Returns `a, x1` such that
+     * ```
+     * x^(p/q) = a * x1^(1/q)
+     * ```
+     */
+    fun nrootFactor(x : BigInteger, p_ : Int, q_ : Int) : Pair<BigInteger,BigInteger>{
+        val (p,q) = gcdReduce(p_,q_)
+        require(p >= 0){"p must be non-negative, but p = $p"}
+        if (x == BigInteger.ZERO) {
+            if (p == 0) throw ArithmeticException("0^0 is undefined")
+            return BigInteger.ZERO to BigInteger.ONE
+        }
+        if(p == 0) return BigInteger.ONE to BigInteger.ONE
+        val xAbs = if (x.signum() < 0) {
+            if (q % 2 == 0) throw ArithmeticException("x is negative and q is even")
+            x.negate()
+        } else x
+        val factors = factorize(xAbs)
+        var a = BigInteger.ONE
+        var x1 = BigInteger.ONE
+        for (factor in factors) {
+            val prime = factor.prime
+            val power = factor.power * p
+            val k = power / q
+            val r = power % q
+            if(k > 0) {
+                a = a.multiply(prime.pow(k))
+            }
+            if(r > 0){
+                x1 = x1.multiply(prime.pow(r))
+            }
+        }
+        if(x.signum() < 0) {
+            a = a.negate()
+        }
+        return a to x1
+    }
+
+//    /**
+//     * Returns the primitive root modulo `p`, that is,
+//     * an integer `a` that generates the modular multiplication
+//     * group `(Z_p)^*`.
+//     *
+//     *
+//     * The order of `a` in `(Z_p)^*` is exactly `p-1`.
+//     *
+//     * @return a primitive root of `p`.
+//     */
+//    fun primitiveRoot(p: Long): Long {
+//        require(p >= 2) { "p must be an odd prime!" }
+//        if (p == 2L) {
+//            return 1
+//        }
+//        val q = p - 1
+//        val factors = factorize()
+//        Outer@ for (a in 2 until p) {
+//            for (i in 1 until factors.size) {
+//                val e = powMod(a, q / factors[i], p)
+//                if (e == 1L) {
+//                    continue@Outer
+//                }
+//            }
+//            return a
+//        }
+//        throw ArithmeticException("No primitive root for p!")
+//    }
 
     /*
 
@@ -900,21 +1073,6 @@ object NTFunctions {
         return re
     }
 
-    /**
-     * The radical of n, rad(n),
-     * is the product of distinct prime factors of n.
-     * For example, 504 = 23 × 32 × 7, so rad(504) = 2 × 3 × 7 = 42.
-     *
-     * @return rad(n)
-     */
-    fun rad(n: Long): Long {
-        val pfactors = factorReduce(n)
-        var re: Long = 1
-        for (f in pfactors) {
-            re *= f!![0]
-        }
-        return re
-    }
 
     /**
      * Returns the sum of factors of `n`.
@@ -940,34 +1098,6 @@ object NTFunctions {
 
 
 
-    /**
-     * Returns the primitive root modulo `p`, that is,
-     * an integer `a` that generates the modular multiplication
-     * group `(Z_p)^*`.
-     *
-     *
-     * The order of `a` in `(Z_p)^*` is exactly `p-1`.
-     *
-     * @return a primitive root of `p`.
-     */
-    fun primitiveRoot(p: Long): Long {
-        require(p >= 2) { "p must be an odd prime!" }
-        if (p == 2L) {
-            return 1
-        }
-        val q = p - 1
-        val factors = factors(q)
-        Outer@ for (a in 2 until p) {
-            for (i in 1 until factors.size) {
-                val e = powMod(a, q / factors[i], p)
-                if (e == 1L) {
-                    continue@Outer
-                }
-            }
-            return a
-        }
-        throw ArithmeticException("No primitive root for p!")
-    }
     /**
      * Computes the biggest factor `result` of `n` that satisfies `p^exp = result`, where
      * `p` is an integer. This method will return an array composed of the biggest factor described ahead,
@@ -1043,9 +1173,14 @@ object NTFunctions {
     }
      */
 }
+
 //
-//fun main() {
+fun main() {
+//    println(NTFunctions.nrootFactor(-3000, 3))
+    val x = BigInteger.valueOf(4 * 3)
+    println(NTFunctions.nrootFactor(x,4,5))
+    println(NTFunctions.nrootFactor(x.pow(4),5))
 //    BigInteger.valueOf(2 * 3 * 5 * 7 * 8).let {
 //        println(NTFunctions.factorize(it))
 //    }
-//}
+}

@@ -72,11 +72,16 @@ object SimUtils {
         }
     }
 
-
-    fun asPower(node: Node, context: ExprContext): Exponent {
+    /**
+     * Convert a node to an exponent form:
+     * - If the node is a pow node, return the base and the power;
+     * - If the node is an exp node, return e and the power;
+     * - Otherwise, return the node and 1.
+     */
+    fun toPower(node: Node): Exponent {
         if (node.name == Node.Names.POW && node is Node2)
             return Exponent(node.first, node.second)
-        if(node.name == Node.Names.EXP && node is Node1){
+        if(node.name == Node.Names.F1_EXP && node is Node1){
             return Exponent(Node.NATURAL_E, node.child) // e^x
         }
         return Exponent(node, Node.ONE)

@@ -5,6 +5,7 @@ import io.github.ezrnest.model.struct.FieldModel
 import io.github.ezrnest.model.struct.RingModel
 import io.github.ezrnest.numberTheory.NTFunctions
 import io.github.ezrnest.structure.*
+import io.github.ezrnest.util.DataStructureUtil
 import java.math.BigDecimal
 import java.math.BigInteger
 import java.math.MathContext
@@ -69,6 +70,15 @@ object IntAsIntegers : Integers<Int> {
 
     override val one: Int = 1
 
+    override fun asInt(x: Int): Int {
+        return x
+    }
+
+    override fun asLong(x: Int): Long {
+        return x.toLong()
+    }
+
+
     override fun isUnit(x: Int): Boolean {
         return x == 1 || x == -1
     }
@@ -116,6 +126,7 @@ object IntAsIntegers : Integers<Int> {
     override fun gcd(a: Int, b: Int): Int {
         return NTFunctions.gcd(a, b)
     }
+
     override fun gcdUV(a: Int, b: Int): Triple<Int, Int, Int> {
         return NTFunctions.gcdUV(a, b).let { Triple(it[0], it[1], it[2]) }
     }
@@ -161,6 +172,14 @@ object LongAsIntegers : Integers<Long> {
 
     override fun isUnit(x: Long): Boolean {
         return x == 1L || x == -1L
+    }
+
+    override fun asLong(x: Long): Long {
+        return x
+    }
+
+    override fun asInt(x: Long): Int {
+        return Math.toIntExact(x)
     }
 
     override fun add(x: Long, y: Long): Long {
@@ -250,6 +269,7 @@ fun BigInteger.isOdd(): Boolean {
     return this.testBit(0)
 }
 
+
 object BigIntegerAsIntegers : Integers<BigInteger> {
 
 //        override val numberClass: Class<BigInteger>
@@ -298,8 +318,8 @@ object BigIntegerAsIntegers : Integers<BigInteger> {
         return x.multiply(n.toBigInteger())
     }
 
-    override fun power(x: BigInteger, n: Long): BigInteger {
-        return x.pow(n.toInt())
+    override fun power(x: BigInteger, n: Int): BigInteger {
+        return x.pow(n)
     }
 
     override fun asBigInteger(x: BigInteger): BigInteger {
@@ -401,7 +421,7 @@ class DoubleAsReals(
         return 1 / x
     }
 
-    override fun divideLong(x: Double, n: Long): Double {
+    override fun divideN(x: Double, n: Long): Double {
         return x / n
     }
 
@@ -431,7 +451,7 @@ class DoubleAsReals(
         return o1.compareTo(o2)
     }
 
-    override fun power(x: Double, n: Long): Double {
+    override fun power(x: Double, n: Int): Double {
         return Math.pow(x, n.toDouble())
     }
 
@@ -543,7 +563,7 @@ class BigDecimalAsReals(val mc: MathContext = MathContext.DECIMAL128) : Reals<Bi
         return one.divide(x, mc)
     }
 
-    override fun divideLong(x: BigDecimal, n: Long): BigDecimal {
+    override fun divideN(x: BigDecimal, n: Long): BigDecimal {
         return x.divide(BigDecimal.valueOf(n), mc)
     }
 
@@ -552,7 +572,7 @@ class BigDecimalAsReals(val mc: MathContext = MathContext.DECIMAL128) : Reals<Bi
         return o1.compareTo(o2)
     }
 
-    override fun power(x: BigDecimal, n: Long): BigDecimal {
+    override fun power(x: BigDecimal, n: Int): BigDecimal {
         return x.pow(n.toInt())
     }
 
@@ -600,9 +620,16 @@ class BigDecimalAsReals(val mc: MathContext = MathContext.DECIMAL128) : Reals<Bi
 
 typealias BigFraction = RFraction<BigInteger>
 
-object BigFractionAsQuotients : RFracOverIntDom<BigInteger>(BigIntegerAsIntegers), Quotients<BigInteger,BigFraction> {
+object BigFractionAsQuotients : RFracOverIntDom<BigInteger>(BigIntegerAsIntegers), Quotients<BigInteger, BigFraction> {
     override val integers: Integers<BigInteger>
         get() = BigIntegerAsIntegers
+
+    override fun simplifySign(nume: BigInteger, deno: BigInteger): BigFraction {
+        if (deno < BigInteger.ZERO) {
+            return RFraction(-nume, -deno)
+        }
+        return RFraction(nume, deno)
+    }
 
     override fun simplifyFrac(nume: BigInteger, deno: BigInteger): RFraction<BigInteger> {
         val r = super.simplifyFrac(nume, deno)
@@ -626,6 +653,10 @@ object BigFractionAsQuotients : RFracOverIntDom<BigInteger>(BigIntegerAsIntegers
 
     fun fromBigInt(n: BigInteger): BigFraction {
         return frac(n, BigInteger.ONE)
+    }
+
+    override fun of(n: BigInteger, d: BigInteger): BigFraction {
+        return frac(n, d)
     }
 
     val Int.bfrac: BigFraction
@@ -658,34 +689,140 @@ object BigFractionAsQuotients : RFracOverIntDom<BigInteger>(BigIntegerAsIntegers
         return x.deno
     }
 
-    fun power(base: BigFraction, p : BigInteger) : BigFraction{
-        if(isOne(base)) return one
-        if(isZero(base)){
-            if(p <= BigInteger.ZERO){
+    fun floor(x: BigFraction): BigInteger {
+        val (n, d) = x
+        val (q, r) = n.divideAndRemainder(d)
+        if (n.signum() < 0 && r.signum() != 0) {
+            return q - BigInteger.ONE
+        }
+        return q
+    }
+
+    fun floorAndRem(x: BigFraction): Pair<BigInteger, BigFraction> {
+        val (n, d) = x
+        val (q, r) = n.divideAndRemainder(d)
+        if (n.signum() < 0 && r.signum() != 0) {
+            return q - BigInteger.ONE to RFraction(r + d, d)
+        }
+        return q to RFraction(r, d)
+    }
+
+    fun ceil(x: BigFraction): BigInteger {
+        val (n, d) = x
+        val (q, r) = n.divideAndRemainder(d)
+        if (n.signum() > 0 && r.signum() != 0) {
+            return q + BigInteger.ONE
+        }
+        return q
+    }
+
+    override fun power(base: BigFraction, p: BigInteger): BigFraction {
+        if (isOne(base)) return one
+        if (isZero(base)) {
+            if (integers.isNegative(p)) {
                 throw ArithmeticException("Cannot raise 0 to a non-positive power.")
             }
             return zero
         }
-        run{
+        run {
             val m1 = negate(one)
-            if(isEqual(base, m1)){
-                if(p.isOdd()){
-                    return m1
-                }
-                return one
+            if (isEqual(base, m1)) {
+                return if (integers.isOdd(p)) m1 else m1
             }
         }
-        // only possible for p in int range
-        val pInt = p.intValueExact()
-        return if(pInt <= 0){
-            if(isZero(base)){
+        return power(base, p.intValueExact())
+    }
+
+        private fun powerFactor0(baseAbs: BigFraction, p0: Int, q: Int): Pair<BigFraction, BigInteger> {
+        if (isOne(baseAbs) || p0 == 0) return one to BigInteger.ONE
+        val (a, b) = baseAbs
+        val floor = Math.floorDivExact(p0, q)
+        val p = Math.floorMod(p0, q)
+//        val (floor_, rem) = powAbs.floorAndRem()
+//        val floor = Math.toIntExact(floor_)
+        // (a/b)^(p/q) = a^(p/q) * b^(-p/q) = b^-1 * a^(p/q)  * b^((q-p)/q)
+        // = b^-1 * a_1 * (a_2)^(1/q) * b_1 * (b_2)^(1/q)
+        val (a1, a2) = NTFunctions.nrootFactor(a, p, q)
+        val (b1, b2) = NTFunctions.nrootFactor(b, q - p, q)
+        val n0 = a.pow(floor)
+        val d0 = b.pow(floor)
+        val f2 = frac(b1, b)
+        val f = simplifySign(n0 * a1 * f2.nume, d0 * f2.deno)
+        val m = a2 * b2
+        return f to m
+    }
+
+    /**
+     * Returns the pair of fraction and positive integer and `f,a` such that
+     * ```
+     * base^(p/q) = f * a^(1/q)
+     * ```
+     *
+     */
+    fun powerFactor(base: BigFraction, p: Int, q: Int): Pair<BigFraction, BigInteger> {
+        val pow = Fraction(p, q)
+        if (isZero(base)) {
+            if (!pow.isPositive) {
                 throw ArithmeticException("Cannot raise 0 to a non-positive power.")
             }
-            RFraction(base.deno.pow(-pInt), base.nume.pow(-pInt))
-        }else{
-            RFraction(base.nume.pow(pInt), base.deno.pow(pInt))
+            return zero to BigInteger.ONE
         }
+        // (a/b)^(p/q) = [a^(1/q) / b^(1/q)]^p = [a_0 / b_0]^p
+        val positive = isPositive(base)
+        var baseAbs = if (positive) base else {
+            if (pow.deno % 2 == 0L) throw ArithmeticException("Cannot raise a negative number to $pow.")
+            -base
+        }
+        val powAbs = if (pow.isPositive) pow else {
+            baseAbs = reciprocal(baseAbs)
+            -pow
+        }
+        val res = powerFactor0(baseAbs, powAbs.nume.toInt(), powAbs.deno.toInt())
+        if (!positive && pow.nume % 2 == 1L) {
+            return -res.first to res.second
+        }
+        return res
     }
+
+
+    fun factorize(x: BigFraction): List<NTFunctions.FactorBig> {
+        val (n, d) = x
+        val factorsN = NTFunctions.factorize(n)
+        val factorsD = NTFunctions.factorize(d).map { NTFunctions.FactorBig(it.prime, -it.power) }
+        val merged = DataStructureUtil.mergeSorted2(factorsN, factorsD, compareBy { it.prime }) { a, b ->
+            NTFunctions.FactorBig(a.prime, a.power + b.power)
+        }
+        return merged
+    }
+
+    fun factorizedPow(x: BigFraction, pow: BigFraction): List<Pair<BigInteger, BigFraction>> {
+//        require(!isNegative(x)) {"Powering a negative number is not supported."}
+        if(isZero(x)){
+            if(!isPositive(pow)) throw ArithmeticException("Cannot raise 0 to a non-positive power.")
+            return listOf(BigInteger.ZERO to one)
+        }
+        if(isZero(pow)) return listOf(BigInteger.ONE to one)
+
+        val res = factorize(x).map { (p, e) ->
+            p to e * pow
+        }
+        if(isNegative(x)){
+            if(pow.deno.isEven()) throw ArithmeticException("Cannot root a negative number to an even power: $x ^ $pow")
+            if(pow.nume.isOdd()){
+                return listOf(BigInteger.ONE.negate() to one) + res
+            }
+        }
+        return res
+    }
+
+
+    /*
+    Operator functions
+     */
+
+    operator fun BigFraction.times(n: Int): BigFraction = multiplyN(this, n.toLong())
+    operator fun Int.times(x: BigFraction): BigFraction = multiplyN(x, this.toLong())
+
 
 }
 
@@ -725,7 +862,7 @@ object Models {
      */
     fun bigIntegers(): Integers<BigInteger> = BigIntegerAsIntegers
 
-    fun doubles(dev : Double = Double.MIN_VALUE): Reals<Double> = DoubleAsReals(dev)
+    fun doubles(dev: Double = Double.MIN_VALUE): Reals<Double> = DoubleAsReals(dev)
 
     fun bigDecimals(mc: MathContext = MathContext.DECIMAL128): Reals<BigDecimal> = BigDecimalAsReals(mc)
 
@@ -766,4 +903,18 @@ object Models {
         return BigFractionAsQuotients
     }
 
+}
+
+
+fun main() {
+    with(Models.fractionBig()) {
+        val f = bfrac(3, 4)
+        val p = 2
+        val q = 3
+        println(factorizedPow(f, bfrac(p, q)))
+//        val (f1, a1) = powerFactor(f, p, q)
+//        println(powerFactor(f, p, q))
+//        println(f1.pow(q) * a1.bfrac)
+//        println(f.pow(p))
+    }
 }

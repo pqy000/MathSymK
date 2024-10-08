@@ -12,8 +12,9 @@ import io.github.ezrnest.model.BigFractionAsQuotients
 interface ExprContext {
     val rational: BigFractionAsQuotients
 
-
     val nodeOrder: NodeOrder
+
+    val options : Map<String, Any> get() = emptyMap()
 
     fun isCommutative(name: String): Boolean
 
@@ -69,36 +70,13 @@ interface ExprContext {
 
 
     companion object {
-//        fun ExprContext.sortNode2(node: Node2): Node2 {
-//            if (!isCommutative(node.name)) return node
-//            val first = sortTree(node.first)
-//            val second = sortTree(node.second)
-//            return if (nodeOrder.compare(first, second) <= 0) {
-//                node.newWithChildren(first, second)
-//            } else {
-//                node.newWithChildren(second, first)
-//            }
-//        }
-//
-//        fun ExprContext.sortNode3(node: Node3): Node3 {
-//            if (!isCommutative(node.name)) return node
-//            val first = sortTree(node.first)
-//            val second = sortTree(node.second)
-//            val third = sortTree(node.third)
-//            val a = nodeOrder.compare(first, second)
-//            val b = nodeOrder.compare(second, third)
-//            val c = nodeOrder.compare(first, third)
-//            return when {
-//                a <= 0 && b <= 0 -> node.newWithChildren(first, second, third)
-//                a <= 0 && c <= 0 -> node.newWithChildren(first, third, second)
-//                b <= 0 && c <= 0 -> node.newWithChildren(second, third, first)
-//                a <= 0 -> node.newWithChildren(first, second, third)
-//                b <= 0 -> node.newWithChildren(second, third, first)
-//                c <= 0 -> node.newWithChildren(first, third, second)
-//                else -> node.newWithChildren(third, second, first)
-//            }
-//        }
-//
+    }
+
+    object Options{
+        /**
+         * Forces all the computations to be done in the real domain, throwing an ArithmeticException for undefined operations like `sqrt(-1)`.
+         */
+        val forceReal : TypedKey<Boolean> = TypedKey("forceReal")
     }
 }
 
@@ -109,6 +87,12 @@ object TestExprContext : ExprContext {
 
     override val nodeOrder: NodeOrder
         get() = DefaultNodeOrder
+
+    override val options: MutableMap<String, Any> = mutableMapOf()
+
+    init {
+
+    }
 
     override fun isCommutative(name: String): Boolean {
         return when (name) {
@@ -127,6 +111,7 @@ object TestExprContext : ExprContext {
         MergeAdditionRational(),
         ComputeProduct,
         MergeProduct(),
+        ComputePow
     )
 
 

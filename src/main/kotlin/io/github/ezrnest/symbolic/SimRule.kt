@@ -1,14 +1,17 @@
 package io.github.ezrnest.symbolic
 
+import io.github.ezrnest.model.isOdd
 import io.github.ezrnest.symbolic.Node.Names
+import java.math.BigInteger
+import kotlin.math.absoluteValue
 
 // created at 2024/10/1
 
 interface SimRule {
     val description: String
 
-    val metaInfoKey: MetaKey<Boolean>
-        get() = MetaKey<Boolean>(description)
+    val metaInfoKey: TypedKey<Boolean>
+        get() = TypedKey(description)
 
     fun simplify(node: Node, context: ExprContext): Node?
 }
@@ -16,8 +19,8 @@ interface SimRule {
 object RuleSort : SimRule {
     override val description: String = "Sort"
 
-    override val metaInfoKey: MetaKey<Boolean>
-        get() = MetaKey("sorted")
+    override val metaInfoKey: TypedKey<Boolean>
+        get() = TypedKey("sorted")
 
     private fun sort2(node: Node2, context: ExprContext): Node2 {
         val (first, second) = node
@@ -57,7 +60,7 @@ abstract class RuleForSpecificChilded(val targetName: String) : SimRule {
 class RegularizeNodeN(targetName: String) : RuleForSpecificChilded(targetName) {
     override val description: String = "Regularize $targetName"
 
-    override val metaInfoKey: MetaKey<Boolean> = MetaKey("Reg${targetName}")
+    override val metaInfoKey: TypedKey<Boolean> = TypedKey("Reg${targetName}")
 
     override fun simplifyChilded(node: NodeChilded, context: ExprContext): Node? {
         if (node is NodeN) return null
@@ -104,7 +107,7 @@ class MergeAdditionRational : RuleForSpecificN(Names.ADD) {
     // created at 2024/10/05
 
 
-    override val metaInfoKey: MetaKey<Boolean> = MetaKey("Merge+")
+    override val metaInfoKey: TypedKey<Boolean> = TypedKey("Merge+")
 
 
     override val description: String
@@ -155,7 +158,7 @@ class MergeProduct : RuleForSpecificN(Names.MUL) {
     override val description: String
         get() = "Merge product"
 
-    override val metaInfoKey: MetaKey<Boolean> = MetaKey("Merge*")
+    override val metaInfoKey: TypedKey<Boolean> = TypedKey("Merge*")
 
     private fun buildPower(base: Node, expList: List<Node>, context: ExprContext): Node {
         var exp = if (expList.size == 1) {
@@ -165,7 +168,8 @@ class MergeProduct : RuleForSpecificN(Names.MUL) {
         }
         exp = context.simplifyNode(exp, 0)
         if (exp == Node.ONE) return base
-        val res = if (base == Node.NATURAL_E) Node.Exp(exp) else Node.Pow(base, exp)
+//        val res = if (base == Node.NATURAL_E) Node.Exp(exp) else Node.Pow(base, exp)
+        val res = Node.Pow(base, exp)
         return context.simplifyNode(res, 0)
     }
 
@@ -174,7 +178,7 @@ class MergeProduct : RuleForSpecificN(Names.MUL) {
         val collect = sortedMapOf<Node, List<Node>>(context.nodeOrder)
         var simplified = false
         for (node in children) {
-            val (base, exp) = SimUtils.asPower(node, context)
+            val (base, exp) = SimUtils.toPower(node)
             val t = collect[base]
             if (t == null) {
                 collect[base] = listOf(exp)
@@ -203,7 +207,7 @@ class MergeProduct : RuleForSpecificN(Names.MUL) {
  */
 object ComputeProduct : RuleForSpecificN(Names.MUL) {
     // created at 2024/10/05
-    override val metaInfoKey: MetaKey<Boolean> = MetaKey("Compute*")
+    override val metaInfoKey: TypedKey<Boolean> = TypedKey("Compute*")
 
     override val description: String
         get() = "Compute product"
@@ -252,12 +256,22 @@ abstract class RuleForSpecific2(targetName: String) : RuleForSpecificChilded(tar
  */
 object FlattenPow : RuleForSpecific2(Names.POW) {
     // created at 2024/10/05
-    override val metaInfoKey: MetaKey<Boolean> = MetaKey("FlattenPow")
+    override val metaInfoKey: TypedKey<Boolean> = TypedKey("FlattenPow")
 
     override val description: String
         get() = "Flatten pow"
 
+    private fun flattenPowInt(base: Node, exp: BigInteger): Node {
+        if (exp == BigInteger.ONE) return base
+        TODO()
+    }
+
     override fun simplify2(root: Node2, context: ExprContext): Node? {
+        val (base, exp) = root
+        SimUtils.asInteger(exp, context)?.let { expInt ->
+            return flattenPowInt(base, expInt)
+        }
+
         TODO()
     }
 }
@@ -270,25 +284,130 @@ object FlattenPow : RuleForSpecific2(Names.POW) {
  */
 object ComputePow : RuleForSpecific2(Names.POW) {
     // created at 2024/10/05
-    override val metaInfoKey: MetaKey<Boolean> = MetaKey("ComputePow")
+    override val metaInfoKey: TypedKey<Boolean> = TypedKey("ComputePow")
 
     override val description: String
         get() = "Compute pow"
 
-    private fun simplifyPow(base: Rational, exp: Rational, context: ExprContext): Node {
-        val Q = context.rational
-        if (Q.isInteger(exp)) {
-            val p = Q.asInteger(exp)
-            val res = Q.power(base, p)
-            return Node.Rational(res)
+    val MAX_BIT_LENGTH = 1_000_000
+
+    /**
+     * Computes:
+     * ```
+     * (-1)^(1/n) -> exp(pi*i/n) = cos(pi/n) + i*sin(pi/n)
+     * ```
+     */
+    private fun computeNRootMinus1(exp: BigInteger, context: ExprContext): Node {
+        // TODO mode check real or complex
+        if (exp == BigInteger.ONE) return Node.NEG_ONE
+        if (context.options[ExprContext.Options.forceReal] == true) throw ArithmeticException(
+            "Cannot compute the value of (-1)^(1/n) in the real mode"
+        )
+
+        if (exp == BigInteger.TWO) return Node.IMAGINARY_UNIT
+        val piOverN = Node.Div(Node.PI, Node.Int(exp))
+        val cos = Node.Cos(piOverN)
+        val sin = Node.Sin(piOverN)
+        val res = Node.Add(cos, Node.Mul(Node.IMAGINARY_UNIT, sin))
+        return context.simplifyFull(res)
+    }
+
+    private fun canExpandPow(base: BigInteger, pow: BigInteger): Boolean {
+        if (pow.bitLength() > 31) return false
+        val powInt =  pow.intValueExact().absoluteValue
+        val length = Math.multiplyFull(base.bitLength(), powInt)
+        return length <= MAX_BIT_LENGTH
+    }
+
+
+    private fun powRational(base: Rational, exp: Rational, context: ExprContext): Node {
+        with(context.rational) {
+            if (isInteger(exp)) {
+                val p = asInteger(exp)
+                if (canExpandPow(base.nume, p) && canExpandPow(base.deno, p)) {
+                    val res = power(base, p)
+                    return Node.Rational(res)
+                }
+                // power too big
+            }
+            if (isOne(base)) return Node.ONE
+            if (isZero(base)) {
+                if (isZero(exp)) return Node.UNDEFINED
+                return Node.ZERO
+            }
+            val factorPow = factorizedPow(abs(base), exp)
+            var rPart = one
+            val nodes = ArrayList<Node>(factorPow.size)
+            for ((b, e) in factorPow) {
+                /* No expansion:
+                if (isInteger(e)) {
+                    val e1 = asInteger(e)
+                    if (canExpandPow(b, e1)) {
+                        val eInt = e1.intValueExact()
+                        if (eInt < 0) {
+                            rPart /= integers.power(b, -eInt).bfrac
+                        } else {
+                            rPart *= integers.power(b, eInt).bfrac
+                        }
+                    }else{
+                        val node = Node.Pow(Node.Int(b), Node.Int(e1))
+                        node[metaInfoKey] = true
+                        nodes.add(node)
+                    }
+                }else{
+                    val p = Node.Pow(Node.Int(b), Node.Rational(e))
+                    p[metaInfoKey] = true
+                    nodes.add(p)
+                }
+                 */
+
+                val (floor, rem) = floorAndRem(e)
+                if (floor.signum() != 0) {
+                    if(canExpandPow(b, floor)){
+                        val floorInt = floor.intValueExact()
+                        if (floorInt < 0) {
+                            rPart /= integers.power(b, -floorInt).bfrac
+                        } else {
+                            rPart *= integers.power(b, floorInt).bfrac
+                        }
+                    }else{
+                        val node = Node.Pow(Node.Int(b), Node.Int(floor))
+                        node[metaInfoKey] = true
+                        node[EMeta.rational] = true
+                        node[EMeta.positive] = true
+                        nodes.add(node)
+                        // power too big, cannot compute the exact value
+                    }
+                }
+                if (!isZero(rem)) {
+                    val p = Node.Pow(Node.Int(b), Node.Rational(rem))
+                    p[metaInfoKey] = true
+                    nodes.add(p)
+                }
+            }
+            if (isNegative(base) && exp.nume.isOdd()) {
+                if (exp.deno.isOdd()) {
+                    rPart = -rPart
+                } else {
+                    val p = computeNRootMinus1(exp.deno, context)
+                    nodes.add(p)
+                }
+            }
+            if (!isOne(rPart)) {
+                nodes.add(Node.Rational(rPart))
+            }
+            return Node.Mul(nodes)
         }
-        val (nume,deno) = exp
+    }
+
+    private fun powFactorDecomposition(base: Rational, exp: Node, context: ExprContext): Node {
         TODO()
     }
 
     override fun simplify2(root: Node2, context: ExprContext): Node? {
         val (base, exp) = root
-        if (base !is NRational || exp !is NRational) return null
-        return simplifyPow(base.value, exp.value, context)
+        if (base !is NRational) return null
+        if (exp is NRational) return powRational(base.value, exp.value, context)
+        return null
     }
 }

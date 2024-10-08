@@ -47,6 +47,8 @@ sealed interface Node {
 
         val IMAGINARY_UNIT = Symbol(Names.Symbol_I)
 
+        val UNDEFINED = Symbol("undefined")
+
         fun Int(value: BigInteger): NRational {
             return NRational(BigFraction(value, BigInteger.ONE))
         }
@@ -54,6 +56,7 @@ sealed interface Node {
         fun Rational(value: Rational): NRational {
             return NRational(value)
         }
+
 
         //
         fun Symbol(name: String): Node {
@@ -68,12 +71,27 @@ sealed interface Node {
 
         fun Add(nodes: List<Node>): Node {
             if (nodes.isEmpty()) return ZERO
+            if (nodes.size == 1) return nodes[0]
             return NodeN(Names.ADD, nodes)
+        }
+
+        fun Add(vararg nodes: Node): Node {
+            return Add(nodes.asList())
         }
 
         fun Mul(nodes: List<Node>): Node {
             if (nodes.isEmpty()) return ONE
+            if (nodes.size == 1) return nodes[0]
             return NodeN(Names.MUL, nodes)
+        }
+
+        fun Mul(vararg nodes: Node): Node {
+            return Mul(nodes.asList())
+        }
+
+        fun Div(numerator: Node, denominator: Node): Node {
+//            return Node2(Names.NAME_DIV, numerator, denominator)
+            return Mul(numerator, Inv(denominator))
         }
 
 
@@ -82,12 +100,12 @@ sealed interface Node {
         }
 
         fun Node2(name: String, first: Node, second: Node): Node2 {
-            return Node2Impl(name, first, second)
+            return Node2Impl(first, second, name)
 
         }
 
         fun Node3(name: String, first: Node, second: Node, third: Node): Node3 {
-            return Node3Impl(name, first, second, third)
+            return Node3Impl(first, second, third, name)
         }
 
         fun Neg(child: Node): Node {
@@ -103,7 +121,16 @@ sealed interface Node {
         }
 
         fun Exp(exp: Node): Node {
-            return Node1(Names.EXP, exp)
+            return Pow(NATURAL_E, exp)
+        }
+
+
+        fun Cos(node: Node): Node {
+            return Node1(Names.F1_COS, node)
+        }
+
+        fun Sin(node: Node): Node {
+            return Node1(Names.F1_SIN, node)
         }
     }
 
@@ -114,13 +141,17 @@ sealed interface Node {
         const val POW = "^"
 
 
-        const val EXP = "exp"
-        const val LN = "ln"
+        const val F1_EXP = "exp"
+        const val F1_LN = "ln"
 
 
         const val Symbol_I = "𝑖"
         const val Symbol_E = "𝑒"
         const val Symbol_PI = "π"
+
+        const val F1_SIN = "sin"
+
+        const val F1_COS = "cos"
 
     }
 }
@@ -160,6 +191,7 @@ sealed interface LeafNode : Node {
 
 sealed class AbstractNode {
     var meta: Map<String, Any?> = emptyMap()
+
 }
 
 
@@ -425,9 +457,9 @@ data class Node1Impl(
 
 //data class EFraction(val nume)
 
-data class Node2Impl(
-    override val name: String,
-    override var first: Node, override var second: Node
+class Node2Impl(
+    override var first: Node, override var second: Node,
+    override val name: String
 ) : AbstractNode(), Node2 {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -443,7 +475,7 @@ data class Node2Impl(
     }
 
     override fun newWithChildren(first: Node, second: Node): Node2 {
-        return Node2Impl(name, first, second)
+        return Node2Impl(first, second, name)
     }
 
 
@@ -452,13 +484,13 @@ data class Node2Impl(
         val newFirst = first.recurMap(depth - 1, action)
         val newSecond = second.recurMap(depth - 1, action)
         if (newFirst === first && newSecond === second) return action(this)
-        return action(Node2Impl(name, newFirst, newSecond))
+        return action(Node2Impl(newFirst, newSecond, name))
     }
 }
 
 data class Node3Impl(
-    override val name: String,
-    override var first: Node, override var second: Node, override var third: Node
+    override var first: Node, override var second: Node, override var third: Node,
+    override val name: String
 ) : AbstractNode(), Node3 {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -475,7 +507,7 @@ data class Node3Impl(
     }
 
     override fun newWithChildren(first: Node, second: Node, third: Node): Node3 {
-        return Node3Impl(name, first, second, third)
+        return Node3Impl(first, second, third, name)
     }
 
     override fun recurMap(depth: Int, action: (Node) -> Node): Node {
@@ -484,7 +516,7 @@ data class Node3Impl(
         val newSecond = second.recurMap(depth - 1, action)
         val newThird = third.recurMap(depth - 1, action)
         if (newFirst === first && newSecond === second && newThird === third) return action(this)
-        return action(Node3Impl(name, newFirst, newSecond, newThird))
+        return action(Node3Impl(newFirst, newSecond, newThird, name))
     }
 }
 
@@ -546,7 +578,11 @@ object NodeBuilderScope {
         return Node.Mul(listOf(this, other))
     }
 
-    fun exp(base: Node, exp: Node): Node {
+    operator fun Node.div(other: Node): Node {
+        return Node.Mul(listOf(this, Node.Inv(other)))
+    }
+
+    fun pow(base: Node, exp: Node): Node {
         return Node.Node2(Node.Names.POW, base, exp)
     }
 
