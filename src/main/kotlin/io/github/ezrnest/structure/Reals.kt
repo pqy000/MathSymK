@@ -39,7 +39,7 @@ interface Reals<T> : OrderedField<T>, Field<T>,ProvideElementaryFunctions<T> {
      *    nroot(x,n) = exp(x, 1/n)
      */
     override fun nroot(x: T, n: Long): T {
-        return exp(x, divideLong(x,n))
+        return exp(x, divideN(x,n))
     }
 
     /**
@@ -107,7 +107,7 @@ interface Reals<T> : OrderedField<T>, Field<T>,ProvideElementaryFunctions<T> {
      * @return `arccos(x)`
      */
     override fun arccos(x: T): T {
-        return subtract(divideLong(constantValue("pi"), 2L), arcsin(x))
+        return subtract(divideN(constantValue("pi"), 2L), arcsin(x))
     }
 
     /**

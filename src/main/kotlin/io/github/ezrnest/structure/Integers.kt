@@ -523,16 +523,26 @@ interface Integers<T> : EuclideanDomain<T>, OrderedRing<T> {
         get() = ofN(this)
 
     /**
-     * Converts a value of type T to long, throws [UnsupportedOperationException] if
-     * this cannot be done.
+     * Converts the given integer to a long value.
+     *
+     * @throws ArithmeticException if the value is too large to be represented as a long.
      */
     fun asLong(x: T): Long {
         return asBigInteger(x).longValueExact()
     }
 
     /**
-     * Converts a value of type T to BigInteger, throws [UnsupportedOperationException] if
-     * this cannot be done.
+     * Converts the given integer to an int value.
+     *
+     * @throws ArithmeticException if the value is too large to be represented as an int.
+     */
+    fun asInt(x: T): Int {
+        return asBigInteger(x).intValueExact()
+    }
+
+    /**
+     * Converts a value of type T to BigInteger,
+     * throwing [UnsupportedOperationException] if this cannot be done.
      */
     fun asBigInteger(x: T): BigInteger
 

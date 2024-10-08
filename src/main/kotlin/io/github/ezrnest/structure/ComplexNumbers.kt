@@ -231,7 +231,7 @@ interface ComplexNumbers<R, C> : Field<C>, UnitAlgebra<R, C>, ComplexOverField<R
     }
 
     override fun nroot(x: C, n: Long): C {
-        return exp(x, ofReal(reals.of(Fraction(1, n))))
+        return exp(x, ofReal(reals.ofQ(Fraction(1, n))))
     }
 
     override fun exp(base: C, pow: C): C {

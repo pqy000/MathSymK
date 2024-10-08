@@ -105,7 +105,7 @@ interface DivisionRing<T> : UnitRing<T>, MulGroup<T> {
         return divide(a, b)
     }
 
-    fun divideLong(x: T, n: Long): T {
+    fun divideN(x: T, n: Long): T {
         if (n == 0L) {
             throw ArithmeticException("Divided by zero")
         }
@@ -115,7 +115,7 @@ interface DivisionRing<T> : UnitRing<T>, MulGroup<T> {
     /**
      * Returns the element in this division that represents the given fraction, `of(q.nume)/of(q.deno)`.
      */
-    fun of(q : Fraction): T {
+    fun ofQ(q : Fraction): T {
         return ofN(q.nume) / ofN(q.deno)
     }
 
@@ -125,5 +125,13 @@ interface DivisionRing<T> : UnitRing<T>, MulGroup<T> {
 
     operator fun T.inv(): T {
         return reciprocal(this)
+    }
+
+    operator fun T.div(n : Long): T {
+        return divideN(this, n)
+    }
+
+    operator fun Long.div(y: T): T {
+        return ofN(this) / y
     }
 }

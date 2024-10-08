@@ -146,7 +146,7 @@ data class Polynomial<T> internal constructor(
         internal inline fun <T, M> computeGeneral(
             p: Polynomial<T>, x: M,
             zero: () -> M, inclusion: (T) -> M,
-            add: (M, M) -> M, multiply: (M, M) -> M, pow: (M, Long) -> M,
+            add: (M, M) -> M, multiply: (M, M) -> M, pow: (M, Int) -> M,
         ): M {
             if (p.terms.isEmpty()) {
                 return zero()
@@ -162,13 +162,13 @@ data class Polynomial<T> internal constructor(
                 result = if (pDiff == 1) {
                     multiply(result, x)
                 } else {
-                    multiply(result, pow(x, pDiff.toLong()))
+                    multiply(result, pow(x, pDiff))
                 }
                 result = add(result, inclusion(term.value))
                 power = term.pow
             }
             if (power > 0) {
-                result = multiply(result, pow(x, power.toLong()))
+                result = multiply(result, pow(x, power))
             }
             return result
         }
@@ -641,7 +641,7 @@ open class PolyOverRing<T>(protected val modelRing: Ring<T>) :
             R = R * d - S * B
             e -= 1
         }
-        val q = model.power(d, e.toLong())
+        val q = model.power(d, e)
         Q *= q
         R *= q
         return Pair(Q, R)
@@ -681,7 +681,7 @@ open class PolyOverRing<T>(protected val modelRing: Ring<T>) :
             R = R * d - S * B
             e -= 1
         }
-        val q = model.power(d, e.toLong())
+        val q = model.power(d, e)
         R *= q
         return R
     }
@@ -891,7 +891,7 @@ open class PolyOverUFD<T>(override val model: UniqueFactorizationDomain<T>) :
         var g1 = model.one
         var h1 = model.one
         while (true) {
-            val t = (A.degree - B.degree).toLong()
+            val t = A.degree - B.degree
             val R = pseudoDivRem(A, B)
             if (R.isZero) break
             if (R.isConstant) {
@@ -1009,7 +1009,7 @@ open class PolyOverField<T>(override val model: Field<T>) : PolyOverUFD<T>(model
     fun Polynomial<T>.integral(): Polynomial<T> {
         if (isZero) return zero
         return mapTermsPossiblyZeroT(terms, model) { t ->
-            PTerm(t.pow + 1, model.divideLong(t.value, (t.pow + 1).toLong()))
+            PTerm(t.pow + 1, model.divideN(t.value, (t.pow + 1).toLong()))
         }
     }
 
@@ -1052,7 +1052,7 @@ open class PolyOverField<T>(override val model: Field<T>) : PolyOverUFD<T>(model
             val sign = if (degProduct % 2 == 0) model.one else model.negate(model.one)
 
             // Compute LC(s)^(deg(h) - deg(r))
-            val lcSPow = model.power(lcS, pow.toLong())
+            val lcSPow = model.power(lcS, pow)
 
             // Update the resultant
             res = model.multiply(model.multiply(sign, lcSPow), res)
@@ -1069,7 +1069,7 @@ open class PolyOverField<T>(override val model: Field<T>) : PolyOverUFD<T>(model
             // Multiply res by LC(s)^(deg(h))
             val lcS = s.leadCoef
             val degH = h.degree
-            val lcSPow = model.power(lcS, degH.toLong())
+            val lcSPow = model.power(lcS, degH)
             res = model.multiply(lcSPow, res)
         }
 

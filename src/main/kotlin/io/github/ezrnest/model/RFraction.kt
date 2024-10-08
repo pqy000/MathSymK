@@ -161,6 +161,9 @@ open class RFracOverURing<T>(_model: UnitRing<T>) : UnitRing<RFraction<T>>,Modul
         return RFraction(nume, deno)
     }
 
+    protected open fun simplifySign(nume: T, deno: T): RFraction<T>{
+        return RFraction(nume, deno)
+    }
 
     /*
     Basic model:
@@ -242,7 +245,7 @@ open class RFracOverIntDom<T>(override val model: IntegralDomain<T>) : RFracOver
         if (isZero(x)) {
             throw ArithmeticException("Cannot invert zero: $x")
         }
-        return RFraction(x.deno, x.nume)
+        return simplifySign(x.deno, x.nume)
     }
 
     override fun divide(x: RFraction<T>, y: RFraction<T>): RFraction<T> {
@@ -257,13 +260,13 @@ open class RFracOverIntDom<T>(override val model: IntegralDomain<T>) : RFracOver
     }
 
 
-    override fun power(x: RFraction<T>, n: Long): RFraction<T> {
+    override fun power(x: RFraction<T>, n: Int): RFraction<T> {
         if (n > 0) {
             return RFraction(model.power(x.nume, n), model.power(x.deno, n))
         }
         if (isZero(x)) throw ArithmeticException("Cannot raise zero to a negative power: $x^$n")
-        if (n == 0L) return one
-        return RFraction(model.power(x.deno, -n), model.power(x.nume, -n))
+        if (n == 0) return one
+        return simplifySign(model.power(x.deno, -n), model.power(x.nume, -n))
     }
 
     private fun addWithGCD(x: RFraction<T>, y: RFraction<T>, model : UniqueFactorizationDomain<T>): RFraction<T> {

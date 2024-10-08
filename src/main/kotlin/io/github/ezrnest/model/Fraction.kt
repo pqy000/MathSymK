@@ -325,6 +325,12 @@ data class Fraction internal constructor(
         return Math.floorDivExact(nume, deno)
     }
 
+    fun floorAndRem() : Pair<Long, Fraction> {
+        val q = floor()
+        val r = this - q
+        return q to r
+    }
+
     /**
      * Returns the smallest (closest to negative infinity) value that is
      * greater than or equal to the argument and is equal to a mathematical integer. Special cases:
@@ -878,6 +884,10 @@ object FractionAsQuotients : Quotients<Long,Fraction> {
     override val one: Fraction
         get() = ONE
 
+    override fun of(n: Long, d: Long): Fraction {
+        return Fraction.of(n, d)
+    }
+
     fun frac(n: Long, d: Long): Fraction = Fraction.of(n, d)
 
     fun frac(n: Int, d: Int): Fraction = Fraction.of(n.toLong(), d.toLong())
@@ -928,7 +938,7 @@ object FractionAsQuotients : Quotients<Long,Fraction> {
         return o1.compareTo(o2)
     }
 
-    override fun power(x: Fraction, n: Long): Fraction {
+    override fun power(x: Fraction, n: Int): Fraction {
         return x.pow(n)
     }
 }

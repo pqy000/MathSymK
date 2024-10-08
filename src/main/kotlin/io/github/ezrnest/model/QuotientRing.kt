@@ -92,7 +92,7 @@ open class IntModN(val n: Int) : OrderedRing<Int>, CommutativeRing<Int>, UnitRin
         return multiply(x, n1)
     }
 
-    override fun power(x: Int, n: Long): Int {
+    override fun power(x: Int, n: Int): Int {
         return NTFunctions.powMod(x, n, this.n)
     }
 
@@ -104,7 +104,7 @@ open class IntModP(p: Int) : IntModN(p), Field<Int> {
     }
 
 
-    override fun power(x: Int, n: Long): Int {
+    override fun power(x: Int, n: Int): Int {
         return super<Field>.power(x, n)
     }
 

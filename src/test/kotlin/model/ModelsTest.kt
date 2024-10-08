@@ -1,8 +1,11 @@
 package model
 
+import TestUtils.assertEquals
 import io.github.ezrnest.model.Models
 import io.github.ezrnest.model.Polynomial
+import io.github.ezrnest.numberTheory.NTFunctions
 import org.junit.jupiter.api.assertThrows
+import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -61,9 +64,9 @@ class ModelsTest {
             with(polyF) {
                 val xP1 = x + 1.asQ
                 val a = xP1.pow(3)
-                val b = xP1.pow(2L) * (x + 2.asQ)
+                val b = xP1.pow(2) * (x + 2.asQ)
                 val (g, u, v) = gcdUV(a, b)
-                assertEquals(xP1.pow(2L).toMonic(), g.toMonic())
+                assertEquals(xP1.pow(2).toMonic(), g.toMonic())
                 assertEquals(g, u * a + v * b)
                 val gcdFull = gcdExtendedFull(a, b)
                 assertEquals(g, gcdFull.gcd)
@@ -127,5 +130,19 @@ class ModelsTest {
             assertEquals(46341L * 46341 % n, multiply(46341, 46341).toLong())
             assertEquals(46340L * 46340 % n, multiply(46340, 46340).toLong())
         }
+    }
+
+    @Test
+    fun testPowerFactor(){
+        val rng = Random(100)
+        repeat(100){
+            with(Models.fractionBig()) {
+                val f = bfrac(rng.nextInt(1, 100), rng.nextInt(1, 100))
+                val (p,q) = NTFunctions.gcdReduce(rng.nextInt(1, 10),rng.nextInt(1, 10))
+                val (f1, a1) = powerFactor(f, p, q)
+                assertEquals(f.pow(p), f1.pow(q) * a1.bfrac)
+            }
+        }
+
     }
 }

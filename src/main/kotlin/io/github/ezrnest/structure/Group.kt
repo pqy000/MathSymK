@@ -331,8 +331,8 @@ interface MulSemigroup<T> : EqualPredicate<T> {
     val isCommutative: Boolean
         get() = false
 
-    fun power(x: T, n: Long): T {
-        return ModelPatterns.binaryProduce(n, x) { a, b -> multiply(a, b) }
+    fun power(x: T, n: Int): T {
+        return ModelPatterns.binaryProduce(n.toLong(), x) { a, b -> multiply(a, b) }
     }
 
     fun product(ps: List<T>): T {
@@ -347,12 +347,8 @@ interface MulSemigroup<T> : EqualPredicate<T> {
     operator fun T.times(y: T): T = multiply(this, y)
 
 
-    infix fun T.pow(n: Long): T = power(this, n)
+    infix fun T.pow(n: Int): T = power(this, n)
 
-}
-
-fun <T> MulSemigroup<T>.power(x: T, n: Int): T {
-    return power(x, n.toLong())
 }
 
 
@@ -395,8 +391,8 @@ interface MulMonoid<T> : MulSemigroup<T> {
      *
      * @param n a non-negative integer
      */
-    override fun power(x: T, n: Long): T {
-        return if (n == 0L) {
+    override fun power(x: T, n: Int): T {
+        return if (n == 0) {
             one
         } else {
             super.power(x, n)
@@ -478,11 +474,11 @@ interface MulGroup<T> : MulMonoid<T> {
      *
      * @param n an integer
      */
-    override fun power(x: T, n: Long): T {
-        if (n == 0L) {
+    override fun power(x: T, n: Int): T {
+        if (n == 0) {
             return one
         }
-        val t = ModelPatterns.binaryProduce(abs(n), x) { a, b -> multiply(a, b) }
+        val t = ModelPatterns.binaryProduce(abs(n).toLong(), x) { a, b -> multiply(a, b) }
         return if (n > 0) {
             t
         } else {
