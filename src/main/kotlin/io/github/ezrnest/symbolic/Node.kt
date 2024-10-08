@@ -198,6 +198,8 @@ sealed class AbstractNode {
 typealias Rational = BigFraction
 
 
+
+
 data class NRational(val value: Rational) : AbstractNode(), LeafNode {
 
     override fun equals(other: Any?): Boolean {

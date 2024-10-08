@@ -108,9 +108,9 @@ object TestExprContext : ExprContext {
         Flatten(Node.Names.ADD),
         Flatten(Node.Names.MUL),
         RuleSort,
-        MergeAdditionRational(),
-        ComputeProduct,
-        MergeProduct(),
+        MergeAdditionRational,
+        ComputeProductRational,
+        MergeProduct,
         ComputePow
     )
 

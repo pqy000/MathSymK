@@ -103,7 +103,7 @@ class Flatten(targetName: String) : RuleForSpecificN(targetName) {
  * a + a -> 2a
  * ```
  */
-class MergeAdditionRational : RuleForSpecificN(Names.ADD) {
+object MergeAdditionRational : RuleForSpecificN(Names.ADD) {
     // created at 2024/10/05
 
 
@@ -152,7 +152,7 @@ class MergeAdditionRational : RuleForSpecificN(Names.ADD) {
  * x * x -> x^2
  * ```
  */
-class MergeProduct : RuleForSpecificN(Names.MUL) {
+object MergeProduct : RuleForSpecificN(Names.MUL) {
     // created at 2024/10/05
 
     override val description: String
@@ -205,7 +205,7 @@ class MergeProduct : RuleForSpecificN(Names.MUL) {
  * 1 * x -> x
  * ```
  */
-object ComputeProduct : RuleForSpecificN(Names.MUL) {
+object ComputeProductRational : RuleForSpecificN(Names.MUL) {
     // created at 2024/10/05
     override val metaInfoKey: TypedKey<Boolean> = TypedKey("Compute*")
 
@@ -298,7 +298,6 @@ object ComputePow : RuleForSpecific2(Names.POW) {
      * ```
      */
     private fun computeNRootMinus1(exp: BigInteger, context: ExprContext): Node {
-        // TODO mode check real or complex
         if (exp == BigInteger.ONE) return Node.NEG_ONE
         if (context.options[ExprContext.Options.forceReal] == true) throw ArithmeticException(
             "Cannot compute the value of (-1)^(1/n) in the real mode"
