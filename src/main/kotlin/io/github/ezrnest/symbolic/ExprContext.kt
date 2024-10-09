@@ -49,27 +49,53 @@ interface ExprContext {
         return simplifyNode(root, Int.MAX_VALUE)
     }
 
-    fun simplifyOne(node: Node): Node
+    fun simplifyPlain(node: Node): Node
 
     fun simplifyNode(node: Node, depth: Int = 0): Node {
-        if (depth <= 0) return simplifyOne(node)
+        if (depth <= 0) return simplifyPlain(node)
         val res = when (node) {
             is LeafNode -> node
-            is Node1 -> Node.Node1(node.name, simplifyNode(node.child, depth - 1))
-            is Node2 -> Node.Node2(node.name, simplifyNode(node.first, depth - 1), simplifyNode(node.second, depth - 1))
-            is Node3 -> Node.Node3(
-                node.name,
-                simplifyNode(node.first, depth - 1),
-                simplifyNode(node.second, depth - 1),
-                simplifyNode(node.third, depth - 1)
-            )
-            is NodeN -> Node.NodeN(node.name, node.children.map { simplifyNode(it, depth - 1) })
+            is Node1 -> simplifyRecur1(node, depth-1)
+            is Node2 -> simplifyRecur2(node, depth-1)
+            is Node3 -> simplifyRecur3(node, depth-1)
+            is NodeN -> simplifyRecurN(node, depth-1)
+            else -> node
         }
-        return simplifyOne(res)
+        return simplifyPlain(res)
     }
 
 
     companion object {
+
+        private fun ExprContext.simplifyRecur1(node: Node1, depth: Int): Node {
+            val n1 = simplifyNode(node.child, depth)
+            if(n1 === node.child) return node
+            return Node.Node1(node.name, n1)
+        }
+
+        private fun ExprContext.simplifyRecur2(node: Node2, depth: Int): Node {
+            val n1 = simplifyNode(node.first, depth)
+            val n2 = simplifyNode(node.second, depth)
+            if(n1 === node.first && n2 === node.second) return node
+            return Node.Node2(node.name, n1, n2)
+        }
+
+        private fun ExprContext.simplifyRecur3(node: Node3, depth: Int): Node {
+            val n1 = simplifyNode(node.first, depth)
+            val n2 = simplifyNode(node.second, depth)
+            val n3 = simplifyNode(node.third, depth)
+            if(n1 === node.first && n2 === node.second && n3 === node.third) return node
+            return Node.Node3(node.name, n1, n2, n3)
+        }
+
+        private fun ExprContext.simplifyRecurN(node: NodeN, depth: Int): Node {
+            var changed = false
+            val children = node.children.map { n ->
+                simplifyNode(n, depth).also { if(n !== it) changed = true }
+            }
+            if(!changed) return node
+            return Node.NodeN(node.name, children)
+        }
     }
 
     object Options{
@@ -116,7 +142,7 @@ object TestExprContext : ExprContext {
     )
 
 
-    override fun simplifyOne(node: Node): Node {
+    override fun simplifyPlain(node: Node): Node {
         var res = node
         var previousRule: SimRule? = null
         while (true) {

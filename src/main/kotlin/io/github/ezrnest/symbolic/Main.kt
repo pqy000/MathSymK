@@ -7,12 +7,13 @@ fun main() {
     with(NodeBuilderScope) {
 //        val n0 = (1.e + 2.e) * (x + y) * z + a
 //        val n0 = 1.e * 2.e * x * x * x * pow(x,2.e + y) / 2.e
-        val n0 = pow(x * y * z, 3.e)
-        println(n0.plainToString())
-        println(n0.treeToString())
+        val np = pow(2.e,3.e)
+        val expr = sin(np) + cos(np) + np
+        println(expr.plainToString())
+        println(expr.treeToString())
 //
 //
-        val res = cal.simplifyFull(n0)
+        val res = cal.simplifyFull(expr)
         println(res.treeToString())
         println(res.plainToString())
 

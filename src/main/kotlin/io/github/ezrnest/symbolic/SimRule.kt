@@ -2,6 +2,7 @@ package io.github.ezrnest.symbolic
 
 import io.github.ezrnest.model.isOdd
 import io.github.ezrnest.symbolic.Node.Names
+import io.github.ezrnest.util.all2
 import java.math.BigInteger
 import kotlin.math.absoluteValue
 
@@ -22,23 +23,33 @@ object RuleSort : SimRule {
     override val metaInfoKey: TypedKey<Boolean>
         get() = TypedKey("sorted")
 
-    private fun sort2(node: Node2, context: ExprContext): Node2 {
+    private fun sort2(node: Node2, context: ExprContext): Node2? {
         val (first, second) = node
-        if (context.nodeOrder.compare(first, second) <= 0) return node
-        return Node.Node2(node.name, second, first)
+        if (context.nodeOrder.compare(first, second) <= 0) {
+            node[metaInfoKey] = true
+            return null
+        }
+        return Node.Node2(node.name, second, first).also { it[metaInfoKey] = true }
+    }
+
+    private fun sortN(node: NodeChilded, context: ExprContext): NodeChilded? {
+        val children = node.children
+        val childrenSorted = children.sortedWith(context.nodeOrder)
+        if (children.all2(childrenSorted) { x, y -> x === y }){
+            node[metaInfoKey] = true
+            return null
+        }
+        return node.newWithChildren(childrenSorted).also { it[metaInfoKey] = true }
     }
 
 
-    override fun simplify(node: Node, context: ExprContext): Node {
-        if (node !is NodeChilded) return node
-        if (!context.isCommutative(node.name)) return node
+    override fun simplify(node: Node, context: ExprContext): Node? {
+        if (node !is NodeChilded) return null
+        if (!context.isCommutative(node.name)) return null
         return when (node) {
-            is Node1 -> node
+            is Node1 -> null
             is Node2 -> sort2(node, context)
-            else -> {
-                val childrenSorted = node.children.sortedWith(context.nodeOrder)
-                node.newWithChildren(childrenSorted)
-            }
+            else -> sortN(node, context)
         }
     }
 
@@ -52,8 +63,10 @@ abstract class RuleForSpecificChilded(val targetName: String) : SimRule {
     override fun simplify(node: Node, context: ExprContext): Node? {
         if (node.name != targetName || node !is NodeChilded || node[metaInfoKey] == true)
             return null
-        node[metaInfoKey] = true
-        return simplifyChilded(node, context)
+        val res = simplifyChilded(node, context)
+        if(res != null) return res
+        node[metaInfoKey] = true // mark as tried
+        return null
     }
 }
 
@@ -292,7 +305,7 @@ object FlattenPow : RuleForSpecific2(Names.POW) {
     }
 
     private fun flattenPowInt(base: Node, exp: NRational, context: ExprContext): Node? {
-        if(context.rational.isOne(exp.value)) return base
+        if (context.rational.isOne(exp.value)) return base
         if (SimUtils.isPow(base)) {
             return flattenPowPow(base, exp, context)
         }
@@ -312,7 +325,7 @@ object FlattenPow : RuleForSpecific2(Names.POW) {
 
     override fun simplify2(root: Node2, context: ExprContext): Node? {
         val (base, exp) = root
-        if(SimUtils.isInteger(exp,context)){
+        if (SimUtils.isInteger(exp, context)) {
             return flattenPowInt(base, exp, context)
         }
         return null

@@ -47,7 +47,7 @@ sealed interface Node {
 
         val IMAGINARY_UNIT = Symbol(Names.Symbol_I)
 
-        val UNDEFINED = Symbol("undefined")
+        val UNDEFINED = NOther("undefined")
 
         fun Int(value: BigInteger): NRational {
             return NRational(BigFraction(value, BigInteger.ONE))
@@ -249,6 +249,17 @@ data class NSymbol(val ch: String) : AbstractNode(), LeafNode {
     }
 }
 
+data class NOther(override val name : String) : AbstractNode(), LeafNode{
+    override fun plainToString(): String {
+        return name
+    }
+
+    override fun deepEquals(other: Node): Boolean {
+        if (this === other) return true
+        if (other !is NOther) return false
+        return name == other.name
+    }
+}
 
 sealed interface NodeChilded : Node {
     val children: List<Node>

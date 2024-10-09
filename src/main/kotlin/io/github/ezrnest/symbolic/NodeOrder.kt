@@ -9,6 +9,7 @@ object DefaultNodeOrder : NodeOrder {
         return when (node) {
             is NRational -> 0
             is NSymbol -> 10
+            is NOther -> 20
             is Node1 -> 100
             is Node2 -> 110
             is Node3 -> 120
