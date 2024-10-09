@@ -1,6 +1,6 @@
 package io.github.ezrnest.model
 
-import io.github.ezrnest.numberTheory.NTFunctions
+import io.github.ezrnest.numTh.NTFunctions
 import io.github.ezrnest.structure.*
 
 

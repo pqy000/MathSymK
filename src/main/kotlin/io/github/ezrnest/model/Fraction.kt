@@ -3,7 +3,7 @@ package io.github.ezrnest.model
 import io.github.ezrnest.model.Fraction.Companion.ONE
 import io.github.ezrnest.model.Fraction.Companion.ZERO
 import io.github.ezrnest.model.struct.FieldModel
-import io.github.ezrnest.numberTheory.NTFunctions
+import io.github.ezrnest.numTh.NTFunctions
 import io.github.ezrnest.structure.Integers
 import io.github.ezrnest.structure.Quotients
 import io.github.ezrnest.util.ArraySup

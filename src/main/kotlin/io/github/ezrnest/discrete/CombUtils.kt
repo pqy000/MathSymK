@@ -4,7 +4,7 @@
 package io.github.ezrnest.discrete
 
 import io.github.ezrnest.model.Fraction
-import io.github.ezrnest.numberTheory.NTFunctions.degFactorial
+import io.github.ezrnest.numTh.NTFunctions.degFactorial
 import io.github.ezrnest.util.MathUtils
 import io.github.ezrnest.util.exceptions.NumberValueException
 import java.math.BigInteger

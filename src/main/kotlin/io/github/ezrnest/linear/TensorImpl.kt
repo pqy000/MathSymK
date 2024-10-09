@@ -1,6 +1,6 @@
 package io.github.ezrnest.linear
 
-import io.github.ezrnest.numberTheory.NTFunctions
+import io.github.ezrnest.numTh.NTFunctions
 import io.github.ezrnest.structure.*
 import io.github.ezrnest.util.IterUtils
 import io.github.ezrnest.util.MathUtils

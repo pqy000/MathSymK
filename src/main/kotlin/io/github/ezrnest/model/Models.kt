@@ -3,7 +3,7 @@ package io.github.ezrnest.model
 import io.github.ezrnest.model.struct.AddGroupModel
 import io.github.ezrnest.model.struct.FieldModel
 import io.github.ezrnest.model.struct.RingModel
-import io.github.ezrnest.numberTheory.NTFunctions
+import io.github.ezrnest.numTh.NTFunctions
 import io.github.ezrnest.structure.*
 import io.github.ezrnest.util.DataStructureUtil
 import java.math.BigDecimal

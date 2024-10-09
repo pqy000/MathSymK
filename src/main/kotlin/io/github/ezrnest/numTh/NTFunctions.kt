@@ -1,4 +1,4 @@
-package io.github.ezrnest.numberTheory
+package io.github.ezrnest.numTh
 
 import io.github.ezrnest.model.isEven
 import io.github.ezrnest.util.MathUtils

@@ -5,6 +5,7 @@ import java.math.BigInteger
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
 
+@OptIn(ExperimentalContracts::class)
 object SimUtils {
 
 
@@ -32,7 +33,15 @@ object SimUtils {
     }
 
 
-    @OptIn(ExperimentalContracts::class)
+    @Suppress("NOTHING_TO_INLINE")
+    inline fun isInteger(node: Node, context: ExprContext): Boolean {
+        contract {
+            returns(true) implies (node is NRational)
+        }
+        return node is NRational && context.rational.isInteger(node.value)
+    }
+
+
     @Suppress("NOTHING_TO_INLINE")
     inline fun isAdd(node: Node): Boolean {
         contract {
@@ -41,13 +50,20 @@ object SimUtils {
         return (node.name == Node.Names.ADD && node is NodeN)
     }
 
-    @OptIn(ExperimentalContracts::class)
     @Suppress("NOTHING_TO_INLINE")
     inline fun isMul(node: Node): Boolean {
         contract {
             returns(true) implies (node is NodeN)
         }
         return (node.name == Node.Names.MUL && node is NodeN)
+    }
+
+    @Suppress("NOTHING_TO_INLINE")
+    inline fun isPow(node: Node): Boolean {
+        contract {
+            returns(true) implies (node is Node2)
+        }
+        return (node.name == Node.Names.POW && node is Node2)
     }
 
 
@@ -81,7 +97,7 @@ object SimUtils {
     fun toPower(node: Node): Exponent {
         if (node.name == Node.Names.POW && node is Node2)
             return Exponent(node.first, node.second)
-        if(node.name == Node.Names.F1_EXP && node is Node1){
+        if (node.name == Node.Names.F1_EXP && node is Node1) {
             return Exponent(Node.NATURAL_E, node.child) // e^x
         }
         return Exponent(node, Node.ONE)

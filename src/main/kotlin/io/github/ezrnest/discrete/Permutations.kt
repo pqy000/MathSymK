@@ -1,6 +1,6 @@
 package io.github.ezrnest.discrete
 
-import io.github.ezrnest.numberTheory.NTFunctions
+import io.github.ezrnest.numTh.NTFunctions
 import io.github.ezrnest.util.ArraySup
 
 

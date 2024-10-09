@@ -1,6 +1,6 @@
 package numberTheory
 
-import io.github.ezrnest.numberTheory.NTFunctions
+import io.github.ezrnest.numTh.NTFunctions
 import io.github.ezrnest.util.MathUtils
 import org.junit.jupiter.api.Test
 import kotlin.random.Random

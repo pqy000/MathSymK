@@ -173,11 +173,25 @@ object MergeProduct : RuleForSpecificN(Names.MUL) {
         return context.simplifyNode(res, 0)
     }
 
+    private fun simMulZero(collect: Map<Node, List<Node>>, context: ExprContext): Node {
+        // possible further check for undefined or infinity
+        return Node.ZERO
+    }
+
     override fun simplifyN(root: NodeN, context: ExprContext): Node? {
         val children = root.children
         val collect = sortedMapOf<Node, List<Node>>(context.nodeOrder)
+        val Q = context.rational
+        var rPart = Q.one
+        var rationalCount = 0
         var simplified = false
         for (node in children) {
+            if (node is NRational) {
+                // do not merge rational into power
+                rationalCount++
+                rPart = Q.multiply(rPart, node.value)
+                continue
+            }
             val (base, exp) = SimUtils.toPower(node)
             val t = collect[base]
             if (t == null) {
@@ -187,15 +201,23 @@ object MergeProduct : RuleForSpecificN(Names.MUL) {
                 collect[base] = t + exp
             }
         }
-        if (!simplified) return null
-        if (collect.size == 1) {
-            val (base, expList) = collect.entries.first()
-            return buildPower(base, expList, context)
+        if (rationalCount > 0 && Q.isZero(rPart)) {
+            return simMulZero(collect, context) // special case for 0
         }
-        val newChildren = collect.entries.map { (base, expList) -> buildPower(base, expList, context) }
-        return Node.Mul(newChildren)
-    }
+        if (rationalCount >= 2 || (rationalCount == 1 && Q.isOne(rPart))) {
+            // rational part is either merged or removed
+            simplified = true
+        }
+        if (!simplified) return null
 
+        val addRational = rationalCount > 0 && !Q.isOne(rPart)
+        val newChildren = ArrayList<Node>(collect.size + if (addRational) 1 else 0)
+        if (addRational) newChildren.add(Node.Rational(rPart))
+        collect.entries.mapTo(newChildren) { (base, expList) -> buildPower(base, expList, context) }
+        return Node.Mul(
+            newChildren
+        ) // need simplification by the rule again since the power may be added and simplified
+    }
 }
 
 
@@ -237,7 +259,6 @@ object ComputeProductRational : RuleForSpecificN(Names.MUL) {
         }
         return Node.Mul(nodes).also { it[metaInfoKey] = true }
     }
-
 }
 
 abstract class RuleForSpecific2(targetName: String) : RuleForSpecificChilded(targetName) {
@@ -256,22 +277,45 @@ abstract class RuleForSpecific2(targetName: String) : RuleForSpecificChilded(tar
  */
 object FlattenPow : RuleForSpecific2(Names.POW) {
     // created at 2024/10/05
-    override val metaInfoKey: TypedKey<Boolean> = TypedKey("FlattenPow")
+    override val metaInfoKey: TypedKey<Boolean> = TypedKey("Flatten^")
 
     override val description: String
         get() = "Flatten pow"
 
-    private fun flattenPowInt(base: Node, exp: BigInteger): Node {
-        if (exp == BigInteger.ONE) return base
-        TODO()
+    /**
+     * Flatten `exp(base = pow(b0, e0), exp) = pow(b0, e0*exp)`
+     */
+    private fun flattenPowPow(base: Node2, exp: Node, context: ExprContext): Node {
+        val (baseBase, baseExp) = base
+        val newExp = context.simplifyNode(Node.Mul(listOf(baseExp, exp)), 0)
+        return Node.Pow(baseBase, newExp)
+    }
+
+    private fun flattenPowInt(base: Node, exp: NRational, context: ExprContext): Node? {
+        if(context.rational.isOne(exp.value)) return base
+        if (SimUtils.isPow(base)) {
+            return flattenPowPow(base, exp, context)
+        }
+        if (SimUtils.isMul(base)) {
+            val children = base.children
+            val newChildren = children.map {
+                if (SimUtils.isPow(it)) {
+                    flattenPowPow(it, exp, context)
+                } else {
+                    Node.Pow(it, exp)
+                }
+            }
+            return Node.Mul(newChildren)
+        }
+        return null
     }
 
     override fun simplify2(root: Node2, context: ExprContext): Node? {
         val (base, exp) = root
-        SimUtils.asInteger(exp, context)?.let { expInt ->
-            return flattenPowInt(base, expInt)
+        if(SimUtils.isInteger(exp,context)){
+            return flattenPowInt(base, exp, context)
         }
-
+        return null
         TODO()
     }
 }
@@ -284,7 +328,7 @@ object FlattenPow : RuleForSpecific2(Names.POW) {
  */
 object ComputePow : RuleForSpecific2(Names.POW) {
     // created at 2024/10/05
-    override val metaInfoKey: TypedKey<Boolean> = TypedKey("ComputePow")
+    override val metaInfoKey: TypedKey<Boolean> = TypedKey("Compute^")
 
     override val description: String
         get() = "Compute pow"
@@ -313,7 +357,7 @@ object ComputePow : RuleForSpecific2(Names.POW) {
 
     private fun canExpandPow(base: BigInteger, pow: BigInteger): Boolean {
         if (pow.bitLength() > 31) return false
-        val powInt =  pow.intValueExact().absoluteValue
+        val powInt = pow.intValueExact().absoluteValue
         val length = Math.multiplyFull(base.bitLength(), powInt)
         return length <= MAX_BIT_LENGTH
     }
@@ -362,14 +406,14 @@ object ComputePow : RuleForSpecific2(Names.POW) {
 
                 val (floor, rem) = floorAndRem(e)
                 if (floor.signum() != 0) {
-                    if(canExpandPow(b, floor)){
+                    if (canExpandPow(b, floor)) {
                         val floorInt = floor.intValueExact()
                         if (floorInt < 0) {
                             rPart /= integers.power(b, -floorInt).bfrac
                         } else {
                             rPart *= integers.power(b, floorInt).bfrac
                         }
-                    }else{
+                    } else {
                         val node = Node.Pow(Node.Int(b), Node.Int(floor))
                         node[metaInfoKey] = true
                         node[EMeta.rational] = true

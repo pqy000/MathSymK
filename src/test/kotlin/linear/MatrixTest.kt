@@ -6,7 +6,7 @@ import io.github.ezrnest.model.Multinomial
 import io.github.ezrnest.model.Models
 import io.github.ezrnest.model.Polynomial
 import io.github.ezrnest.model.Polynomial.Companion.substitute
-import io.github.ezrnest.numberTheory.NTFunctions
+import io.github.ezrnest.numTh.NTFunctions
 import io.github.ezrnest.util.IterUtils
 import io.github.ezrnest.util.MathUtils
 import io.github.ezrnest.util.pow

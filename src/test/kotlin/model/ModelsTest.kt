@@ -3,7 +3,7 @@ package model
 import TestUtils.assertEquals
 import io.github.ezrnest.model.Models
 import io.github.ezrnest.model.Polynomial
-import io.github.ezrnest.numberTheory.NTFunctions
+import io.github.ezrnest.numTh.NTFunctions
 import org.junit.jupiter.api.assertThrows
 import kotlin.random.Random
 import kotlin.test.Test
