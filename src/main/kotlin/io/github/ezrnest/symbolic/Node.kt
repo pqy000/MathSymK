@@ -7,7 +7,7 @@ import java.math.BigInteger
 sealed interface Node {
     val name: String
 
-    var meta: Map<String, Any?>
+    var meta: Map<TypedKey<*>, Any?>
 
 
     fun plainToString(): String
@@ -190,7 +190,7 @@ sealed interface LeafNode : Node {
 
 
 sealed class AbstractNode {
-    var meta: Map<String, Any?> = emptyMap()
+    var meta: Map<TypedKey<*>, Any?> = emptyMap()
 
 }
 

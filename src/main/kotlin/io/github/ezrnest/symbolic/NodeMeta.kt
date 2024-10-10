@@ -1,46 +1,55 @@
 package io.github.ezrnest.symbolic
 // created at 2024/10/05
 import io.github.ezrnest.model.Multinomial
-import kotlin.collections.plus
-
+import java.util.*
 
 
 typealias Multi = Multinomial<Rational>
 
-data class TypedKey<@Suppress("UNUSED") T>(val key: String)
-
-fun <T> Node.addMeta(key: TypedKey<T>, value: T) {
-    val k = key.key
-    if (meta.isEmpty()) {
-        meta = mutableMapOf(k to value)
-    } else if (meta is MutableMap) {
-        (meta as MutableMap)[k] = value
-    } else {
-        meta = meta + (k to value)
+/**
+ * Defines a typed key for meta data.
+ */
+data class TypedKey<T>(val name: String) {
+    override fun toString(): String {
+        return name
     }
 }
 
-fun <T> Node.getMeta(key: TypedKey<T>): T? = meta[key]
+fun <T> Node.addMeta(key: TypedKey<T>, value: T) {
+    val meta = meta
+    if (meta is MutableMap) {
+        meta[key] = value
+        return
+    }
+    val mutableMeta: MutableMap<TypedKey<*>, Any?> =
+        if (meta.isEmpty()) {
+            IdentityHashMap<TypedKey<*>, Any?>(4)
+        } else {
+            IdentityHashMap<TypedKey<*>, Any?>(meta)
+        }
+    mutableMeta[key] = value
+    this.meta = mutableMeta
+}
 
-fun <T> Node.getMeta(key: TypedKey<T>, default: T): T = meta[key] ?: default
+fun <T> Node.getMeta(key: TypedKey<T>): T? = meta.getTyped(key)
+
+fun <T> Node.getMeta(key: TypedKey<T>, default: T): T = meta.getTyped(key, default)
 
 operator fun <T> Node.get(key: TypedKey<T>): T? = getMeta(key)
 
-operator fun <T> Node.contains(key: TypedKey<T>): Boolean = meta.containsKey(key.key)
+operator fun <T> Node.contains(key: TypedKey<T>): Boolean = meta.containsKey(key)
 
 operator fun <T> Node.set(key: TypedKey<T>, value: T) = addMeta(key, value)
 
 @Suppress("UNCHECKED_CAST")
-operator fun <T> Map<String,Any?>.get(key: TypedKey<T>): T? = get(key.key) as T?
+fun <T> Map<TypedKey<*>, Any?>.getTyped(key: TypedKey<T>): T? = get(key) as T?
 
-operator fun <V,T:V> MutableMap<String,V>.set(key: TypedKey<T>, value: T) {
-    this[key.key] = value
-}
+@Suppress("UNCHECKED_CAST")
+fun <T> Map<TypedKey<*>, Any?>.getTyped(key: TypedKey<T>, default: T): T = getOrDefault(key, default) as T
 
 
 
 object EMeta {
-
 
     val asMulti = TypedKey<Multi>("asMulti")
 

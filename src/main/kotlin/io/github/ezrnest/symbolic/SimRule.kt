@@ -11,8 +11,11 @@ import kotlin.math.absoluteValue
 interface SimRule {
     val description: String
 
-    val metaInfoKey: TypedKey<Boolean>
-        get() = TypedKey(description)
+    /**
+     * The key for marking the node as tried by the rule but not applicable.
+     * This can be used to avoid trying the same rule again.
+     */
+    val metaKeyNotApplicable: TypedKey<Boolean>
 
     fun simplify(node: Node, context: ExprContext): Node?
 }
@@ -20,26 +23,25 @@ interface SimRule {
 object RuleSort : SimRule {
     override val description: String = "Sort"
 
-    override val metaInfoKey: TypedKey<Boolean>
-        get() = TypedKey("sorted")
+    override val metaKeyNotApplicable: TypedKey<Boolean> = TypedKey("sorted")
 
     private fun sort2(node: Node2, context: ExprContext): Node2? {
         val (first, second) = node
         if (context.nodeOrder.compare(first, second) <= 0) {
-            node[metaInfoKey] = true
+            node[metaKeyNotApplicable] = true
             return null
         }
-        return Node.Node2(node.name, second, first).also { it[metaInfoKey] = true }
+        return Node.Node2(node.name, second, first).also { it[metaKeyNotApplicable] = true }
     }
 
     private fun sortN(node: NodeChilded, context: ExprContext): NodeChilded? {
         val children = node.children
         val childrenSorted = children.sortedWith(context.nodeOrder)
-        if (children.all2(childrenSorted) { x, y -> x === y }){
-            node[metaInfoKey] = true
+        if (children.all2(childrenSorted) { x, y -> x === y }) {
+            node[metaKeyNotApplicable] = true
             return null
         }
-        return node.newWithChildren(childrenSorted).also { it[metaInfoKey] = true }
+        return node.newWithChildren(childrenSorted).also { it[metaKeyNotApplicable] = true }
     }
 
 
@@ -55,50 +57,47 @@ object RuleSort : SimRule {
 
 }
 
-abstract class RuleForSpecificChilded(val targetName: String) : SimRule {
-
-
-    protected abstract fun simplifyChilded(node: NodeChilded, context: ExprContext): Node?
-
-    override fun simplify(node: Node, context: ExprContext): Node? {
-        if (node.name != targetName || node !is NodeChilded || node[metaInfoKey] == true)
+abstract class RuleForSpecificName(val targetName: String) : SimRule {
+    protected inline fun <reified T : Node> simplifyNodeTyped(
+        node: Node, context: ExprContext, nextSimplification: (T, ExprContext) -> Node?
+    ): Node? {
+        if (node.name != targetName || node !is T || node[metaKeyNotApplicable] == true)
             return null
-        val res = simplifyChilded(node, context)
-        if(res != null) return res
-        node[metaInfoKey] = true // mark as tried
+        val res = nextSimplification(node, context)
+        if (res != null) return res
+        node[metaKeyNotApplicable] = true // tried but not applicable
         return null
     }
 }
 
-class RegularizeNodeN(targetName: String) : RuleForSpecificChilded(targetName) {
+
+class RegularizeNodeN(targetName: String) : RuleForSpecificName(targetName) {
     override val description: String = "Regularize $targetName"
 
-    override val metaInfoKey: TypedKey<Boolean> = TypedKey("Reg${targetName}")
+    override val metaKeyNotApplicable: TypedKey<Boolean> = TypedKey("Reg[$targetName]")
 
-    override fun simplifyChilded(node: NodeChilded, context: ExprContext): Node? {
-        if (node is NodeN) return null
-        return Node.NodeN(targetName, node.children).also {
-            it[metaInfoKey] = true
-        }
+    override fun simplify(node: Node, context: ExprContext): Node? {
+        if (node.name != targetName || node !is NodeChilded || node is NodeN)
+            return null
+        return Node.NodeN(targetName, node.children)
+        // no need for the metaKeyNotApplicable since it is always applicable
     }
 }
 
 
-abstract class RuleForSpecificN(targetName: String) : RuleForSpecificChilded(targetName) {
-
-    final override fun simplifyChilded(node: NodeChilded, context: ExprContext): Node? {
-        if (node !is NodeN) return null
-        return simplifyN(node, context)
+abstract class RuleForSpecificN(targetName: String) : RuleForSpecificName(targetName) {
+    final override fun simplify(node: Node, context: ExprContext): Node? {
+        return simplifyNodeTyped<NodeN>(node, context) { n, c -> simplifyN(n, c) }
     }
 
-    protected abstract fun simplifyN(root: NodeN, context: ExprContext): Node?
+    abstract fun simplifyN(root: NodeN, context: ExprContext): Node?
 }
 
 
 class Flatten(targetName: String) : RuleForSpecificN(targetName) {
     // created at 2024/10/01
     override val description: String = "Flatten${targetName}"
-
+    override val metaKeyNotApplicable: TypedKey<Boolean> = TypedKey("Flatten[${targetName}]")
 
     override fun simplifyN(root: NodeN, context: ExprContext): Node? {
         val children = root.children
@@ -120,7 +119,7 @@ object MergeAdditionRational : RuleForSpecificN(Names.ADD) {
     // created at 2024/10/05
 
 
-    override val metaInfoKey: TypedKey<Boolean> = TypedKey("Merge+")
+    override val metaKeyNotApplicable: TypedKey<Boolean> = TypedKey("Merge+")
 
 
     override val description: String
@@ -163,6 +162,7 @@ object MergeAdditionRational : RuleForSpecificN(Names.ADD) {
 /**
  * ```
  * x * x -> x^2
+ * 1 * x * 2 -> 2x
  * ```
  */
 object MergeProduct : RuleForSpecificN(Names.MUL) {
@@ -171,7 +171,7 @@ object MergeProduct : RuleForSpecificN(Names.MUL) {
     override val description: String
         get() = "Merge product"
 
-    override val metaInfoKey: TypedKey<Boolean> = TypedKey("Merge*")
+    override val metaKeyNotApplicable: TypedKey<Boolean> = TypedKey("Merge*")
 
     private fun buildPower(base: Node, expList: List<Node>, context: ExprContext): Node {
         var exp = if (expList.size == 1) {
@@ -242,7 +242,7 @@ object MergeProduct : RuleForSpecificN(Names.MUL) {
  */
 object ComputeProductRational : RuleForSpecificN(Names.MUL) {
     // created at 2024/10/05
-    override val metaInfoKey: TypedKey<Boolean> = TypedKey("Compute*")
+    override val metaKeyNotApplicable: TypedKey<Boolean> = TypedKey("Compute*")
 
     override val description: String
         get() = "Compute product"
@@ -270,14 +270,21 @@ object ComputeProductRational : RuleForSpecificN(Names.MUL) {
         if (!Q.isOne(product)) {
             nodes.add(Node.Rational(product))
         }
-        return Node.Mul(nodes).also { it[metaInfoKey] = true }
+        return Node.Mul(nodes).also { it[metaKeyNotApplicable] = true }
     }
 }
 
-abstract class RuleForSpecific2(targetName: String) : RuleForSpecificChilded(targetName) {
-    final override fun simplifyChilded(node: NodeChilded, context: ExprContext): Node? {
-        if (node !is Node2) return null
-        return simplify2(node, context)
+abstract class RuleForSpecific1(targetName: String) : RuleForSpecificName(targetName) {
+    override fun simplify(node: Node, context: ExprContext): Node? {
+        return simplifyNodeTyped<Node1>(node, context) { n, c -> simplify1(n, c) }
+    }
+
+    protected abstract fun simplify1(root: Node1, context: ExprContext): Node?
+}
+
+abstract class RuleForSpecific2(targetName: String) : RuleForSpecificName(targetName) {
+    override fun simplify(node: Node, context: ExprContext): Node? {
+        return simplifyNodeTyped<Node2>(node, context) { n, c -> simplify2(n, c) }
     }
 
     protected abstract fun simplify2(root: Node2, context: ExprContext): Node?
@@ -290,7 +297,7 @@ abstract class RuleForSpecific2(targetName: String) : RuleForSpecificChilded(tar
  */
 object FlattenPow : RuleForSpecific2(Names.POW) {
     // created at 2024/10/05
-    override val metaInfoKey: TypedKey<Boolean> = TypedKey("Flatten^")
+    override val metaKeyNotApplicable: TypedKey<Boolean> = TypedKey("Flatten^")
 
     override val description: String
         get() = "Flatten pow"
@@ -329,7 +336,7 @@ object FlattenPow : RuleForSpecific2(Names.POW) {
             return flattenPowInt(base, exp, context)
         }
         return null
-        TODO()
+        // TODO
     }
 }
 
@@ -341,7 +348,7 @@ object FlattenPow : RuleForSpecific2(Names.POW) {
  */
 object ComputePow : RuleForSpecific2(Names.POW) {
     // created at 2024/10/05
-    override val metaInfoKey: TypedKey<Boolean> = TypedKey("Compute^")
+    override val metaKeyNotApplicable: TypedKey<Boolean> = TypedKey("Compute^")
 
     override val description: String
         get() = "Compute pow"
@@ -428,7 +435,7 @@ object ComputePow : RuleForSpecific2(Names.POW) {
                         }
                     } else {
                         val node = Node.Pow(Node.Int(b), Node.Int(floor))
-                        node[metaInfoKey] = true
+                        node[metaKeyNotApplicable] = true
                         node[EMeta.rational] = true
                         node[EMeta.positive] = true
                         nodes.add(node)
@@ -437,7 +444,7 @@ object ComputePow : RuleForSpecific2(Names.POW) {
                 }
                 if (!isZero(rem)) {
                     val p = Node.Pow(Node.Int(b), Node.Rational(rem))
-                    p[metaInfoKey] = true
+                    p[metaKeyNotApplicable] = true
                     nodes.add(p)
                 }
             }

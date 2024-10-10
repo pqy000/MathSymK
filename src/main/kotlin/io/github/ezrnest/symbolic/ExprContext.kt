@@ -14,7 +14,7 @@ interface ExprContext {
 
     val nodeOrder: NodeOrder
 
-    val options : Map<String, Any> get() = emptyMap()
+    val options : Map<TypedKey<*>, Any> get() = emptyMap()
 
     fun isCommutative(name: String): Boolean
 
@@ -114,7 +114,7 @@ object TestExprContext : ExprContext {
     override val nodeOrder: NodeOrder
         get() = DefaultNodeOrder
 
-    override val options: MutableMap<String, Any> = mutableMapOf()
+    override val options: MutableMap<TypedKey<*>, Any> = mutableMapOf()
 
     init {
 
