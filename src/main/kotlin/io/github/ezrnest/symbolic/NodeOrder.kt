@@ -7,14 +7,15 @@ object DefaultNodeOrder : NodeOrder {
 
     fun nodeTypeOrdinal(node: Node): Int {
         return when (node) {
+            is NOther -> -1
             is NRational -> 0
             is NSymbol -> 10
-            is NOther -> 20
+//            is LeafNode -> 99
             is Node1 -> 100
             is Node2 -> 110
             is Node3 -> 120
             is NodeN -> 1000
-            else -> Int.MAX_VALUE
+//            is NodeChilded -> 9999
         }
     }
 
@@ -29,10 +30,10 @@ object DefaultNodeOrder : NodeOrder {
 
 
     override fun compare(o1: Node, o2: Node): Int {
-        o1.name.compareTo(o2.name).let {
+        (nodeTypeOrdinal(o1) - nodeTypeOrdinal(o2)).let {
             if (it != 0) return it
         }
-        (nodeTypeOrdinal(o1) - nodeTypeOrdinal(o2)).let {
+        o1.name.compareTo(o2.name).let {
             if (it != 0) return it
         }
 

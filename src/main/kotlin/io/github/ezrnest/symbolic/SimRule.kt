@@ -20,6 +20,8 @@ interface SimRule {
     fun simplify(node: Node, context: ExprContext): Node?
 }
 
+
+
 object RuleSort : SimRule {
     override val description: String = "Sort"
 
@@ -96,8 +98,8 @@ abstract class RuleForSpecificN(targetName: String) : RuleForSpecificName(target
 
 class Flatten(targetName: String) : RuleForSpecificN(targetName) {
     // created at 2024/10/01
-    override val description: String = "Flatten${targetName}"
-    override val metaKeyNotApplicable: TypedKey<Boolean> = TypedKey("Flatten[${targetName}]")
+    override val description: String = "Flatten $targetName"
+    override val metaKeyNotApplicable: TypedKey<Boolean> = TypedKey("Flatten${targetName}")
 
     override fun simplifyN(root: NodeN, context: ExprContext): Node? {
         val children = root.children

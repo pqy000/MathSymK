@@ -249,7 +249,7 @@ data class NSymbol(val ch: String) : AbstractNode(), LeafNode {
     }
 }
 
-data class NOther(override val name : String) : AbstractNode(), LeafNode{
+data class NOther(override val name: String) : AbstractNode(), LeafNode {
     override fun plainToString(): String {
         return name
     }
@@ -327,13 +327,15 @@ sealed interface NodeChilded : Node {
 //    }
 }
 
-interface Node1 : NodeChilded {
-    val child: Node
+typealias Node1 = Node1T<*>
+
+interface Node1T<out C : Node> : NodeChilded {
+    val child: C
 
     override val children: List<Node>
         get() = listOf(child)
 
-    fun newWithChildren(child: Node): Node1
+    fun <S : Node> newWithChildren(child: S): Node1T<S>
 
     override fun newWithChildren(children: List<Node>): NodeChilded {
         require(children.size == 1)
@@ -353,9 +355,11 @@ interface Node1 : NodeChilded {
 //    }
 }
 
-interface Node2 : NodeChilded {
-    val first: Node
-    val second: Node
+typealias Node2 = Node2T<*, *>
+
+interface Node2T<out C1 : Node, out C2 : Node> : NodeChilded {
+    val first: C1
+    val second: C2
 
     operator fun component1() = first
     operator fun component2() = second
@@ -363,7 +367,7 @@ interface Node2 : NodeChilded {
     override val children: List<Node>
         get() = listOf(first, second)
 
-    fun newWithChildren(first: Node, second: Node): Node2
+    fun <S1 : Node, S2 : Node> newWithChildren(first: S1, second: S2): Node2T<S1, S2>
 
     override fun newWithChildren(children: List<Node>): NodeChilded {
         require(children.size == 2)
@@ -380,10 +384,12 @@ interface Node2 : NodeChilded {
 
 }
 
-interface Node3 : NodeChilded {
-    val first: Node
-    val second: Node
-    val third: Node
+typealias Node3 = Node3T<*, *, *>
+
+interface Node3T<out C1 : Node, out C2 : Node, out C3 : Node> : NodeChilded {
+    val first: C1
+    val second: C2
+    val third: C3
 
     operator fun component1() = first
     operator fun component2() = second
@@ -393,7 +399,7 @@ interface Node3 : NodeChilded {
     override val children: List<Node>
         get() = listOf(first, second, third)
 
-    fun newWithChildren(first: Node, second: Node, third: Node): Node3
+    fun <S1 : Node, S2 : Node, S3 : Node> newWithChildren(first: S1, second: S2, third: S3): Node3T<S1, S2, S3>
 
     override fun newWithChildren(children: List<Node>): NodeChilded {
         require(children.size == 3)
@@ -440,13 +446,13 @@ interface NodeN : NodeChilded {
 //}
 
 
-data class Node1Impl(
+data class Node1Impl<C : Node>(
     override val name: String,
-    override var child: Node
-) : AbstractNode(), Node1 {
+    override var child: C
+) : AbstractNode(), Node1T<C> {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
-        if (other !is Node1Impl) return false
+        if (other !is Node1Impl<*>) return false
         return name == other.name && child == other.child
     }
 
@@ -456,7 +462,7 @@ data class Node1Impl(
         return result
     }
 
-    override fun newWithChildren(child: Node): Node1 {
+    override fun <S : Node> newWithChildren(child: S): Node1T<S> {
         return Node1Impl(name, child)
     }
 
@@ -470,13 +476,13 @@ data class Node1Impl(
 
 //data class EFraction(val nume)
 
-class Node2Impl(
-    override var first: Node, override var second: Node,
+class Node2Impl<C1 : Node, C2 : Node>(
+    override var first: C1, override var second: C2,
     override val name: String
-) : AbstractNode(), Node2 {
+) : AbstractNode(), Node2T<C1, C2> {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
-        if (other !is Node2Impl) return false
+        if (other !is Node2Impl<*, *>) return false
         return name == other.name && first == other.first && second == other.second
     }
 
@@ -487,10 +493,9 @@ class Node2Impl(
         return result
     }
 
-    override fun newWithChildren(first: Node, second: Node): Node2 {
+    override fun <S1 : Node, S2 : Node> newWithChildren(first: S1, second: S2): Node2T<S1, S2> {
         return Node2Impl(first, second, name)
     }
-
 
     override fun recurMap(depth: Int, action: (Node) -> Node): Node {
         if (depth <= 0) return action(this)
@@ -501,13 +506,13 @@ class Node2Impl(
     }
 }
 
-data class Node3Impl(
-    override var first: Node, override var second: Node, override var third: Node,
+data class Node3Impl<C1 : Node, C2 : Node, C3 : Node>(
+    override var first: C1, override var second: C2, override var third: C3,
     override val name: String
-) : AbstractNode(), Node3 {
+) : AbstractNode(), Node3T<C1, C2, C3> {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
-        if (other !is Node3Impl) return false
+        if (other !is Node3Impl<*, *, *>) return false
         return name == other.name && first == other.first && second == other.second && third == other.third
     }
 
@@ -519,7 +524,9 @@ data class Node3Impl(
         return result
     }
 
-    override fun newWithChildren(first: Node, second: Node, third: Node): Node3 {
+    override fun <S1 : Node, S2 : Node, S3 : Node> newWithChildren(
+        first: S1, second: S2, third: S3
+    ): Node3T<S1, S2, S3> {
         return Node3Impl(first, second, third, name)
     }
 
