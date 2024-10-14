@@ -10,7 +10,7 @@ object DefaultNodeOrder : NodeOrder {
             is NOther -> -1
             is NRational -> 0
             is NSymbol -> 10
-//            is LeafNode -> 99
+            is LeafNode -> 99
             is Node1 -> 100
             is Node2 -> 110
             is Node3 -> 120

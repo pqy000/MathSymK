@@ -18,11 +18,37 @@ interface SimRule {
     val metaKeyNotApplicable: TypedKey<Boolean>
 
     fun simplify(node: Node, context: ExprContext): Node?
+
+    val matcher : NodeMatcher<Node>
+        get() = AnyMatcher
+}
+
+interface SimRuleMatched<T : Node> : SimRule {
+
+
+    /**
+     * A matcher describing the nodes that the rule can be applied to.
+     */
+    override val matcher: NodeMatcher<T>
+
+    /**
+     * Simplify the matched node.
+     */
+    fun simplifyMatched(node: T, matchContext: MatchContext): Node?
+
+
+    override fun simplify(node: Node, context: ExprContext): Node? {
+        val matchContext = MutableMatchContext(context)
+        val r = matcher.matches(node, matchContext) ?: return null
+        return simplifyMatched(r, matchContext)
+    }
 }
 
 
+class RuleSort(val targetSig: NodeSig) : SimRule {
 
-object RuleSort : SimRule {
+    override val matcher: NodeMatcher<Node> = LeafMatcherForSpec(targetSig)
+
     override val description: String = "Sort"
 
     override val metaKeyNotApplicable: TypedKey<Boolean> = TypedKey("sorted")
@@ -56,8 +82,8 @@ object RuleSort : SimRule {
             else -> sortN(node, context)
         }
     }
-
 }
+
 
 abstract class RuleForSpecificName(val targetName: String) : SimRule {
     protected inline fun <reified T : Node> simplifyNodeTyped(
@@ -73,21 +99,24 @@ abstract class RuleForSpecificName(val targetName: String) : SimRule {
 }
 
 
-class RegularizeNodeN(targetName: String) : RuleForSpecificName(targetName) {
-    override val description: String = "Regularize $targetName"
-
-    override val metaKeyNotApplicable: TypedKey<Boolean> = TypedKey("Reg[$targetName]")
-
-    override fun simplify(node: Node, context: ExprContext): Node? {
-        if (node.name != targetName || node !is NodeChilded || node is NodeN)
-            return null
-        return Node.NodeN(targetName, node.children)
-        // no need for the metaKeyNotApplicable since it is always applicable
-    }
-}
+//class RegularizeNodeN(targetName: String) : RuleForSpecificName(targetName) {
+//    override val description: String = "Regularize $targetName"
+//
+//    override val metaKeyNotApplicable: TypedKey<Boolean> = TypedKey("Reg[$targetName]")
+//
+//    override fun simplify(node: Node, context: ExprContext): Node? {
+//        if (node.name != targetName || node !is NodeChilded || node is NodeN)
+//            return null
+//        return Node.NodeN(targetName, node.children)
+//        // no need for the metaKeyNotApplicable since it is always applicable
+//    }
+//}
 
 
 abstract class RuleForSpecificN(targetName: String) : RuleForSpecificName(targetName) {
+
+    final override val matcher: NodeMatcher<NodeN> = LeafMatcherForSpec.forNodeN(targetName)
+
     final override fun simplify(node: Node, context: ExprContext): Node? {
         return simplifyNodeTyped<NodeN>(node, context) { n, c -> simplifyN(n, c) }
     }
@@ -277,7 +306,9 @@ object ComputeProductRational : RuleForSpecificN(Names.MUL) {
 }
 
 abstract class RuleForSpecific1(targetName: String) : RuleForSpecificName(targetName) {
-    override fun simplify(node: Node, context: ExprContext): Node? {
+    final override val matcher: NodeMatcher<Node> = LeafMatcherForSpec.forNode1(targetName)
+
+    final override fun simplify(node: Node, context: ExprContext): Node? {
         return simplifyNodeTyped<Node1>(node, context) { n, c -> simplify1(n, c) }
     }
 
@@ -285,7 +316,9 @@ abstract class RuleForSpecific1(targetName: String) : RuleForSpecificName(target
 }
 
 abstract class RuleForSpecific2(targetName: String) : RuleForSpecificName(targetName) {
-    override fun simplify(node: Node, context: ExprContext): Node? {
+    final override val matcher: NodeMatcher<Node> = LeafMatcherForSpec.forNode2(targetName)
+
+    final override fun simplify(node: Node, context: ExprContext): Node? {
         return simplifyNodeTyped<Node2>(node, context) { n, c -> simplify2(n, c) }
     }
 

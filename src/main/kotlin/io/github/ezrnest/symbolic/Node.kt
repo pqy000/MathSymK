@@ -3,6 +3,7 @@ package io.github.ezrnest.symbolic
 import io.github.ezrnest.model.BigFraction
 import io.github.ezrnest.util.all2
 import java.math.BigInteger
+import kotlin.reflect.KClass
 
 sealed interface Node {
     val name: String
@@ -59,7 +60,7 @@ sealed interface Node {
 
 
         //
-        fun Symbol(name: String): Node {
+        fun Symbol(name: String): NSymbol {
             return NSymbol(name)
         }
 
@@ -157,7 +158,7 @@ sealed interface Node {
 }
 
 
-sealed interface LeafNode : Node {
+interface LeafNode : Node {
 
     override val name: String get() = ""
 
@@ -196,8 +197,6 @@ sealed class AbstractNode {
 
 
 typealias Rational = BigFraction
-
-
 
 
 data class NRational(val value: Rational) : AbstractNode(), LeafNode {
@@ -349,10 +348,6 @@ interface Node1T<out C : Node> : NodeChilded {
         if (name != other.name) return false
         return child.deepEquals(other.child)
     }
-
-//    override fun sortWith(order: Comparator<Node>): Node {
-//        return newWithChildren(child.sortWith(order))
-//    }
 }
 
 typealias Node2 = Node2T<*, *>
@@ -474,7 +469,6 @@ data class Node1Impl<C : Node>(
     }
 }
 
-//data class EFraction(val nume)
 
 class Node2Impl<C1 : Node, C2 : Node>(
     override var first: C1, override var second: C2,
@@ -569,6 +563,80 @@ data class NodeNImpl(
         return action(NodeNImpl(name, newChildren))
     }
 }
+
+
+data class NodeSig(val name: String, val type: NType) {
+
+    override fun toString(): String {
+        return "$name:$type"
+    }
+
+    /**
+     * Describes the structural type of nodes.
+     */
+    enum class NType {
+        Leaf, Node1, Node2, Node3, NodeN;
+
+        fun matches(node: Node): Boolean {
+            return when (this) {
+                Leaf -> node is LeafNode
+                Node1 -> node is Node1
+                Node2 -> node is Node2
+                Node3 -> node is Node3
+                NodeN -> node is NodeN
+            }
+        }
+    }
+
+    fun matches(node: Node): Boolean {
+        return type.matches(node) && node.name == name
+    }
+
+    companion object {
+        fun typeOf(node: Node): NType {
+            return when (node) {
+                is LeafNode -> NType.Leaf
+                is Node1 -> NType.Node1
+                is Node2 -> NType.Node2
+                is Node3 -> NType.Node3
+                is NodeN -> NType.NodeN
+                // all the cases are covered
+            }
+        }
+
+        fun toType(type: KClass<Node>): NType {
+            return when (type) {
+                NRational::class -> NType.Leaf
+                Node1::class -> NType.Node1
+                Node2::class -> NType.Node2
+                Node3::class -> NType.Node3
+                NodeN::class -> NType.NodeN
+                else -> error("Unknown type $type")
+            }
+        }
+
+        fun signatureOf(node: Node): NodeSig {
+            return NodeSig(node.name, typeOf(node))
+        }
+
+
+        val RATIONAL = NodeSig("", NType.Leaf)
+        val SYMBOL = NodeSig("", NType.Leaf)
+
+
+        val ADD = NodeSig(Node.Names.ADD, NType.NodeN)
+        val MUL = NodeSig(Node.Names.MUL, NType.NodeN)
+        val POW = NodeSig(Node.Names.POW, NType.Node2)
+
+        val F1_SIN = NodeSig(Node.Names.F1_SIN, NType.Node1)
+        val F1_COS = NodeSig(Node.Names.F1_COS, NType.Node1)
+
+
+    }
+}
+
+val Node.signature get() = NodeSig.signatureOf(this)
+
 
 object NodeBuilderScope {
     val x = "x".s
