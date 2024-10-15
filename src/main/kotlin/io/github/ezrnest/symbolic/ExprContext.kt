@@ -13,7 +13,7 @@ import kotlin.math.max
 interface ExprContext {
     val rational: BigFractionAsQuotients
 
-    val nodeOrder: NodeOrder
+    val nodeOrder: NodeComparator
 
     val options: Map<TypedKey<*>, Any> get() = emptyMap()
 
@@ -112,8 +112,8 @@ object TestExprContext : ExprContext {
     override val rational: BigFractionAsQuotients
         get() = BigFractionAsQuotients
 
-    override val nodeOrder: NodeOrder
-        get() = DefaultNodeOrder
+    override val nodeOrder: NodeComparator
+        get() = NodeOrder
 
     override val options: MutableMap<TypedKey<*>, Any> = mutableMapOf()
 
@@ -161,22 +161,23 @@ object TestExprContext : ExprContext {
         var res = node
         var previousRule: SimRule? = null
         simLevel++
+        if (verbose) println("Simplifying: ${res.plainToString()}, ${res.meta}")
         while (true) {
-            if (verbose) println("Trying for: ${res.plainToString()}")
             val appliedRule = dispatcher.dispatchUntil(res) { rule ->
-                if (verbose) println(" - ${rule.description}")
+                if (verbose) println(" > ${rule.description}")
                 if (rule === previousRule) return@dispatchUntil false
                 val simplified = rule.simplify(res, this) ?: return@dispatchUntil false
-                if (verbose) println("Simplified to: ${simplified.plainToString()}")
+                if (verbose) println("To: ${simplified.plainToString()}, ${simplified.meta}")
                 res = simplified
                 true
             }
             if (appliedRule == null) {
-                if (verbose) println("No rule applied...")
+                if (verbose) println(" > Nothing happened ...")
                 break
             }
             previousRule = appliedRule
         }
+//        if (verbose) println("Final: ${res.plainToString()}, ${res.meta}")
         simLevel--
         return res
     }

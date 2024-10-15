@@ -1,9 +1,9 @@
 package io.github.ezrnest.symbolic
 // created at 2024/10/05
-typealias NodeOrder = Comparator<Node>
+typealias NodeComparator = Comparator<Node>
 
 
-object DefaultNodeOrder : NodeOrder {
+object NodeOrder : NodeComparator {
 
     fun nodeTypeOrdinal(node: Node): Int {
         return when (node) {

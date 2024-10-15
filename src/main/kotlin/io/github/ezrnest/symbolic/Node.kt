@@ -565,20 +565,29 @@ data class NodeNImpl(
 }
 
 
-data class NodeSig(val name: String, val type: NType) {
+data class NodeSig(val name: String, val type: NType) : Comparable<NodeSig> {
 
     override fun toString(): String {
         return "$name:$type"
+    }
+
+    override fun compareTo(other: NodeSig): Int {
+        type.compareTo(other.type).let {
+            if (it != 0) return it
+        }
+        return name.compareTo(other.name)
     }
 
     /**
      * Describes the structural type of nodes.
      */
     enum class NType {
-        Leaf, Node1, Node2, Node3, NodeN;
+        Rational, Symbol, Leaf, Node1, Node2, Node3, NodeN;
 
         fun matches(node: Node): Boolean {
             return when (this) {
+                Rational -> node is NRational
+                Symbol -> node is NSymbol
                 Leaf -> node is LeafNode
                 Node1 -> node is Node1
                 Node2 -> node is Node2
@@ -595,6 +604,8 @@ data class NodeSig(val name: String, val type: NType) {
     companion object {
         fun typeOf(node: Node): NType {
             return when (node) {
+                is NRational -> NType.Rational
+                is NSymbol -> NType.Symbol
                 is LeafNode -> NType.Leaf
                 is Node1 -> NType.Node1
                 is Node2 -> NType.Node2
@@ -606,7 +617,9 @@ data class NodeSig(val name: String, val type: NType) {
 
         fun toType(type: KClass<Node>): NType {
             return when (type) {
-                NRational::class -> NType.Leaf
+                NRational::class -> NType.Rational
+                NSymbol::class -> NType.Symbol
+                LeafNode::class -> NType.Leaf
                 Node1::class -> NType.Node1
                 Node2::class -> NType.Node2
                 Node3::class -> NType.Node3
@@ -620,8 +633,8 @@ data class NodeSig(val name: String, val type: NType) {
         }
 
 
-        val RATIONAL = NodeSig("", NType.Leaf)
-        val SYMBOL = NodeSig("", NType.Leaf)
+        val RATIONAL = NodeSig("", NType.Rational)
+        val SYMBOL = NodeSig("", NType.Symbol)
 
 
         val ADD = NodeSig(Node.Names.ADD, NType.NodeN)

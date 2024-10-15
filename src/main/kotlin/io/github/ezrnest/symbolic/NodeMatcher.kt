@@ -1,15 +1,11 @@
 package io.github.ezrnest.symbolic
 
+import io.github.ezrnest.structure.PartialOrder
 import io.github.ezrnest.symbolic.TreeDispatcher.DispatchNode
 import java.util.PriorityQueue
 import java.util.SortedMap
 
 //created at 2024/10/10
-
-interface StructuredRule<T : Node> : SimRule {
-
-    fun simplifyTyped(node: T, context: ExprContext): Node?
-}
 
 interface MatchContext {
     val exprContext: ExprContext
@@ -50,8 +46,6 @@ sealed interface NodeMatcher<out T : Node> {
 
 
     val refNames: Set<String>
-
-
 }
 
 
@@ -62,7 +56,7 @@ sealed interface NodeMatcherForSpec<T : Node> : NodeMatcher<T> {
     val nodeSig: NodeSig
 }
 
-interface NodeMatcherChilded<T : Node> : NodeMatcherForSpec<T> {
+interface NodeMatcherChildedOrdered<T : Node> : NodeMatcherForSpec<T> {
     val children: List<NodeMatcher<Node>>
 }
 
@@ -81,7 +75,7 @@ abstract class AbstractNodeMatcherForSpec<T : Node>(final override val nodeSig: 
 }
 
 class NodeMatcher1<C : Node>(val child: NodeMatcher<C>, nodeName: NodeSig) :
-    AbstractNodeMatcherForSpec<Node1T<C>>(nodeName), NodeMatcherChilded<Node1T<C>> {
+    AbstractNodeMatcherForSpec<Node1T<C>>(nodeName), NodeMatcherChildedOrdered<Node1T<C>> {
 
     override val children: List<NodeMatcher<Node>>
         get() = listOf(child)
@@ -102,10 +96,10 @@ class NodeMatcher1<C : Node>(val child: NodeMatcher<C>, nodeName: NodeSig) :
     }
 }
 
-class NodeMatcher2<C1 : Node, C2 : Node>(
+class NodeMatcher2Ordered<C1 : Node, C2 : Node>(
     val child1: NodeMatcher<C1>, val child2: NodeMatcher<C2>, nodeName: NodeSig
 ) :
-    AbstractNodeMatcherForSpec<Node2T<C1, C2>>(nodeName), NodeMatcherChilded<Node2T<C1, C2>> {
+    AbstractNodeMatcherForSpec<Node2T<C1, C2>>(nodeName), NodeMatcherChildedOrdered<Node2T<C1, C2>> {
     override val children: List<NodeMatcher<Node>>
         get() = listOf(child1, child2)
 
@@ -127,10 +121,10 @@ class NodeMatcher2<C1 : Node, C2 : Node>(
     }
 }
 
-class NodeMatcher3<C1 : Node, C2 : Node, C3 : Node>(
+class NodeMatcher3Ordered<C1 : Node, C2 : Node, C3 : Node>(
     val child1: NodeMatcher<C1>, val child2: NodeMatcher<C2>, val child3: NodeMatcher<C3>, nodeName: NodeSig
 ) : AbstractNodeMatcherForSpec<Node3T<C1, C2, C3>>(nodeName),
-    NodeMatcherChilded<Node3T<C1, C2, C3>> {
+    NodeMatcherChildedOrdered<Node3T<C1, C2, C3>> {
     override val children: List<NodeMatcher<Node>>
         get() = listOf(child1, child2, child3)
     override val refNames: Set<String> by lazy(LazyThreadSafetyMode.NONE) {
@@ -152,9 +146,55 @@ class NodeMatcher3<C1 : Node, C2 : Node, C3 : Node>(
     }
 }
 
-interface MatcherN : NodeMatcherChilded<NodeN> {
+class NodeMatcherNOrdered(override val children: List<NodeMatcher<Node>>, nodeName: NodeSig) :
+    AbstractNodeMatcherForSpec<NodeN>(nodeName), NodeMatcherChildedOrdered<NodeN> {
+    override val refNames: Set<String> by lazy(LazyThreadSafetyMode.NONE) {
+        children.flatMap { it.refNames }.toSet()
+    }
 
+    override fun matches(node: Node, matchContext: MutableMatchContext): NodeN? {
+        if (node !is NodeN) return null
+        if (!nodeSig.matches(node)) return null
+        if (node.children.size != children.size) return null
+        for (i in children.indices) {
+            if (children[i].matches(node.children[i], matchContext) == null) return null
+        }
+        return node
+    }
+
+    override fun toString(): String {
+        return "${nodeSig.name}(${children.joinToString(", ")})"
+    }
 }
+
+class NodeMatcherNPartialOrder(children: List<NodeMatcher<Node>>, nodeName: NodeSig) :
+    AbstractNodeMatcherForSpec<NodeN>(nodeName) {
+
+    private val children : List<NodeMatcher<Node>> = TODO()
+
+    override val refNames: Set<String> by lazy(LazyThreadSafetyMode.NONE) {
+        children.flatMap { it.refNames }.toSet()
+    }
+
+    private val link : IntArray = TODO()
+
+
+    override fun matches(node: Node, matchContext: MutableMatchContext): NodeN? {
+        TODO("Not yet implemented")
+    }
+
+    object Preference : Comparator<NodeMatcher<*>>{
+        override fun compare(o1: NodeMatcher<*>, o2: NodeMatcher<*>): Int {
+            TODO()
+        }
+    }
+
+    companion object{
+
+
+    }
+}
+
 
 object AnyMatcher : LeafMatcher<Node> {
     override fun matches(node: Node, matchContext: MutableMatchContext): Node? {
@@ -289,10 +329,43 @@ class LeafMatcherForSpec<T : Node> private constructor(signature: NodeSig) :
     }
 }
 
+object MatcherPartialOrder : PartialOrder<NodeMatcher<*>> {
+
+
+    fun compareChildren(o1: NodeMatcher<*>, o2: NodeMatcher<*>): PartialOrder.Result {
+        if (o1 is NodeMatcher1<*> && o2 is NodeMatcher1<*>) {
+            return compare(o1.child, o2.child)
+        }
+
+
+        if (o1 is NodeMatcherChildedOrdered && o2 is NodeMatcherChildedOrdered) {
+            val c = o1.children.size - o2.children.size
+            if (c != 0) return PartialOrder.Result.ofInt(c)
+            for (i in o1.children.indices) {
+                val c = compare(o1.children[i], o2.children[i])
+                if (c != PartialOrder.Result.EQUAL) return c
+            }
+            return PartialOrder.Result.EQUAL
+        }
+        TODO()
+    }
+
+
+    override fun compare(
+        o1: NodeMatcher<*>, o2: NodeMatcher<*>
+    ): PartialOrder.Result {
+        if (o1 is NodeMatcherForSpec<*> && o2 is NodeMatcherForSpec<*>) {
+            val c = o1.nodeSig.compareTo(o2.nodeSig)
+            if (c != 0) return PartialOrder.Result.ofInt(c)
+        }
+        return compareChildren(o1, o2)
+    }
+}
+
 object MatcherBuilderScope {
 
     fun <T : Node, S : Node> pow(base: NodeMatcher<T>, exp: NodeMatcher<S>): NodeMatcher<Node2T<T, S>> {
-        return NodeMatcher2(base, exp, NodeSig.POW)
+        return NodeMatcher2Ordered(base, exp, NodeSig.POW)
     }
 
     fun <T : Node> sin(x: NodeMatcher<T>): NodeMatcher<Node1T<T>> {
@@ -300,8 +373,9 @@ object MatcherBuilderScope {
     }
 
 
-    val x: NodeMatcher<Node> get() = RefMatcher("x")
-    val y: NodeMatcher<Node> get() = RefMatcher("y")
+    val x: RefMatcher get() = RefMatcher("x")
+    val y: RefMatcher get() = RefMatcher("y")
+    val z: RefMatcher get() = RefMatcher("z")
 
     fun symbol(name: String): NodeMatcher<NSymbol> {
         return symbol(NSymbol(name))
@@ -322,12 +396,15 @@ object MatcherBuilderScope {
 class TreeDispatcher<T>() {
     private val dispatchRoot: DispatchNode<T> = DispatchNode()
 
+//    private sealed interface DispatchNode<T> {
+//        var signed: MutableMap<NodeSig, DispatchResult<T>>?
+//    }
+
     private data class DispatchNode<T>(
         var wildcard: DispatchResult<T>? = null,
-        var signed: MutableMap<NodeSig, DispatchResult<T>>? = null
-    ) {
-
-    }
+        var fixed: MutableMap<NodeSig, DispatchResult<T>>? = null,
+        var variable: MutableMap<NodeSig, DispatchResult<T>>? = null,
+    )
 
     private data class DispatchResult<T>(
         var result: MutableList<T>? = null,
@@ -378,16 +455,24 @@ class TreeDispatcher<T>() {
         dispatchStack.add(WithLevel(0, dispatchRoot))
         var node = root // the current node that is successfully matched
         var level = 0
-
-
-
+        val tempMap = LinkedHashMap<NodeSig, DispatchResult<T>>(4)
         while (dispatchStack.isNotEmpty()) {
             // now we are at the same level: level==nextLevel
 //            println("Dealing with level=$level")
+            tempMap.clear()
             while (dispatchStack.isNotEmpty() && dispatchStack.peek().level == level) {
                 val (_, p) = dispatchStack.poll()
-                applyDispatchResult(p.wildcard,f,dispatchStack,level)?.let { return it }
-                applyDispatchResult(p.signed?.get(node.signature),f,dispatchStack,level)?.let { return it }
+                applyDispatchResult(p.wildcard, f, dispatchStack, level)?.let { return it }
+                applyDispatchResult(p.fixed?.get(node.signature), f, dispatchStack, level)?.let { return it }
+                p.variable?.let { va ->
+                    applyDispatchResult(va[node.signature], f, dispatchStack, level)?.let { return it }
+                    tempMap.putAll(va)
+                }
+            }
+            // retain the variable nodes
+            if (tempMap.isNotEmpty()) {
+                val varNode = DispatchNode(variable = tempMap)
+                dispatchStack.add(WithLevel(level, varNode))
             }
 
             FindDispatch@
@@ -437,12 +522,12 @@ class TreeDispatcher<T>() {
             return buildTo(matcher.matcher, node)
         }
         val nodeRes: DispatchResult<T> = if (matcher is NodeMatcherForSpec) {
-            val map = node.signed ?: mutableMapOf<NodeSig, DispatchResult<T>>().also { node.signed = it }
+            val map = node.fixed ?: mutableMapOf<NodeSig, DispatchResult<T>>().also { node.fixed = it }
             map.getOrPut(matcher.nodeSig) { DispatchResult() }
         } else {
             node.wildcard ?: DispatchResult<T>().also { node.wildcard = it }
         }
-        if (matcher !is NodeMatcherChilded) {
+        if (matcher !is NodeMatcherChildedOrdered) {
             return WithLevel(0, nodeRes) // do not go down
         }
 
@@ -485,6 +570,10 @@ fun <T : Node> NodeMatcher<T>.named(name: String): NodeMatcher<T> {
     return NamedMatcher(this, name)
 }
 
+fun <T : Node> NodeMatcher<T>.named(ref: RefMatcher): NodeMatcher<T> {
+    return NamedMatcher(this, ref.name)
+}
+
 
 fun main() {
     val dispatcher = TreeDispatcher<NodeMatcher<*>>()
@@ -499,10 +588,12 @@ fun main() {
         dispatcher.register(m3)
         val m4 = pow(rational, rational)
         dispatcher.register(m4)
+        val m5 = pow(sin(sin(sin(x))), x)
+        dispatcher.register(m5)
     }
     val expr1 = with(NodeBuilderScope) {
 //        pow(pow(Node.PI, y), 1.e)
-        pow(2.e, 1.e)
+        pow(sin(sin(sin(sin(1.e)))), sin(2.e))
     }
     println("Dispatched To")
     dispatcher.dispatch(expr1) {
