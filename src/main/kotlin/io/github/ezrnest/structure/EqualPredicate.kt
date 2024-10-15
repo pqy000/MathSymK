@@ -13,7 +13,8 @@ import java.util.*
  * @author liyicheng
  * 2018-02-28 17:33
  */
-interface EqualPredicate<T> {
+@FunctionalInterface
+fun interface EqualPredicate<T> {
     /**
      * Evaluates whether the two objects are equal.
      *
