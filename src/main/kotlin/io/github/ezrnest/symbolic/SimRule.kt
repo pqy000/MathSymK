@@ -47,7 +47,7 @@ interface SimRuleMatched<T : Node> : SimRule {
 
 class RuleSort(val targetSig: NodeSig) : SimRule {
 
-    override val matcher: NodeMatcher<Node> = LeafMatcherForSpec(targetSig)
+    override val matcher: NodeMatcher<Node> = LeafMatcherFixSig(targetSig)
 
     override val description: String = "Sort"
 
@@ -118,7 +118,7 @@ abstract class RuleForSpecificName(val targetName: String) : SimRule {
 
 abstract class RuleForSpecificN(targetName: String) : RuleForSpecificName(targetName) {
 
-    final override val matcher: NodeMatcher<NodeN> = LeafMatcherForSpec.forNodeN(targetName)
+    final override val matcher: NodeMatcher<NodeN> = LeafMatcherFixSig.forNodeN(targetName)
 
     final override fun simplify(node: Node, context: ExprContext): Node? {
         return simplifyNodeTyped<NodeN>(node, context) { n, c -> simplifyN(n, c) }
@@ -309,7 +309,7 @@ object ComputeProductRational : RuleForSpecificN(Names.MUL) {
 }
 
 abstract class RuleForSpecific1(targetName: String) : RuleForSpecificName(targetName) {
-    final override val matcher: NodeMatcher<Node> = LeafMatcherForSpec.forNode1(targetName)
+    final override val matcher: NodeMatcher<Node> = LeafMatcherFixSig.forNode1(targetName)
 
     final override fun simplify(node: Node, context: ExprContext): Node? {
         return simplifyNodeTyped<Node1>(node, context) { n, c -> simplify1(n, c) }
@@ -319,7 +319,7 @@ abstract class RuleForSpecific1(targetName: String) : RuleForSpecificName(target
 }
 
 abstract class RuleForSpecific2(targetName: String) : RuleForSpecificName(targetName) {
-    final override val matcher: NodeMatcher<Node> = LeafMatcherForSpec.forNode2(targetName)
+    final override val matcher: NodeMatcher<Node> = LeafMatcherFixSig.forNode2(targetName)
 
     final override fun simplify(node: Node, context: ExprContext): Node? {
         return simplifyNodeTyped<Node2>(node, context) { n, c -> simplify2(n, c) }

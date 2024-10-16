@@ -54,6 +54,10 @@ sealed interface Node {
             return NRational(BigFraction(value, BigInteger.ONE))
         }
 
+        fun Int(value: Int): NRational {
+            return Int(value.toBigInteger())
+        }
+
         fun Rational(value: Rational): NRational {
             return NRational(value)
         }
@@ -96,16 +100,15 @@ sealed interface Node {
         }
 
 
-        fun Node1(name: String, child: Node): Node1 {
+        fun <T:Node> Node1(name: String, child: T): Node1T<T> {
             return Node1Impl(name, child)
         }
 
-        fun Node2(name: String, first: Node, second: Node): Node2 {
+        fun <T1:Node, T2:Node> Node2(name: String, first: T1, second: T2): Node2T<T1, T2> {
             return Node2Impl(first, second, name)
-
         }
 
-        fun Node3(name: String, first: Node, second: Node, third: Node): Node3 {
+        fun <T1:Node, T2:Node, T3:Node> Node3(name: String, first: T1, second: T2, third: T3): Node3T<T1, T2, T3> {
             return Node3Impl(first, second, third, name)
         }
 
@@ -648,6 +651,9 @@ data class NodeSig(val name: String, val type: NType) : Comparable<NodeSig> {
     }
 }
 
+/**
+ * Describes the structural signature of a node.
+ */
 val Node.signature get() = NodeSig.signatureOf(this)
 
 
@@ -692,11 +698,11 @@ object NodeBuilderScope {
     }
 
     fun sin(node: Node): Node {
-        return Node.Node1("sin", node)
+        return Node.Node1(Node.Names.F1_SIN, node)
     }
 
     fun cos(node: Node): Node {
-        return Node.Node1("cos", node)
+        return Node.Node1(Node.Names.F1_COS, node)
     }
 
 }

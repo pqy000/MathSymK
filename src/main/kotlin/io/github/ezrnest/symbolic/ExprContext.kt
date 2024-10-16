@@ -119,7 +119,7 @@ object TestExprContext : ExprContext {
 
     val dispatcher: TreeDispatcher<SimRule> = TreeDispatcher()
 
-    val verbose = true
+    var verbose = false
     private val indent = "   "
     private var simLevel = -1
 
