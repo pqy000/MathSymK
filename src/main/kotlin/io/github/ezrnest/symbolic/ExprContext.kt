@@ -50,54 +50,7 @@ interface ExprContext {
         return simplifyNode(root, Int.MAX_VALUE)
     }
 
-    fun simplifyPlain(node: Node): Node
-
-    fun simplifyNode(node: Node, depth: Int = 0): Node {
-        if (depth <= 0) return simplifyPlain(node)
-        val res = when (node) {
-            is LeafNode -> node
-            is Node1 -> simplifyRecur1(node, depth - 1)
-            is Node2 -> simplifyRecur2(node, depth - 1)
-            is Node3 -> simplifyRecur3(node, depth - 1)
-            is NodeN -> simplifyRecurN(node, depth - 1)
-            else -> node
-        }
-        return simplifyPlain(res)
-    }
-
-
-    companion object {
-
-        private fun ExprContext.simplifyRecur1(node: Node1, depth: Int): Node {
-            val n1 = simplifyNode(node.child, depth)
-            if (n1 === node.child) return node
-            return node.newWithChildren(n1)
-        }
-
-        private fun ExprContext.simplifyRecur2(node: Node2, depth: Int): Node {
-            val n1 = simplifyNode(node.first, depth)
-            val n2 = simplifyNode(node.second, depth)
-            if (n1 === node.first && n2 === node.second) return node
-            return node.newWithChildren(n1, n2)
-        }
-
-        private fun ExprContext.simplifyRecur3(node: Node3, depth: Int): Node {
-            val n1 = simplifyNode(node.first, depth)
-            val n2 = simplifyNode(node.second, depth)
-            val n3 = simplifyNode(node.third, depth)
-            if (n1 === node.first && n2 === node.second && n3 === node.third) return node
-            return node.newWithChildren(n1, n2, n3)
-        }
-
-        private fun ExprContext.simplifyRecurN(node: NodeN, depth: Int): Node {
-            var changed = false
-            val children = node.children.map { n ->
-                simplifyNode(n, depth).also { if (n !== it) changed = true }
-            }
-            if (!changed) return node
-            return node.newWithChildren(children)
-        }
-    }
+    fun simplifyNode(node: Node, depth: Int = 0): Node
 
     object Options {
         /**
@@ -120,7 +73,7 @@ object TestExprContext : ExprContext {
     val dispatcher: TreeDispatcher<SimRule> = TreeDispatcher()
 
     var verbose = false
-    private val indent = "   "
+    private val indent = "|  "
     private var simLevel = -1
 
 
@@ -153,37 +106,74 @@ object TestExprContext : ExprContext {
     }
 
     private fun println(s: String) {
-        if (verbose) kotlin.io.println(indent.repeat(max(simLevel,0))+s)
+        if (verbose) kotlin.io.println(indent.repeat(max(simLevel, 0)) + s)
     }
 
 
-    override fun simplifyPlain(node: Node): Node {
+    override fun simplifyNode(node: Node, depth: Int): Node {
+        var depth = depth
         var res = node
-        var previousRule: SimRule? = null
         simLevel++
-        if (verbose) println("Simplifying: ${res.plainToString()}, ${res.meta}")
+        if (verbose) println("Simplifying: ${node.plainToString()}, ${node.meta}")
         while (true) {
-            val appliedRule = dispatcher.dispatchUntil(res) { rule ->
-                if (verbose) println(" > ${rule.description}")
-                if (rule === previousRule) return@dispatchUntil false
-                val (level,simplified) = rule.simplify(res, this) ?: return@dispatchUntil false
-                if (verbose) println("To: ${simplified.plainToString()}, ${simplified.meta}")
-                res = simplified
-                if(level > 0){
-                    if (verbose) println(" > Recursing ...")
-                    res = simplifyNode(res, level)
+            res = if (depth <= 0) {
+                res
+            } else {
+                when (res) {
+                    is LeafNode -> res
+                    is Node1 -> simplifyRecur1(res, depth - 1)
+                    is Node2 -> simplifyRecur2(res, depth - 1)
+                    is Node3 -> simplifyRecur3(res, depth - 1)
+                    is NodeN -> simplifyRecurN(res, depth - 1)
+                    else -> res
                 }
+            }
+            val appliedRule = dispatcher.dispatchUntil(res) { rule ->
+                if (verbose) println("> ${rule.description}")
+                val p = rule.simplify(res, this) ?: return@dispatchUntil false
+                depth = p.level
+                res = p.item
+                if (verbose) println("To: ${res.plainToString()}, ${res.meta}")
                 true
             }
             if (appliedRule == null) {
-                if (verbose) println(" > Nothing happened ...")
+                if (verbose) println("> Nothing happened ...")
                 break
             }
-            previousRule = appliedRule
         }
-//        if (verbose) println("Final: ${res.plainToString()}, ${res.meta}")
         simLevel--
         return res
+    }
+
+
+    private fun simplifyRecur1(node: Node1, depth: Int): Node {
+        val n1 = simplifyNode(node.child, depth)
+        if (n1 === node.child) return node
+        return node.newWithChildren(n1)
+    }
+
+    private fun simplifyRecur2(node: Node2, depth: Int): Node {
+        val n1 = simplifyNode(node.first, depth)
+        val n2 = simplifyNode(node.second, depth)
+        if (n1 === node.first && n2 === node.second) return node
+        return node.newWithChildren(n1, n2)
+    }
+
+    private fun simplifyRecur3(node: Node3, depth: Int): Node {
+        val n1 = simplifyNode(node.first, depth)
+        val n2 = simplifyNode(node.second, depth)
+        val n3 = simplifyNode(node.third, depth)
+        if (n1 === node.first && n2 === node.second && n3 === node.third) return node
+        return node.newWithChildren(n1, n2, n3)
+    }
+
+    private fun simplifyRecurN(node: NodeN, depth: Int): Node {
+        var changed = false
+        val children = node.children.map { n ->
+            simplifyNode(n, depth).also { if (n !== it) changed = true }
+        }
+        if (!changed) return node
+        return node.newWithChildren(children)
     }
 
 }
