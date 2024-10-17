@@ -166,9 +166,13 @@ object TestExprContext : ExprContext {
             val appliedRule = dispatcher.dispatchUntil(res) { rule ->
                 if (verbose) println(" > ${rule.description}")
                 if (rule === previousRule) return@dispatchUntil false
-                val simplified = rule.simplify(res, this) ?: return@dispatchUntil false
+                val (level,simplified) = rule.simplify(res, this) ?: return@dispatchUntil false
                 if (verbose) println("To: ${simplified.plainToString()}, ${simplified.meta}")
                 res = simplified
+                if(level > 0){
+                    if (verbose) println(" > Recursing ...")
+                    res = simplifyNode(res, level)
+                }
                 true
             }
             if (appliedRule == null) {

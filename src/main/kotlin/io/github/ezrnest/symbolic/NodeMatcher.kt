@@ -632,12 +632,6 @@ class TreeDispatcher<T>() {
     }
 
 
-    private data class WithLevel<D>(val level: Int, val item: D) : Comparable<WithLevel<D>> {
-        override fun compareTo(other: WithLevel<D>): Int {
-            return -level.compareTo(other.level) //
-        }
-    }
-
 
     fun dispatch(root: Node, f: (T) -> Unit) {
         dispatchUntil(root) {
@@ -660,13 +654,19 @@ class TreeDispatcher<T>() {
         return null
     }
 
+    private object WithLevelComparator : Comparator<WithLevel<*>> {
+        override fun compare(o1: WithLevel<*>, o2: WithLevel<*>): Int {
+            return -(o1.level - o2.level)
+        }
+    }
+
     /**
      * Dispatches the given node to the registered matchers,
      * and applies the given function to the matched data until the function returns `true`.
      */
     fun dispatchUntil(root: Node, f: (T) -> Boolean): T? {
         val stack = mutableListOf<Iterator<Node>>()
-        val dispatchStack = PriorityQueue<WithLevel<DispatchNode<T>>>()
+        val dispatchStack = PriorityQueue<WithLevel<DispatchNode<T>>>(WithLevelComparator)
         dispatchStack.add(WithLevel(0, dispatchRoot))
         var node = root // the current node that is successfully matched
         var level = 0

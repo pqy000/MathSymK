@@ -592,10 +592,10 @@ data class NodeSig(val name: String, val type: NType) : Comparable<NodeSig> {
                 Rational -> node is NRational
                 Symbol -> node is NSymbol
                 Leaf -> node is LeafNode
-                Node1 -> node is Node1
-                Node2 -> node is Node2
-                Node3 -> node is Node3
-                NodeN -> node is NodeN
+                Node1 -> node is Node1T<*>
+                Node2 -> node is Node2T<*,*>
+                Node3 -> node is Node3T<*,*,*>
+                NodeN -> node is io.github.ezrnest.symbolic.NodeN
             }
         }
     }
@@ -623,9 +623,9 @@ data class NodeSig(val name: String, val type: NType) : Comparable<NodeSig> {
                 NRational::class -> NType.Rational
                 NSymbol::class -> NType.Symbol
                 LeafNode::class -> NType.Leaf
-                Node1::class -> NType.Node1
-                Node2::class -> NType.Node2
-                Node3::class -> NType.Node3
+                Node1T::class -> NType.Node1
+                Node2T::class -> NType.Node2
+                Node3T::class -> NType.Node3
                 NodeN::class -> NType.NodeN
                 else -> error("Unknown type $type")
             }
