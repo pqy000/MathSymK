@@ -17,8 +17,9 @@ fun main() {
         println(expr.treeToString())
 
         val res = cal.simplifyFull(expr)
-        println(res.treeToString())
+        println()
         println(res.plainToString())
+        println(res.treeToString())
 
     }
 

@@ -129,18 +129,19 @@ object TestExprContext : ExprContext {
                 }
             }
             val appliedRule = dispatcher.dispatchUntil(res) { rule ->
-                if (verbose) println("> ${rule.description}")
+                if (verbose) println("|> ${rule.description}")
                 val p = rule.simplify(res, this) ?: return@dispatchUntil false
                 depth = p.level
                 res = p.item
-                if (verbose) println("To: ${res.plainToString()}, ${res.meta}")
+                if (verbose) println("|To: ${res.plainToString()}, ${res.meta}")
                 true
             }
             if (appliedRule == null) {
-                if (verbose) println("> Nothing happened ...")
+                if (verbose) println("|> Nothing happened ...")
                 break
             }
         }
+        if(verbose) println("|-> ${res.plainToString()}")
         simLevel--
         return res
     }
