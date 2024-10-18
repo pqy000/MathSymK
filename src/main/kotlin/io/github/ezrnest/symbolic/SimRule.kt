@@ -19,7 +19,7 @@ interface SimRule {
 
     fun simplify(node: Node, context: ExprContext): WithLevel<Node>?
 
-    val matcher: NodeMatcher<Node>
+    val matcher: NodeMatcherT<Node>
         get() = AnyMatcher
 }
 
@@ -27,31 +27,10 @@ interface SimRule {
 data class WithLevel<out D>(val level: Int, val item: D) {
 }
 
-interface SimRuleMatched<T : Node> : SimRule {
-
-
-    /**
-     * A matcher describing the nodes that the rule can be applied to.
-     */
-    override val matcher: NodeMatcher<T>
-
-    /**
-     * Simplify the matched node.
-     */
-    fun simplifyMatched(node: T, matchContext: MatchContext): WithLevel<Node>?
-
-
-    override fun simplify(node: Node, context: ExprContext): WithLevel<Node>? {
-        val matchContext = MutableMatchContext(context)
-        val r = matcher.matches(node, matchContext) ?: return null
-        return simplifyMatched(r, matchContext)
-    }
-}
-
 
 class RuleSort(val targetSig: NodeSig) : SimRule {
 
-    override val matcher: NodeMatcher<Node> = LeafMatcherFixSig(targetSig)
+    override val matcher: NodeMatcherT<Node> = LeafMatcherFixSig(targetSig)
 
     override val description: String = "Sort"
 
@@ -119,7 +98,7 @@ abstract class RuleForSpecificName(val targetName: String) : SimRule {
 
 abstract class RuleForSpecificN(targetName: String) : RuleForSpecificName(targetName) {
 
-    final override val matcher: NodeMatcher<NodeN> = LeafMatcherFixSig.forNodeN(targetName)
+    final override val matcher: NodeMatcherT<NodeN> = LeafMatcherFixSig.forNodeN(targetName)
 
     final override fun simplify(node: Node, context: ExprContext): WithLevel<Node>? {
         return simplifyNodeTyped<NodeN>(node, context) { n, c -> simplifyN(n, c) }
@@ -310,7 +289,7 @@ object ComputeProductRational : RuleForSpecificN(Names.MUL) {
 }
 
 abstract class RuleForSpecific1(targetName: String) : RuleForSpecificName(targetName) {
-    final override val matcher: NodeMatcher<Node> = LeafMatcherFixSig.forNode1(targetName)
+    final override val matcher: NodeMatcherT<Node> = LeafMatcherFixSig.forNode1(targetName)
 
     final override fun simplify(node: Node, context: ExprContext): WithLevel<Node>? {
         return simplifyNodeTyped<Node1>(node, context) { n, c -> simplify1(n, c) }
@@ -320,7 +299,7 @@ abstract class RuleForSpecific1(targetName: String) : RuleForSpecificName(target
 }
 
 abstract class RuleForSpecific2(targetName: String) : RuleForSpecificName(targetName) {
-    final override val matcher: NodeMatcher<Node> = LeafMatcherFixSig.forNode2(targetName)
+    final override val matcher: NodeMatcherT<Node> = LeafMatcherFixSig.forNode2(targetName)
 
     final override fun simplify(node: Node, context: ExprContext): WithLevel<Node>? {
         return simplifyNodeTyped<Node2>(node, context) { n, c -> simplify2(n, c) }
@@ -351,9 +330,9 @@ object FlattenPow : RuleForSpecific2(Names.POW) {
     }
 
     private fun flattenPowInt(base: Node, exp: NRational, context: ExprContext): WithLevel<Node>? {
-        if (context.rational.isOne(exp.value)) return WithLevel(0,base)
+        if (context.rational.isOne(exp.value)) return WithLevel(0, base)
         if (SimUtils.isPow(base)) {
-            return WithLevel(0,flattenPowPow(base, exp))
+            return WithLevel(0, flattenPowPow(base, exp))
         }
         if (SimUtils.isMul(base)) {
             val children = base.children
@@ -364,7 +343,7 @@ object FlattenPow : RuleForSpecific2(Names.POW) {
                     Node.Pow(it, exp)
                 }
             }
-            return WithLevel(2,Node.Mul(newChildren))
+            return WithLevel(2, Node.Mul(newChildren))
         }
         return null
     }
@@ -515,6 +494,73 @@ object ComputePow : RuleForSpecific2(Names.POW) {
 }
 
 
-//class MatcherReplaceRule : SimRule {
-//
-//}
+interface SimRuleMatched<T : Node> : SimRule {
+
+
+    /**
+     * A matcher describing the nodes that the rule can be applied to.
+     */
+    override val matcher: NodeMatcherT<T>
+
+    /**
+     * Simplify the matched node.
+     */
+    fun simplifyMatched(node: T, matchContext: MatchContext): WithLevel<Node>?
+
+
+    override fun simplify(node: Node, context: ExprContext): WithLevel<Node>? {
+        val matchContext = MutableMatchContext(context)
+        val r = matcher.matches(node, matchContext) ?: return null
+        return simplifyMatched(r, matchContext)
+    }
+}
+
+interface ReplacementBuilderScope : NodeBuilderScope {
+
+    val matchContext: MatchContext
+
+    override val context: ExprContext
+        get() = matchContext.exprContext
+
+    fun ref(name: String): Node {
+        return matchContext.refMap[name] ?: throw IllegalArgumentException("No reference found for $name")
+    }
+
+    fun hasRef(name: String): Boolean {
+        return matchContext.refMap.containsKey(name)
+    }
+
+    override val x: Node get() = ref("x")
+    override val y: Node get() = ref("y")
+    override val z: Node get() = ref("z")
+    override val a: Node get() = ref("a")
+    override val b: Node get() = ref("b")
+    override val c: Node get() = ref("c")
+
+    val String.ref get() = ref(this)
+
+    companion object {
+        private class ReplacementBuilderScopeImpl(override val matchContext: MatchContext) : ReplacementBuilderScope
+
+        fun create(matchContext: MatchContext): ReplacementBuilderScope = ReplacementBuilderScopeImpl(matchContext)
+    }
+}
+typealias RepBuilder = ReplacementBuilderScope.() -> Node
+
+class MatcherReplaceRule(
+    override val matcher: NodeMatcherT<*>,
+    val replacement: RepBuilder,
+    override val description: String,
+    val afterDepth: Int = Int.MAX_VALUE
+) : SimRule {
+
+    override val metaKeyApplied: TypedKey<Boolean> = TypedKey(description)
+
+    override fun simplify(node: Node, context: ExprContext): WithLevel<Node>? {
+        val matchCtx = MutableMatchContext(context)
+        matcher.matches(node, matchCtx) ?: return null
+        val replacementNode = ReplacementBuilderScope.create(matchCtx).replacement()
+        return WithLevel(afterDepth, replacementNode)
+    }
+
+}

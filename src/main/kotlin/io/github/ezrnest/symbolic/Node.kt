@@ -100,15 +100,17 @@ sealed interface Node {
         }
 
 
-        fun <T:Node> Node1(name: String, child: T): Node1T<T> {
+        fun <T : Node> Node1(name: String, child: T): Node1T<T> {
             return Node1Impl(name, child)
         }
 
-        fun <T1:Node, T2:Node> Node2(name: String, first: T1, second: T2): Node2T<T1, T2> {
+        fun <T1 : Node, T2 : Node> Node2(name: String, first: T1, second: T2): Node2T<T1, T2> {
             return Node2Impl(first, second, name)
         }
 
-        fun <T1:Node, T2:Node, T3:Node> Node3(name: String, first: T1, second: T2, third: T3): Node3T<T1, T2, T3> {
+        fun <T1 : Node, T2 : Node, T3 : Node> Node3(
+            name: String, first: T1, second: T2, third: T3
+        ): Node3T<T1, T2, T3> {
             return Node3Impl(first, second, third, name)
         }
 
@@ -593,8 +595,8 @@ data class NodeSig(val name: String, val type: NType) : Comparable<NodeSig> {
                 Symbol -> node is NSymbol
                 Leaf -> node is LeafNode
                 Node1 -> node is Node1T<*>
-                Node2 -> node is Node2T<*,*>
-                Node3 -> node is Node3T<*,*,*>
+                Node2 -> node is Node2T<*, *>
+                Node3 -> node is Node3T<*, *, *>
                 NodeN -> node is io.github.ezrnest.symbolic.NodeN
             }
         }
@@ -657,20 +659,33 @@ data class NodeSig(val name: String, val type: NType) : Comparable<NodeSig> {
 val Node.signature get() = NodeSig.signatureOf(this)
 
 
-object NodeBuilderScope {
-    val x = "x".s
-    val y = "y".s
-    val z = "z".s
-    val a = "a".s
-    val b = "b".s
+interface NodeBuilderScope {
 
-    val context = TestExprContext
+    fun symbol(name: String): Node {
+        return NSymbol(name)
+    }
+
+
+    val x: Node get() = symbol("x")
+    val y: Node get() = symbol("y")
+    val z: Node get() = symbol("z")
+    val a: Node get() = symbol("a")
+    val b: Node get() = symbol("b")
+    val c: Node get() = symbol("c")
+
+    val imagUnit: Node get() = Node.IMAGINARY_UNIT
+
+    val naturalE: Node get() = Node.NATURAL_E
+
+    val pi: Node get() = Node.PI
+
+    val context: ExprContext
+        get() = TestExprContext
 
 
     val Int.e: Node get() = Node.Int(BigInteger.valueOf(this.toLong()))
 
-    val String.s: Node get() = NSymbol(this)
-
+    val String.s: Node get() = symbol(this)
 
     operator fun Node.plus(other: Node): Node {
         return Node.Add(listOf(this, other))
@@ -678,6 +693,22 @@ object NodeBuilderScope {
 
     operator fun Node.minus(other: Node): Node {
         return Node.Add(listOf(this, Node.Mul(listOf(Node.NEG_ONE, other))))
+    }
+
+    fun sum(vararg nodes: Node): Node {
+        return Node.Add(nodes.asList())
+    }
+
+    fun sum(nodes: List<Node>): Node {
+        return Node.Add(nodes)
+    }
+
+    fun product(vararg nodes: Node): Node {
+        return Node.Mul(nodes.asList())
+    }
+
+    fun product(nodes: List<Node>): Node {
+        return Node.Mul(nodes)
     }
 
 
@@ -705,5 +736,24 @@ object NodeBuilderScope {
         return Node.Node1(Node.Names.F1_COS, node)
     }
 
+
+    companion object {
+        private object DefaultBuilderScope : NodeBuilderScope {
+            override val x: Node = symbol("x")
+            override val y: Node = symbol("y")
+            override val z: Node = symbol("z")
+            override val a: Node = symbol("a")
+            override val b: Node = symbol("b")
+            override val c: Node = symbol("c")
+        }
+
+        operator fun invoke(): NodeBuilderScope {
+            return DefaultBuilderScope
+        }
+    }
 }
 
+
+fun buildNode(builder: NodeBuilderScope.() -> Node): Node {
+    return NodeBuilderScope().builder()
+}

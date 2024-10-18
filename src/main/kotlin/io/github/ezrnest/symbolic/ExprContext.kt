@@ -97,6 +97,10 @@ object TestExprContext : ExprContext {
         }
     }
 
+    fun addRule(rule: SimRule) {
+        dispatcher.register(rule.matcher, rule)
+    }
+
     override fun isCommutative(name: String): Boolean {
         return when (name) {
             Node.Names.ADD -> true
