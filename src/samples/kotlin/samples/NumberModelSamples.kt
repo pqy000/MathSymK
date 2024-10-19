@@ -2,13 +2,13 @@ package cn.mathsymk.samples
 
 import io.github.ezrnest.model.Fraction
 import io.github.ezrnest.model.Models
-import io.github.ezrnest.model.RFraction
+import io.github.ezrnest.model.RingFrac
 
 
 object NumberModelSamples {
     fun variousFractions(){
         val Z = Models.bigIntegers()
-        val Q = RFraction.over(Z)
+        val Q = RingFrac.over(Z)
         with(Q) {
             val a = frac(1.toBigInteger(), 2.toBigInteger())
             val b = frac(1.toBigInteger(), 3.toBigInteger())

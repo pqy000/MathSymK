@@ -270,7 +270,7 @@ fun BigInteger.isOdd(): Boolean {
 }
 
 
-object BigIntegerAsIntegers : Integers<BigInteger> {
+object BigIntAsIntegers : Integers<BigInteger> {
 
 //        override val numberClass: Class<BigInteger>
 //            get() = BigInteger::class.java
@@ -618,78 +618,83 @@ class BigDecimalAsReals(val mc: MathContext = MathContext.DECIMAL128) : Reals<Bi
 }
 
 
-typealias BigFraction = RFraction<BigInteger>
+typealias BigFrac = RingFrac<BigInteger>
 
-object BigFractionAsQuotients : RFracOverIntDom<BigInteger>(BigIntegerAsIntegers), Quotients<BigInteger, BigFraction> {
+object BigFracAsQuot : RFracOverIntDom<BigInteger>(BigIntAsIntegers), Quotients<BigInteger, BigFrac> {
     override val integers: Integers<BigInteger>
-        get() = BigIntegerAsIntegers
+        get() = BigIntAsIntegers
 
-    override fun simplifySign(nume: BigInteger, deno: BigInteger): BigFraction {
+    val half : BigFrac = RingFrac(BigInteger.ONE, BigInteger.TWO)
+
+    override fun simplifySign(nume: BigInteger, deno: BigInteger): BigFrac {
         if (deno < BigInteger.ZERO) {
-            return RFraction(-nume, -deno)
+            return RingFrac(-nume, -deno)
         }
-        return RFraction(nume, deno)
+        return RingFrac(nume, deno)
     }
 
-    override fun simplifyFrac(nume: BigInteger, deno: BigInteger): RFraction<BigInteger> {
-        val r = super.simplifyFrac(nume, deno)
+    override fun simplify(nume: BigInteger, deno: BigInteger): RingFrac<BigInteger> {
+        val r = super.simplify(nume, deno)
         if (r.deno < BigInteger.ZERO) {
-            return RFraction(-r.nume, -r.deno)
+            return RingFrac(-r.nume, -r.deno)
         }
         return r
     }
 
-    fun bfrac(n: Int, d: Int): BigFraction {
-        return frac(n.toBigInteger(), d.toBigInteger())
+    fun bfrac(n: Int, d: Int): BigFrac {
+        return simplify(n.toBigInteger(), d.toBigInteger())
     }
 
-    fun bfrac(n: Long, d: Long): BigFraction {
-        return frac(n.toBigInteger(), d.toBigInteger())
+    fun bfrac(n: Long, d: Long): BigFrac {
+        return simplify(n.toBigInteger(), d.toBigInteger())
     }
 
-    fun bfrac(n: BigInteger, d: BigInteger): BigFraction {
-        return frac(n, d)
+    fun bfrac(n: BigInteger, d: BigInteger): BigFrac {
+        return simplify(n, d)
     }
 
-    fun fromBigInt(n: BigInteger): BigFraction {
-        return frac(n, BigInteger.ONE)
+    fun fromBigInt(n: BigInteger): BigFrac {
+        return simplify(n, BigInteger.ONE)
     }
 
-    override fun of(n: BigInteger, d: BigInteger): BigFraction {
-        return frac(n, d)
+    override fun of(n: BigInteger, d: BigInteger): BigFrac {
+        return simplify(n, d)
     }
 
-    val Int.bfrac: BigFraction
+    val Int.bfrac: BigFrac
         get() = this.toBigInteger().f
 
-    val Long.bfrac: BigFraction
+    val Long.bfrac: BigFrac
         get() = this.toBigInteger().f
 
-    val BigInteger.bfrac: BigFraction
+    val BigInteger.bfrac: BigFrac
         get() = this.f
 
     override val characteristic: Long
         get() = super<Quotients>.characteristic
 
-    override fun compare(o1: BigFraction, o2: BigFraction): Int {
+    override fun compare(o1: BigFrac, o2: BigFrac): Int {
         val a = if (o1.deno < BigInteger.ZERO) -o1 else o1
         val b = if (o2.deno < BigInteger.ZERO) -o2 else o2
         return (a.nume * b.deno).compareTo(b.nume * a.deno)
     }
 
-    override fun isInteger(x: BigFraction): Boolean {
+    override fun isInteger(x: BigFrac): Boolean {
         return x.deno == BigInteger.ONE
     }
 
-    override fun numerator(x: BigFraction): BigInteger {
+    override fun numerator(x: BigFrac): BigInteger {
         return x.nume
     }
 
-    override fun denominator(x: BigFraction): BigInteger {
+    override fun denominator(x: BigFrac): BigInteger {
         return x.deno
     }
 
-    fun floor(x: BigFraction): BigInteger {
+    /**
+     * Returns the floor of the fraction, which is the largest integer less than or equal to the fraction.
+     */
+    fun floor(x: BigFrac): BigInteger {
         val (n, d) = x
         val (q, r) = n.divideAndRemainder(d)
         if (n.signum() < 0 && r.signum() != 0) {
@@ -698,16 +703,19 @@ object BigFractionAsQuotients : RFracOverIntDom<BigInteger>(BigIntegerAsIntegers
         return q
     }
 
-    fun floorAndRem(x: BigFraction): Pair<BigInteger, BigFraction> {
+    fun floorAndRem(x: BigFrac): Pair<BigInteger, BigFrac> {
         val (n, d) = x
         val (q, r) = n.divideAndRemainder(d)
         if (n.signum() < 0 && r.signum() != 0) {
-            return q - BigInteger.ONE to RFraction(r + d, d)
+            return q - BigInteger.ONE to RingFrac(r + d, d)
         }
-        return q to RFraction(r, d)
+        return q to RingFrac(r, d)
     }
 
-    fun ceil(x: BigFraction): BigInteger {
+    /**
+     * Returns the ceiling of the fraction, which is the smallest integer greater than or equal to the fraction.
+     */
+    fun ceil(x: BigFrac): BigInteger {
         val (n, d) = x
         val (q, r) = n.divideAndRemainder(d)
         if (n.signum() > 0 && r.signum() != 0) {
@@ -716,7 +724,17 @@ object BigFractionAsQuotients : RFracOverIntDom<BigInteger>(BigIntegerAsIntegers
         return q
     }
 
-    override fun power(base: BigFraction, p: BigInteger): BigFraction {
+    /**
+     * Returns the fraction `r` with the smallest absolute value such that `this = k * n + r`, where `k` is an integer.
+     */
+    fun intRem(x: BigFrac, m: BigInteger): BigFrac {
+        val (n, d) = x
+        val n1 = n.mod(d * m)
+        if(n1.signum() == 0) return zero
+        return RingFrac(n1, d)
+    }
+
+    override fun power(base: BigFrac, p: BigInteger): BigFrac {
         if (isOne(base)) return one
         if (isZero(base)) {
             if (integers.isNegative(p)) {
@@ -727,13 +745,13 @@ object BigFractionAsQuotients : RFracOverIntDom<BigInteger>(BigIntegerAsIntegers
         run {
             val m1 = negate(one)
             if (isEqual(base, m1)) {
-                return if (integers.isOdd(p)) m1 else m1
+                return if (integers.isOdd(p)) m1 else one
             }
         }
         return power(base, p.intValueExact())
     }
 
-        private fun powerFactor0(baseAbs: BigFraction, p0: Int, q: Int): Pair<BigFraction, BigInteger> {
+    private fun powerFactor0(baseAbs: BigFrac, p0: Int, q: Int): Pair<BigFrac, BigInteger> {
         if (isOne(baseAbs) || p0 == 0) return one to BigInteger.ONE
         val (a, b) = baseAbs
         val floor = Math.floorDivExact(p0, q)
@@ -759,7 +777,7 @@ object BigFractionAsQuotients : RFracOverIntDom<BigInteger>(BigIntegerAsIntegers
      * ```
      *
      */
-    fun powerFactor(base: BigFraction, p: Int, q: Int): Pair<BigFraction, BigInteger> {
+    fun powerFactor(base: BigFrac, p: Int, q: Int): Pair<BigFrac, BigInteger> {
         val pow = Fraction(p, q)
         if (isZero(base)) {
             if (!pow.isPositive) {
@@ -785,7 +803,7 @@ object BigFractionAsQuotients : RFracOverIntDom<BigInteger>(BigIntegerAsIntegers
     }
 
 
-    fun factorize(x: BigFraction): List<NTFunctions.FactorBig> {
+    fun factorize(x: BigFrac): List<NTFunctions.FactorBig> {
         val (n, d) = x
         val factorsN = NTFunctions.factorize(n)
         val factorsD = NTFunctions.factorize(d).map { NTFunctions.FactorBig(it.prime, -it.power) }
@@ -795,20 +813,22 @@ object BigFractionAsQuotients : RFracOverIntDom<BigInteger>(BigIntegerAsIntegers
         return merged
     }
 
-    fun factorizedPow(x: BigFraction, pow: BigFraction): List<Pair<BigInteger, BigFraction>> {
+    fun factorizedPow(x: BigFrac, pow: BigFrac): List<Pair<BigInteger, BigFrac>> {
 //        require(!isNegative(x)) {"Powering a negative number is not supported."}
-        if(isZero(x)){
-            if(!isPositive(pow)) throw ArithmeticException("Cannot raise 0 to a non-positive power.")
+        if (isZero(x)) {
+            if (!isPositive(pow)) throw ArithmeticException("Cannot raise 0 to a non-positive power.")
             return listOf(BigInteger.ZERO to one)
         }
-        if(isZero(pow)) return listOf(BigInteger.ONE to one)
+        if (isZero(pow)) return listOf(BigInteger.ONE to one)
 
         val res = factorize(x).map { (p, e) ->
             p to e * pow
         }
-        if(isNegative(x)){
-            if(pow.deno.isEven()) throw ArithmeticException("Cannot root a negative number to an even power: $x ^ $pow")
-            if(pow.nume.isOdd()){
+        if (isNegative(x)) {
+            if (pow.deno.isEven()) throw ArithmeticException(
+                "Cannot root a negative number to an even power: $x ^ $pow"
+            )
+            if (pow.nume.isOdd()) {
                 return listOf(BigInteger.ONE.negate() to one) + res
             }
         }
@@ -820,8 +840,13 @@ object BigFractionAsQuotients : RFracOverIntDom<BigInteger>(BigIntegerAsIntegers
     Operator functions
      */
 
-    operator fun BigFraction.times(n: Int): BigFraction = multiplyN(this, n.toLong())
-    operator fun Int.times(x: BigFraction): BigFraction = multiplyN(x, this.toLong())
+    operator fun BigFrac.times(n: Int): BigFrac = multiplyN(this, n.toLong())
+    operator fun Int.times(x: BigFrac): BigFrac = multiplyN(x, this.toLong())
+
+    operator fun BigFrac.plus(y: BigInteger): BigFrac = add(this, fromBigInt(y))
+    operator fun BigInteger.plus(y: BigFrac): BigFrac = add(fromBigInt(this), y)
+    operator fun BigFrac.minus(y: BigInteger): BigFrac = subtract(this, fromBigInt(y))
+    operator fun BigInteger.minus(y: BigFrac): BigFrac = subtract(fromBigInt(this), y)
 
 
 }
@@ -860,7 +885,7 @@ object Models {
     /**
      * Gets the model of integers with type `BigInteger`.
      */
-    fun bigIntegers(): Integers<BigInteger> = BigIntegerAsIntegers
+    fun bigIntegers(): Integers<BigInteger> = BigIntAsIntegers
 
     fun doubles(dev: Double = Double.MIN_VALUE): Reals<Double> = DoubleAsReals(dev)
 
@@ -897,17 +922,17 @@ object Models {
     /**
      * Gets the field of fractions with [BigInteger].
      *
-     * @see RFraction
+     * @see RingFrac
      */
-    fun fractionBig(): BigFractionAsQuotients {
-        return BigFractionAsQuotients
+    fun bigFraction(): BigFracAsQuot {
+        return BigFracAsQuot
     }
 
 }
 
 
 fun main() {
-    with(Models.fractionBig()) {
+    with(Models.bigFraction()) {
         val f = bfrac(3, 4)
         val p = 2
         val q = 3

@@ -103,7 +103,7 @@ class ModelsTest {
 
     @Test
     fun testBigFrac() {
-        val bigFrac = Models.fractionBig()
+        val bigFrac = Models.bigFraction()
         with(bigFrac) {
             val f1 = bfrac(1, 2)
             val f2 = bfrac(1, 3)
@@ -136,7 +136,7 @@ class ModelsTest {
     fun testPowerFactor(){
         val rng = Random(100)
         repeat(100){
-            with(Models.fractionBig()) {
+            with(Models.bigFraction()) {
                 val f = bfrac(rng.nextInt(1, 100), rng.nextInt(1, 100))
                 val (p,q) = NTFunctions.gcdReduce(rng.nextInt(1, 10),rng.nextInt(1, 10))
                 val (f1, a1) = powerFactor(f, p, q)
