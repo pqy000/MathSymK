@@ -1,5 +1,7 @@
 package io.github.ezrnest.symbolic
 
+import io.github.ezrnest.model.BigFrac
+import io.github.ezrnest.model.BigFracAsQuot
 import io.github.ezrnest.model.isOdd
 import io.github.ezrnest.symbolic.Node.Names
 import io.github.ezrnest.util.all2
@@ -36,9 +38,9 @@ class RuleSort(val targetSig: NodeSig) : SimRule {
 
     override val metaKeyApplied: TypedKey<Boolean> = TypedKey("sorted")
 
-    private fun sort2(node: Node2, context: ExprContext): Node2? {
+    private fun sort2(node: Node2): Node2? {
         val (first, second) = node
-        if (context.nodeOrder.compare(first, second) <= 0) {
+        if (NodeOrder.compare(first, second) <= 0) {
             node[metaKeyApplied] = true
             return null
         }
@@ -47,7 +49,7 @@ class RuleSort(val targetSig: NodeSig) : SimRule {
 
     private fun sortN(node: NodeChilded, context: ExprContext): NodeChilded? {
         val children = node.children
-        val childrenSorted = children.sortedWith(context.nodeOrder)
+        val childrenSorted = children.sortedWith(NodeOrder)
         if (children.all2(childrenSorted) { x, y -> x === y }) {
             node[metaKeyApplied] = true
             return null
@@ -61,7 +63,7 @@ class RuleSort(val targetSig: NodeSig) : SimRule {
         if (!context.isCommutative(node.name)) return null
         return when (node) {
             is Node1 -> null
-            is Node2 -> sort2(node, context)?.let { WithLevel(0, it) }
+            is Node2 -> sort2(node)?.let { WithLevel(0, it) }
             else -> sortN(node, context)?.let { WithLevel(0, it) }
         }
     }
@@ -142,8 +144,8 @@ object MergeAdditionRational : RuleForSpecificN(Names.ADD) {
 
     override fun simplifyN(root: NodeN, context: ExprContext): WithLevel<Node>? {
         val children = root.children
-        val Q = context.rational
-        val collect = sortedMapOf<Node, Rational>(context.nodeOrder)
+        val Q = BigFracAsQuot
+        val collect = sortedMapOf<Node, BigFrac>(NodeOrder)
         var simplified = false
         for (node in children) {
             val (r, n) = SimUtils.extractRational(node, context)
@@ -164,10 +166,10 @@ object MergeAdditionRational : RuleForSpecificN(Names.ADD) {
         if (collect.isEmpty()) return WithLevel(-1, Node.ZERO)
         if (collect.size == 1) {
             val (n, r) = collect.entries.first()
-            return WithLevel(0, SimUtils.createWithRational(r, n, context))
+            return WithLevel(0, SimUtils.createWithRational(r, n))
         }
 
-        val newChildren = collect.entries.map { (n, r) -> SimUtils.createWithRational(r, n, context) }
+        val newChildren = collect.entries.map { (n, r) -> SimUtils.createWithRational(r, n) }
         return WithLevel(0, Node.Add(newChildren))
 
     }
@@ -208,8 +210,8 @@ object MergeProduct : RuleForSpecificN(Names.MUL) {
 
     override fun simplifyN(root: NodeN, context: ExprContext): WithLevel<Node>? {
         val children = root.children
-        val collect = sortedMapOf<Node, List<Node>>(context.nodeOrder)
-        val Q = context.rational
+        val collect = sortedMapOf<Node, List<Node>>(NodeOrder)
+        val Q = BigFracAsQuot
         var rPart = Q.one
         var rationalCount = 0
         var simplified = false
@@ -264,7 +266,7 @@ object ComputeProductRational : RuleForSpecificN(Names.MUL) {
 
     override fun simplifyN(root: NodeN, context: ExprContext): WithLevel<Node>? {
         val children = root.children
-        val Q = context.rational
+        val Q = BigFracAsQuot
         var product = Q.one
         val nodes = ArrayList<Node>(children.size)
         var count = 0
@@ -330,7 +332,7 @@ object FlattenPow : RuleForSpecific2(Names.POW) {
     }
 
     private fun flattenPowInt(base: Node, exp: NRational, context: ExprContext): WithLevel<Node>? {
-        if (context.rational.isOne(exp.value)) return WithLevel(0, base)
+        if (BigFracAsQuot.isOne(exp.value)) return WithLevel(0, base)
         if (SimUtils.isPow(base)) {
             return WithLevel(0, flattenPowPow(base, exp))
         }
@@ -401,8 +403,8 @@ object ComputePow : RuleForSpecific2(Names.POW) {
     }
 
 
-    private fun powRational(base: Rational, exp: Rational, context: ExprContext): Node {
-        with(context.rational) {
+    private fun powRational(base: BigFrac, exp: BigFrac, context: ExprContext): Node {
+        with(BigFracAsQuot) {
             if (isInteger(exp)) {
                 val p = asInteger(exp)
                 if (canExpandPow(base.nume, p) && canExpandPow(base.deno, p)) {
@@ -454,8 +456,8 @@ object ComputePow : RuleForSpecific2(Names.POW) {
                     } else {
                         val node = Node.Pow(Node.Int(b), Node.Int(floor))
                         node[metaKeyApplied] = true
-                        node[EMeta.rational] = true
-                        node[EMeta.positive] = true
+                        node[NodeMetas.rational] = true
+                        node[NodeMetas.positive] = true
                         nodes.add(node)
                         // power too big, cannot compute the exact value
                     }
@@ -481,7 +483,7 @@ object ComputePow : RuleForSpecific2(Names.POW) {
         }
     }
 
-    private fun powFactorDecomposition(base: Rational, exp: Node, context: ExprContext): Node {
+    private fun powFactorDecomposition(base: BigFrac, exp: Node, context: ExprContext): Node {
         TODO()
     }
 
@@ -509,9 +511,13 @@ interface SimRuleMatched<T : Node> : SimRule {
 
 
     override fun simplify(node: Node, context: ExprContext): WithLevel<Node>? {
+        if(node[metaKeyApplied] == true) return null
         val matchContext = MutableMatchContext(context)
         val r = matcher.matches(node, matchContext) ?: return null
-        return simplifyMatched(r, matchContext)
+        val res= simplifyMatched(r, matchContext)
+        if(res != null) return res
+        node[metaKeyApplied] = true // tried but not applicable
+        return null
     }
 }
 

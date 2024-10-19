@@ -1,10 +1,11 @@
 package io.github.ezrnest.symbolic
 // created at 2024/10/05
+import io.github.ezrnest.model.BigFrac
 import io.github.ezrnest.model.Multinomial
 import java.util.*
 
 
-typealias Multi = Multinomial<Rational>
+typealias Multi = Multinomial<BigFrac>
 
 /**
  * Defines a typed key for meta data.
@@ -49,7 +50,7 @@ fun <T> Map<TypedKey<*>, Any?>.getTyped(key: TypedKey<T>, default: T): T = getOr
 
 
 
-object EMeta {
+object NodeMetas {
 
     val asMulti = TypedKey<Multi>("asMulti")
 
@@ -63,4 +64,13 @@ object EMeta {
     val rational = TypedKey<Boolean>("rational")
 
     val real = TypedKey<Boolean>("real")
+
+    /**
+     * Mark this node as fully simplified.
+     *
+     * This is typically used for some known special values such as `(sqrt(2) + sqrt(3))/2`.
+     */
+    val simplified = TypedKey<Boolean>("simplified")
+
+
 }

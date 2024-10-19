@@ -1,6 +1,7 @@
 package io.github.ezrnest.symbolic
 // created at 2024/10/01
-import io.github.ezrnest.model.BigFraction
+import io.github.ezrnest.model.BigFrac
+import io.github.ezrnest.model.BigFracAsQuot
 import io.github.ezrnest.util.all2
 import java.math.BigInteger
 import kotlin.reflect.KClass
@@ -42,6 +43,8 @@ sealed interface Node {
 
         val NEG_ONE = Int(BigInteger.ONE.negate())
 
+        val HALF = Rational(BigFracAsQuot.half)
+
         val PI = Symbol(Names.Symbol_PI)
 
         val NATURAL_E = Symbol(Names.Symbol_E)
@@ -51,14 +54,14 @@ sealed interface Node {
         val UNDEFINED = NOther("undefined")
 
         fun Int(value: BigInteger): NRational {
-            return NRational(BigFraction(value, BigInteger.ONE))
+            return NRational(BigFrac(value, BigInteger.ONE))
         }
 
         fun Int(value: Int): NRational {
             return Int(value.toBigInteger())
         }
 
-        fun Rational(value: Rational): NRational {
+        fun Rational(value: BigFrac): NRational {
             return NRational(value)
         }
 
@@ -201,10 +204,7 @@ sealed class AbstractNode {
 }
 
 
-typealias Rational = BigFraction
-
-
-data class NRational(val value: Rational) : AbstractNode(), LeafNode {
+data class NRational(val value: BigFrac) : AbstractNode(), LeafNode {
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -224,8 +224,9 @@ data class NRational(val value: Rational) : AbstractNode(), LeafNode {
 
 
     override fun plainToString(): String {
-        if (value.deno == BigInteger.ONE) return value.nume.toString()
-        return value.toString()
+        val (nume, deno) = value
+        if(deno == BigInteger.ONE) return nume.toString()
+        return "$nume/$deno"
     }
 }
 
@@ -685,6 +686,8 @@ interface NodeBuilderScope {
 
     val Int.e: Node get() = Node.Int(BigInteger.valueOf(this.toLong()))
 
+    val BigFrac.e : Node get() = Node.Rational(this)
+
     val String.s: Node get() = symbol(this)
 
     operator fun Node.plus(other: Node): Node {
@@ -693,6 +696,10 @@ interface NodeBuilderScope {
 
     operator fun Node.minus(other: Node): Node {
         return Node.Add(listOf(this, Node.Mul(listOf(Node.NEG_ONE, other))))
+    }
+
+    operator fun Node.unaryMinus(): Node {
+        return Node.Neg(this)
     }
 
     fun sum(vararg nodes: Node): Node {
@@ -734,6 +741,10 @@ interface NodeBuilderScope {
 
     fun cos(node: Node): Node {
         return Node.Node1(Node.Names.F1_COS, node)
+    }
+
+    fun sqrt(node: Node): Node {
+        return pow(node, Node.HALF)
     }
 
 

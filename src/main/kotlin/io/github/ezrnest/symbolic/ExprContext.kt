@@ -1,50 +1,12 @@
 package io.github.ezrnest.symbolic
 // created at 2024/10/01
-import io.github.ezrnest.model.BigFractionAsQuotients
 import kotlin.math.max
 
-
-//interface ExprCal {
-//    fun simplifyNode(node: Node): Node
-//
-//    val context: ExprContext
-//}
-
 interface ExprContext {
-    val rational: BigFractionAsQuotients
-
-    val nodeOrder: NodeComparator
 
     val options: Map<TypedKey<*>, Any> get() = emptyMap()
 
     fun isCommutative(name: String): Boolean
-
-
-    fun sortTree(node: Node): Node {
-        if (node is LeafNode) return node
-
-        if (true == node[EMeta.sorted]) return node
-
-        val res = when (node) {
-            is Node1 -> node.newWithChildren(sortTree(node.child))
-//            is Node2 -> sortNode2(node)
-//            is Node3 -> sortNode3(node)
-            is NodeChilded -> {
-                val children = node.children.map { sortTree(it) }
-                val newChildren = if (isCommutative(node.name)) {
-                    children.sortedWith(nodeOrder)
-                } else {
-                    children
-                }
-                node.newWithChildren(newChildren)
-            }
-
-            else -> node
-        }
-        res[EMeta.sorted] = true
-
-        return res
-    }
 
     fun simplifyFull(root: Node): Node {
         return simplifyNode(root, Int.MAX_VALUE)
@@ -60,19 +22,53 @@ interface ExprContext {
     }
 }
 
-object TestExprContext : ExprContext {
+/*
+    fun sortTree(node: Node): Node {
+        if (node is LeafNode) return node
 
-    override val rational: BigFractionAsQuotients
-        get() = BigFractionAsQuotients
+        if (true == node[EMeta.sorted]) return node
 
-    override val nodeOrder: NodeComparator
-        get() = NodeOrder
+        val res = when (node) {
+            is Node1 -> node.newWithChildren(sortTree(node.child))
+            is NodeChilded -> {
+                val children = node.children.map { sortTree(it) }
+                val newChildren = if (isCommutative(node.name)) {
+                    children.sortedWith(NodeOrder)
+                } else {
+                    children
+                }
+                node.newWithChildren(newChildren)
+            }
+
+            else -> node
+        }
+        res[EMeta.sorted] = true
+
+        return res
+    }
+ */
+
+
+//object BasicAlgebraContext : ExprContext{
+//
+//
+//}
+
+val TestExprContext = BasicExprContext()
+
+class BasicExprContext : ExprContext {
 
     override val options: MutableMap<TypedKey<*>, Any> = mutableMapOf()
 
     val dispatcher: TreeDispatcher<SimRule> = TreeDispatcher()
 
-    var verbose = false
+    var verbose: Verbosity = Verbosity.NONE
+
+    enum class Verbosity {
+        NONE, WHEN_APPLIED, ALL
+    }
+
+
     private val indent = "|  "
     private var simLevel = -1
 
@@ -109,17 +105,27 @@ object TestExprContext : ExprContext {
         }
     }
 
-    private fun println(s: String) {
-        if (verbose) kotlin.io.println(indent.repeat(max(simLevel, 0)) + s)
+    private inline fun log(level: Verbosity, supplier: () -> String) {
+        if (verbose >= level) {
+            println(indent.repeat(max(simLevel, 0)) + supplier())
+        }
+    }
+
+    private fun showNode(node : Node): String{
+        val meta = node.meta
+        if(meta.isEmpty()) return node.plainToString()
+        return "${node.plainToString()}, ${node.meta}"
     }
 
 
     override fun simplifyNode(node: Node, depth: Int): Node {
+
         var depth = depth
         var res = node
         simLevel++
-        if (verbose) println("Simplifying: ${node.plainToString()}, ${node.meta}")
+        log(Verbosity.WHEN_APPLIED) { "Sim:  ${showNode(node)}" }
         while (true) {
+            if(res[NodeMetas.simplified] == true) break
             res = if (depth <= 0) {
                 res
             } else {
@@ -133,19 +139,24 @@ object TestExprContext : ExprContext {
                 }
             }
             val appliedRule = dispatcher.dispatchUntil(res) { rule ->
-                if (verbose) println("|> ${rule.description}")
+                log(Verbosity.ALL) { "|> ${rule.description}" }
                 val p = rule.simplify(res, this) ?: return@dispatchUntil false
+
+                if (verbose == Verbosity.WHEN_APPLIED) {
+                    log(Verbosity.WHEN_APPLIED) { "|>${rule.description}" }
+                }
                 depth = p.level
                 res = p.item
-                if (verbose) println("|To: ${res.plainToString()}, ${res.meta}")
+                log(Verbosity.WHEN_APPLIED) { "|->  ${showNode(res)}" }
                 true
             }
             if (appliedRule == null) {
-                if (verbose) println("|> Nothing happened ...")
+                log(Verbosity.ALL) { "|> Nothing happened ..." }
                 break
             }
+
         }
-        if(verbose) println("|-> ${res.plainToString()}")
+        log(Verbosity.ALL) { "|->  ${showNode(res)}" }
         simLevel--
         return res
     }

@@ -1,6 +1,7 @@
 package io.github.ezrnest.symbolic
 // created at 2024/10/1
-import io.github.ezrnest.model.BigFractionAsQuotients
+import io.github.ezrnest.model.BigFrac
+import io.github.ezrnest.model.BigFracAsQuot
 import java.math.BigInteger
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
@@ -9,8 +10,8 @@ import kotlin.contracts.contract
 object SimUtils {
 
 
-    fun asInteger(node: Node, context: ExprContext): BigInteger? {
-        val Q = context.rational
+    fun asInteger(node: Node): BigInteger? {
+        val Q = BigFracAsQuot
         return if (node is NRational && Q.isInteger(node.value)) {
             Q.asInteger(node.value)
         } else {
@@ -19,7 +20,7 @@ object SimUtils {
     }
 
 
-    fun asRational(node: Node, Q: BigFractionAsQuotients): Rational? {
+    fun asRational(node: Node, Q: BigFracAsQuot): BigFrac? {
         return if (node is NRational) {
             node.value
         } else {
@@ -28,8 +29,7 @@ object SimUtils {
     }
 
     fun asPositiveInt(node: Node, context: ExprContext): BigInteger? {
-        val Q = context.rational
-        return asInteger(node, context)?.takeIf { it > BigInteger.ZERO }
+        return asInteger(node)?.takeIf { it > BigInteger.ZERO }
     }
 
 
@@ -38,7 +38,7 @@ object SimUtils {
         contract {
             returns(true) implies (node is NRational)
         }
-        return node is NRational && context.rational.isInteger(node.value)
+        return node is NRational && BigFracAsQuot.isInteger(node.value)
     }
 
 
@@ -77,9 +77,9 @@ object SimUtils {
     fun extractRational(node: Node, context: ExprContext): WithRational {
         if (node is NRational) return WithRational(node.value, Node.ONE) // itself is a rational
         if (!isMul(node))
-            return WithRational(context.rational.one, node) // not a mul node
+            return WithRational(BigFracAsQuot.one, node) // not a mul node
         val children = node.children
-        val Q = context.rational
+        val Q = BigFracAsQuot
         val rational = asRational(children.first(), Q) ?: return WithRational(Q.one, node)
         return when (children.size) {
             1 -> WithRational(rational, Node.ONE)
@@ -104,8 +104,8 @@ object SimUtils {
     }
 
 
-    fun createWithRational(r: Rational, n: Node, context: ExprContext): Node {
-        val Q = context.rational
+    fun createWithRational(r: BigFrac, n: Node): Node {
+        val Q = BigFracAsQuot
         if (n === Node.ONE) return Node.Rational(r)
         if (n is NRational) return Node.Rational(Q.multiply(r, n.value))
         if (Q.isZero(r)) return Node.ZERO
@@ -121,5 +121,5 @@ object SimUtils {
 
     data class Exponent(val base: Node, val power: Node)
 
-    data class WithRational(val rational: Rational, val node: Node)
+    data class WithRational(val rational: BigFrac, val node: Node)
 }
