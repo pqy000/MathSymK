@@ -24,7 +24,7 @@ package io.github.ezrnest.structure
  * - Rational numbers `Q`. [Quotients][io.github.ezrnest.structure.Quotients]
  * - Real numbers `R`. [Reals][io.github.ezrnest.structure.Reals]
  * - Complex numbers `C`.
- * - Fraction fields of integral domains. [FractionField][io.github.ezrnest.model.RFraction]
+ * - Fraction fields of integral domains. [FractionField][io.github.ezrnest.model.RingFrac]
  *
  * ## Hierarchy of algebraic structures
  * In the hierarchy of algebraic structures, a field is a division ring whose multiplication is commutative.
