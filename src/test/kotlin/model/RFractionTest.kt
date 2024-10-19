@@ -2,7 +2,7 @@ package model
 
 import io.github.ezrnest.model.Models
 import io.github.ezrnest.model.Polynomial
-import io.github.ezrnest.model.RFraction
+import io.github.ezrnest.model.RingFrac
 import org.junit.jupiter.api.Assertions.assertThrows
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -10,10 +10,10 @@ import kotlin.test.assertTrue
 
 class RFractionTest {
     val ints = Models.ints()
-    val qInt = RFraction.over(ints)
+    val qInt = RingFrac.over(ints)
 
     val polyInt = Polynomial.over(ints)
-    val qPoly = RFraction.over(polyInt)
+    val qPoly = RingFrac.over(polyInt)
 
 
     @Test

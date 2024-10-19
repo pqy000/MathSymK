@@ -3,7 +3,7 @@ package samples
 import io.github.ezrnest.model.Fraction
 import io.github.ezrnest.model.Models
 import io.github.ezrnest.model.Polynomial
-import io.github.ezrnest.model.RFraction
+import io.github.ezrnest.model.RingFrac
 
 fun basicFraction() {
     val a = Fraction(1, 2)
@@ -17,7 +17,7 @@ fun basicFraction() {
 fun fractionsOverVariousModels() {
     // First example: fractions over integers, just as plain fractions
     val Z = Models.ints()
-    with(RFraction.over(Z)) {
+    with(RingFrac.over(Z)) {
         val f1 = frac(3, 4)
         val f2 = frac(1, 2)
         println(f1 + f2) // 5/4
@@ -26,7 +26,7 @@ fun fractionsOverVariousModels() {
     // Second example: fractions over polynomials
     val polyF = Polynomial.over(Z) // Polynomials over Z
     with(polyF) {
-        with(RFraction.over(polyF)) { // Fraction of polynomials over Z
+        with(RingFrac.over(polyF)) { // Fraction of polynomials over Z
             val f1 = (1 + x) / (1 + 2.x) // an overloaded operator `/` to create a fraction
             val f2 = (2 + 3.x) / (1 + 2.x)
             println(f1 + f2) // (3 + 4x)/(1 + 2x)

@@ -5,7 +5,7 @@ import io.github.ezrnest.structure.*
 /**
  * RFraction defines a fraction on a unit ring of type [T].
  *
- * To use RFraction, you need to first provide a model subclassing [UnitRing] and get the corresponding RFraction model by calling [RFraction.over].
+ * To use RFraction, you need to first provide a model subclassing [UnitRing] and get the corresponding RFraction model by calling [RingFrac.over].
  * With the returned RFraction model, you can create and operate on fractions.
  * Here is an example:
  * ```kotlin
@@ -49,7 +49,7 @@ import io.github.ezrnest.structure.*
  */
 @JvmRecord
 @ConsistentCopyVisibility
-data class RFraction<T>
+data class RingFrac<T>
 internal constructor(val nume: T, val deno: T) {
     /*
     Basic properties:
@@ -66,8 +66,8 @@ internal constructor(val nume: T, val deno: T) {
      * @param mapper the function that maps elements of type [T] to type [N].
      * @return a new fraction with the mapped numerator and denominator.
      */
-    fun <N> mapTo(mapper: (T) -> N): RFraction<N> {
-        return RFraction(mapper(nume), mapper(deno))
+    fun <N> mapTo(mapper: (T) -> N): RingFrac<N> {
+        return RingFrac(mapper(nume), mapper(deno))
     }
 
     companion object {
@@ -106,15 +106,17 @@ internal constructor(val nume: T, val deno: T) {
  * @param T the type of the elements in the underlying unit ring.
  * @property model the unit ring model on which the fractions are based.
  */
-open class RFracOverURing<T>(_model: UnitRing<T>) : UnitRing<RFraction<T>>,Module<T,RFraction<T>> {
+open class RFracOverURing<T>(_model: UnitRing<T>) : UnitRing<RingFrac<T>>,Module<T,RingFrac<T>> {
 
     open val model: UnitRing<T> = _model
 
-    final override val zero: RFraction<T> = RFraction(_model.zero, _model.one)
+    final override val zero: RingFrac<T> = RingFrac(_model.zero, _model.one)
 
-    final override val one: RFraction<T> = _model.one.let { RFraction(it, it) }
+    final override val one: RingFrac<T> = _model.one.let { RingFrac(it, it) }
 
-    override fun contains(x: RFraction<T>): Boolean {
+
+
+    override fun contains(x: RingFrac<T>): Boolean {
         return model.contains(x.nume) && model.contains(x.deno)
     }
 
@@ -127,22 +129,19 @@ open class RFracOverURing<T>(_model: UnitRing<T>) : UnitRing<RFraction<T>>,Modul
      * @param deno the denominator.
      * @return the created fraction.
      */
-    fun frac(nume: T, deno: T): RFraction<T> {
-        if (model.isZero(deno)) {
-            throw ArithmeticException("Divide by zero: $nume / $deno")
-        }
-        return simplifyFrac(nume, deno)
+    fun frac(nume: T, deno: T): RingFrac<T> {
+        return simplify(nume, deno)
     }
 
     /**
      * The inclusion function from the ring to the fractions. It lifts an element of type [T] in the ring
      * to a fraction with the given element as the numerator and `1` as the denominator.
      */
-    val T.f: RFraction<T>
+    val T.f: RingFrac<T>
         get() = frac(this, model.one)
 
 
-    operator fun T.div(deno: T): RFraction<T> {
+    operator fun T.div(deno: T): RingFrac<T> {
         return frac(this, deno)
     }
 
@@ -157,63 +156,66 @@ open class RFracOverURing<T>(_model: UnitRing<T>) : UnitRing<RFraction<T>>,Modul
      * @param deno the denominator.
      * @return the simplified fraction.
      */
-    protected open fun simplifyFrac(nume: T, deno: T): RFraction<T> {
-        return RFraction(nume, deno)
+    protected open fun simplify(nume: T, deno: T): RingFrac<T> {
+        if (model.isZero(deno)) {
+            throw ArithmeticException("Divide by zero: $nume / $deno")
+        }
+        return RingFrac(nume, deno)
     }
 
-    protected open fun simplifySign(nume: T, deno: T): RFraction<T>{
-        return RFraction(nume, deno)
+    protected open fun simplifySign(nume: T, deno: T): RingFrac<T>{
+        return RingFrac(nume, deno)
     }
 
     /*
     Basic model:
      */
-    override fun isEqual(x: RFraction<T>, y: RFraction<T>): Boolean {
+    override fun isEqual(x: RingFrac<T>, y: RingFrac<T>): Boolean {
         return model.eval {
             isZero(x.nume * y.deno - x.deno * y.nume)
         }
     }
 
-    override fun isZero(x: RFraction<T>): Boolean {
+    override fun isZero(x: RingFrac<T>): Boolean {
         return model.isZero(x.nume)
     }
 
-    override fun add(x: RFraction<T>, y: RFraction<T>): RFraction<T> {
+    override fun add(x: RingFrac<T>, y: RingFrac<T>): RingFrac<T> {
         model.eval {
             val n = x.nume * y.deno + x.deno * y.nume
             val d = x.deno * y.deno
-            return simplifyFrac(n, d)
+            return simplify(n, d)
         }
     }
 
-    override fun subtract(x: RFraction<T>, y: RFraction<T>): RFraction<T> {
+    override fun subtract(x: RingFrac<T>, y: RingFrac<T>): RingFrac<T> {
         model.eval {
             val n = x.nume * y.deno - x.deno * y.nume
             val d = x.deno * y.deno
-            return simplifyFrac(n, d)
+            return simplify(n, d)
         }
     }
 
-    override fun negate(x: RFraction<T>): RFraction<T> {
-        return RFraction(model.negate(x.nume), x.deno)
+    override fun negate(x: RingFrac<T>): RingFrac<T> {
+        return RingFrac(model.negate(x.nume), x.deno)
     }
 
-    override fun multiply(x: RFraction<T>, y: RFraction<T>): RFraction<T> {
+    override fun multiply(x: RingFrac<T>, y: RingFrac<T>): RingFrac<T> {
         model.eval {
-            val f1 = simplifyFrac(x.nume, y.deno)
-            val f2 = simplifyFrac(y.nume, x.deno)
-            return RFraction(f1.nume * f2.nume, f1.deno * f2.deno)
+            val f1 = simplify(x.nume, y.deno)
+            val f2 = simplify(y.nume, x.deno)
+            return RingFrac(f1.nume * f2.nume, f1.deno * f2.deno)
         }
     }
 
-    override fun scalarMul(k: T, v: RFraction<T>): RFraction<T> {
+    override fun scalarMul(k: T, v: RingFrac<T>): RingFrac<T> {
         model.eval {
-            val f1 = simplifyFrac(k, v.deno)
-            return RFraction(v.nume * f1.nume, f1.deno)
+            val f1 = simplify(k, v.deno)
+            return RingFrac(v.nume * f1.nume, f1.deno)
         }
     }
 
-    override fun multiplyN(x: RFraction<T>, n: Long): RFraction<T> {
+    override fun multiplyN(x: RingFrac<T>, n: Long): RingFrac<T> {
         return scalarMul(model.ofN(n), x)
     }
 
@@ -221,17 +223,20 @@ open class RFracOverURing<T>(_model: UnitRing<T>) : UnitRing<RFraction<T>>,Modul
 }
 
 open class RFracOverIntDom<T>(override val model: IntegralDomain<T>) : RFracOverURing<T>(model),
-    Field<RFraction<T>> {
+    Field<RingFrac<T>> {
 
-    override fun simplifyFrac(nume: T, deno: T): RFraction<T> {
+    override fun simplify(nume: T, deno: T): RingFrac<T> {
+        if (model.isZero(deno)) {
+            throw ArithmeticException("Divide by zero: $nume / $deno")
+        }
         val model = model
         if (model is UniqueFactorizationDomain) {
             val g = model.gcd(nume, deno)
             val n = model.exactDiv(nume, g)
             val d = model.exactDiv(deno, g)
-            return RFraction(n, d)
+            return RingFrac(n, d)
         }
-        return RFraction(nume, deno)
+        return RingFrac(nume, deno)
     }
 
     /*
@@ -241,46 +246,46 @@ open class RFracOverIntDom<T>(override val model: IntegralDomain<T>) : RFracOver
     override val characteristic: Long?
         get() = null
 
-    override fun reciprocal(x: RFraction<T>): RFraction<T> {
+    override fun reciprocal(x: RingFrac<T>): RingFrac<T> {
         if (isZero(x)) {
             throw ArithmeticException("Cannot invert zero: $x")
         }
         return simplifySign(x.deno, x.nume)
     }
 
-    override fun divide(x: RFraction<T>, y: RFraction<T>): RFraction<T> {
+    override fun divide(x: RingFrac<T>, y: RingFrac<T>): RingFrac<T> {
         if (isZero(y)) {
             throw ArithmeticException("Division by zero: $x / $y")
         }
         model.eval {
-            val f1 = simplifyFrac(x.nume, y.nume)
-            val f2 = simplifyFrac(y.deno, x.deno)
-            return RFraction(f1.nume * f2.nume, f1.deno * f2.deno)
+            val f1 = simplify(x.nume, y.nume)
+            val f2 = simplify(y.deno, x.deno)
+            return RingFrac(f1.nume * f2.nume, f1.deno * f2.deno)
         }
     }
 
 
-    override fun power(x: RFraction<T>, n: Int): RFraction<T> {
+    override fun power(x: RingFrac<T>, n: Int): RingFrac<T> {
         if (n > 0) {
-            return RFraction(model.power(x.nume, n), model.power(x.deno, n))
+            return RingFrac(model.power(x.nume, n), model.power(x.deno, n))
         }
         if (isZero(x)) throw ArithmeticException("Cannot raise zero to a negative power: $x^$n")
         if (n == 0) return one
         return simplifySign(model.power(x.deno, -n), model.power(x.nume, -n))
     }
 
-    private fun addWithGCD(x: RFraction<T>, y: RFraction<T>, model : UniqueFactorizationDomain<T>): RFraction<T> {
+    private fun addWithGCD(x: RingFrac<T>, y: RingFrac<T>, model : UniqueFactorizationDomain<T>): RingFrac<T> {
         with(model) {
             val g = gcd(x.deno, y.deno)
             val b1 = exactDiv(x.deno, g)
             val d1 = exactDiv(y.deno, g)
             val lcm = b1 * y.deno
             val num = x.nume * d1 + y.nume * b1
-            return simplifyFrac(num, lcm)
+            return simplify(num, lcm)
         }
     }
 
-    override fun add(x: RFraction<T>, y: RFraction<T>): RFraction<T> {
+    override fun add(x: RingFrac<T>, y: RingFrac<T>): RingFrac<T> {
         val model = model
         if (model !is UniqueFactorizationDomain) {
             return super.add(x, y)
@@ -288,7 +293,7 @@ open class RFracOverIntDom<T>(override val model: IntegralDomain<T>) : RFracOver
         return addWithGCD(x, y, model)
     }
 
-    override fun subtract(x: RFraction<T>, y: RFraction<T>): RFraction<T> {
+    override fun subtract(x: RingFrac<T>, y: RingFrac<T>): RingFrac<T> {
         val model = model
         if (model !is UniqueFactorizationDomain) {
             return super<RFracOverURing>.subtract(x, y)

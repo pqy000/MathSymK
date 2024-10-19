@@ -325,7 +325,7 @@ data class Fraction internal constructor(
         return Math.floorDivExact(nume, deno)
     }
 
-    fun floorAndRem() : Pair<Long, Fraction> {
+    fun floorAndRem(): Pair<Long, Fraction> {
         val q = floor()
         val r = this - q
         return q to r
@@ -351,7 +351,7 @@ data class Fraction internal constructor(
      * @return The integer part of `this / divisor`.
      * @throws ArithmeticException if `divisor==0`
      */
-    fun divideToInteger(divisor: Fraction): Long {
+    fun divToInt(divisor: Fraction): Long {
         if (isZero) {
             return 0
         }
@@ -367,12 +367,19 @@ data class Fraction internal constructor(
      * @return A pair of `Long` and `Fraction` where the first element is the integer part of `this / divisor`
      * @throws ArithmeticException if `divisor==0`
      */
-    fun divideToIntAndRemainder(divisor: Fraction): Pair<Long, Fraction> {
-        val q = this.divideToInteger(divisor)
+    fun divToIntAndRem(divisor: Fraction): Pair<Long, Fraction> {
+        val q = this.divToInt(divisor)
         val r = this - q * divisor
         return q to r
     }
 
+    /**
+     * Returns the fraction `r` with the smallest absolute value such that `this = k * n + r`, where `k` is an integer.
+     */
+    fun intRem(n: Long): Fraction {
+        val nume1 = nume % (n * deno)
+        return of(nume1, deno)
+    }
 //    /**
 //     * Returns the remainder of this fraction divided by the specified `divisor` to integer value.
 //     *
@@ -488,7 +495,6 @@ data class Fraction internal constructor(
         }
 
 
-
         /**
          * Returns a fraction from a long.
          */
@@ -544,14 +550,13 @@ data class Fraction internal constructor(
         /**
          * Returns a fraction corresponding to the `number`.
          */
-        operator fun invoke(number : Long): Fraction {
+        operator fun invoke(number: Long): Fraction {
             return of(number)
         }
 
-        operator fun invoke(number : Int): Fraction {
+        operator fun invoke(number: Int): Fraction {
             return of(number)
         }
-
 
 
         private val maxPrecision = log10(java.lang.Long.MAX_VALUE.toDouble()).toInt() - 1
@@ -867,7 +872,7 @@ data class Fraction internal constructor(
 /**
  * A model for fractions, which is a subclass of [Quotients].
  */
-object FractionAsQuotients : Quotients<Long,Fraction> {
+object FractionAsQuotients : Quotients<Long, Fraction> {
     override val integers: Integers<Long>
         get() = LongAsIntegers
 

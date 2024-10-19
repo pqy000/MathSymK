@@ -66,7 +66,7 @@ interface Quotients<I,T> : OrderedField<T> {
         run{
             val m1 = negate(one)
             if(isEqual(base, m1)){
-                return if(integers.isOdd(p)) m1 else m1
+                return if(integers.isOdd(p)) m1 else one
             }
         }
         // only possible for p in int range
