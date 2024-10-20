@@ -152,11 +152,11 @@ class BasicExprContext : ExprContext {
             }
             if (appliedRule == null) {
                 log(Verbosity.ALL) { "|> Nothing happened ..." }
+                log(Verbosity.ALL) { "|->  ${showNode(res)}" }
                 break
             }
-
         }
-        log(Verbosity.ALL) { "|->  ${showNode(res)}" }
+
         simLevel--
         return res
     }

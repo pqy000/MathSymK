@@ -2,6 +2,7 @@ package io.github.ezrnest.symbolic
 // created at 2024/10/1
 import io.github.ezrnest.model.BigFrac
 import io.github.ezrnest.model.BigFracAsQuot
+import io.github.ezrnest.util.MathUtils
 import java.math.BigInteger
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
@@ -88,21 +89,6 @@ object SimUtils {
         }
     }
 
-    /**
-     * Convert a node to an exponent form:
-     * - If the node is a pow node, return the base and the power;
-     * - If the node is an exp node, return e and the power;
-     * - Otherwise, return the node and 1.
-     */
-    fun toPower(node: Node): Exponent {
-        if (node.name == Node.Names.POW && node is Node2)
-            return Exponent(node.first, node.second)
-        if (node.name == Node.Names.F1_EXP && node is Node1) {
-            return Exponent(Node.NATURAL_E, node.child) // e^x
-        }
-        return Exponent(node, Node.ONE)
-    }
-
 
     fun createWithRational(r: BigFrac, n: Node): Node {
         val Q = BigFracAsQuot
@@ -119,7 +105,20 @@ object SimUtils {
         return context.simplifyNode(Node.Mul(nodes))
     }
 
-    data class Exponent(val base: Node, val power: Node)
+
+    fun sqrt(n: Int): Node {
+        if (n == 0) return Node.ZERO
+        if (n < 0) return buildNode { sqrt(n.e) }
+
+        MathUtils.sqrtInt(n.toLong()).let {
+            if (it * it == n.toLong()) {
+                return buildNode { it.e }
+            }
+        }
+        return buildNode { sqrt(n.e) }.also { it[NodeMetas.simplified] = true }
+
+    }
+
 
     data class WithRational(val rational: BigFrac, val node: Node)
 }

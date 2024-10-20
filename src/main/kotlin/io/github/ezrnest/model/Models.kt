@@ -691,10 +691,8 @@ object BigFracAsQuot : RFracOverIntDom<BigInteger>(BigIntAsIntegers), Quotients<
         return x.deno
     }
 
-    /**
-     * Returns the floor of the fraction, which is the largest integer less than or equal to the fraction.
-     */
-    fun floor(x: BigFrac): BigInteger {
+
+    override fun floor(x: BigFrac): BigInteger {
         val (n, d) = x
         val (q, r) = n.divideAndRemainder(d)
         if (n.signum() < 0 && r.signum() != 0) {
@@ -703,7 +701,7 @@ object BigFracAsQuot : RFracOverIntDom<BigInteger>(BigIntAsIntegers), Quotients<
         return q
     }
 
-    fun floorAndRem(x: BigFrac): Pair<BigInteger, BigFrac> {
+    override fun floorAndRem(x: BigFrac): Pair<BigInteger, BigFrac> {
         val (n, d) = x
         val (q, r) = n.divideAndRemainder(d)
         if (n.signum() < 0 && r.signum() != 0) {
@@ -715,7 +713,7 @@ object BigFracAsQuot : RFracOverIntDom<BigInteger>(BigIntAsIntegers), Quotients<
     /**
      * Returns the ceiling of the fraction, which is the smallest integer greater than or equal to the fraction.
      */
-    fun ceil(x: BigFrac): BigInteger {
+    override fun ceil(x: BigFrac): BigInteger {
         val (n, d) = x
         val (q, r) = n.divideAndRemainder(d)
         if (n.signum() > 0 && r.signum() != 0) {
@@ -842,11 +840,21 @@ object BigFracAsQuot : RFracOverIntDom<BigInteger>(BigIntAsIntegers), Quotients<
 
     operator fun BigFrac.times(n: Int): BigFrac = multiplyN(this, n.toLong())
     operator fun Int.times(x: BigFrac): BigFrac = multiplyN(x, this.toLong())
+    operator fun BigFrac.div(y: Int): BigFrac = divideN(this, y.toLong())
+    operator fun Int.div(y: BigFrac): BigFrac = divideN(y, this.toLong())
+    operator fun BigFrac.plus(y: Int): BigFrac = add(this, fromBigInt(y.toBigInteger()))
+    operator fun Int.plus(y: BigFrac): BigFrac = add(fromBigInt(this.toBigInteger()), y)
+    operator fun BigFrac.minus(y: Int): BigFrac = subtract(this, fromBigInt(y.toBigInteger()))
+    operator fun Int.minus(y: BigFrac): BigFrac = subtract(fromBigInt(this.toBigInteger()), y)
 
     operator fun BigFrac.plus(y: BigInteger): BigFrac = add(this, fromBigInt(y))
     operator fun BigInteger.plus(y: BigFrac): BigFrac = add(fromBigInt(this), y)
     operator fun BigFrac.minus(y: BigInteger): BigFrac = subtract(this, fromBigInt(y))
     operator fun BigInteger.minus(y: BigFrac): BigFrac = subtract(fromBigInt(this), y)
+    operator fun BigFrac.times(n: BigInteger): BigFrac = multiply(this, fromBigInt(n))
+    operator fun BigInteger.times(x: BigFrac): BigFrac = multiply(fromBigInt(this), x)
+    operator fun BigFrac.div(y: BigInteger): BigFrac = divide(this, fromBigInt(y))
+    operator fun BigInteger.div(y: BigFrac): BigFrac = divide(fromBigInt(this), y)
 
 
 }

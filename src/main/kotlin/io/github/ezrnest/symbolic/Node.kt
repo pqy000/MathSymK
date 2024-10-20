@@ -161,6 +161,7 @@ sealed interface Node {
         const val F1_SIN = "sin"
 
         const val F1_COS = "cos"
+        const val F1_TAN = "tan"
 
     }
 }
@@ -449,7 +450,7 @@ interface NodeN : NodeChilded {
 
 data class Node1Impl<C : Node>(
     override val name: String,
-    override var child: C
+    override val child: C
 ) : AbstractNode(), Node1T<C> {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -477,7 +478,7 @@ data class Node1Impl<C : Node>(
 
 
 class Node2Impl<C1 : Node, C2 : Node>(
-    override var first: C1, override var second: C2,
+    override val first: C1, override val second: C2,
     override val name: String
 ) : AbstractNode(), Node2T<C1, C2> {
     override fun equals(other: Any?): Boolean {
@@ -507,7 +508,7 @@ class Node2Impl<C1 : Node, C2 : Node>(
 }
 
 data class Node3Impl<C1 : Node, C2 : Node, C3 : Node>(
-    override var first: C1, override var second: C2, override var third: C3,
+    override val first: C1, override val second: C2, override val third: C3,
     override val name: String
 ) : AbstractNode(), Node3T<C1, C2, C3> {
     override fun equals(other: Any?): Boolean {
@@ -542,7 +543,7 @@ data class Node3Impl<C1 : Node, C2 : Node, C3 : Node>(
 
 data class NodeNImpl(
     override val name: String,
-    override var children: List<Node>
+    override val children: List<Node>
 ) : AbstractNode(), NodeN {
 
     override fun equals(other: Any?): Boolean {
@@ -649,6 +650,7 @@ data class NodeSig(val name: String, val type: NType) : Comparable<NodeSig> {
 
         val F1_SIN = NodeSig(Node.Names.F1_SIN, NType.Node1)
         val F1_COS = NodeSig(Node.Names.F1_COS, NType.Node1)
+        val F1_TAN = NodeSig(Node.Names.F1_TAN, NType.Node1)
 
 
     }
@@ -665,7 +667,6 @@ interface NodeBuilderScope {
     fun symbol(name: String): Node {
         return NSymbol(name)
     }
-
 
     val x: Node get() = symbol("x")
     val y: Node get() = symbol("y")
@@ -684,7 +685,11 @@ interface NodeBuilderScope {
         get() = TestExprContext
 
 
-    val Int.e: Node get() = Node.Int(BigInteger.valueOf(this.toLong()))
+    val Int.e: Node get() = Node.Int(this.toBigInteger())
+
+    val Long.e : Node get() = Node.Int(this.toBigInteger())
+
+    val BigInteger.e : Node get() = Node.Int(this)
 
     val BigFrac.e : Node get() = Node.Rational(this)
 
@@ -731,6 +736,14 @@ interface NodeBuilderScope {
         return Node.Node2(Node.Names.POW, base, exp)
     }
 
+    fun sqrt(node: Node): Node {
+        return pow(node, Node.HALF)
+    }
+
+    fun inv(node: Node): Node {
+        return Node.Inv(node)
+    }
+
     fun exp(x: Node): Node {
         return Node.Exp(x)
     }
@@ -743,8 +756,8 @@ interface NodeBuilderScope {
         return Node.Node1(Node.Names.F1_COS, node)
     }
 
-    fun sqrt(node: Node): Node {
-        return pow(node, Node.HALF)
+    fun tan(node: Node): Node {
+        return Node.Node1(Node.Names.F1_TAN, node)
     }
 
 

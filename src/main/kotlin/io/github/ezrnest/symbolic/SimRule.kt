@@ -122,7 +122,7 @@ class Flatten(targetName: String) : RuleForSpecificN(targetName) {
         val newChildren = children.flatMap {
             if (it is NodeN && it.name == targetName) it.children else listOf(it)
         }
-        val res = Node.NodeN(targetName, newChildren)
+        val res = Node.NodeN(targetName, newChildren).also { it[metaKeyApplied] = true }
         return WithLevel(0, res)
     }
 }
@@ -190,15 +190,26 @@ object MergeProduct : RuleForSpecificN(Names.MUL) {
 
     override val metaKeyApplied: TypedKey<Boolean> = TypedKey("Merge*")
 
-    private fun buildPower(base: Node, expList: List<Node>, context: ExprContext): Node {
-        var exp = if (expList.size == 1) {
-            expList[0]
-        } else {
-            Node.Add(expList)
+
+    private fun getBase(node: Node): Node {
+        if (node is Node2 && node.name == Names.POW) {
+            return node.first
         }
+        return node
+    }
+
+    private fun getPower(node: Node): Node {
+        if (node is Node2 && node.name == Names.POW) {
+            return node.second
+        }
+        return Node.ONE
+    }
+
+    private fun buildPower(base: Node, nodeList: List<Node>, context: ExprContext): Node {
+        if (nodeList.size == 1) return nodeList[0] // not merged
+        var exp = Node.Add(nodeList.map { getPower(it) })
         exp = context.simplifyNode(exp, 0)
         if (exp == Node.ONE) return base
-//        val res = if (base == Node.NATURAL_E) Node.Exp(exp) else Node.Pow(base, exp)
         val res = Node.Pow(base, exp)
         return context.simplifyNode(res, 0)
     }
@@ -207,6 +218,7 @@ object MergeProduct : RuleForSpecificN(Names.MUL) {
         // possible further check for undefined or infinity
         return WithLevel(-1, Node.ZERO)
     }
+
 
     override fun simplifyN(root: NodeN, context: ExprContext): WithLevel<Node>? {
         val children = root.children
@@ -222,13 +234,13 @@ object MergeProduct : RuleForSpecificN(Names.MUL) {
                 rPart = Q.multiply(rPart, node.value)
                 continue
             }
-            val (base, exp) = SimUtils.toPower(node)
+            val base = getBase(node)
             val t = collect[base]
             if (t == null) {
-                collect[base] = listOf(exp)
+                collect[base] = listOf(node)
             } else {
                 simplified = true
-                collect[base] = t + exp
+                collect[base] = t + node
             }
         }
         if (rationalCount > 0 && Q.isZero(rPart)) {
@@ -243,7 +255,7 @@ object MergeProduct : RuleForSpecificN(Names.MUL) {
         val addRational = rationalCount > 0 && !Q.isOne(rPart)
         val newChildren = ArrayList<Node>(collect.size + if (addRational) 1 else 0)
         if (addRational) newChildren.add(Node.Rational(rPart))
-        collect.entries.mapTo(newChildren) { (base, expList) -> buildPower(base, expList, context) }
+        collect.entries.mapTo(newChildren) { (base, nodeList) -> buildPower(base, nodeList, context) }
         return WithLevel(0, Node.Mul(newChildren))
         // need simplification by the rule again since the power may be added and simplified
     }
@@ -355,8 +367,8 @@ object FlattenPow : RuleForSpecific2(Names.POW) {
         if (SimUtils.isInteger(exp, context)) {
             return flattenPowInt(base, exp, context)
         }
+        // TODO rational power
         return null
-        // TODO
     }
 }
 
@@ -511,11 +523,11 @@ interface SimRuleMatched<T : Node> : SimRule {
 
 
     override fun simplify(node: Node, context: ExprContext): WithLevel<Node>? {
-        if(node[metaKeyApplied] == true) return null
+        if (node[metaKeyApplied] == true) return null
         val matchContext = MutableMatchContext(context)
         val r = matcher.matches(node, matchContext) ?: return null
-        val res= simplifyMatched(r, matchContext)
-        if(res != null) return res
+        val res = simplifyMatched(r, matchContext)
+        if (res != null) return res
         node[metaKeyApplied] = true // tried but not applicable
         return null
     }

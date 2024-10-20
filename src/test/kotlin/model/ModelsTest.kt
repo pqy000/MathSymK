@@ -1,6 +1,7 @@
 package model
 
 import TestUtils.assertEquals
+import io.github.ezrnest.model.BigFracAsQuot
 import io.github.ezrnest.model.Models
 import io.github.ezrnest.model.Polynomial
 import io.github.ezrnest.numTh.NTFunctions
@@ -143,6 +144,16 @@ class ModelsTest {
                 assertEquals(f.pow(p), f1.pow(q) * a1.bfrac)
             }
         }
+    }
 
+
+    @Test
+    fun testIntDiv(){
+        with(BigFracAsQuot) {
+            val x = bfrac(5,3)
+            val y = bfrac(1,2)
+            val (q,r) = intDivRem(x,y)
+            assertEquals(x, q * y + r)
+        }
     }
 }

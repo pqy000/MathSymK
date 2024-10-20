@@ -3,31 +3,29 @@ package io.github.ezrnest.symbolic.sim
 import io.github.ezrnest.model.BigFrac
 import io.github.ezrnest.model.BigFracAsQuot
 import io.github.ezrnest.model.Models
+import io.github.ezrnest.model.isEven
 import io.github.ezrnest.symbolic.NodeMetas
-import io.github.ezrnest.symbolic.ExprContext
 import io.github.ezrnest.symbolic.MatchContext
 import io.github.ezrnest.symbolic.NRational
 import io.github.ezrnest.symbolic.Node
 import io.github.ezrnest.symbolic.Node1
 import io.github.ezrnest.symbolic.NodeMatcherT
 import io.github.ezrnest.symbolic.SimRuleMatched
+import io.github.ezrnest.symbolic.SimUtils
 import io.github.ezrnest.symbolic.TypedKey
 import io.github.ezrnest.symbolic.WithLevel
 import io.github.ezrnest.symbolic.buildMatcher
 import io.github.ezrnest.symbolic.buildNode
 import io.github.ezrnest.symbolic.set
-import java.math.BigInteger
 
 // trigonometric functions
 
-class RuleSinSpecial : SimRuleMatched<Node1> {
-    override val matcher: NodeMatcherT<Node1> = buildMatcher {
-        sin(rational.named("r") * π)
-    }
 
-    private val values: MutableMap<BigFrac, Node> = mutableMapOf()
+object TrigonometricUtils {
 
-    init {
+
+    val sinTable: MutableMap<BigFrac, Node> by lazy {
+        val values = mutableMapOf<BigFrac, Node>()
         /*
         sin(0) = 0
         sin(π/2) = 1
@@ -41,8 +39,8 @@ class RuleSinSpecial : SimRuleMatched<Node1> {
             values[ofN(0)] = Node.ZERO
             val half = half
             values[half] = Node.ONE
-            val sqrt2 = buildNode { sqrt(2.e) }
-            val sqrt3 = buildNode { sqrt(3.e) }
+            val sqrt2 = SimUtils.sqrt(2)
+            val sqrt3 = SimUtils.sqrt(3)
             values[bfrac(1, 3)] = buildNode { half.e * sqrt3 }
             values[bfrac(1, 4)] = buildNode { half.e * sqrt2 }
             values[bfrac(1, 6)] = Node.Rational(half)
@@ -53,40 +51,129 @@ class RuleSinSpecial : SimRuleMatched<Node1> {
         for (v in values.values) {
             v[NodeMetas.simplified] = true
         }
+
+        values
     }
 
-    private fun sinRpi(k: BigFrac, ctx: ExprContext): Node? {
-        val Q = Models.bigFraction()
+    /**
+     * Reduce the angle to [0, π) and return the quadrant.
+     */
+    private fun modInPiAndQuad(k: BigFrac): Pair<BigFrac, Boolean> {
+        with(Models.bigFraction()) {
+            val (q, r) = intDivRem(k, one)
+            val pos = q.isEven()
+            return r to pos
+        }
+    }
 
-        with(Q) {
-            var negate = false
-            var r = intRem(k, BigInteger.TWO) // mod 2 pi
-            if (isNegative(r)) {
-                r = -r
-                negate = !negate
-            }
-            if (r >= one) {
-                r -= one
-                negate = !negate
-            }
-            val res = values[r]
-            if (res != null) {
-                return if (negate) {
-                    buildNode { -res }
-                } else {
-                    res
-                }
+    fun sinRPi(k: BigFrac): Node? {
+        var (r, pos) = modInPiAndQuad(k)
+        with(BigFracAsQuot) {
+            if (r > half) {
+                // sin(π - r) = sin(r)
+                r = one - r
             }
         }
-        return null
+        val res = sinTable[r] ?: return null
+        return if (pos) res else buildNode { -res }
+    }
+
+    fun cosRPi(k: BigFrac): Node? {
+        // cos(x) = sin(π/2 - x)
+        with(BigFracAsQuot) {
+            return sinRPi(half - k)
+        }
+    }
+
+
+    val tanTable: MutableMap<BigFrac, Node> by lazy {
+        val values = mutableMapOf<BigFrac, Node>()
+        /*
+        tan(0) = 0
+        tan(π/6) = 1/sqrt(3)
+        tan(π/4) = 1
+        tan(π/3) = sqrt(3)
+        tan(π/2) = Undefined
+         */
+        val Q = BigFracAsQuot
+        with(Q) {
+            val sqrt2 = SimUtils.sqrt(2)
+            val sqrt3 = SimUtils.sqrt(3)
+            values[ofN(0)] = Node.ZERO
+            values[bfrac(1, 6)] = buildNode { pow(3.e, (-half).e) }
+            values[bfrac(1, 4)] = Node.ONE
+            values[bfrac(1, 3)] = sqrt3
+            values[half] = Node.UNDEFINED
+        }
+        for (v in values.values) {
+            v[NodeMetas.simplified] = true
+        }
+        values
+    }
+
+    fun tanRPi(k: BigFrac): Node? {
+        var (r, _) = modInPiAndQuad(k) // tan(x + kπ) = tan(x)
+        var pos = true
+        with(BigFracAsQuot) {
+            if (r > half) {
+                // tan(π - r) = -tan(r)
+                r = one - r
+                pos = false
+            }
+        }
+        val res = tanTable[r] ?: return null
+        return if (pos) res else buildNode { -res }
+    }
+}
+
+
+class RuleSinSpecial : SimRuleMatched<Node1> {
+    override val metaKeyApplied: TypedKey<Boolean> = TypedKey("RSinSpecial")
+    override val description: String = "Simplify `sin(r π)`"
+    override val matcher: NodeMatcherT<Node1> = buildMatcher {
+        sin(rational.named("r") * π)
+    }
+
+
+    override fun simplifyMatched(node: Node1, matchContext: MatchContext): WithLevel<Node>? {
+        val r = (matchContext.refMap["r"] as NRational).value
+        val res = TrigonometricUtils.sinRPi(r) ?: return null
+        return WithLevel(Int.MAX_VALUE, res)
+    }
+
+}
+
+class RuleCosSpecial : SimRuleMatched<Node1> {
+    override val metaKeyApplied: TypedKey<Boolean> = TypedKey("RCosSpecial")
+
+    override val description: String
+        get() = "Simplify `cos(r π)`"
+
+    override val matcher: NodeMatcherT<Node1> = buildMatcher {
+        cos(rational.named("r") * π)
     }
 
     override fun simplifyMatched(node: Node1, matchContext: MatchContext): WithLevel<Node>? {
         val r = (matchContext.refMap["r"] as NRational).value
-        val res = sinRpi(r, matchContext.exprContext) ?: return null
+        val res = TrigonometricUtils.cosRPi(r) ?: return null
         return WithLevel(Int.MAX_VALUE, res)
     }
+}
 
-    override val description: String = "Simplify `sin(r π)`"
-    override val metaKeyApplied: TypedKey<Boolean> = TypedKey("RSinSpecial")
+
+class RuleTanSpecial : SimRuleMatched<Node1> {
+    override val metaKeyApplied: TypedKey<Boolean> = TypedKey("RTanSpecial")
+
+    override val description: String
+        get() = "Simplify `tan(r π)`"
+
+    override val matcher: NodeMatcherT<Node1> = buildMatcher {
+        tan(rational.named("r") * π)
+    }
+
+    override fun simplifyMatched(node: Node1, matchContext: MatchContext): WithLevel<Node>? {
+        val r = (matchContext.refMap["r"] as NRational).value
+        val res = TrigonometricUtils.tanRPi(r) ?: return null
+        return WithLevel(Int.MAX_VALUE, res)
+    }
 }

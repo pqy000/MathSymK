@@ -602,6 +602,10 @@ object MatcherBuilderScope {
         return NMatcher1(x, NodeSig.F1_COS)
     }
 
+    fun <T : Node> tan(x: NodeMatcherT<T>): NodeMatcherT<Node1T<T>> {
+        return NMatcher1(x, NodeSig.F1_TAN)
+    }
+
 
     val x: RefMatcher get() = RefMatcher("x")
     val y: RefMatcher get() = RefMatcher("y")
