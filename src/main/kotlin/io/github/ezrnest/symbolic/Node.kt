@@ -45,6 +45,10 @@ sealed interface Node {
 
         val HALF = Rational(BigFracAsQuot.half)
 
+        val TWO = Int(BigInteger.TWO)
+
+        val TEN = Int(BigInteger.TEN)
+
         val PI = Symbol(Names.Symbol_PI)
 
         val NATURAL_E = Symbol(Names.Symbol_E)
@@ -98,7 +102,6 @@ sealed interface Node {
         }
 
         fun Div(numerator: Node, denominator: Node): Node {
-//            return Node2(Names.NAME_DIV, numerator, denominator)
             return Mul(numerator, Inv(denominator))
         }
 
@@ -133,25 +136,60 @@ sealed interface Node {
             return Pow(NATURAL_E, exp)
         }
 
+        fun Sin(node: Node): Node {
+            return Node1(Names.F1_SIN, node)
+        }
 
         fun Cos(node: Node): Node {
             return Node1(Names.F1_COS, node)
         }
 
-        fun Sin(node: Node): Node {
-            return Node1(Names.F1_SIN, node)
+        fun Tan(node: Node): Node {
+            return Node1(Names.F1_TAN, node)
+        }
+
+        fun Cot(node: Node): Node {
+            return Node1(Names.F1_COT, node)
+        }
+
+        fun ArcSin(node: Node): Node {
+            return Node1(Names.F1_ARCSIN, node)
+        }
+
+        fun ArcCos(node: Node): Node {
+            return Node1(Names.F1_ARCCOS, node)
+        }
+
+        fun ArcTan(node: Node): Node {
+            return Node1(Names.F1_ARCTAN, node)
+        }
+
+        fun Log(base: Node, x: Node): Node {
+            return Node2(Names.F2_LOG, base, x)
+        }
+
+        fun Ln(node: Node): Node {
+            return Log(NATURAL_E, node)
+        }
+
+        fun Log2(node: Node): Node {
+            return Log(TWO, node)
+        }
+
+        fun Log10(node: Node): Node {
+            return Log(TEN, node)
         }
     }
 
     object Names {
         const val MUL = "*"
         const val ADD = "+"
-        const val NAME_DIV = "/"
+//        const val NAME_DIV = "/"
         const val POW = "^"
 
 
-        const val F1_EXP = "exp"
-        const val F1_LN = "ln"
+        //        const val F1_EXP = "exp"
+        const val F2_LOG = "log"
 
 
         const val Symbol_I = "𝑖"
@@ -159,9 +197,13 @@ sealed interface Node {
         const val Symbol_PI = "π"
 
         const val F1_SIN = "sin"
-
         const val F1_COS = "cos"
         const val F1_TAN = "tan"
+        const val F1_COT = "cot"
+        const val F1_ARCSIN = "arcsin"
+        const val F1_ARCCOS = "arccos"
+        const val F1_ARCTAN = "arctan"
+
 
     }
 }
@@ -668,6 +710,15 @@ interface NodeBuilderScope {
         return NSymbol(name)
     }
 
+    fun constant(name : String) : Node{
+        return when(name){
+            "pi", Node.Names.Symbol_PI -> Node.PI
+            "e", Node.Names.Symbol_E -> Node.NATURAL_E
+            "i", Node.Names.Symbol_I -> Node.IMAGINARY_UNIT
+            else -> throw IllegalArgumentException("Unknown constant: $name")
+        }
+    }
+
     val x: Node get() = symbol("x")
     val y: Node get() = symbol("y")
     val z: Node get() = symbol("z")
@@ -676,13 +727,13 @@ interface NodeBuilderScope {
     val c: Node get() = symbol("c")
 
     val imagUnit: Node get() = Node.IMAGINARY_UNIT
+    val 𝑖: Node get() = Node.IMAGINARY_UNIT
 
     val naturalE: Node get() = Node.NATURAL_E
+    val 𝑒: Node get() = Node.NATURAL_E
 
     val pi: Node get() = Node.PI
-
-    val context: ExprContext
-        get() = TestExprContext
+    val π: Node get() = Node.PI
 
 
     val Int.e: Node get() = Node.Int(this.toBigInteger())
@@ -695,12 +746,20 @@ interface NodeBuilderScope {
 
     val String.s: Node get() = symbol(this)
 
-    operator fun Node.plus(other: Node): Node {
-        return Node.Add(listOf(this, other))
+    fun rational(nume: Int, deno: Int): Node {
+        return Node.Rational(BigFracAsQuot.bfrac(nume, deno))
     }
 
-    operator fun Node.minus(other: Node): Node {
-        return Node.Add(listOf(this, Node.Mul(listOf(Node.NEG_ONE, other))))
+    operator fun Node.plus(y: Node): Node {
+        return Node.Add(listOf(this, y))
+    }
+
+    operator fun Node.minus(y: Node): Node {
+        return Node.Add(listOf(this, Node.Mul(listOf(Node.NEG_ONE, y))))
+    }
+
+    fun negate(x : Node): Node{
+        return Node.Neg(x)
     }
 
     operator fun Node.unaryMinus(): Node {
@@ -711,33 +770,33 @@ interface NodeBuilderScope {
         return Node.Add(nodes.asList())
     }
 
-    fun sum(nodes: List<Node>): Node {
-        return Node.Add(nodes)
+    fun sum(elements: List<Node>): Node {
+        return Node.Add(elements)
     }
 
     fun product(vararg nodes: Node): Node {
         return Node.Mul(nodes.asList())
     }
 
-    fun product(nodes: List<Node>): Node {
-        return Node.Mul(nodes)
+    fun product(elements: List<Node>): Node {
+        return Node.Mul(elements)
     }
 
 
-    operator fun Node.times(other: Node): Node {
-        return Node.Mul(listOf(this, other))
+    operator fun Node.times(y: Node): Node {
+        return Node.Mul(listOf(this, y))
     }
 
-    operator fun Node.div(other: Node): Node {
-        return Node.Mul(listOf(this, Node.Inv(other)))
+    operator fun Node.div(y: Node): Node {
+        return Node.Mul(listOf(this, Node.Inv(y)))
     }
 
     fun pow(base: Node, exp: Node): Node {
         return Node.Node2(Node.Names.POW, base, exp)
     }
 
-    fun sqrt(node: Node): Node {
-        return pow(node, Node.HALF)
+    fun sqrt(x: Node): Node {
+        return pow(x, Node.HALF)
     }
 
     fun inv(node: Node): Node {
@@ -748,16 +807,24 @@ interface NodeBuilderScope {
         return Node.Exp(x)
     }
 
-    fun sin(node: Node): Node {
-        return Node.Node1(Node.Names.F1_SIN, node)
+    fun log(base: Node, x: Node): Node {
+        return Node.Log(base, x)
     }
 
-    fun cos(node: Node): Node {
-        return Node.Node1(Node.Names.F1_COS, node)
+    fun ln(x: Node): Node {
+        return Node.Ln(x)
     }
 
-    fun tan(node: Node): Node {
-        return Node.Node1(Node.Names.F1_TAN, node)
+    fun sin(x: Node): Node {
+        return Node.Node1(Node.Names.F1_SIN, x)
+    }
+
+    fun cos(x: Node): Node {
+        return Node.Node1(Node.Names.F1_COS, x)
+    }
+
+    fun tan(x: Node): Node {
+        return Node.Node1(Node.Names.F1_TAN, x)
     }
 
 

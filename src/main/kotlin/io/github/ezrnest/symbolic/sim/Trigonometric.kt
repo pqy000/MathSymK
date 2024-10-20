@@ -18,7 +18,6 @@ import io.github.ezrnest.symbolic.buildMatcher
 import io.github.ezrnest.symbolic.buildNode
 import io.github.ezrnest.symbolic.set
 
-// trigonometric functions
 
 
 object TrigonometricUtils {
@@ -175,5 +174,26 @@ class RuleTanSpecial : SimRuleMatched<Node1> {
         val r = (matchContext.refMap["r"] as NRational).value
         val res = TrigonometricUtils.tanRPi(r) ?: return null
         return WithLevel(Int.MAX_VALUE, res)
+    }
+}
+
+
+class RulesTrigonometricReduce : RuleList() {
+
+    init {
+        list.add(RuleSinSpecial())
+        list.add(RuleCosSpecial())
+        list.add(RuleTanSpecial())
+    }
+
+    init {
+        rule {
+            name = "Trig: sin^2(x) + cos^2(x) = 1"
+            match {
+                pow(sin(x), 2.e) + pow(cos(x), 2.e)
+            } to {
+                1.e
+            }
+        }
     }
 }

@@ -2,17 +2,19 @@ package io.github.ezrnest.symbolic
 // created at 2024/10/01
 import kotlin.math.max
 
-interface ExprContext {
+interface ExprContext : NodeBuilderScope {
 
     val options: Map<TypedKey<*>, Any> get() = emptyMap()
 
     fun isCommutative(name: String): Boolean
 
-    fun simplifyFull(root: Node): Node {
-        return simplifyNode(root, Int.MAX_VALUE)
+    fun simplify(node: Node, depth: Int = Int.MAX_VALUE): Node
+
+
+    fun fullSimplify(node: Node): Node {
+        return simplify(node, Int.MAX_VALUE)
     }
 
-    fun simplifyNode(node: Node, depth: Int = 0): Node
 
     object Options {
         /**
@@ -54,13 +56,13 @@ interface ExprContext {
 //
 //}
 
-val TestExprContext = BasicExprContext()
+val TestExprCal = BasicExprCal()
 
-class BasicExprContext : ExprContext {
+open class BasicExprCal : ExprContext {
 
-    override val options: MutableMap<TypedKey<*>, Any> = mutableMapOf()
+    final override val options: MutableMap<TypedKey<*>, Any> = mutableMapOf()
 
-    val dispatcher: TreeDispatcher<SimRule> = TreeDispatcher()
+    protected val dispatcher: TreeDispatcher<SimRule> = TreeDispatcher()
 
     var verbose: Verbosity = Verbosity.NONE
 
@@ -69,32 +71,36 @@ class BasicExprContext : ExprContext {
     }
 
 
-    private val indent = "|  "
-    private var simLevel = -1
+    protected var indent = "|  "
+    protected var simLevel = -1
 
 
-    val rules: List<SimRule> = listOf(
-//        RegularizeNodeN(Node.Names.ADD),
-//        RegularizeNodeN(Node.Names.MUL),
-        Flatten(Node.Names.ADD),
-        Flatten(Node.Names.MUL),
-        RuleSort(NodeSig.ADD),
-        RuleSort(NodeSig.MUL),
-        MergeAdditionRational,
-//        ComputeProductRational,
-        MergeProduct,
-        ComputePow,
-        FlattenPow
-    )
+//    val rules: List<SimRule>
+
+    protected val _reduceRules: MutableList<SimRule> = mutableListOf()
+
+    val reduceRules: List<SimRule> get() = _reduceRules
 
     init {
-        for (r in rules) {
-            dispatcher.register(r.matcher, r)
-        }
+        listOf(
+//        RegularizeNodeN(Node.Names.ADD),
+//        RegularizeNodeN(Node.Names.MUL),
+            Flatten(Node.Names.ADD),
+            Flatten(Node.Names.MUL),
+            RuleSort(NodeSig.ADD),
+            RuleSort(NodeSig.MUL),
+            MergeAdditionRational,
+//        ComputeProductRational,
+            MergeProduct,
+            ComputePow,
+            FlattenPow
+        ).forEach { addRule(it) }
     }
 
     fun addRule(rule: SimRule) {
-        dispatcher.register(rule.matcher, rule)
+        val r = rule.init(this) ?: return
+        _reduceRules.add(r)
+        dispatcher.register(r.matcher, r)
     }
 
     override fun isCommutative(name: String): Boolean {
@@ -105,27 +111,26 @@ class BasicExprContext : ExprContext {
         }
     }
 
-    private inline fun log(level: Verbosity, supplier: () -> String) {
+    protected inline fun log(level: Verbosity, supplier: () -> String) {
         if (verbose >= level) {
             println(indent.repeat(max(simLevel, 0)) + supplier())
         }
     }
 
-    private fun showNode(node : Node): String{
+    protected fun showNode(node: Node): String {
         val meta = node.meta
-        if(meta.isEmpty()) return node.plainToString()
+        if (meta.isEmpty()) return node.plainToString()
         return "${node.plainToString()}, ${node.meta}"
     }
 
 
-    override fun simplifyNode(node: Node, depth: Int): Node {
-
+    override fun simplify(node: Node, depth: Int): Node {
         var depth = depth
         var res = node
         simLevel++
         log(Verbosity.WHEN_APPLIED) { "Sim:  ${showNode(node)}" }
         while (true) {
-            if(res[NodeMetas.simplified] == true) break
+            if (res[NodeMetas.simplified] == true) break
             res = if (depth <= 0) {
                 res
             } else {
@@ -163,22 +168,22 @@ class BasicExprContext : ExprContext {
 
 
     private fun simplifyRecur1(node: Node1, depth: Int): Node {
-        val n1 = simplifyNode(node.child, depth)
+        val n1 = simplify(node.child, depth)
         if (n1 === node.child) return node
         return node.newWithChildren(n1)
     }
 
     private fun simplifyRecur2(node: Node2, depth: Int): Node {
-        val n1 = simplifyNode(node.first, depth)
-        val n2 = simplifyNode(node.second, depth)
+        val n1 = simplify(node.first, depth)
+        val n2 = simplify(node.second, depth)
         if (n1 === node.first && n2 === node.second) return node
         return node.newWithChildren(n1, n2)
     }
 
     private fun simplifyRecur3(node: Node3, depth: Int): Node {
-        val n1 = simplifyNode(node.first, depth)
-        val n2 = simplifyNode(node.second, depth)
-        val n3 = simplifyNode(node.third, depth)
+        val n1 = simplify(node.first, depth)
+        val n2 = simplify(node.second, depth)
+        val n3 = simplify(node.third, depth)
         if (n1 === node.first && n2 === node.second && n3 === node.third) return node
         return node.newWithChildren(n1, n2, n3)
     }
@@ -186,7 +191,7 @@ class BasicExprContext : ExprContext {
     private fun simplifyRecurN(node: NodeN, depth: Int): Node {
         var changed = false
         val children = node.children.map { n ->
-            simplifyNode(n, depth).also { if (n !== it) changed = true }
+            simplify(n, depth).also { if (n !== it) changed = true }
         }
         if (!changed) return node
         return node.newWithChildren(children)

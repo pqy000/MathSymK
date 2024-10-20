@@ -1,98 +1,87 @@
 package io.github.ezrnest.symbolic.sim
 
-import io.github.ezrnest.symbolic.MatcherBuilderScope
-import io.github.ezrnest.symbolic.MatcherReplaceRule
-import io.github.ezrnest.symbolic.Node
-import io.github.ezrnest.symbolic.NodeMatcher
-import io.github.ezrnest.symbolic.NodeMatcherNPO
-import io.github.ezrnest.symbolic.NodeMatcherT
-import io.github.ezrnest.symbolic.NothingMatcher
-import io.github.ezrnest.symbolic.RefMatcher
-import io.github.ezrnest.symbolic.RepBuilder
-import io.github.ezrnest.symbolic.ReplacementBuilderScope
-import io.github.ezrnest.symbolic.SimRule
-
-
-//data class MatcherBuilt<T : Node>(val matcher: NodeMatcher<T>) {
-//
-//    infix fun to(resultBuilder: RepBuilder): MatcherReplaceRule {
-//        return MatcherReplaceRule(matcher, resultBuilder, "")
-//    }
-//}
-//
-//fun <T : Node> match(buildMatcher: MatcherBuilderScope.() -> NodeMatcher<T>): MatcherBuilt<T> {
-//    return MatcherBuilt(buildMatcher(MatcherBuilderScope))
-//}
-
-object MatchInfix
+import io.github.ezrnest.symbolic.*
 
 
 interface RuleBuilder {
 
     var name: String
 
-    fun match(buildMatcher: MatcherBuilderScope.() -> NodeMatcherT<Node>): MatchInfix
+    fun matcher(buildMatcher: MatcherBuilderScope.() -> NodeMatcherT<Node>)
 
-    fun to(buildReplacement: ReplacementBuilderScope.() -> Node)
+    fun match(buildMatch: NodeBuilderScope.() -> Node)
 
-    infix fun MatchInfix.to(buildReplacement: ReplacementBuilderScope.() -> Node)
+    fun to(buildReplacement: ReplacementScope.() -> Node)
+
+    infix fun Unit.to(buildReplacement: ReplacementScope.() -> Node)
+
+
+    fun condition(buildCondition: MatchContext.() -> Boolean) {
+        //TODO
+    }
 }
 
 internal class RuleBuilderImpl : RuleBuilder {
 
     override var name: String = "None"
 
+    var afterRuleDepth: Int = Int.MAX_VALUE
+
     private var matcher: NodeMatcherT<Node>? = null
+    private var matchNodeBuilder: (NodeBuilderScope.() -> Node)? = null
 
     private var replacement: RepBuilder? = null
 
-    private var remMatcher: RefMatcher? = null
+    private var remMatcher: MatcherRef? = null
 
-    override fun match(buildMatcher: MatcherBuilderScope.() -> NodeMatcherT<Node>): MatchInfix {
+    override fun match(buildMatch: NodeBuilderScope.() -> Node) {
+        matchNodeBuilder = buildMatch
+    }
+
+
+    override fun matcher(buildMatcher: MatcherBuilderScope.() -> NodeMatcherT<Node>): Unit {
         val mat = buildMatcher(MatcherBuilderScope)
-        if (mat is NodeMatcherNPO) {
-            if (mat.remMatcher is NothingMatcher) {
-                val rem = RefMatcher("_rem${mat.nodeSig.name}")
-                remMatcher = rem
-                mat.remMatcher = rem
-            }
-        }
         matcher = mat
-        return MatchInfix
     }
 
     private fun setRep(builder: RepBuilder) {
-        if (remMatcher == null) {
-            replacement = builder
-            return
-        }
-        val remName = (remMatcher as RefMatcher).name
-        val sig = (matcher as NodeMatcherNPO).nodeSig
-        replacement = {
-            val sub = builder()
-            if (!hasRef(remName)) {
-                sub
-            } else {
-                Node.NodeN(sig.name, listOf(sub, ref(remName)))
-            }
-        }
+        replacement = builder
     }
 
-    override fun to(buildReplacement: ReplacementBuilderScope.() -> Node) {
+    override fun to(buildReplacement: ReplacementScope.() -> Node) {
         setRep(buildReplacement)
     }
 
-    override fun MatchInfix.to(buildReplacement: ReplacementBuilderScope.() -> Node) {
+    override fun Unit.to(buildReplacement: ReplacementScope.() -> Node) {
         setRep(buildReplacement)
     }
 
     fun build(): SimRule {
-        require(matcher != null && replacement != null) { "Matcher and replacement must be set" }
-        return MatcherReplaceRule(matcher!!, replacement!!, name)
+        val matcher = this.matcher
+        val matchNodeBuilder = this.matchNodeBuilder
+        val replacement = this.replacement
+        require(matcher != null || matchNodeBuilder != null) { "Matcher or match node must be set" }
+        require(replacement != null) { "Replacement must be set" }
+        return if (matcher != null) {
+            NodeBuilderForMatch.warpPartialMatcherReplace(matcher, replacement, name, afterRuleDepth)
+        } else {
+            MatchNodeReplaceRule(matchNodeBuilder!!, replacement, name, afterRuleDepth)
+        }
     }
 
 }
 
+
+open class RuleList {
+
+    val list: MutableList<SimRule> = mutableListOf()
+
+    fun rule(f: RuleBuilder.() -> Unit) {
+        val builder = RuleBuilderImpl()
+        builder.f()
+        list.add(builder.build())
+    }
+}
 
 fun rule(f: RuleBuilder.() -> Unit): SimRule {
     val builder = RuleBuilderImpl()
@@ -100,8 +89,6 @@ fun rule(f: RuleBuilder.() -> Unit): SimRule {
     return builder.build()
 }
 
-
-fun main() {
-
-
+fun BasicExprCal.addAll(rules : RuleList) {
+    rules.list.forEach { addRule(it) }
 }
