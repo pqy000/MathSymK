@@ -28,7 +28,7 @@ interface ProvideElementaryFunctions<T> {
     /**
      * Returns the `n`-th root of `x`, where `n` is a non-negative positive integer.
      */
-    fun nroot(x: T, n: Long): T
+    fun nroot(x: T, n: Int): T
 
      /**
      * Returns `base^pow`, the exponential function.

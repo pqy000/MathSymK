@@ -38,8 +38,8 @@ interface Reals<T> : OrderedField<T>, Field<T>,ProvideElementaryFunctions<T> {
      *
      *    nroot(x,n) = exp(x, 1/n)
      */
-    override fun nroot(x: T, n: Long): T {
-        return exp(x, divideN(x,n))
+    override fun nroot(x: T, n: Int): T {
+        return exp(x, divideN(x,n.toLong()))
     }
 
     /**

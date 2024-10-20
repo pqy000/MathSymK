@@ -167,7 +167,7 @@ data class Complex128(val re: Double, val im: Double) : FieldModel<Complex128>, 
      *
      * @param n the root number, positive integer
      */
-    fun root(n: Long): Complex128 {
+    fun root(n: Int): Complex128 {
         require(n > 0) { "n=$n should be positive" }
         val arg = arg / n
         val m = exp(ln(mod) / n)
@@ -487,7 +487,7 @@ class ComplexDModel(dev: Double) : ComplexNumbers<Double, Complex128> {
         return x.sqrt()
     }
 
-    override fun nroot(x: Complex128, n: Long): Complex128 {
+    override fun nroot(x: Complex128, n: Int): Complex128 {
         return x.root(n)
     }
 
