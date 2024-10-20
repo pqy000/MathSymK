@@ -90,5 +90,5 @@ fun rule(f: RuleBuilder.() -> Unit): SimRule {
 }
 
 fun BasicExprCal.addAll(rules : RuleList) {
-    rules.list.forEach { addRule(it) }
+    rules.list.forEach { addReduceRule(it) }
 }

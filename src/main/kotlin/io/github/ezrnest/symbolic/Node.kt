@@ -184,7 +184,8 @@ sealed interface Node {
     object Names {
         const val MUL = "*"
         const val ADD = "+"
-//        const val NAME_DIV = "/"
+
+        //        const val NAME_DIV = "/"
         const val POW = "^"
 
 
@@ -268,7 +269,7 @@ data class NRational(val value: BigFrac) : AbstractNode(), LeafNode {
 
     override fun plainToString(): String {
         val (nume, deno) = value
-        if(deno == BigInteger.ONE) return nume.toString()
+        if (deno == BigInteger.ONE) return nume.toString()
         return "$nume/$deno"
     }
 }
@@ -710,8 +711,8 @@ interface NodeBuilderScope {
         return NSymbol(name)
     }
 
-    fun constant(name : String) : Node{
-        return when(name){
+    fun constant(name: String): Node {
+        return when (name) {
             "pi", Node.Names.Symbol_PI -> Node.PI
             "e", Node.Names.Symbol_E -> Node.NATURAL_E
             "i", Node.Names.Symbol_I -> Node.IMAGINARY_UNIT
@@ -738,11 +739,11 @@ interface NodeBuilderScope {
 
     val Int.e: Node get() = Node.Int(this.toBigInteger())
 
-    val Long.e : Node get() = Node.Int(this.toBigInteger())
+    val Long.e: Node get() = Node.Int(this.toBigInteger())
 
-    val BigInteger.e : Node get() = Node.Int(this)
+    val BigInteger.e: Node get() = Node.Int(this)
 
-    val BigFrac.e : Node get() = Node.Rational(this)
+    val BigFrac.e: Node get() = Node.Rational(this)
 
     val String.s: Node get() = symbol(this)
 
@@ -758,7 +759,7 @@ interface NodeBuilderScope {
         return Node.Add(listOf(this, Node.Mul(listOf(Node.NEG_ONE, y))))
     }
 
-    fun negate(x : Node): Node{
+    fun negate(x: Node): Node {
         return Node.Neg(x)
     }
 
@@ -845,6 +846,6 @@ interface NodeBuilderScope {
 }
 
 
-fun buildNode(builder: NodeBuilderScope.() -> Node): Node {
-    return NodeBuilderScope().builder()
+fun buildNode(context: NodeBuilderScope = NodeBuilderScope(), builder: NodeBuilderScope.() -> Node): Node {
+    return context.builder()
 }

@@ -56,7 +56,7 @@ interface ExprContext : NodeBuilderScope {
 //
 //}
 
-val TestExprCal = BasicExprCal()
+
 
 open class BasicExprCal : ExprContext {
 
@@ -94,10 +94,10 @@ open class BasicExprCal : ExprContext {
             MergeProduct,
             ComputePow,
             FlattenPow
-        ).forEach { addRule(it) }
+        ).forEach { addReduceRule(it) }
     }
 
-    fun addRule(rule: SimRule) {
+    fun addReduceRule(rule: SimRule) {
         val r = rule.init(this) ?: return
         _reduceRules.add(r)
         dispatcher.register(r.matcher, r)

@@ -141,7 +141,7 @@ class MatcherReplaceRule(
 
 class MatchNodeReplaceRule(
     private val nodeInit: NodeBuilderScope.() -> Node,
-    private val _replacement: RepBuilder,
+    private val replacement: RepBuilder,
     override val description: String,
     private val afterDepth: Int = Int.MAX_VALUE,
     private val allowPartialMatch: Boolean = true
@@ -153,12 +153,14 @@ class MatchNodeReplaceRule(
         get() = throw IllegalStateException("Matcher is not initialized")
 
 
-    override fun init(context: ExprContext): SimRule {
+    override fun init(context: ExprContext): SimRule? {
+//        val nodeMatch = context.simplify(nodeInit(context))
+//        val nodeRep = context.simplify()
         val matcher = NodeBuilderForMatch.buildMatcher(nodeInit, context)
         return if (allowPartialMatch) {
-            NodeBuilderForMatch.warpPartialMatcherReplace(matcher, _replacement, description, afterDepth)
+            NodeBuilderForMatch.warpPartialMatcherReplace(matcher, replacement, description, afterDepth)
         } else {
-            MatcherReplaceRule(matcher, _replacement, description, afterDepth)
+            MatcherReplaceRule(matcher, replacement, description, afterDepth)
         }
     }
 
