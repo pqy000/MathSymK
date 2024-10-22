@@ -23,6 +23,11 @@ interface SimRule {
 
     val matcher: NodeMatcherT<Node>
         get() = AnyMatcher
+
+
+    fun init(context: ExprContext): SimRule? {
+        return this
+    }
 }
 
 @JvmRecord
@@ -208,10 +213,10 @@ object MergeProduct : RuleForSpecificN(Names.MUL) {
     private fun buildPower(base: Node, nodeList: List<Node>, context: ExprContext, cal: ExprCal): Node {
         if (nodeList.size == 1) return nodeList[0] // not merged
         var exp = Node.Add(nodeList.map { getPower(it) })
-        exp = cal.simplifyNode(exp, context, 0)
+        exp = cal.simplify(exp, context, 0)
         if (exp == Node.ONE) return base
         val res = Node.Pow(base, exp)
-        return cal.simplifyNode(res, context, 0)
+        return cal.simplify(res, context, 0)
     }
 
     private fun simMulZero(collect: Map<Node, List<Node>>, context: ExprContext): WithLevel<Node> {
@@ -400,11 +405,13 @@ object ComputePow : RuleForSpecific2(Names.POW) {
         )
 
         if (exp == BigInteger.TWO) return Node.IMAGINARY_UNIT
-        val piOverN = Node.Div(Node.PI, Node.Int(exp))
-        val cos = Node.Cos(piOverN)
-        val sin = Node.Sin(piOverN)
-        val res = Node.Add(cos, Node.Mul(Node.IMAGINARY_UNIT, sin))
-        return res // let the simplification handle the rest
+        return buildNode {
+            val piOverN = pi / exp.e
+            val cos = cos(piOverN)
+            val sin = sin(piOverN)
+            cos + 𝑖 * sin // let the simplification handle the rest
+        }
+
     }
 
     private fun canExpandPow(base: BigInteger, pow: BigInteger): Boolean {
@@ -495,9 +502,9 @@ object ComputePow : RuleForSpecific2(Names.POW) {
         }
     }
 
-    private fun powFactorDecomposition(base: BigFrac, exp: Node, context: ExprContext): Node {
-        TODO()
-    }
+//    private fun powFactorDecomposition(base: BigFrac, exp: Node, context: ExprContext): Node {
+//        TODO()
+//    }
 
     override fun simplify2(root: Node2, context: ExprContext, cal: ExprCal): WithLevel<Node>? {
         val (base, exp) = root
@@ -531,54 +538,4 @@ interface SimRuleMatched<T : Node> : SimRule {
         node[metaKeyApplied] = true // tried but not applicable
         return null
     }
-}
-
-interface ReplacementBuilderScope : NodeBuilderScope {
-
-    val matchContext: MatchContext
-
-    override val context: ExprContext
-        get() = matchContext.exprContext
-
-    fun ref(name: String): Node {
-        return matchContext.refMap[name] ?: throw IllegalArgumentException("No reference found for $name")
-    }
-
-    fun hasRef(name: String): Boolean {
-        return matchContext.refMap.containsKey(name)
-    }
-
-    override val x: Node get() = ref("x")
-    override val y: Node get() = ref("y")
-    override val z: Node get() = ref("z")
-    override val a: Node get() = ref("a")
-    override val b: Node get() = ref("b")
-    override val c: Node get() = ref("c")
-
-    val String.ref get() = ref(this)
-
-    companion object {
-        private class ReplacementBuilderScopeImpl(override val matchContext: MatchContext) : ReplacementBuilderScope
-
-        fun create(matchContext: MatchContext): ReplacementBuilderScope = ReplacementBuilderScopeImpl(matchContext)
-    }
-}
-typealias RepBuilder = ReplacementBuilderScope.() -> Node
-
-class MatcherReplaceRule(
-    override val matcher: NodeMatcherT<*>,
-    val replacement: RepBuilder,
-    override val description: String,
-    val afterDepth: Int = Int.MAX_VALUE
-) : SimRule {
-
-    override val metaKeyApplied: TypedKey<Boolean> = TypedKey(description)
-
-    override fun simplify(node: Node, ctx: ExprContext, cal: ExprCal): WithLevel<Node>? {
-        val matchCtx = MutableMatchContext(ctx)
-        matcher.matches(node, matchCtx) ?: return null
-        val replacementNode = ReplacementBuilderScope.create(matchCtx).replacement()
-        return WithLevel(afterDepth, replacementNode)
-    }
-
 }

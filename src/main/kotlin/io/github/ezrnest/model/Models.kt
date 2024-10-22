@@ -459,7 +459,7 @@ class DoubleAsReals(
         return kotlin.math.sqrt(x)
     }
 
-    override fun nroot(x: Double, n: Long): Double {
+    override fun nroot(x: Double, n: Int): Double {
         return x.pow(1.0 / n)
     }
 
@@ -588,7 +588,7 @@ class BigDecimalAsReals(val mc: MathContext = MathContext.DECIMAL128) : Reals<Bi
         }
     }
 
-    override fun nroot(x: BigDecimal, n: Long): BigDecimal {
+    override fun nroot(x: BigDecimal, n: Int): BigDecimal {
         TODO("Not yet implemented")
     }
 

@@ -2,6 +2,7 @@ package io.github.ezrnest.symbolic
 // created at 2024/10/01
 import kotlin.math.max
 
+
 /**
  * Describes
  */
@@ -14,7 +15,6 @@ interface ExprContext {
 class BasicExprContext : ExprContext {
 //    override val conditions: List<Any> = emptyList()
 }
-
 /*
     fun sortTree(node: Node): Node {
         if (node is LeafNode) return node
@@ -40,5 +40,4 @@ class BasicExprContext : ExprContext {
         return res
     }
  */
-
 
