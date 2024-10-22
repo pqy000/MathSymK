@@ -682,7 +682,7 @@ interface NodeBuilderScope {
     val pi: Node get() = Node.PI
 
     val context: ExprContext
-        get() = TestExprContext
+        get() = BasicExprContext()
 
 
     val Int.e: Node get() = Node.Int(this.toBigInteger())

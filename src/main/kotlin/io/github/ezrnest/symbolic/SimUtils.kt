@@ -99,10 +99,10 @@ object SimUtils {
         return Node.Mul(listOf(Node.Rational(r), n))
     }
 
-    fun createMulSim(nodes: List<Node>, context: ExprContext): Node {
+    fun createMulSim(nodes: List<Node>, context: ExprContext, cal : ExprCal): Node {
         if (nodes.isEmpty()) return Node.ONE
         if (nodes.size == 1) return nodes[0]
-        return context.simplifyNode(Node.Mul(nodes))
+        return cal.simplifyNode(Node.Mul(nodes),context)
     }
 
 

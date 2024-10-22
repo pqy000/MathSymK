@@ -11,7 +11,7 @@ fun main() {
     val Q = BigFracAsQuot
 
     val cal = TestExprContext
-    cal.verbose = BasicExprContext.Verbosity.ALL
+    cal.verbose = BasicExprCal.Verbosity.ALL
 //    cal.options[ExprContext.Options.forceReal] = true
     rule {
         name = "Trig[ sin^2(x) + cos^2(x) = 1 ]"

@@ -32,7 +32,7 @@ interface MutableMatchContext : MatchContext {
 }
 
 internal data class MutableMatchContextImpl(
-    override val exprContext: ExprContext = TestExprContext,
+    override val exprContext: ExprContext,
     override val refMap: MutableMap<String, Node> = mutableMapOf()
 ) : MutableMatchContext {
 

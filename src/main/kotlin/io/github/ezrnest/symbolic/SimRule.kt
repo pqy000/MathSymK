@@ -19,7 +19,7 @@ interface SimRule {
      */
     val metaKeyApplied: TypedKey<Boolean>
 
-    fun simplify(node: Node, context: ExprContext): WithLevel<Node>?
+    fun simplify(node: Node, ctx: ExprContext, cal: ExprCal): WithLevel<Node>?
 
     val matcher: NodeMatcherT<Node>
         get() = AnyMatcher
@@ -58,13 +58,13 @@ class RuleSort(val targetSig: NodeSig) : SimRule {
     }
 
 
-    override fun simplify(node: Node, context: ExprContext): WithLevel<Node>? {
+    override fun simplify(node: Node, ctx: ExprContext, cal: ExprCal): WithLevel<Node>? {
         if (node !is NodeChilded) return null
-        if (!context.isCommutative(node.name)) return null
+        if (!cal.isCommutative(node.name)) return null
         return when (node) {
             is Node1 -> null
             is Node2 -> sort2(node)?.let { WithLevel(0, it) }
-            else -> sortN(node, context)?.let { WithLevel(0, it) }
+            else -> sortN(node, ctx)?.let { WithLevel(0, it) }
         }
     }
 }
@@ -72,11 +72,11 @@ class RuleSort(val targetSig: NodeSig) : SimRule {
 
 abstract class RuleForSpecificName(val targetName: String) : SimRule {
     protected inline fun <reified T : Node> simplifyNodeTyped(
-        node: Node, context: ExprContext, nextSimplification: (T, ExprContext) -> WithLevel<Node>?
+        node: Node, nextSimplification: (T) -> WithLevel<Node>?
     ): WithLevel<Node>? {
         if (node.name != targetName || node !is T || node[metaKeyApplied] == true)
             return null
-        val res = nextSimplification(node, context)
+        val res = nextSimplification(node)
         if (res != null) return res
         node[metaKeyApplied] = true // tried but not applicable
         return null
@@ -102,11 +102,11 @@ abstract class RuleForSpecificN(targetName: String) : RuleForSpecificName(target
 
     final override val matcher: NodeMatcherT<NodeN> = LeafMatcherFixSig.forNodeN(targetName)
 
-    final override fun simplify(node: Node, context: ExprContext): WithLevel<Node>? {
-        return simplifyNodeTyped<NodeN>(node, context) { n, c -> simplifyN(n, c) }
+    final override fun simplify(node: Node, ctx: ExprContext, cal: ExprCal): WithLevel<Node>? {
+        return simplifyNodeTyped<NodeN>(node) { n -> simplifyN(n, ctx, cal) }
     }
 
-    abstract fun simplifyN(root: NodeN, context: ExprContext): WithLevel<Node>?
+    abstract fun simplifyN(root: NodeN, context: ExprContext, cal: ExprCal): WithLevel<Node>?
 }
 
 
@@ -115,7 +115,7 @@ class Flatten(targetName: String) : RuleForSpecificN(targetName) {
     override val description: String = "Flatten $targetName"
     override val metaKeyApplied: TypedKey<Boolean> = TypedKey("Flatten${targetName}")
 
-    override fun simplifyN(root: NodeN, context: ExprContext): WithLevel<Node>? {
+    override fun simplifyN(root: NodeN, context: ExprContext, cal: ExprCal): WithLevel<Node>? {
         val children = root.children
         if (children.size == 1) return WithLevel(0, children[0])
         if (children.all { !(it is NodeN && it.name == targetName) }) return null
@@ -142,7 +142,7 @@ object MergeAdditionRational : RuleForSpecificN(Names.ADD) {
     override val description: String
         get() = "Merge addition rational"
 
-    override fun simplifyN(root: NodeN, context: ExprContext): WithLevel<Node>? {
+    override fun simplifyN(root: NodeN, context: ExprContext, cal: ExprCal): WithLevel<Node>? {
         val children = root.children
         val Q = BigFracAsQuot
         val collect = sortedMapOf<Node, BigFrac>(NodeOrder)
@@ -205,13 +205,13 @@ object MergeProduct : RuleForSpecificN(Names.MUL) {
         return Node.ONE
     }
 
-    private fun buildPower(base: Node, nodeList: List<Node>, context: ExprContext): Node {
+    private fun buildPower(base: Node, nodeList: List<Node>, context: ExprContext, cal: ExprCal): Node {
         if (nodeList.size == 1) return nodeList[0] // not merged
         var exp = Node.Add(nodeList.map { getPower(it) })
-        exp = context.simplifyNode(exp, 0)
+        exp = cal.simplifyNode(exp, context, 0)
         if (exp == Node.ONE) return base
         val res = Node.Pow(base, exp)
-        return context.simplifyNode(res, 0)
+        return cal.simplifyNode(res, context, 0)
     }
 
     private fun simMulZero(collect: Map<Node, List<Node>>, context: ExprContext): WithLevel<Node> {
@@ -220,7 +220,7 @@ object MergeProduct : RuleForSpecificN(Names.MUL) {
     }
 
 
-    override fun simplifyN(root: NodeN, context: ExprContext): WithLevel<Node>? {
+    override fun simplifyN(root: NodeN, context: ExprContext, cal: ExprCal): WithLevel<Node>? {
         val children = root.children
         val collect = sortedMapOf<Node, List<Node>>(NodeOrder)
         val Q = BigFracAsQuot
@@ -255,7 +255,7 @@ object MergeProduct : RuleForSpecificN(Names.MUL) {
         val addRational = rationalCount > 0 && !Q.isOne(rPart)
         val newChildren = ArrayList<Node>(collect.size + if (addRational) 1 else 0)
         if (addRational) newChildren.add(Node.Rational(rPart))
-        collect.entries.mapTo(newChildren) { (base, nodeList) -> buildPower(base, nodeList, context) }
+        collect.entries.mapTo(newChildren) { (base, nodeList) -> buildPower(base, nodeList, context, cal) }
         return WithLevel(0, Node.Mul(newChildren))
         // need simplification by the rule again since the power may be added and simplified
     }
@@ -276,7 +276,7 @@ object ComputeProductRational : RuleForSpecificN(Names.MUL) {
         get() = "Compute product"
 
 
-    override fun simplifyN(root: NodeN, context: ExprContext): WithLevel<Node>? {
+    override fun simplifyN(root: NodeN, context: ExprContext, cal: ExprCal): WithLevel<Node>? {
         val children = root.children
         val Q = BigFracAsQuot
         var product = Q.one
@@ -305,21 +305,21 @@ object ComputeProductRational : RuleForSpecificN(Names.MUL) {
 abstract class RuleForSpecific1(targetName: String) : RuleForSpecificName(targetName) {
     final override val matcher: NodeMatcherT<Node> = LeafMatcherFixSig.forNode1(targetName)
 
-    final override fun simplify(node: Node, context: ExprContext): WithLevel<Node>? {
-        return simplifyNodeTyped<Node1>(node, context) { n, c -> simplify1(n, c) }
+    final override fun simplify(node: Node, ctx: ExprContext, cal: ExprCal): WithLevel<Node>? {
+        return simplifyNodeTyped<Node1>(node) { n -> simplify1(n, ctx, cal) }
     }
 
-    protected abstract fun simplify1(root: Node1, context: ExprContext): WithLevel<Node>?
+    protected abstract fun simplify1(root: Node1, context: ExprContext, cal: ExprCal): WithLevel<Node>?
 }
 
 abstract class RuleForSpecific2(targetName: String) : RuleForSpecificName(targetName) {
     final override val matcher: NodeMatcherT<Node> = LeafMatcherFixSig.forNode2(targetName)
 
-    final override fun simplify(node: Node, context: ExprContext): WithLevel<Node>? {
-        return simplifyNodeTyped<Node2>(node, context) { n, c -> simplify2(n, c) }
+    final override fun simplify(node: Node, ctx: ExprContext, cal: ExprCal): WithLevel<Node>? {
+        return simplifyNodeTyped<Node2>(node) { n -> simplify2(n, ctx, cal) }
     }
 
-    protected abstract fun simplify2(root: Node2, context: ExprContext): WithLevel<Node>?
+    protected abstract fun simplify2(root: Node2, context: ExprContext, cal: ExprCal): WithLevel<Node>?
 }
 
 /**
@@ -362,7 +362,7 @@ object FlattenPow : RuleForSpecific2(Names.POW) {
         return null
     }
 
-    override fun simplify2(root: Node2, context: ExprContext): WithLevel<Node>? {
+    override fun simplify2(root: Node2, context: ExprContext, cal: ExprCal): WithLevel<Node>? {
         val (base, exp) = root
         if (SimUtils.isInteger(exp, context)) {
             return flattenPowInt(base, exp, context)
@@ -393,9 +393,9 @@ object ComputePow : RuleForSpecific2(Names.POW) {
      * (-1)^(1/n) -> exp(pi*i/n) = cos(pi/n) + i*sin(pi/n)
      * ```
      */
-    private fun computeNRootMinus1(exp: BigInteger, context: ExprContext): Node {
+    private fun computeNRootMinus1(exp: BigInteger, context: ExprContext, cal: ExprCal): Node {
         if (exp == BigInteger.ONE) return Node.NEG_ONE
-        if (context.options[ExprContext.Options.forceReal] == true) throw ArithmeticException(
+        if (cal.options[ExprCal.Options.forceReal] == true) throw ArithmeticException(
             "Cannot compute the value of (-1)^(1/n) in the real mode"
         )
 
@@ -415,7 +415,7 @@ object ComputePow : RuleForSpecific2(Names.POW) {
     }
 
 
-    private fun powRational(base: BigFrac, exp: BigFrac, context: ExprContext): Node {
+    private fun powRational(base: BigFrac, exp: BigFrac, context: ExprContext, cal: ExprCal): Node {
         with(BigFracAsQuot) {
             if (isInteger(exp)) {
                 val p = asInteger(exp)
@@ -484,7 +484,7 @@ object ComputePow : RuleForSpecific2(Names.POW) {
                 if (exp.deno.isOdd()) {
                     rPart = -rPart
                 } else {
-                    val p = computeNRootMinus1(exp.deno, context)
+                    val p = computeNRootMinus1(exp.deno, context, cal)
                     nodes.add(p)
                 }
             }
@@ -499,10 +499,10 @@ object ComputePow : RuleForSpecific2(Names.POW) {
         TODO()
     }
 
-    override fun simplify2(root: Node2, context: ExprContext): WithLevel<Node>? {
+    override fun simplify2(root: Node2, context: ExprContext, cal: ExprCal): WithLevel<Node>? {
         val (base, exp) = root
         if (base !is NRational) return null
-        if (exp is NRational) return WithLevel(Int.MAX_VALUE, powRational(base.value, exp.value, context))
+        if (exp is NRational) return WithLevel(Int.MAX_VALUE, powRational(base.value, exp.value, context, cal))
         return null
     }
 }
@@ -522,9 +522,9 @@ interface SimRuleMatched<T : Node> : SimRule {
     fun simplifyMatched(node: T, matchContext: MatchContext): WithLevel<Node>?
 
 
-    override fun simplify(node: Node, context: ExprContext): WithLevel<Node>? {
+    override fun simplify(node: Node, ctx: ExprContext, cal: ExprCal): WithLevel<Node>? {
         if (node[metaKeyApplied] == true) return null
-        val matchContext = MutableMatchContext(context)
+        val matchContext = MutableMatchContext(ctx)
         val r = matcher.matches(node, matchContext) ?: return null
         val res = simplifyMatched(r, matchContext)
         if (res != null) return res
@@ -574,8 +574,8 @@ class MatcherReplaceRule(
 
     override val metaKeyApplied: TypedKey<Boolean> = TypedKey(description)
 
-    override fun simplify(node: Node, context: ExprContext): WithLevel<Node>? {
-        val matchCtx = MutableMatchContext(context)
+    override fun simplify(node: Node, ctx: ExprContext, cal: ExprCal): WithLevel<Node>? {
+        val matchCtx = MutableMatchContext(ctx)
         matcher.matches(node, matchCtx) ?: return null
         val replacementNode = ReplacementBuilderScope.create(matchCtx).replacement()
         return WithLevel(afterDepth, replacementNode)
