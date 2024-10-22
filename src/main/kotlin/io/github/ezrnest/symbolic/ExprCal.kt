@@ -13,6 +13,7 @@ interface ExprCal {
 
     val context: ExprContext
 
+
     object Options {
         /**
          * Forces all the computations to be done in the real domain, throwing an ArithmeticException for undefined operations like `sqrt(-1)`.
@@ -23,22 +24,26 @@ interface ExprCal {
 
     fun isCommutative(name: String): Boolean
 
-    fun simplify(root: Node, depth: Int = Int.MAX_VALUE): Node {
-        return simplifyNode(root, context, depth)
+    fun reduce(root: Node, depth: Int = Int.MAX_VALUE): Node {
+        return reduceNode(root, context, depth)
     }
 
-    fun simplifyNode(node: Node, context: ExprContext, depth: Int = 0): Node
+    fun reduceNode(node: Node, context: ExprContext, depth: Int = 0): Node
+
+
+    fun simplify(node : Node, maxDepth : Int) : List<Node>{
+        TODO()
+    }
 
 }
 
-
-val TestExprContext = BasicExprCal()
 
 open class BasicExprCal : ExprCal, NodeBuilderScope {
 
     override val options: MutableMap<TypedKey<*>, Any> = mutableMapOf()
 
-    val dispatcher: TreeDispatcher<SimRule> = TreeDispatcher()
+    val reduceRules: TreeDispatcher<SimRule> = TreeDispatcher()
+
 
     var verbose: Verbosity = Verbosity.NONE
 
@@ -53,30 +58,29 @@ open class BasicExprCal : ExprCal, NodeBuilderScope {
     private var simLevel = -1
 
 
-    val rules: List<SimRule> = listOf(
-//        RegularizeNodeN(Node.Names.ADD),
-//        RegularizeNodeN(Node.Names.MUL),
-        Flatten(Node.Names.ADD),
-        Flatten(Node.Names.MUL),
-        RuleSort(NodeSig.ADD),
-        RuleSort(NodeSig.MUL),
-        MergeAdditionRational,
-//        ComputeProductRational,
-        MergeProduct,
-        ComputePow,
-        FlattenPow
-    )
-
     init {
+        val rules: List<SimRule> = listOf(
+            Flatten(Node.Names.ADD),
+            Flatten(Node.Names.MUL),
+            RuleSort(NodeSig.ADD),
+            RuleSort(NodeSig.MUL),
+            MergeAdditionRational,
+            MergeProduct,
+            ComputePow,
+            FlattenPow
+        )
+
         for (r in rules) {
-            dispatcher.register(r.matcher, r)
+            reduceRules.register(r.matcher, r)
         }
     }
 
     fun addReduceRule(rule: SimRule) {
         val rule = rule.init(this) ?: rule
-        dispatcher.register(rule.matcher, rule)
+        reduceRules.register(rule.matcher, rule)
     }
+
+//    fun addRule()
 
 
     override fun isCommutative(name: String): Boolean {
@@ -100,7 +104,7 @@ open class BasicExprCal : ExprCal, NodeBuilderScope {
     }
 
 
-    override fun simplifyNode(node: Node, context: ExprContext, depth: Int): Node {
+    override fun reduceNode(node: Node, context: ExprContext, depth: Int): Node {
 
         var depth = depth
         var res = node
@@ -120,7 +124,7 @@ open class BasicExprCal : ExprCal, NodeBuilderScope {
                     else -> res
                 }
             }
-            val appliedRule = dispatcher.dispatchUntil(res) { rule ->
+            val appliedRule = reduceRules.dispatchUntil(res) { rule ->
                 log(Verbosity.ALL) { "|> ${rule.description}" }
                 val p = rule.simplify(res, context, this) ?: return@dispatchUntil false
 
@@ -145,22 +149,22 @@ open class BasicExprCal : ExprCal, NodeBuilderScope {
 
 
     private fun simplifyRecur1(node: Node1, context: ExprContext, depth: Int): Node {
-        val n1 = simplifyNode(node.child, context, depth)
+        val n1 = reduceNode(node.child, context, depth)
         if (n1 === node.child) return node
         return node.newWithChildren(n1)
     }
 
     private fun simplifyRecur2(node: Node2, context: ExprContext, depth: Int): Node {
-        val n1 = simplifyNode(node.first, context, depth)
-        val n2 = simplifyNode(node.second, context, depth)
+        val n1 = reduceNode(node.first, context, depth)
+        val n2 = reduceNode(node.second, context, depth)
         if (n1 === node.first && n2 === node.second) return node
         return node.newWithChildren(n1, n2)
     }
 
     private fun simplifyRecur3(node: Node3, context: ExprContext, depth: Int): Node {
-        val n1 = simplifyNode(node.first, context, depth)
-        val n2 = simplifyNode(node.second, context, depth)
-        val n3 = simplifyNode(node.third, context, depth)
+        val n1 = reduceNode(node.first, context, depth)
+        val n2 = reduceNode(node.second, context, depth)
+        val n3 = reduceNode(node.third, context, depth)
         if (n1 === node.first && n2 === node.second && n3 === node.third) return node
         return node.newWithChildren(n1, n2, n3)
     }
@@ -168,7 +172,7 @@ open class BasicExprCal : ExprCal, NodeBuilderScope {
     private fun simplifyRecurN(node: NodeN, context: ExprContext, depth: Int): Node {
         var changed = false
         val children = node.children.map { n ->
-            simplifyNode(n, context, depth).also { if (n !== it) changed = true }
+            reduceNode(n, context, depth).also { if (n !== it) changed = true }
         }
         if (!changed) return node
         return node.newWithChildren(children)
@@ -209,27 +213,27 @@ class ExprCalReal : BasicExprCal(), Reals<Node> {
     }
 
     override fun negate(x: Node): Node {
-        return simplify(Node.Neg(x), 0)
+        return reduce(Node.Neg(x), 0)
     }
 
     override fun add(x: Node, y: Node): Node {
-        return simplify(Node.Add(x, y), 0)
+        return reduce(Node.Add(x, y), 0)
     }
 
     override fun sum(elements: List<Node>): Node {
-        return simplify(Node.Add(elements), 0)
+        return reduce(Node.Add(elements), 0)
     }
 
     override fun multiply(x: Node, y: Node): Node {
-        return simplify(Node.Mul(x, y), 0)
+        return reduce(Node.Mul(x, y), 0)
     }
 
     override fun reciprocal(x: Node): Node {
-        return simplify(Node.Inv(x), 0)
+        return reduce(Node.Inv(x), 0)
     }
 
     override fun divide(x: Node, y: Node): Node {
-        return simplify(Node.Div(x, y), 1)
+        return reduce(Node.Div(x, y), 1)
     }
 
     override fun compare(o1: Node, o2: Node): Int {
@@ -237,31 +241,31 @@ class ExprCalReal : BasicExprCal(), Reals<Node> {
     }
 
     override fun sqrt(x: Node): Node {
-        return simplify(Node.Pow(x, Node.HALF), 0)
+        return reduce(Node.Pow(x, Node.HALF), 0)
     }
 
     override fun exp(x: Node): Node {
-        return simplify(Node.Exp(x), 0)
+        return reduce(Node.Exp(x), 0)
     }
 
     override fun ln(x: Node): Node {
-        return simplify(Node.Ln(x), 0)
+        return reduce(Node.Ln(x), 0)
     }
 
     override fun sin(x: Node): Node {
-        return simplify(Node.Sin(x), 0)
+        return reduce(Node.Sin(x), 0)
     }
 
     override fun cos(x: Node): Node {
-        return simplify(Node.Cos(x), 0)
+        return reduce(Node.Cos(x), 0)
     }
 
     override fun arcsin(x: Node): Node {
-        return simplify(Node.ArcSin(x), 0)
+        return reduce(Node.ArcSin(x), 0)
     }
 
     override fun tan(x: Node): Node {
-        return simplify(Node.Tan(x), 0)
+        return reduce(Node.Tan(x), 0)
     }
 
     override fun Node.div(y: Node): Node {
@@ -273,7 +277,7 @@ class ExprCalReal : BasicExprCal(), Reals<Node> {
     }
 
     override fun product(elements: List<Node>): Node {
-        return simplify(Node.Mul(elements), 0)
+        return reduce(Node.Mul(elements), 0)
     }
 
     override fun Node.minus(y: Node): Node {
@@ -289,27 +293,27 @@ class ExprCalReal : BasicExprCal(), Reals<Node> {
     }
 
     override fun exp(base: Node, pow: Node): Node {
-        return simplify(Node.Pow(base, pow), 0)
+        return reduce(Node.Pow(base, pow), 0)
     }
 
     override fun nroot(x: Node, n: Int): Node {
-        return simplify(Node.Pow(x, rational(1, n)), 0)
+        return reduce(Node.Pow(x, rational(1, n)), 0)
     }
 
     override fun log(base: Node, x: Node): Node {
-        return simplify(Node.Log(base, x), 0)
+        return reduce(Node.Log(base, x), 0)
     }
 
     override fun cot(x: Node): Node {
-        return simplify(Node.Cot(x), 0)
+        return reduce(Node.Cot(x), 0)
     }
 
     override fun arccos(x: Node): Node {
-        return simplify(Node.ArcCos(x), 0)
+        return reduce(Node.ArcCos(x), 0)
     }
 
     override fun arctan(x: Node): Node {
-        return simplify(Node.ArcTan(x), 0)
+        return reduce(Node.ArcTan(x), 0)
     }
 
     override fun arctan2(y: Node, x: Node): Node {

@@ -684,9 +684,9 @@ fun <T : Node> buildMatcher(action: MatcherBuilderScope.() -> NodeMatcherT<T>): 
 class TreeDispatcher<T>() {
     private val dispatchRoot: DispatchNode<T> = DispatchNode()
 
-//    private sealed interface DispatchNode<T> {
-//        var signed: MutableMap<NodeSig, DispatchResult<T>>?
-//    }
+    private val _elements : MutableList<T> = mutableListOf()
+
+    val elements : List<T> get() = _elements
 
     private data class DispatchNode<T>(
         var wildcard: DispatchResult<T>? = null,
@@ -863,6 +863,7 @@ class TreeDispatcher<T>() {
         val (_, d) = buildTo(matcher, dispatchRoot)
         val res = d.result ?: mutableListOf<T>().also { d.result = it }
         res.add(data)
+        _elements.add(data)
     }
 
 //    fun dispatchLeveled(root : Node, level)

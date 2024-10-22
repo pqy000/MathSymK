@@ -7,10 +7,12 @@ import io.github.ezrnest.symbolic.sim.RuleTanSpecial
 import io.github.ezrnest.symbolic.sim.rule
 
 
+val TestExprCal = BasicExprCal()
+
 fun main() {
     val Q = BigFracAsQuot
 
-    val cal = TestExprContext
+    val cal = TestExprCal
     cal.verbose = BasicExprCal.Verbosity.ALL
 //    cal.options[ExprContext.Options.forceReal] = true
     rule {
@@ -39,7 +41,7 @@ fun main() {
     println(expr.plainToString())
     println(expr.treeToString())
 
-    val res = cal.simplify(expr)
+    val res = cal.reduce(expr)
     println()
     println(res.plainToString())
     println(res.treeToString())

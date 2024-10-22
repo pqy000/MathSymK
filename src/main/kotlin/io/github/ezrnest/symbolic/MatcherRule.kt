@@ -58,7 +58,7 @@ object NodeBuilderForMatch : NodeBuilderScope {
     }
 
     fun buildMatcher(build: NodeBuilderScope.() -> Node, cal: ExprCal): NodeMatcher {
-        val node = cal.simplify(build(this))
+        val node = cal.reduce(build(this))
         return buildMatcher0(node, cal)
     }
 

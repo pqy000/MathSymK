@@ -102,7 +102,7 @@ object SimUtils {
     fun createMulSim(nodes: List<Node>, context: ExprContext, cal : ExprCal): Node {
         if (nodes.isEmpty()) return Node.ONE
         if (nodes.size == 1) return nodes[0]
-        return cal.simplifyNode(Node.Mul(nodes),context)
+        return cal.reduceNode(Node.Mul(nodes),context)
     }
 
 

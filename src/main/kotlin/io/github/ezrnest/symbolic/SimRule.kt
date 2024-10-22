@@ -213,10 +213,10 @@ object MergeProduct : RuleForSpecificN(Names.MUL) {
     private fun buildPower(base: Node, nodeList: List<Node>, context: ExprContext, cal: ExprCal): Node {
         if (nodeList.size == 1) return nodeList[0] // not merged
         var exp = Node.Add(nodeList.map { getPower(it) })
-        exp = cal.simplifyNode(exp, context, 0)
+        exp = cal.reduceNode(exp, context, 0)
         if (exp == Node.ONE) return base
         val res = Node.Pow(base, exp)
-        return cal.simplifyNode(res, context, 0)
+        return cal.reduceNode(res, context, 0)
     }
 
     private fun simMulZero(collect: Map<Node, List<Node>>, context: ExprContext): WithLevel<Node> {
