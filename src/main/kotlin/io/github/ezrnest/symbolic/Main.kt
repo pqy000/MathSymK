@@ -20,11 +20,11 @@ fun main() {
         } to {
             1.e
         }
-    }.also { cal.addRule(it) }
+    }.also { cal.addReduceRule(it) }
 
-    cal.addRule(RuleSinSpecial())
-    cal.addRule(RuleCosSpecial())
-    cal.addRule(RuleTanSpecial())
+    cal.addReduceRule(RuleSinSpecial())
+    cal.addReduceRule(RuleCosSpecial())
+    cal.addReduceRule(RuleTanSpecial())
 
     val expr = buildNode {
 //      1.e * 2.e + x * pow(x, 2.e) * 3.e - x * x * (2.e * x)
@@ -39,7 +39,7 @@ fun main() {
     println(expr.plainToString())
     println(expr.treeToString())
 
-    val res = cal.simplifyFull(expr)
+    val res = cal.simplify(expr)
     println()
     println(res.plainToString())
     println(res.treeToString())

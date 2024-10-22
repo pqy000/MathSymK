@@ -1,7 +1,6 @@
 package io.github.ezrnest.symbolic
 
 import io.github.ezrnest.structure.Reals
-import io.github.ezrnest.symbolic.ExprContext.BasicExprContext
 import io.github.ezrnest.symbolic.sim.RulesExponentialReduce
 import io.github.ezrnest.symbolic.sim.RulesTrigonometricReduce
 import io.github.ezrnest.symbolic.sim.addAll
@@ -24,21 +23,18 @@ interface ExprCal {
 
     fun isCommutative(name: String): Boolean
 
-    fun simplifyFull(root: Node): Node {
-        return simplifyNode(root, context, Int.MAX_VALUE)
+    fun simplify(root: Node, depth: Int = Int.MAX_VALUE): Node {
+        return simplifyNode(root, context, depth)
     }
 
     fun simplifyNode(node: Node, context: ExprContext, depth: Int = 0): Node
-    
-    fun addAll(){
-        TODO()
-    }
+
 }
 
 
 val TestExprContext = BasicExprCal()
 
-open class BasicExprCal : ExprCal {
+open class BasicExprCal : ExprCal, NodeBuilderScope {
 
     override val options: MutableMap<TypedKey<*>, Any> = mutableMapOf()
 
@@ -77,9 +73,11 @@ open class BasicExprCal : ExprCal {
         }
     }
 
-    fun addRule(rule: SimRule) {
+    fun addReduceRule(rule: SimRule) {
+        val rule = rule.init(this) ?: rule
         dispatcher.register(rule.matcher, rule)
     }
+
 
     override fun isCommutative(name: String): Boolean {
         return when (name) {
@@ -179,11 +177,10 @@ open class BasicExprCal : ExprCal {
 }
 
 
-
 class ExprCalReal : BasicExprCal(), Reals<Node> {
 
-    init{
-        options[ExprContext.Options.forceReal] = true
+    init {
+        options[ExprCal.Options.forceReal] = true
 
         addAll(RulesTrigonometricReduce())
         addAll(RulesExponentialReduce())

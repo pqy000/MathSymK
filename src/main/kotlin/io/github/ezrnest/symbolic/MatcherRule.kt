@@ -23,31 +23,31 @@ object NodeBuilderForMatch : NodeBuilderScope {
         return FixedNodeMatcher(node)
     }
 
-    private fun buildMatcher0(node: Node, ctx: ExprContext): NodeMatcher {
+    private fun buildMatcher0(node: Node, cal: ExprCal ): NodeMatcher {
         when (node) {
             is NSymbol -> return buildSymbol(node)
             is LeafNode -> return FixedNodeMatcher(node)
             is Node1 -> {
-                val child = buildMatcher0(node.child, ctx)
+                val child = buildMatcher0(node.child, cal)
                 return NodeMatcher1(child, node.signature)
             }
 
             is Node2 -> {
-                val left = buildMatcher0(node.first, ctx)
-                val right = buildMatcher0(node.second, ctx)
+                val left = buildMatcher0(node.first, cal)
+                val right = buildMatcher0(node.second, cal)
                 return NodeMatcher2Ordered(left, right, node.signature)
             }
 
             is Node3 -> {
-                val first = buildMatcher0(node.first, ctx)
-                val second = buildMatcher0(node.second, ctx)
-                val third = buildMatcher0(node.third, ctx)
+                val first = buildMatcher0(node.first, cal)
+                val second = buildMatcher0(node.second, cal)
+                val third = buildMatcher0(node.third, cal)
                 return NodeMatcher3Ordered(first, second, third, node.signature)
             }
 
             is NodeChilded -> {
-                val children = node.children.map { buildMatcher0(it, ctx) }
-                if (ctx.isCommutative(node.name)) {
+                val children = node.children.map { buildMatcher0(it, cal) }
+                if (cal.isCommutative(node.name)) {
                     return NodeMatcherNPO(children, node.signature)
                 }
                 return NMatcherNOrdered(children, node.signature)
@@ -57,9 +57,9 @@ object NodeBuilderForMatch : NodeBuilderScope {
         }
     }
 
-    fun buildMatcher(build: NodeBuilderScope.() -> Node, ctx: ExprContext): NodeMatcher {
-        val node = ctx.simplify(build(this))
-        return buildMatcher0(node, ctx)
+    fun buildMatcher(build: NodeBuilderScope.() -> Node, cal: ExprCal): NodeMatcher {
+        val node = cal.simplify(build(this))
+        return buildMatcher0(node, cal)
     }
 
     fun warpPartialMatcherReplace(
@@ -131,7 +131,7 @@ class MatcherReplaceRule(
 
     override val metaKeyApplied: TypedKey<Boolean> = TypedKey(description)
 
-    override fun simplify(node: Node, context: ExprContext): WithLevel<Node>? {
+    override fun simplify(node: Node, context: ExprContext, cal : ExprCal): WithLevel<Node>? {
         val matchCtx = MutableMatchContext(context)
         matcher.matches(node, matchCtx) ?: return null
         val replacementNode = ReplacementScope.create(matchCtx).replacement() ?: return null
@@ -153,7 +153,7 @@ class MatchNodeReplaceRule(
         get() = throw IllegalStateException("Matcher is not initialized")
 
 
-    override fun init(context: ExprContext): SimRule? {
+    override fun init(context: ExprCal): SimRule? {
 //        val nodeMatch = context.simplify(nodeInit(context))
 //        val nodeRep = context.simplify()
         val matcher = NodeBuilderForMatch.buildMatcher(nodeInit, context)
@@ -164,7 +164,7 @@ class MatchNodeReplaceRule(
         }
     }
 
-    override fun simplify(node: Node, context: ExprContext): WithLevel<Node>? {
+    override fun simplify(node: Node, context: ExprContext, cal : ExprCal): WithLevel<Node>? {
         throw IllegalStateException("Matcher is not initialized")
     }
 }
