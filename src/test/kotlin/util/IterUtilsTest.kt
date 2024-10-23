@@ -1,7 +1,7 @@
 package util
 
-import io.github.ezrnest.util.IterUtils
-import io.github.ezrnest.discrete.CombUtils
+import io.github.ezrnest.mathsymk.util.IterUtils
+import io.github.ezrnest.mathsymk.discrete.CombUtils
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue

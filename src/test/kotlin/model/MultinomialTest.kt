@@ -1,7 +1,10 @@
 package model
 
 import TestUtils.assertValueEquals
-import io.github.ezrnest.model.*
+import io.github.ezrnest.mathsymk.model.ChPow
+import io.github.ezrnest.mathsymk.model.Models
+import io.github.ezrnest.mathsymk.model.Multinomial
+import io.github.ezrnest.mathsymk.model.TermChs
 import kotlin.test.*
 
 class MultinomialTest {

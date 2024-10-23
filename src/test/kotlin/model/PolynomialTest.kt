@@ -1,10 +1,10 @@
 package model
 
-import io.github.ezrnest.model.Fraction
-import io.github.ezrnest.model.Models
-import io.github.ezrnest.model.PTerm
-import io.github.ezrnest.model.Polynomial
-import io.github.ezrnest.structure.sum
+import io.github.ezrnest.mathsymk.model.Fraction
+import io.github.ezrnest.mathsymk.model.Models
+import io.github.ezrnest.mathsymk.model.PTerm
+import io.github.ezrnest.mathsymk.model.Polynomial
+import io.github.ezrnest.mathsymk.structure.sum
 import org.junit.jupiter.api.Assertions.assertThrows
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -30,7 +30,7 @@ class PolynomialTest {
     fun testCreate() {
         with(Zx) {
             assertEquals(poly(1, 2, 1), 1 + 2 * x + x2)
-            assertEquals(poly(1, 2, 1), Polynomial.of(ints, 1, 2, 1))
+            assertEquals(poly(1, 2, 1), io.github.ezrnest.mathsymk.model.Polynomial.of(ints, 1, 2, 1))
         }
     }
 
@@ -358,7 +358,7 @@ class PolynomialTest {
             val p = ofF(1, -3, 2) // 1 - 3x + 2x^2
             val result = p.integral()
             val expected =
-                Polynomial.of(fractions, Fraction.ZERO, Fraction.of(1), Fraction.of(-3, 2), Fraction.of(2, 3))
+                io.github.ezrnest.mathsymk.model.Polynomial.of(fractions, io.github.ezrnest.mathsymk.model.Fraction.ZERO, io.github.ezrnest.mathsymk.model.Fraction.of(1), io.github.ezrnest.mathsymk.model.Fraction.of(-3, 2), io.github.ezrnest.mathsymk.model.Fraction.of(2, 3))
             assertEquals(expected, result) // x - 1.5x^2 + 2/3x^3
         }
         with(Qx) {

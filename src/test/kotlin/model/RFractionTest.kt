@@ -1,8 +1,8 @@
 package model
 
-import io.github.ezrnest.model.Models
-import io.github.ezrnest.model.Polynomial
-import io.github.ezrnest.model.RingFrac
+import io.github.ezrnest.mathsymk.model.Models
+import io.github.ezrnest.mathsymk.model.Polynomial
+import io.github.ezrnest.mathsymk.model.RingFrac
 import org.junit.jupiter.api.Assertions.assertThrows
 import kotlin.test.Test
 import kotlin.test.assertEquals

@@ -1,10 +1,10 @@
 package linear
 
 import TestUtils.assertEquals
-import io.github.ezrnest.linear.T
-import io.github.ezrnest.linear.Vector
-import io.github.ezrnest.linear.Vector.Companion.vec
-import io.github.ezrnest.model.Models
+import io.github.ezrnest.mathsymk.linear.T
+import io.github.ezrnest.mathsymk.linear.Vector
+import io.github.ezrnest.mathsymk.linear.Vector.Companion.vec
+import io.github.ezrnest.mathsymk.model.Models
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

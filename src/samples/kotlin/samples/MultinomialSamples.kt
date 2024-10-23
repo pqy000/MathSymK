@@ -1,7 +1,7 @@
 package samples
 
-import io.github.ezrnest.model.Multinomial
-import io.github.ezrnest.model.Models
+import io.github.ezrnest.mathsymk.model.Multinomial
+import io.github.ezrnest.mathsymk.model.Models
 
 
 fun buildMultinomial(){

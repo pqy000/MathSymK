@@ -1,15 +1,15 @@
 package linear
 
 import TestUtils.assertEquals
-import io.github.ezrnest.linear.*
-import io.github.ezrnest.model.Multinomial
-import io.github.ezrnest.model.Models
-import io.github.ezrnest.model.Polynomial
-import io.github.ezrnest.model.Polynomial.Companion.substitute
-import io.github.ezrnest.numTh.NTFunctions
-import io.github.ezrnest.util.IterUtils
-import io.github.ezrnest.util.MathUtils
-import io.github.ezrnest.util.pow
+import io.github.ezrnest.mathsymk.linear.*
+import io.github.ezrnest.mathsymk.model.Multinomial
+import io.github.ezrnest.mathsymk.model.Models
+import io.github.ezrnest.mathsymk.model.Polynomial
+import io.github.ezrnest.mathsymk.model.Polynomial.Companion.substitute
+import io.github.ezrnest.mathsymk.numTh.NTFunctions
+import io.github.ezrnest.mathsymk.util.IterUtils
+import io.github.ezrnest.mathsymk.util.MathUtils
+import io.github.ezrnest.mathsymk.util.pow
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import kotlin.random.Random
@@ -133,7 +133,7 @@ class MatrixTest {
                     }
                     res * MathUtils.powOfMinusOne(k)
                 }
-                val p2 = Polynomial.fromList(ℤ, coef)
+                val p2 = io.github.ezrnest.mathsymk.model.Polynomial.fromList(ℤ, coef)
                 assertEquals(p, p2)
                 assertTrue(isZero(p.substitute(A, Z44))) // p(A) = 0, a matrix of zeros
             }

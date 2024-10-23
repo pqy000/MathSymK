@@ -1,14 +1,16 @@
 package samples
 
-import io.github.ezrnest.linear.*
-import io.github.ezrnest.model.Multinomial
-import io.github.ezrnest.model.Models
-import io.github.ezrnest.model.Polynomial
-import io.github.ezrnest.model.Polynomial.Companion.substitute
-import io.github.ezrnest.numTh.NTFunctions
-import io.github.ezrnest.structure.eval
-import io.github.ezrnest.util.IterUtils
-import io.github.ezrnest.util.MathUtils
+import io.github.ezrnest.mathsymk.linear.Matrix
+import io.github.ezrnest.mathsymk.linear.MatrixImpl
+import io.github.ezrnest.mathsymk.linear.T
+import io.github.ezrnest.mathsymk.linear.Vector
+import io.github.ezrnest.mathsymk.model.Multinomial
+import io.github.ezrnest.mathsymk.model.Models
+import io.github.ezrnest.mathsymk.model.Polynomial.Companion.substitute
+import io.github.ezrnest.mathsymk.numTh.NTFunctions
+import io.github.ezrnest.mathsymk.structure.eval
+import io.github.ezrnest.mathsymk.util.IterUtils
+import io.github.ezrnest.mathsymk.util.MathUtils
 import kotlin.math.cos
 import kotlin.random.Random
 
@@ -80,7 +82,7 @@ fun matrixCharacteristicPolynomials() {
             }
             res * MathUtils.powOfMinusOne(k)
         }
-        val p2 = Polynomial.fromList(ℤ, coef)
+        val p2 = io.github.ezrnest.mathsymk.model.Polynomial.fromList(ℤ, coef)
         println("Another way to compute the characteristic polynomial:")
         println(p2.toString(ch = "λ"))
 
@@ -118,7 +120,7 @@ fun matrixCharacteristicPolynomialsComplexExample() {
             }
             res * MathUtils.powOfMinusOne(k)
         }
-        val p2 = Polynomial.fromList(multiOverZ, coef)
+        val p2 = io.github.ezrnest.mathsymk.model.Polynomial.fromList(multiOverZ, coef)
         println("Another way to compute the characteristic polynomial:")
         println(p2.toString(ch = "λ"))
 

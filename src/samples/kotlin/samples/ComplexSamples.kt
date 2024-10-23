@@ -1,9 +1,9 @@
 package samples
 
-import io.github.ezrnest.model.Complex
-import io.github.ezrnest.model.Complex128
-import io.github.ezrnest.model.Complex128.Companion.exp
-import io.github.ezrnest.model.Models
+import io.github.ezrnest.mathsymk.model.Complex
+import io.github.ezrnest.mathsymk.model.Complex128
+import io.github.ezrnest.mathsymk.model.Complex128.Companion.exp
+import io.github.ezrnest.mathsymk.model.Models
 
 
 fun basicDoubleComplex(){

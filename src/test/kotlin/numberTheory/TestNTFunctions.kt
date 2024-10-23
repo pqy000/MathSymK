@@ -1,7 +1,7 @@
 package numberTheory
 
-import io.github.ezrnest.numTh.NTFunctions
-import io.github.ezrnest.util.MathUtils
+import io.github.ezrnest.mathsymk.numTh.NTFunctions
+import io.github.ezrnest.mathsymk.util.MathUtils
 import org.junit.jupiter.api.Test
 import kotlin.random.Random
 import kotlin.test.assertEquals

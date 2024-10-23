@@ -1,9 +1,9 @@
 package samples
 
-import io.github.ezrnest.model.Fraction
-import io.github.ezrnest.model.Models
-import io.github.ezrnest.model.Polynomial
-import io.github.ezrnest.model.RingFrac
+import io.github.ezrnest.mathsymk.model.Fraction
+import io.github.ezrnest.mathsymk.model.Models
+import io.github.ezrnest.mathsymk.model.Polynomial
+import io.github.ezrnest.mathsymk.model.RingFrac
 
 fun basicFraction() {
     val a = Fraction(1, 2)

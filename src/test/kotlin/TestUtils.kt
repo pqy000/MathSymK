@@ -1,5 +1,5 @@
-import io.github.ezrnest.ValueEquatable
-import io.github.ezrnest.structure.EqualPredicate
+import io.github.ezrnest.mathsymk.ValueEquatable
+import io.github.ezrnest.mathsymk.structure.EqualPredicate
 import kotlin.test.asserter
 
 /**

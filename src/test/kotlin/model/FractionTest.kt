@@ -1,7 +1,7 @@
 package model
 
-import io.github.ezrnest.model.Fraction
-import io.github.ezrnest.model.toFrac
+import io.github.ezrnest.mathsymk.model.Fraction
+import io.github.ezrnest.mathsymk.model.toFrac
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals

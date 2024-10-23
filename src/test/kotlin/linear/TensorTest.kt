@@ -1,14 +1,13 @@
 package linear
 
 import TestUtils.assertEquals
-import io.github.ezrnest.linear.Tensor
-import io.github.ezrnest.linear.Tensor.Companion.invoke
-import io.github.ezrnest.model.*
-import io.github.ezrnest.linear.TensorImpl
-import io.github.ezrnest.linear.all
-import io.github.ezrnest.linear.get
-import io.github.ezrnest.model.Models.fractions
-import io.github.ezrnest.model.Models.ints
+import io.github.ezrnest.mathsymk.linear.Tensor
+import io.github.ezrnest.mathsymk.linear.Tensor.Companion.invoke
+import io.github.ezrnest.mathsymk.linear.TensorImpl
+import io.github.ezrnest.mathsymk.linear.all
+import io.github.ezrnest.mathsymk.linear.get
+import io.github.ezrnest.mathsymk.model.Models
+import io.github.ezrnest.mathsymk.model.Models.ints
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.assertThrows
 import kotlin.test.Test
@@ -191,8 +190,8 @@ class TensorTest {
     fun testEinsum3() {
         with(tenZ) {
             val u = Tensor.of(3, 3) { it[0] + 2 * it[1] }
-            assertEquals(einsum("ij->i", u), TensorImpl.sumInOneAxis(u, 1, mc))
-            assertEquals(einsum("ij->j", u), TensorImpl.sumInOneAxis(u, 0, mc))
+            assertEquals(einsum("ij->i", u), io.github.ezrnest.mathsymk.linear.TensorImpl.sumInOneAxis(u, 1, mc))
+            assertEquals(einsum("ij->j", u), io.github.ezrnest.mathsymk.linear.TensorImpl.sumInOneAxis(u, 0, mc))
         }
     }
 

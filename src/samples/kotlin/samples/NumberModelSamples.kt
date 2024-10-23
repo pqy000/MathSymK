@@ -1,8 +1,8 @@
 package cn.mathsymk.samples
 
-import io.github.ezrnest.model.Fraction
-import io.github.ezrnest.model.Models
-import io.github.ezrnest.model.RingFrac
+import io.github.ezrnest.mathsymk.model.Fraction
+import io.github.ezrnest.mathsymk.model.Models
+import io.github.ezrnest.mathsymk.model.RingFrac
 
 
 object NumberModelSamples {

@@ -1,16 +1,16 @@
 package model
 
-import io.github.ezrnest.model.Complex128
-import io.github.ezrnest.model.Complex128.Companion.ONE
-import io.github.ezrnest.model.Complex128.Companion.cos
-import io.github.ezrnest.model.Complex128.Companion.cosh
-import io.github.ezrnest.model.Complex128.Companion.cot
-import io.github.ezrnest.model.Complex128.Companion.exp
-import io.github.ezrnest.model.Complex128.Companion.ln
-import io.github.ezrnest.model.Complex128.Companion.sin
-import io.github.ezrnest.model.Complex128.Companion.sinh
-import io.github.ezrnest.model.Complex128.Companion.tan
-import io.github.ezrnest.model.Fraction
+import io.github.ezrnest.mathsymk.model.Complex128
+import io.github.ezrnest.mathsymk.model.Complex128.Companion.ONE
+import io.github.ezrnest.mathsymk.model.Complex128.Companion.cos
+import io.github.ezrnest.mathsymk.model.Complex128.Companion.cosh
+import io.github.ezrnest.mathsymk.model.Complex128.Companion.cot
+import io.github.ezrnest.mathsymk.model.Complex128.Companion.exp
+import io.github.ezrnest.mathsymk.model.Complex128.Companion.ln
+import io.github.ezrnest.mathsymk.model.Complex128.Companion.sin
+import io.github.ezrnest.mathsymk.model.Complex128.Companion.sinh
+import io.github.ezrnest.mathsymk.model.Complex128.Companion.tan
+import io.github.ezrnest.mathsymk.model.Fraction
 import kotlin.math.abs
 import kotlin.test.*
 

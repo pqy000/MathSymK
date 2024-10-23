@@ -1,13 +1,13 @@
 package cn.mathsymk.samples
 
-import io.github.ezrnest.linear.*
-import io.github.ezrnest.linear.get
-import io.github.ezrnest.model.Fraction
-import io.github.ezrnest.model.Multinomial
-import io.github.ezrnest.model.Models
-import io.github.ezrnest.model.Models.fractions
-import io.github.ezrnest.model.Models.ints
-import io.github.ezrnest.util.IterUtils
+import io.github.ezrnest.mathsymk.linear.Tensor
+import io.github.ezrnest.mathsymk.linear.get
+import io.github.ezrnest.mathsymk.model.Fraction
+import io.github.ezrnest.mathsymk.model.Multinomial
+import io.github.ezrnest.mathsymk.model.Models
+import io.github.ezrnest.mathsymk.model.Models.fractions
+import io.github.ezrnest.mathsymk.model.Models.ints
+import io.github.ezrnest.mathsymk.util.IterUtils
 import kotlin.system.measureTimeMillis
 
 
