@@ -21,19 +21,13 @@ object IterUtils {
         }
         private var ready: EnumState = READY
 
-        val elements: MutableList<T?>
-
-        init {
-
-            elements = iterators.mapTo(ArrayList(iterators.size)) {
-                if (it.hasNext()) {
-                    it.next()
-                } else {
-                    ready = EXHAUSTED
-                    null
-                }
+        val elements: MutableList<T?> = iterators.mapTo(ArrayList(iterators.size)) {
+            if (it.hasNext()) {
+                it.next()
+            } else {
+                ready = EXHAUSTED
+                null
             }
-
         }
 
         fun prepareNext() {
@@ -103,6 +97,10 @@ object IterUtils {
      */
     fun <T> prod(vararg its: Iterable<T>): Sequence<List<T>> {
         return prod(its.asList())
+    }
+
+    fun <T> prod(seqs : List<Sequence<T>>, copy: Boolean = true) : Sequence<List<T>> {
+        return prod(seqs.map { it.asIterable() }, copy)
     }
 
     private abstract class IdxIteratorTemplate(val n: Int) : Iterator<IntArray> {

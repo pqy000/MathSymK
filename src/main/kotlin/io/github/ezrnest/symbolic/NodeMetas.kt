@@ -72,5 +72,4 @@ object NodeMetas {
      */
     val simplified = TypedKey<Boolean>("simplified")
 
-
 }

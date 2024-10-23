@@ -4,6 +4,10 @@ import io.github.ezrnest.structure.Reals
 import io.github.ezrnest.symbolic.sim.RulesExponentialReduce
 import io.github.ezrnest.symbolic.sim.RulesTrigonometricReduce
 import io.github.ezrnest.symbolic.sim.addAll
+import io.github.ezrnest.util.IterUtils
+import io.github.ezrnest.util.all2
+import java.util.Objects
+import java.util.SortedSet
 import kotlin.math.max
 
 
@@ -19,6 +23,10 @@ interface ExprCal {
          * Forces all the computations to be done in the real domain, throwing an ArithmeticException for undefined operations like `sqrt(-1)`.
          */
         val forceReal: TypedKey<Boolean> = TypedKey("forceReal")
+
+        val simMaxStep: TypedKey<Int> = TypedKey("simMaxStep")
+
+        val simTruncationFactor: TypedKey<Double> = TypedKey("simTruncationFactor")
     }
 
 
@@ -31,10 +39,18 @@ interface ExprCal {
     fun reduceNode(node: Node, context: ExprContext, depth: Int = 0): Node
 
 
-    fun simplify(node : Node, maxDepth : Int) : List<Node>{
+    fun simplify(node: Node): List<Node> {
         TODO()
     }
+}
 
+class SimProcess(
+    val results: SortedSet<NodeStatus>,
+    val maxDepth: Int = Int.MAX_VALUE,
+    var steps: Int = 0, val stepLimit: Int = 1000
+) {
+
+    class NodeStatus(val node: Node, val complexity: Int, var processed: Boolean = false)
 }
 
 
@@ -44,14 +60,17 @@ open class BasicExprCal : ExprCal, NodeBuilderScope {
 
     val reduceRules: TreeDispatcher<SimRule> = TreeDispatcher()
 
+    val transRules: TreeDispatcher<SimRule> = TreeDispatcher()
 
     var verbose: Verbosity = Verbosity.NONE
-
-    override val context: ExprContext = BasicExprContext()
 
     enum class Verbosity {
         NONE, WHEN_APPLIED, ALL
     }
+
+    override val context: ExprContext = BasicExprContext()
+
+    var complexity: NodeComplexity = BasicComplexity
 
 
     private val indent = "|  "
@@ -59,7 +78,7 @@ open class BasicExprCal : ExprCal, NodeBuilderScope {
 
 
     init {
-        val rules: List<SimRule> = listOf(
+        listOf(
             Flatten(Node.Names.ADD),
             Flatten(Node.Names.MUL),
             RuleSort(NodeSig.ADD),
@@ -68,19 +87,20 @@ open class BasicExprCal : ExprCal, NodeBuilderScope {
             MergeProduct,
             ComputePow,
             FlattenPow
-        )
-
-        for (r in rules) {
-            reduceRules.register(r.matcher, r)
+        ).forEach {
+            addReduceRule(it)
         }
     }
 
     fun addReduceRule(rule: SimRule) {
-        val rule = rule.init(this) ?: rule
+        val rule = rule.init(this) ?: return
         reduceRules.register(rule.matcher, rule)
     }
 
-//    fun addRule()
+    fun addRule(rule: SimRule) {
+        val rule = rule.init(this) ?: return
+        transRules.register(rule.matcher, rule)
+    }
 
 
     override fun isCommutative(name: String): Boolean {
@@ -117,10 +137,10 @@ open class BasicExprCal : ExprCal, NodeBuilderScope {
             } else {
                 when (res) {
                     is LeafNode -> res
-                    is Node1 -> simplifyRecur1(res, context, depth - 1)
-                    is Node2 -> simplifyRecur2(res, context, depth - 1)
-                    is Node3 -> simplifyRecur3(res, context, depth - 1)
-                    is NodeN -> simplifyRecurN(res, context, depth - 1)
+                    is Node1 -> reduceRecur1(res, context, depth - 1)
+                    is Node2 -> reduceRecur2(res, context, depth - 1)
+                    is Node3 -> reduceRecur3(res, context, depth - 1)
+                    is NodeN -> reduceRecurN(res, context, depth - 1)
                     else -> res
                 }
             }
@@ -131,8 +151,8 @@ open class BasicExprCal : ExprCal, NodeBuilderScope {
                 if (verbose == Verbosity.WHEN_APPLIED) {
                     log(Verbosity.WHEN_APPLIED) { "|>${rule.description}" }
                 }
-                depth = p.level
-                res = p.item
+                depth = p.index
+                res = p.value
                 log(Verbosity.WHEN_APPLIED) { "|->  ${showNode(res)}" }
                 true
             }
@@ -147,21 +167,25 @@ open class BasicExprCal : ExprCal, NodeBuilderScope {
         return res
     }
 
+    private fun enterContext(node: Node, context: ExprContext): ExprContext {
+        return context // TODO
+    }
 
-    private fun simplifyRecur1(node: Node1, context: ExprContext, depth: Int): Node {
-        val n1 = reduceNode(node.child, context, depth)
+    private fun reduceRecur1(node: Node1, context: ExprContext, depth: Int): Node {
+        val ctx = enterContext(node, context)
+        val n1 = reduceNode(node.child, ctx, depth)
         if (n1 === node.child) return node
         return node.newWithChildren(n1)
     }
 
-    private fun simplifyRecur2(node: Node2, context: ExprContext, depth: Int): Node {
+    private fun reduceRecur2(node: Node2, context: ExprContext, depth: Int): Node {
         val n1 = reduceNode(node.first, context, depth)
         val n2 = reduceNode(node.second, context, depth)
         if (n1 === node.first && n2 === node.second) return node
         return node.newWithChildren(n1, n2)
     }
 
-    private fun simplifyRecur3(node: Node3, context: ExprContext, depth: Int): Node {
+    private fun reduceRecur3(node: Node3, context: ExprContext, depth: Int): Node {
         val n1 = reduceNode(node.first, context, depth)
         val n2 = reduceNode(node.second, context, depth)
         val n3 = reduceNode(node.third, context, depth)
@@ -169,7 +193,7 @@ open class BasicExprCal : ExprCal, NodeBuilderScope {
         return node.newWithChildren(n1, n2, n3)
     }
 
-    private fun simplifyRecurN(node: NodeN, context: ExprContext, depth: Int): Node {
+    private fun reduceRecurN(node: NodeN, context: ExprContext, depth: Int): Node {
         var changed = false
         val children = node.children.map { n ->
             reduceNode(n, context, depth).also { if (n !== it) changed = true }
@@ -178,6 +202,99 @@ open class BasicExprCal : ExprCal, NodeBuilderScope {
         return node.newWithChildren(children)
     }
 
+
+    private fun transRecur1(node: Node1, context: ExprContext, depth: Int): Sequence<Node> {
+        val ctx = enterContext(node, context)
+        return transNode(node.child, ctx, depth).map {
+            if (it === node.child) node else node.newWithChildren(it)
+        }
+    }
+
+    private fun transRecur2(node: Node2, context: ExprContext, depth: Int): Sequence<Node> {
+        val ctx = enterContext(node, context)
+        val s1 = transNode(node.first, ctx, depth)
+        val s2 = transNode(node.second, ctx, depth)
+        return s1.flatMap { f1 ->
+            s2.map { f2 ->
+                if (f1 === node.first && f2 === node.second) node else node.newWithChildren(f1, f2)
+            }
+        }
+    }
+
+    private fun transRecur3(node: Node3, context: ExprContext, depth: Int): Sequence<Node> {
+        val ctx = enterContext(node, context)
+        val s1 = transNode(node.first, ctx, depth)
+        val s2 = transNode(node.second, ctx, depth)
+        val s3 = transNode(node.third, ctx, depth)
+        return IterUtils.prod(listOf(s1, s2, s3), copy = false).map { (f1, f2, f3) ->
+            if (f1 === node.first && f2 === node.second && f3 === node.third) node else node.newWithChildren(f1, f2, f3)
+        }
+    }
+
+    private fun transRecurN(node: NodeChilded, context: ExprContext, depth: Int): Sequence<Node> {
+        val ctx = enterContext(node, context)
+        val seqs = node.children.map { n -> transNode(n, ctx, depth) }
+        return IterUtils.prod(seqs, copy = false).map { children ->
+            if (children.all2(node.children) { x, y -> x === y }) node else node.newWithChildren(children)
+        }
+    }
+
+
+    private fun transNode(node: Node, ctx: ExprContext, depth: Int): Sequence<Node> = sequence {
+//        val reduced = reduceNode(node, ctx, 0)
+//        if (reduced !== node) yield(reduced)
+        val seq = if (depth <= 0) {
+            sequenceOf(node)
+        } else {
+            when (node) {
+                is LeafNode -> sequenceOf(node)
+                is Node1 -> transRecur1(node, ctx, depth-1)
+                is Node2 -> transRecur2(node, ctx, depth-1)
+                is Node3 -> transRecur3(node, ctx, depth-1)
+                is NodeChilded -> transRecurN(node, ctx, depth-1)
+                else -> sequenceOf(node)
+            }
+        }
+        for(n in seq){
+            yield(n)
+            transRules.dispatchUntil(n){ rule ->
+                log(Verbosity.ALL) { "|> ${rule.description}" }
+                val p = rule.simplify(n, context, this@BasicExprCal) ?: return@dispatchUntil false
+
+                if (verbose == Verbosity.WHEN_APPLIED) {
+                    log(Verbosity.WHEN_APPLIED) { "|>${rule.description}" }
+                }
+                depth = p.index
+                res = p.value
+                log(Verbosity.WHEN_APPLIED) { "|->  ${showNode(res)}" }
+                true
+
+            }
+            val appliedRule = reduceRules.dispatchUntil(res) { rule ->
+                log(Verbosity.ALL) { "|> ${rule.description}" }
+                val p = rule.simplify(res, context, this) ?: return@dispatchUntil false
+
+                if (verbose == Verbosity.WHEN_APPLIED) {
+                    log(Verbosity.WHEN_APPLIED) { "|>${rule.description}" }
+                }
+                depth = p.index
+                res = p.value
+                log(Verbosity.WHEN_APPLIED) { "|->  ${showNode(res)}" }
+                true
+            }
+            if (appliedRule == null) {
+                log(Verbosity.ALL) { "|> Nothing happened ..." }
+                log(Verbosity.ALL) { "|->  ${showNode(res)}" }
+                break
+            }
+        }
+
+    }
+
+    private fun simplifyTo(node: Node, sim: SimProcess, ctx: ExprContext, depth: Int) {
+//        val reduced = reduceNode(node, ctx, depth)
+//        sim.results += SimProcess.NodeStatus(reduced, complexity.complexity(reduced, ctx))
+    }
 }
 
 

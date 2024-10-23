@@ -131,11 +131,11 @@ class MatcherReplaceRule(
 
     override val metaKeyApplied: TypedKey<Boolean> = TypedKey(description)
 
-    override fun simplify(node: Node, context: ExprContext, cal : ExprCal): WithLevel<Node>? {
+    override fun simplify(node: Node, context: ExprContext, cal : ExprCal): IndexedValue<Node>? {
         val matchCtx = MutableMatchContext(context)
         matcher.matches(node, matchCtx) ?: return null
         val replacementNode = ReplacementScope.create(matchCtx).replacement() ?: return null
-        return WithLevel(afterDepth, replacementNode)
+        return IndexedValue(afterDepth, replacementNode)
     }
 }
 
@@ -164,7 +164,7 @@ class MatchNodeReplaceRule(
         }
     }
 
-    override fun simplify(node: Node, context: ExprContext, cal : ExprCal): WithLevel<Node>? {
+    override fun simplify(node: Node, context: ExprContext, cal : ExprCal): IndexedValue<Node>? {
         throw IllegalStateException("Matcher is not initialized")
     }
 }

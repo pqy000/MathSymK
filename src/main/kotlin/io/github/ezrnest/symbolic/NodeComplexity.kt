@@ -11,8 +11,10 @@ object BasicComplexity : NodeComplexity {
 
     override fun complexity(node: Node, ctx: ExprContext): Int {
         return when (node) {
-            is LeafNode -> 1
-            is NodeChilded -> 1 + node.children.sumOf { complexity(it, ctx) }
+            is NRational -> 1
+            is NSymbol -> 2
+            is LeafNode -> 2
+            is NodeChilded -> 3 + node.children.sumOf { complexity(it, ctx) }
             else -> 1
         }
     }

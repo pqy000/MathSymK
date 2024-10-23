@@ -13,7 +13,6 @@ import io.github.ezrnest.symbolic.NodeMatcherT
 import io.github.ezrnest.symbolic.SimRuleMatched
 import io.github.ezrnest.symbolic.SimUtils
 import io.github.ezrnest.symbolic.TypedKey
-import io.github.ezrnest.symbolic.WithLevel
 import io.github.ezrnest.symbolic.buildMatcher
 import io.github.ezrnest.symbolic.buildNode
 import io.github.ezrnest.symbolic.set
@@ -134,10 +133,10 @@ class RuleSinSpecial : SimRuleMatched<Node1> {
     }
 
 
-    override fun simplifyMatched(node: Node1, matchContext: MatchContext): WithLevel<Node>? {
+    override fun simplifyMatched(node: Node1, matchContext: MatchContext): IndexedValue<Node>? {
         val r = (matchContext.refMap["r"] as NRational).value
         val res = TrigonometricUtils.sinRPi(r) ?: return null
-        return WithLevel(Int.MAX_VALUE, res)
+        return IndexedValue(Int.MAX_VALUE, res)
     }
 
 }
@@ -152,10 +151,10 @@ class RuleCosSpecial : SimRuleMatched<Node1> {
         cos(rational.named("r") * π)
     }
 
-    override fun simplifyMatched(node: Node1, matchContext: MatchContext): WithLevel<Node>? {
+    override fun simplifyMatched(node: Node1, matchContext: MatchContext): IndexedValue<Node>? {
         val r = (matchContext.refMap["r"] as NRational).value
         val res = TrigonometricUtils.cosRPi(r) ?: return null
-        return WithLevel(Int.MAX_VALUE, res)
+        return IndexedValue(Int.MAX_VALUE, res)
     }
 }
 
@@ -170,10 +169,10 @@ class RuleTanSpecial : SimRuleMatched<Node1> {
         tan(rational.named("r") * π)
     }
 
-    override fun simplifyMatched(node: Node1, matchContext: MatchContext): WithLevel<Node>? {
+    override fun simplifyMatched(node: Node1, matchContext: MatchContext): IndexedValue<Node>? {
         val r = (matchContext.refMap["r"] as NRational).value
         val res = TrigonometricUtils.tanRPi(r) ?: return null
-        return WithLevel(Int.MAX_VALUE, res)
+        return IndexedValue(Int.MAX_VALUE, res)
     }
 }
 
@@ -193,6 +192,44 @@ class RulesTrigonometricReduce : RuleList() {
                 pow(sin(x), 2.e) + pow(cos(x), 2.e)
             } to {
                 1.e
+            }
+        }
+    }
+}
+
+class RulesTrigonometricTransform : RuleList(){
+    
+    init{
+        rule{
+            name = "Trig: sin(x) = cos(π/2 - x)"
+            match{
+                sin(x)
+            } to {
+                cos(π/2.e - x)
+            }
+        }
+        rule{
+            name = "Trig: cos(x) = sin(π/2 - x)"
+            match{
+                cos(x)
+            } to {
+                sin(π/2.e - x)
+            }
+        }
+        rule{
+            name = "Trig: sin(x+y) = sin(x)cos(y) + cos(x)sin(y)"
+            match{
+                sin(x + y)
+            } to {
+                sin(x) * cos(y) + cos(x) * sin(y)
+            }
+        }
+        rule{
+            name = "Trig: cos(x+y) = cos(x)cos(y) - sin(x)sin(y)"
+            match{
+                cos(x + y)
+            } to {
+                cos(x) * cos(y) - sin(x) * sin(y)
             }
         }
     }

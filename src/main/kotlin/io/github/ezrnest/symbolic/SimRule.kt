@@ -19,7 +19,7 @@ interface SimRule {
      */
     val metaKeyApplied: TypedKey<Boolean>
 
-    fun simplify(node: Node, ctx: ExprContext, cal: ExprCal): WithLevel<Node>?
+    fun simplify(node: Node, ctx: ExprContext, cal: ExprCal): IndexedValue<Node>?
 
     val matcher: NodeMatcherT<Node>
         get() = AnyMatcher
@@ -30,9 +30,6 @@ interface SimRule {
     }
 }
 
-@JvmRecord
-data class WithLevel<out D>(val level: Int, val item: D) {
-}
 
 
 class RuleSort(val targetSig: NodeSig) : SimRule {
@@ -63,13 +60,13 @@ class RuleSort(val targetSig: NodeSig) : SimRule {
     }
 
 
-    override fun simplify(node: Node, ctx: ExprContext, cal: ExprCal): WithLevel<Node>? {
+    override fun simplify(node: Node, ctx: ExprContext, cal: ExprCal): IndexedValue<Node>? {
         if (node !is NodeChilded) return null
         if (!cal.isCommutative(node.name)) return null
         return when (node) {
             is Node1 -> null
-            is Node2 -> sort2(node)?.let { WithLevel(0, it) }
-            else -> sortN(node, ctx)?.let { WithLevel(0, it) }
+            is Node2 -> sort2(node)?.let { IndexedValue(0, it) }
+            else -> sortN(node, ctx)?.let { IndexedValue(0, it) }
         }
     }
 }
@@ -77,8 +74,8 @@ class RuleSort(val targetSig: NodeSig) : SimRule {
 
 abstract class RuleForSpecificName(val targetName: String) : SimRule {
     protected inline fun <reified T : Node> simplifyNodeTyped(
-        node: Node, nextSimplification: (T) -> WithLevel<Node>?
-    ): WithLevel<Node>? {
+        node: Node, nextSimplification: (T) -> IndexedValue<Node>?
+    ): IndexedValue<Node>? {
         if (node.name != targetName || node !is T || node[metaKeyApplied] == true)
             return null
         val res = nextSimplification(node)
@@ -107,11 +104,11 @@ abstract class RuleForSpecificN(targetName: String) : RuleForSpecificName(target
 
     final override val matcher: NodeMatcherT<NodeN> = LeafMatcherFixSig.forNodeN(targetName)
 
-    final override fun simplify(node: Node, ctx: ExprContext, cal: ExprCal): WithLevel<Node>? {
+    final override fun simplify(node: Node, ctx: ExprContext, cal: ExprCal): IndexedValue<Node>? {
         return simplifyNodeTyped<NodeN>(node) { n -> simplifyN(n, ctx, cal) }
     }
 
-    abstract fun simplifyN(root: NodeN, context: ExprContext, cal: ExprCal): WithLevel<Node>?
+    abstract fun simplifyN(root: NodeN, context: ExprContext, cal: ExprCal): IndexedValue<Node>?
 }
 
 
@@ -120,15 +117,15 @@ class Flatten(targetName: String) : RuleForSpecificN(targetName) {
     override val description: String = "Flatten $targetName"
     override val metaKeyApplied: TypedKey<Boolean> = TypedKey("Flatten${targetName}")
 
-    override fun simplifyN(root: NodeN, context: ExprContext, cal: ExprCal): WithLevel<Node>? {
+    override fun simplifyN(root: NodeN, context: ExprContext, cal: ExprCal): IndexedValue<Node>? {
         val children = root.children
-        if (children.size == 1) return WithLevel(0, children[0])
+        if (children.size == 1) return IndexedValue(0, children[0])
         if (children.all { !(it is NodeN && it.name == targetName) }) return null
         val newChildren = children.flatMap {
             if (it is NodeN && it.name == targetName) it.children else listOf(it)
         }
         val res = Node.NodeN(targetName, newChildren).also { it[metaKeyApplied] = true }
-        return WithLevel(0, res)
+        return IndexedValue(0, res)
     }
 }
 
@@ -147,7 +144,7 @@ object MergeAdditionRational : RuleForSpecificN(Names.ADD) {
     override val description: String
         get() = "Merge addition rational"
 
-    override fun simplifyN(root: NodeN, context: ExprContext, cal: ExprCal): WithLevel<Node>? {
+    override fun simplifyN(root: NodeN, context: ExprContext, cal: ExprCal): IndexedValue<Node>? {
         val children = root.children
         val Q = BigFracAsQuot
         val collect = sortedMapOf<Node, BigFrac>(NodeOrder)
@@ -168,14 +165,14 @@ object MergeAdditionRational : RuleForSpecificN(Names.ADD) {
             }
         }
         if (!simplified) return null
-        if (collect.isEmpty()) return WithLevel(-1, Node.ZERO)
+        if (collect.isEmpty()) return IndexedValue(-1, Node.ZERO)
         if (collect.size == 1) {
             val (n, r) = collect.entries.first()
-            return WithLevel(0, SimUtils.createWithRational(r, n))
+            return IndexedValue(0, SimUtils.createWithRational(r, n))
         }
 
         val newChildren = collect.entries.map { (n, r) -> SimUtils.createWithRational(r, n) }
-        return WithLevel(0, Node.Add(newChildren))
+        return IndexedValue(0, Node.Add(newChildren))
 
     }
 
@@ -219,13 +216,13 @@ object MergeProduct : RuleForSpecificN(Names.MUL) {
         return cal.reduceNode(res, context, 0)
     }
 
-    private fun simMulZero(collect: Map<Node, List<Node>>, context: ExprContext): WithLevel<Node> {
+    private fun simMulZero(collect: Map<Node, List<Node>>, context: ExprContext): IndexedValue<Node> {
         // possible further check for undefined or infinity
-        return WithLevel(-1, Node.ZERO)
+        return IndexedValue(-1, Node.ZERO)
     }
 
 
-    override fun simplifyN(root: NodeN, context: ExprContext, cal: ExprCal): WithLevel<Node>? {
+    override fun simplifyN(root: NodeN, context: ExprContext, cal: ExprCal): IndexedValue<Node>? {
         val children = root.children
         val collect = sortedMapOf<Node, List<Node>>(NodeOrder)
         val Q = BigFracAsQuot
@@ -261,7 +258,7 @@ object MergeProduct : RuleForSpecificN(Names.MUL) {
         val newChildren = ArrayList<Node>(collect.size + if (addRational) 1 else 0)
         if (addRational) newChildren.add(Node.Rational(rPart))
         collect.entries.mapTo(newChildren) { (base, nodeList) -> buildPower(base, nodeList, context, cal) }
-        return WithLevel(0, Node.Mul(newChildren))
+        return IndexedValue(0, Node.Mul(newChildren))
         // need simplification by the rule again since the power may be added and simplified
     }
 }
@@ -281,7 +278,7 @@ object ComputeProductRational : RuleForSpecificN(Names.MUL) {
         get() = "Compute product"
 
 
-    override fun simplifyN(root: NodeN, context: ExprContext, cal: ExprCal): WithLevel<Node>? {
+    override fun simplifyN(root: NodeN, context: ExprContext, cal: ExprCal): IndexedValue<Node>? {
         val children = root.children
         val Q = BigFracAsQuot
         var product = Q.one
@@ -297,34 +294,34 @@ object ComputeProductRational : RuleForSpecificN(Names.MUL) {
             }
         }
         if (count == 0) return null  // no rational to compute
-        if (Q.isZero(product)) return WithLevel(-1, Node.ZERO)
-        if (nodes.isEmpty()) return WithLevel(-1, Node.Rational(product)) // only rational
+        if (Q.isZero(product)) return IndexedValue(-1, Node.ZERO)
+        if (nodes.isEmpty()) return IndexedValue(-1, Node.Rational(product)) // only rational
         if (count == 1 && !Q.isOne(product)) return null // only one rational that can't be simplified
         if (!Q.isOne(product)) {
             nodes.add(Node.Rational(product))
         }
-        return Node.Mul(nodes).also { it[metaKeyApplied] = true }.let { WithLevel(0, it) }
+        return Node.Mul(nodes).also { it[metaKeyApplied] = true }.let { IndexedValue(0, it) }
     }
 }
 
 abstract class RuleForSpecific1(targetName: String) : RuleForSpecificName(targetName) {
     final override val matcher: NodeMatcherT<Node> = LeafMatcherFixSig.forNode1(targetName)
 
-    final override fun simplify(node: Node, ctx: ExprContext, cal: ExprCal): WithLevel<Node>? {
+    final override fun simplify(node: Node, ctx: ExprContext, cal: ExprCal): IndexedValue<Node>? {
         return simplifyNodeTyped<Node1>(node) { n -> simplify1(n, ctx, cal) }
     }
 
-    protected abstract fun simplify1(root: Node1, context: ExprContext, cal: ExprCal): WithLevel<Node>?
+    protected abstract fun simplify1(root: Node1, context: ExprContext, cal: ExprCal): IndexedValue<Node>?
 }
 
 abstract class RuleForSpecific2(targetName: String) : RuleForSpecificName(targetName) {
     final override val matcher: NodeMatcherT<Node> = LeafMatcherFixSig.forNode2(targetName)
 
-    final override fun simplify(node: Node, ctx: ExprContext, cal: ExprCal): WithLevel<Node>? {
+    final override fun simplify(node: Node, ctx: ExprContext, cal: ExprCal): IndexedValue<Node>? {
         return simplifyNodeTyped<Node2>(node) { n -> simplify2(n, ctx, cal) }
     }
 
-    protected abstract fun simplify2(root: Node2, context: ExprContext, cal: ExprCal): WithLevel<Node>?
+    protected abstract fun simplify2(root: Node2, context: ExprContext, cal: ExprCal): IndexedValue<Node>?
 }
 
 /**
@@ -348,10 +345,10 @@ object FlattenPow : RuleForSpecific2(Names.POW) {
         return Node.Pow(baseBase, newExp)
     }
 
-    private fun flattenPowInt(base: Node, exp: NRational, context: ExprContext): WithLevel<Node>? {
-        if (BigFracAsQuot.isOne(exp.value)) return WithLevel(0, base)
+    private fun flattenPowInt(base: Node, exp: NRational, context: ExprContext): IndexedValue<Node>? {
+        if (BigFracAsQuot.isOne(exp.value)) return IndexedValue(0, base)
         if (SimUtils.isPow(base)) {
-            return WithLevel(0, flattenPowPow(base, exp))
+            return IndexedValue(0, flattenPowPow(base, exp))
         }
         if (SimUtils.isMul(base)) {
             val children = base.children
@@ -362,12 +359,12 @@ object FlattenPow : RuleForSpecific2(Names.POW) {
                     Node.Pow(it, exp)
                 }
             }
-            return WithLevel(2, Node.Mul(newChildren))
+            return IndexedValue(2, Node.Mul(newChildren))
         }
         return null
     }
 
-    override fun simplify2(root: Node2, context: ExprContext, cal: ExprCal): WithLevel<Node>? {
+    override fun simplify2(root: Node2, context: ExprContext, cal: ExprCal): IndexedValue<Node>? {
         val (base, exp) = root
         if (SimUtils.isInteger(exp, context)) {
             return flattenPowInt(base, exp, context)
@@ -506,10 +503,10 @@ object ComputePow : RuleForSpecific2(Names.POW) {
 //        TODO()
 //    }
 
-    override fun simplify2(root: Node2, context: ExprContext, cal: ExprCal): WithLevel<Node>? {
+    override fun simplify2(root: Node2, context: ExprContext, cal: ExprCal): IndexedValue<Node>? {
         val (base, exp) = root
         if (base !is NRational) return null
-        if (exp is NRational) return WithLevel(Int.MAX_VALUE, powRational(base.value, exp.value, context, cal))
+        if (exp is NRational) return IndexedValue(Int.MAX_VALUE, powRational(base.value, exp.value, context, cal))
         return null
     }
 }
@@ -526,10 +523,10 @@ interface SimRuleMatched<T : Node> : SimRule {
     /**
      * Simplify the matched node.
      */
-    fun simplifyMatched(node: T, matchContext: MatchContext): WithLevel<Node>?
+    fun simplifyMatched(node: T, matchContext: MatchContext): IndexedValue<Node>?
 
 
-    override fun simplify(node: Node, ctx: ExprContext, cal: ExprCal): WithLevel<Node>? {
+    override fun simplify(node: Node, ctx: ExprContext, cal: ExprCal): IndexedValue<Node>? {
         if (node[metaKeyApplied] == true) return null
         val matchContext = MutableMatchContext(ctx)
         val r = matcher.matches(node, matchContext) ?: return null
