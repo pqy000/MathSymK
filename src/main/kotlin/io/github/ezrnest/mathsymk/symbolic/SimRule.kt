@@ -21,9 +21,9 @@ interface SimRule : TransRule {
 
     fun simplify(node: Node, ctx: ExprContext, cal: ExprCal): IndexedValue<Node>?
 
-    override fun transform(node: Node, ctx: ExprContext, cal: ExprCal): Sequence<Node> {
-        val res = simplify(node, ctx, cal) ?: return emptySequence()
-        return sequenceOf(res.value)
+    override fun transform(node: Node, ctx: ExprContext, cal: ExprCal): List<Node> {
+        val res = simplify(node, ctx, cal) ?: return emptyList()
+        return listOf(res.value)
     }
 
     override val matcher: NodeMatcherT<Node>

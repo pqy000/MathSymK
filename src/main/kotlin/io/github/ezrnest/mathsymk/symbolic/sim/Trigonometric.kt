@@ -216,11 +216,11 @@ class RulesTrigonometricTransform : RuleList() {
 //            }
 //        }
         rule{
-            name = "Trig: sin(x) = sin(-x)"
+            name = "Trig: sin(x) = -sin(-x)"
             match {
                 sin(-x)
             } to {
-                sin(x)
+                -sin(x)
             }
         }
         rule{
@@ -241,11 +241,28 @@ class RulesTrigonometricTransform : RuleList() {
             }
         }
         rule {
+            name = "Trig: sin(x)cos(y) + cos(x)sin(y) -> sin(x+y)"
+            match {
+                sin(x) * cos(y) + cos(x) * sin(y)
+            } to {
+                sin(x+y)
+            }
+        }
+        rule {
             name = "Trig: cos(x+y) = cos(x)cos(y) - sin(x)sin(y)"
             match {
                 cos(x + y)
             } to {
                 cos(x) * cos(y) - sin(x) * sin(y)
+            }
+        }
+        rule {
+            name = "Trig: cos(x)cos(y) - sin(x)sin(y) -> cos(x+y) "
+            match {
+                cos(x) * cos(y) - sin(x) * sin(y)
+
+            } to {
+                cos(x + y)
             }
         }
     }

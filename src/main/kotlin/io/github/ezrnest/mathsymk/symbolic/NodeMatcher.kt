@@ -932,18 +932,15 @@ class TreeDispatcher<T>() {
     }
 }
 
-fun TreeDispatcher<NodeMatcherT<*>>.register(matcher: NodeMatcherT<*>) {
-    register(matcher, matcher)
-}
 
 
 fun main() {
-    val dispatcher = TreeDispatcher<NodeMatcherT<*>>()
+    val dispatcher = TreeDispatcher<Int>()
     with(MatcherBuilderScope) {
-        dispatcher.register(integer)
-        dispatcher.register(AnyMatcher)
+        dispatcher.register(integer,1)
+        dispatcher.register(AnyMatcher,2)
 //        val m1 =
-        dispatcher.register(pow(pow(π, y), rational))
+        dispatcher.register(pow(pow(π, y), rational),3)
 //        val m2 = pow(sin(x), rational)
 //        dispatcher.register(m2)
 //        val m3 = pow(pow(rational, rational), rational)
@@ -958,9 +955,9 @@ fun main() {
         val mat = NodeMatcherNPO(listOf(m1, m2), NodeSig.ADD, ref("rem"))
         mat.childrenChains.forEach { println(it) }
 //        dispatcher.register(mat)
-        dispatcher.register(mat)
-        dispatcher.register(m1)
-        dispatcher.register(m2)
+        dispatcher.register(mat,4)
+        dispatcher.register(m1,5)
+        dispatcher.register(m2,6)
         dispatcher.printDispatchTree()
     }
 //    TestExprContext.dispatcher.printDispatchTree()

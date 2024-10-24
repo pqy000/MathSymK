@@ -4,10 +4,8 @@ import io.github.ezrnest.mathsymk.structure.Reals
 import io.github.ezrnest.mathsymk.symbolic.sim.RuleList
 import io.github.ezrnest.mathsymk.symbolic.sim.RulesExponentialReduce
 import io.github.ezrnest.mathsymk.symbolic.sim.RulesTrigonometricReduce
-import io.github.ezrnest.mathsymk.util.IterUtils
-import io.github.ezrnest.mathsymk.util.all2
-import java.util.PriorityQueue
-import java.util.SortedSet
+import java.util.*
+import kotlin.collections.ArrayList
 import kotlin.math.max
 import kotlin.math.min
 
@@ -45,23 +43,22 @@ interface ExprCal {
     }
 }
 
+
+typealias NodeWithComplexity = IndexedValue<Node>
+
 class SimProcess(
-    val results: SortedSet<NodeStatus>,
-    val maxDepth: Int = Int.MAX_VALUE,
-    var steps: Int = 0, val stepLimit: Int = 1000
+    var depth: Int = 0, var steps: Int = 0, var context: ExprContext,
+    val complexity: NodeComplexity,
 ) {
+    val order = compareBy<NodeWithComplexity> { it.index }.thenBy(NodeOrder) { it.value }
+    var stepLimit: Int = 1000
+    var maxDepth: Int = Int.MAX_VALUE
+    var discardRatio: Double = 100.0
+    var simMaxWidth: Int = 10
 
-    class NodeStatus(val node: Node, val complexity: Int, var processed: Boolean = false){
-        override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            if (other == null || other !is NodeStatus) return false
-            return complexity == other.complexity && node.deepEquals(other.node)
-        }
 
-        override fun toString(): String {
-            return "NS($complexity: ${node.plainToString()})"
-        }
-
+    fun create(node: Node): NodeWithComplexity {
+        return NodeWithComplexity(complexity.complexity(node, context), node)
     }
 }
 
@@ -72,9 +69,10 @@ open class BasicExprCal : ExprCal, NodeBuilderScope {
 
     val reduceRules: TreeDispatcher<SimRule> = TreeDispatcher()
 
-    val transRules: TreeDispatcher<SimRule> = TreeDispatcher()
+    val transRules: TreeDispatcher<TransRule> = TreeDispatcher()
 
     var verbose: Verbosity = Verbosity.NONE
+    var showMeta = false
 
     enum class Verbosity {
         NONE, WHEN_APPLIED, ALL
@@ -109,7 +107,11 @@ open class BasicExprCal : ExprCal, NodeBuilderScope {
         reduceRules.register(rule.matcher, rule)
     }
 
-    fun addRule(rule: SimRule) {
+    fun addReduceRuleAll(rules: RuleList) {
+        rules.list.forEach { addReduceRule(it) }
+    }
+
+    fun addRule(rule: TransRule) {
         val rule = rule.init(this) ?: return
         transRules.register(rule.matcher, rule)
     }
@@ -131,13 +133,15 @@ open class BasicExprCal : ExprCal, NodeBuilderScope {
 
     private fun showNode(node: Node): String {
         val meta = node.meta
-        if (meta.isEmpty()) return node.plainToString()
+        if (meta.isEmpty() || !showMeta) return node.plainToString()
         return "${node.plainToString()}, ${node.meta}"
     }
 
 
     override fun reduceNode(node: Node, context: ExprContext, depth: Int): Node {
-
+        node[NodeMetas.reduceTo]?.let {
+            return it
+        }
         var depth = depth
         var res = node
         simLevel++
@@ -176,6 +180,7 @@ open class BasicExprCal : ExprCal, NodeBuilderScope {
         }
 
         simLevel--
+        res[NodeMetas.reduceTo] = res
         return res
     }
 
@@ -215,124 +220,150 @@ open class BasicExprCal : ExprCal, NodeBuilderScope {
     }
 
 
-    private fun transRecur1(node: Node1, context: ExprContext, depth: Int): Sequence<Node> {
-        val ctx = enterContext(node, context)
-        return transNode(node.child, ctx, depth).map {
-            if (it === node.child) node else node.newWithChildren(it)
-        }
+    private fun transRecur1(node: Node1, sim: SimProcess): List<Node> {
+        return transNode(node.child, sim).map { node.newWithChildren(it.value) }
     }
 
-    private fun transRecur2(node: Node2, context: ExprContext, depth: Int): Sequence<Node> {
-        val ctx = enterContext(node, context)
-        val s1 = transNode(node.first, ctx, depth)
-        val s2 = transNode(node.second, ctx, depth)
-        return s1.flatMap { f1 ->
-            s2.map { f2 ->
-                if (f1 === node.first && f2 === node.second) node else node.newWithChildren(f1, f2)
+    private fun transRecur2(node: Node2, sim: SimProcess): List<Node> {
+        val s1 = transNode(node.first, sim)
+        val s2 = transNode(node.second, sim)
+        val size = s1.size + s2.size
+        if (size == 0) return emptyList()
+        val res = ArrayList<Node>(size)
+        for (f1 in s2) {
+            res.add(node.newWithChildren(f1.value, node.second))
+        }
+        for (f2 in s2) {
+            res.add(node.newWithChildren(node.first, f2.value))
+        }
+        return res
+    }
+
+    private fun transRecur3(node: Node3, sim: SimProcess): List<Node> {
+        val s1 = transNode(node.first, sim)
+        val s2 = transNode(node.second, sim)
+        val s3 = transNode(node.third, sim)
+        val size = s1.size + s2.size + s3.size
+        if (size == 0) return emptyList()
+        val res = ArrayList<Node>(size)
+        for (f1 in s1) {
+            res.add(node.newWithChildren(f1.value, node.second, node.third))
+        }
+        for (f2 in s2) {
+            res.add(node.newWithChildren(node.first, f2.value, node.third))
+        }
+        for (f3 in s3) {
+            res.add(node.newWithChildren(node.first, node.second, f3.value))
+        }
+        return res
+    }
+
+    private fun transRecurN(node: NodeChilded, sim: SimProcess): List<Node> {
+        val subs = node.children.map { n -> transNode(n, sim) }
+        val size = subs.sumOf { it.size }
+        if (size == 0) return emptyList()
+        val res = ArrayList<Node>(size)
+        for (i in subs.indices) {
+            for (sub in subs[i]) {
+                val childrenList = node.children.toMutableList()
+                childrenList[i] = sub.value
+                res.add(node.newWithChildren(childrenList))
             }
         }
+        return res
     }
 
-    private fun transRecur3(node: Node3, context: ExprContext, depth: Int): Sequence<Node> {
-        val ctx = enterContext(node, context)
-        val s1 = transNode(node.first, ctx, depth)
-        val s2 = transNode(node.second, ctx, depth)
-        val s3 = transNode(node.third, ctx, depth)
-        return IterUtils.prodSeq(listOf(s1, s2, s3), copy = false).map { (f1, f2, f3) ->
-            if (f1 === node.first && f2 === node.second && f3 === node.third) node else node.newWithChildren(f1, f2, f3)
+
+    /**
+     * Returns a list of transformations of the given node, not including the node itself.
+     * The list can be empty if no transformation is possible.
+     * The results are sorted by complexity.
+     */
+    private fun transNode(node: Node, sim: SimProcess): List<NodeWithComplexity> {
+        if (node[NodeMetas.simplified] == true) return emptyList()
+        node[NodeMetas.transforms]?.let {
+            return it
         }
-    }
 
-    private fun transRecurN(node: NodeChilded, context: ExprContext, depth: Int): Sequence<Node> {
-        val ctx = enterContext(node, context)
-        val seqs = node.children.map { n -> transNode(n, ctx, depth) }
-        return IterUtils.prodSeq(seqs, copy = false).map { children ->
-            if (children.all2(node.children) { x, y -> x === y }) node else node.newWithChildren(children.toList())
-        }
-    }
+        simLevel++
+        val results = sortedSetOf(sim.order)
+        val pending = PriorityQueue(sim.order)
+        val origin = sim.create(node)
+        pending += origin
+        results += origin
+        if (sim.steps >= sim.stepLimit) return emptyList()
+        while (sim.steps < sim.stepLimit && pending.isNotEmpty()) {
+            val node = pending.remove().value
+            val subResult: List<Node>
+            if (sim.depth <= 0) {
+                subResult = emptyList()
+            } else {
+                sim.depth--
+                subResult = when (node) {
+                    is LeafNode -> emptyList()
+                    is Node1 -> transRecur1(node, sim)
+                    is Node2 -> transRecur2(node, sim)
+                    is Node3 -> transRecur3(node, sim)
+                    is NodeChilded -> transRecurN(node, sim)
+                    else -> emptyList()
+                }
+                sim.depth++
+            }
+            for (n in subResult) {
+                val reduced = reduceNode(n, sim.context, sim.depth)
+                val ns = sim.create(reduced)
+                if (results.add(ns)) {
+                    pending += ns
+                }
+            }
 
-
-    private fun transNode(node: Node, ctx: ExprContext, depth: Int): Sequence<Node> = sequence {
-//        val reduced = reduceNode(node, ctx, 0)
-//        if (reduced !== node) yield(reduced)
-        val seq = if (depth <= 0) {
-            sequenceOf(node)
-        } else {
-            when (node) {
-                is LeafNode -> sequenceOf(node)
-                is Node1 -> transRecur1(node, ctx, depth - 1)
-                is Node2 -> transRecur2(node, ctx, depth - 1)
-                is Node3 -> transRecur3(node, ctx, depth - 1)
-                is NodeChilded -> transRecurN(node, ctx, depth - 1)
-                else -> sequenceOf(node)
+            for (rule in transRules.dispatchSeq(node)) {
+                sim.steps++
+                if (sim.steps >= sim.stepLimit) break
+                val transList = rule.transform(node, sim.context, this)
+                if (transList.isEmpty()) continue
+                log(Verbosity.WHEN_APPLIED) { "|>${rule.description}" }
+                for (trans in transList) {
+                    val res = reduceNode(trans, sim.context, sim.depth)
+                    val ns = sim.create(res)
+                    if (results.add(ns)) {
+                        pending += ns
+                    }
+                }
             }
         }
-        for (n in seq) {
-            val reduced = reduceNode(n, ctx, depth)
-            yield(reduced)
-            transRules.dispatchSeq(reduced).forEach { rule ->
-                val p = rule.simplify(reduced, ctx, this@BasicExprCal) ?: return@forEach
-                val res = reduceNode(p.value, ctx, min(depth, p.index))
-                yield(res)
-            }
-        }
-    }
+        results.remove(origin)
+        val finalResult = results.take(sim.simMaxWidth)
+        node[NodeMetas.transforms] = finalResult
+        simLevel--
+        return finalResult
 
-    private fun simplifyTo(node: Node, sim: SimProcess, ctx: ExprContext) {
-
-//        val reduced = reduceNode(node, ctx, depth)
-//        sim.results += SimProcess.NodeStatus(reduced, complexity.complexity(reduced, ctx))
     }
 
 
     override fun simplify(node: Node): List<Node> {
-        val order = compareBy<SimProcess.NodeStatus> { it.complexity }.thenBy(NodeOrder) { it.node }
-        val pending = PriorityQueue(order)
-        val results = sortedSetOf(order)
-        val sim = SimProcess(results, stepLimit = 100)
-        node.also {
-            val reduced = reduceNode(it, context,Integer.MAX_VALUE)
-            val ns = SimProcess.NodeStatus(reduced, complexity.complexity(reduced, context))
-            pending += ns
-            results += ns
-            println(ns.complexity)
-            println(ns.node.plainToString())
-        }
-        val ctx = context
-        while(sim.steps < sim.stepLimit && pending.isNotEmpty()) {
-            val next = pending.remove()
-            transNode(next.node, ctx, sim.maxDepth).forEach { n ->
-//                if (sim.steps >= sim.stepLimit) return@forEach
-                sim.steps++
-                val ns = SimProcess.NodeStatus(n, complexity.complexity(n, ctx))
-//                println(ns.complexity)
-//                println(ns.node.plainToString())
-                val newNode = results.add(ns)
-//                println(results.joinToString())
-                if(newNode) {
-                    pending += ns
-                    println(ns.node.plainToString())
-                }
-            }
-//            println(results.joinToString())
-//            println(pending.size)
-        }
-        return results.map { it.node }
+        val sim = SimProcess(context = context, complexity = complexity, depth = Int.MAX_VALUE)
+        val reduced = reduceNode(node, context, Integer.MAX_VALUE)
+        val res = transNode(reduced, sim)
+        val results = res.toMutableList()
+        results.add(sim.create(reduced))
+        results.sortBy { it.index }
+        return results.map { it.value }
     }
 }
 
 
 class ExprCalReal : BasicExprCal(), Reals<Node> {
 
-    private fun addAllReduce(rules : RuleList){
-        rules.list.forEach { addReduceRule(it) }
-    }
+//    private fun addAllReduce(rules: RuleList) {
+//        rules.list.forEach { addReduceRule(it) }
+//    }
 
     init {
         options[ExprCal.Options.forceReal] = true
 
-        addAllReduce(RulesTrigonometricReduce())
-        addAllReduce(RulesExponentialReduce())
+        addReduceRuleAll(RulesTrigonometricReduce())
+        addReduceRuleAll(RulesExponentialReduce())
 
     }
 

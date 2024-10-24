@@ -12,7 +12,7 @@ interface TransRule {
     val matcher: NodeMatcherT<Node>
         get() = AnyMatcher
 
-    fun transform(node : Node, ctx: ExprContext, cal: ExprCal) : Sequence<Node>
+    fun transform(node : Node, ctx: ExprContext, cal: ExprCal) : List<Node>
 
     fun init(context: ExprCal): TransRule? {
         return this

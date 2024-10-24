@@ -72,4 +72,8 @@ object NodeMetas {
      */
     val simplified = TypedKey<Boolean>("simplified")
 
+    val reduceTo = TypedKey<Node>("reduceTo")
+
+    val transforms = TypedKey<List<NodeWithComplexity>>("transforms")
+
 }
