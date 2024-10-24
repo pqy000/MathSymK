@@ -3,7 +3,7 @@ package io.github.ezrnest.mathsymk.symbolic
 import io.github.ezrnest.mathsymk.structure.PartialOrder
 import java.util.PriorityQueue
 import java.util.SortedMap
-
+import io.github.ezrnest.mathsymk.util.WithInt
 //created at 2024/10/10
 
 interface MatchContext {
@@ -714,34 +714,34 @@ class TreeDispatcher<T>() {
 
     private fun applyDispatchResult(
         res: DispatchResult<T>?, f: (T) -> Boolean,
-        tempList: MutableList<IndexedValue<DispatchNode<T>>>, level: Int
+        tempList: MutableList<WithInt<DispatchNode<T>>>, level: Int
     ): T? {
         if (res == null) return null
         res.result?.forEach {
             if (f(it)) return it
         }
         res.next?.forEach { (key, value) ->
-            tempList.add(IndexedValue(level + key, value))
+            tempList.add(WithInt(level + key, value))
         }
         return null
     }
 
 
     private suspend fun SequenceScope<T>.applyDispatchSeq(
-        res: DispatchResult<T>?, tempList: ArrayList<IndexedValue<DispatchNode<T>>>, level: Int
+        res: DispatchResult<T>?, tempList: ArrayList<WithInt<DispatchNode<T>>>, level: Int
     ) {
         if (res == null) return
         res.result?.forEach {
             yield(it)
         }
         res.next?.forEach { (key, value) ->
-            tempList.add(IndexedValue(level + key, value))
+            tempList.add(WithInt(level + key, value))
         }
     }
 
-    private object IndexedValueComparator : Comparator<IndexedValue<*>> {
-        override fun compare(o1: IndexedValue<*>, o2: IndexedValue<*>): Int {
-            return -(o1.index - o2.index)
+    private object IndexedValueComparator : Comparator<WithInt<*>> {
+        override fun compare(o1: WithInt<*>, o2: WithInt<*>): Int {
+            return -(o1.v - o2.v)
         }
     }
 
@@ -760,17 +760,17 @@ class TreeDispatcher<T>() {
      */
     fun dispatchSeq(root: Node): Sequence<T> = sequence {
         val stack = mutableListOf<Iterator<Node>>()
-        val dispatchStack = PriorityQueue<IndexedValue<DispatchNode<T>>>(IndexedValueComparator)
-        dispatchStack.add(IndexedValue(0, dispatchRoot))
+        val dispatchStack = PriorityQueue<WithInt<DispatchNode<T>>>(IndexedValueComparator)
+        dispatchStack.add(WithInt(0, dispatchRoot))
         var node = root // the current node that is successfully matched
         var level = 0
         val tempMap = LinkedHashMap<NodeSig, DispatchResult<T>>(4)
-        val tempList = ArrayList<IndexedValue<DispatchNode<T>>>(4)
+        val tempList = ArrayList<WithInt<DispatchNode<T>>>(4)
         while (dispatchStack.isNotEmpty()) {
             // now we are at the same level: level==nextLevel
 //            println("Dealing with level=$level")
 //            println("Matching node: ${node.signature}")
-            while (dispatchStack.isNotEmpty() && dispatchStack.peek().index == level) {
+            while (dispatchStack.isNotEmpty() && dispatchStack.peek().v == level) {
                 val (_, p) = dispatchStack.poll()
                 val res = p.wildcard
                 applyDispatchSeq(res, tempList, level)
@@ -783,7 +783,7 @@ class TreeDispatcher<T>() {
             // retain the variable nodes
             if (tempMap.isNotEmpty()) {
                 val varNode = DispatchNode(variable = tempMap.toMutableMap())
-                dispatchStack.add(IndexedValue(level, varNode))
+                dispatchStack.add(WithInt(level, varNode))
                 tempMap.clear()
             }
             if (tempList.isNotEmpty()) {
@@ -794,7 +794,7 @@ class TreeDispatcher<T>() {
             FindDispatch@
             while (dispatchStack.isNotEmpty()) {
                 // let go to the next level
-                val nextLevel = dispatchStack.peek().index
+                val nextLevel = dispatchStack.peek().v
                 if (level >= nextLevel) {
                     while (level > nextLevel) {
                         stack.removeLast()
@@ -821,7 +821,7 @@ class TreeDispatcher<T>() {
 
                 }
                 if (level < nextLevel) {
-                    while (dispatchStack.isNotEmpty() && dispatchStack.peek().index > level) {
+                    while (dispatchStack.isNotEmpty() && dispatchStack.peek().v > level) {
                         dispatchStack.poll()
                     }
                     continue@FindDispatch
@@ -839,7 +839,7 @@ class TreeDispatcher<T>() {
 
     private fun buildChildrenTo(
         nodeRes: DispatchResult<T>, children: List<NodeMatcherT<Node>>, variable: Boolean = false
-    ): IndexedValue<DispatchResult<T>> {
+    ): WithInt<DispatchResult<T>> {
 //        if(children.size == 1) return buildChild(nodeRes, children[0])
         var prevRes = nodeRes
         var prevDepth = 0
@@ -848,15 +848,15 @@ class TreeDispatcher<T>() {
             val relLevel = (1 - prevDepth)
             val curNode = prevNexts.getOrPut(relLevel) { DispatchNode() }
             val w = buildTo(m, curNode, variable)
-            prevRes = w.value
-            prevDepth = w.index + 1
+            prevRes = w.item
+            prevDepth = w.v + 1
         }
-        return IndexedValue(prevDepth, prevRes)
+        return WithInt(prevDepth, prevRes)
     }
 
     private fun buildTo(
         matcher: NodeMatcherT<*>, node: DispatchNode<T>, variable: Boolean = false
-    ): IndexedValue<DispatchResult<T>> {
+    ): WithInt<DispatchResult<T>> {
         if (matcher is TransparentNodeMatcher) {
             return buildTo(matcher.matcher, node, variable)
         }
@@ -877,7 +877,7 @@ class TreeDispatcher<T>() {
             return buildChildrenTo(nodeRes, matcher.childrenChains[0], true)
         }
 
-        return IndexedValue(0, nodeRes) // do not go down
+        return WithInt(0, nodeRes) // do not go down
 
 
     }

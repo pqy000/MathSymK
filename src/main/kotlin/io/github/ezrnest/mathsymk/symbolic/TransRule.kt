@@ -1,5 +1,7 @@
 package io.github.ezrnest.mathsymk.symbolic
 
+import io.github.ezrnest.mathsymk.util.WithInt
+
 interface TransRule {
     val description: String
 
@@ -12,7 +14,7 @@ interface TransRule {
     val matcher: NodeMatcherT<Node>
         get() = AnyMatcher
 
-    fun transform(node : Node, ctx: ExprContext, cal: ExprCal) : List<Node>
+    fun transform(node : Node, ctx: ExprContext, cal: ExprCal) : List<WithInt<Node>>
 
     fun init(context: ExprCal): TransRule? {
         return this

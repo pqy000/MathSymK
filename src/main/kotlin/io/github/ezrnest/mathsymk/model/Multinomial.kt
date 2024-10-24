@@ -2,7 +2,6 @@ package io.github.ezrnest.mathsymk.model
 
 import io.github.ezrnest.mathsymk.ValueEquatable
 import io.github.ezrnest.mathsymk.structure.*
-import io.github.ezrnest.structure.*
 import io.github.ezrnest.mathsymk.util.DataStructureUtil
 import java.util.*
 import java.util.function.Function
@@ -474,12 +473,12 @@ internal constructor(
         /**
          * The default monomial order.
          */
-        val DEFAULT_MONOMIAL_ORDER: MonomialOrder = TermChs.getLexComparator()
+        val DEFAULT_ORDER: MonomialOrder = TermChs.getLexComparator()
 
         /**
          * Returns a zero multinomial.
          */
-        fun <T> zero(model: Ring<T>, comp: MonomialOrder = DEFAULT_MONOMIAL_ORDER): Multinomial<T> {
+        fun <T> zero(model: Ring<T>, comp: MonomialOrder = DEFAULT_ORDER): Multinomial<T> {
             return Multinomial(model, emptyList(), comp)
         }
 
@@ -487,7 +486,7 @@ internal constructor(
          * Creates a multinomial from a list of terms, possibly unordered and containing zero terms.
          */
         fun <T> fromTerms(
-            terms: List<MTerm<T>>, model: Ring<T>, comp: MonomialOrder = DEFAULT_MONOMIAL_ORDER
+            terms: List<MTerm<T>>, model: Ring<T>, comp: MonomialOrder = DEFAULT_ORDER
         ): Multinomial<T> {
             val filteredTerms = terms.mapNotNull {
                 if (model.isZero(it.c)) null else MTerm(it.c, it.key.normalized(comp.chOrder))
@@ -503,7 +502,7 @@ internal constructor(
         fun <T> of(
             mc: Ring<T>,
             vararg terms: Pair<T, String>,
-            comp: MonomialOrder = DEFAULT_MONOMIAL_ORDER
+            comp: MonomialOrder = DEFAULT_ORDER
         ): Multinomial<T> {
             return fromTerms(terms.map { MTerm(it.first, TermChs.parseChar(it.second)) }, mc, comp)
         }
@@ -511,7 +510,7 @@ internal constructor(
         /**
          * Creates a constant multinomial.
          */
-        fun <T> constant(c: T, model: Ring<T>, comp: MonomialOrder = DEFAULT_MONOMIAL_ORDER): Multinomial<T> {
+        fun <T> constant(c: T, model: Ring<T>, comp: MonomialOrder = DEFAULT_ORDER): Multinomial<T> {
             return if (model.isZero(c)) {
                 zero(model, comp)
             } else {
@@ -522,7 +521,7 @@ internal constructor(
         /**
          * Creates a multinomial `1`.
          */
-        fun <T> one(model: UnitRing<T>, comp: MonomialOrder = DEFAULT_MONOMIAL_ORDER): Multinomial<T> {
+        fun <T> one(model: UnitRing<T>, comp: MonomialOrder = DEFAULT_ORDER): Multinomial<T> {
             return constant(model.one, model, comp)
         }
 
@@ -532,7 +531,7 @@ internal constructor(
         fun <T> monomial(
             t: MTerm<T>,
             model: Ring<T>,
-            comp: MonomialOrder = DEFAULT_MONOMIAL_ORDER
+            comp: MonomialOrder = DEFAULT_ORDER
         ): Multinomial<T> {
             if (model.isZero(t.c)) {
                 return zero(model)
@@ -546,7 +545,7 @@ internal constructor(
          */
         fun <T> monomial(
             c: T, ch: String, pow: Int, model: Ring<T>,
-            comp: MonomialOrder = DEFAULT_MONOMIAL_ORDER
+            comp: MonomialOrder = DEFAULT_ORDER
         ): Multinomial<T> {
             if (model.isZero(c)) {
                 return zero(model, comp)
@@ -559,7 +558,7 @@ internal constructor(
             c: T,
             chars: String,
             model: Ring<T>,
-            comp: MonomialOrder = DEFAULT_MONOMIAL_ORDER
+            comp: MonomialOrder = DEFAULT_ORDER
         ): Multinomial<T> {
             val term = MTerm(c, TermChs.parseChar(chars))
             return Multinomial(model, listOf(term), comp)
@@ -587,7 +586,7 @@ internal constructor(
 //            return action(MultinomialBuilderScope(model, comp))
 //        }
 
-        fun <T> parse(str: String, model: UnitRing<T>, comp: MonomialOrder = DEFAULT_MONOMIAL_ORDER) {
+        fun <T> parse(str: String, model: UnitRing<T>, comp: MonomialOrder = DEFAULT_ORDER) {
             TODO("Not yet implemented$str $model $comp")
         }
 
@@ -622,30 +621,30 @@ internal constructor(
 
         fun <T> over(
             model: Ring<T>,
-            monomialOrder: MonomialOrder = DEFAULT_MONOMIAL_ORDER
-        ): MultinomialOverRing<T> {
-            return MultinomialOverRing(model, monomialOrder)
+            monomialOrder: MonomialOrder = DEFAULT_ORDER
+        ): MultiOverRing<T> {
+            return MultiOverRing(model, monomialOrder)
         }
 
         fun <T> over(
             model: UnitRing<T>,
-            monomialOrder: MonomialOrder = DEFAULT_MONOMIAL_ORDER
-        ): MultinomialOverUnitRing<T> {
-            return MultinomialOverUnitRing(model, monomialOrder)
+            monomialOrder: MonomialOrder = DEFAULT_ORDER
+        ): MultiOverURing<T> {
+            return MultiOverURing(model, monomialOrder)
         }
 
         fun <T> over(
             model: Field<T>,
-            monomialOrder: MonomialOrder = DEFAULT_MONOMIAL_ORDER
-        ): MultinomialOverField<T> {
-            return MultinomialOverField(model, monomialOrder)
+            monomialOrder: MonomialOrder = DEFAULT_ORDER
+        ): MultiOverField<T> {
+            return MultiOverField(model, monomialOrder)
         }
 
 
     }
 }
 
-open class MultinomialOverRing<T>(protected val _model: Ring<T>, val monomialOrder: MonomialOrder) :
+open class MultiOverRing<T>(protected val _model: Ring<T>, val monomialOrder: MonomialOrder) :
     Ring<Multinomial<T>>, InclusionTo<T, Multinomial<T>> {
 
     open val model: Ring<T>
@@ -704,8 +703,8 @@ open class MultinomialOverRing<T>(protected val _model: Ring<T>, val monomialOrd
     }
 }
 
-open class MultinomialOverUnitRing<T>(_model: UnitRing<T>, order: MonomialOrder) :
-    MultinomialOverRing<T>(_model, order),
+open class MultiOverURing<T>(_model: UnitRing<T>, order: MonomialOrder) :
+    MultiOverRing<T>(_model, order),
     UnitRing<Multinomial<T>> {
 
     override val model: UnitRing<T>
@@ -767,5 +766,5 @@ open class MultinomialOverUnitRing<T>(_model: UnitRing<T>, order: MonomialOrder)
 
 }
 
-open class MultinomialOverField<T>(model: Field<T>, order: MonomialOrder) : MultinomialOverUnitRing<T>(model, order),
+open class MultiOverField<T>(model: Field<T>, order: MonomialOrder) : MultiOverURing<T>(model, order),
     IntegralDomain<Multinomial<T>>

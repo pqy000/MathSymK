@@ -26,6 +26,7 @@ fun main() {
     cal.addReduceRule(RuleTanSpecial())
     cal.addReduceRuleAll(RulesTrigonometricReduce())
     cal.addAll(RulesTrigonometricTransform())
+    cal.addRule(RuleExpandMul)
 
 
     val expr = buildNode {
@@ -34,7 +35,9 @@ fun main() {
 //        val sub = pow(sin(x + y), 2.e) + pow(cos(x + y), 2.e)
 //        pow(sin(pi + pi * sub / 3.e), 2.e)
 //        tan(pi / 2.e)
-        sin(x+y) + sin(x-y)
+//        sin(x+y) - sin(x-y)
+//        (x+y) * (x-y)
+        (x+1.e)*(x+2.e) * (x+3.e) - 1.e
     }
 //    val ss = sortedSetOf(compareBy<SimProcess.NodeStatus> { it.complexity }.thenBy(NodeOrder) { it.node })
 //    ss.add(SimProcess.NodeStatus(expr, BasicComplexity.complexity(expr, cal.context)))

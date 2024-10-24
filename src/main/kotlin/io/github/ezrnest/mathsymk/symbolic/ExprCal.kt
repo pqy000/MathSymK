@@ -1,9 +1,11 @@
 package io.github.ezrnest.mathsymk.symbolic
 
+import io.github.ezrnest.mathsymk.model.*
 import io.github.ezrnest.mathsymk.structure.Reals
 import io.github.ezrnest.mathsymk.symbolic.sim.RuleList
 import io.github.ezrnest.mathsymk.symbolic.sim.RulesExponentialReduce
 import io.github.ezrnest.mathsymk.symbolic.sim.RulesTrigonometricReduce
+import io.github.ezrnest.mathsymk.util.WithInt
 import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.math.max
@@ -15,6 +17,10 @@ interface ExprCal {
     val options: Map<TypedKey<*>, Any> get() = emptyMap()
 
     val context: ExprContext
+
+    val rationals: BigFracAsQuot get() = BigFracAsQuot
+    val multinomials: MultiOverField<BigFrac> get() = MultiOverField(rationals, Multinomial.DEFAULT_ORDER)
+    val polynomials : PolyOverField<BigFrac> get() = PolyOverField(rationals)
 
 
     object Options {
@@ -44,13 +50,13 @@ interface ExprCal {
 }
 
 
-typealias NodeWithComplexity = IndexedValue<Node>
+typealias NodeWithComplexity = WithInt<Node>
 
 class SimProcess(
     var depth: Int = 0, var steps: Int = 0, var context: ExprContext,
     val complexity: NodeComplexity,
 ) {
-    val order = compareBy<NodeWithComplexity> { it.index }.thenBy(NodeOrder) { it.value }
+    val order = compareBy<NodeWithComplexity> { it.v }.thenBy(NodeOrder) { it.item }
     var stepLimit: Int = 1000
     var maxDepth: Int = Int.MAX_VALUE
     var discardRatio: Double = 100.0
@@ -167,8 +173,8 @@ open class BasicExprCal : ExprCal, NodeBuilderScope {
                 if (verbose == Verbosity.WHEN_APPLIED) {
                     log(Verbosity.WHEN_APPLIED) { "|>${rule.description}" }
                 }
-                depth = p.index
-                res = p.value
+                depth = p.v
+                res = p.item
                 log(Verbosity.WHEN_APPLIED) { "|->  ${showNode(res)}" }
                 true
             }
@@ -221,7 +227,7 @@ open class BasicExprCal : ExprCal, NodeBuilderScope {
 
 
     private fun transRecur1(node: Node1, sim: SimProcess): List<Node> {
-        return transNode(node.child, sim).map { node.newWithChildren(it.value) }
+        return transNode(node.child, sim).map { node.newWithChildren(it.item) }
     }
 
     private fun transRecur2(node: Node2, sim: SimProcess): List<Node> {
@@ -231,10 +237,10 @@ open class BasicExprCal : ExprCal, NodeBuilderScope {
         if (size == 0) return emptyList()
         val res = ArrayList<Node>(size)
         for (f1 in s2) {
-            res.add(node.newWithChildren(f1.value, node.second))
+            res.add(node.newWithChildren(f1.item, node.second))
         }
         for (f2 in s2) {
-            res.add(node.newWithChildren(node.first, f2.value))
+            res.add(node.newWithChildren(node.first, f2.item))
         }
         return res
     }
@@ -247,13 +253,13 @@ open class BasicExprCal : ExprCal, NodeBuilderScope {
         if (size == 0) return emptyList()
         val res = ArrayList<Node>(size)
         for (f1 in s1) {
-            res.add(node.newWithChildren(f1.value, node.second, node.third))
+            res.add(node.newWithChildren(f1.item, node.second, node.third))
         }
         for (f2 in s2) {
-            res.add(node.newWithChildren(node.first, f2.value, node.third))
+            res.add(node.newWithChildren(node.first, f2.item, node.third))
         }
         for (f3 in s3) {
-            res.add(node.newWithChildren(node.first, node.second, f3.value))
+            res.add(node.newWithChildren(node.first, node.second, f3.item))
         }
         return res
     }
@@ -266,7 +272,7 @@ open class BasicExprCal : ExprCal, NodeBuilderScope {
         for (i in subs.indices) {
             for (sub in subs[i]) {
                 val childrenList = node.children.toMutableList()
-                childrenList[i] = sub.value
+                childrenList[i] = sub.item
                 res.add(node.newWithChildren(childrenList))
             }
         }
@@ -293,7 +299,7 @@ open class BasicExprCal : ExprCal, NodeBuilderScope {
         results += origin
         if (sim.steps >= sim.stepLimit) return emptyList()
         while (sim.steps < sim.stepLimit && pending.isNotEmpty()) {
-            val node = pending.remove().value
+            val node = pending.remove().item
             val subResult: List<Node>
             if (sim.depth <= 0) {
                 subResult = emptyList()
@@ -323,8 +329,8 @@ open class BasicExprCal : ExprCal, NodeBuilderScope {
                 val transList = rule.transform(node, sim.context, this)
                 if (transList.isEmpty()) continue
                 log(Verbosity.WHEN_APPLIED) { "|>${rule.description}" }
-                for (trans in transList) {
-                    val res = reduceNode(trans, sim.context, sim.depth)
+                for ((dep,trans) in transList) {
+                    val res = reduceNode(trans, sim.context, min(sim.depth,dep))
                     val ns = sim.create(res)
                     if (results.add(ns)) {
                         pending += ns
@@ -347,8 +353,8 @@ open class BasicExprCal : ExprCal, NodeBuilderScope {
         val res = transNode(reduced, sim)
         val results = res.toMutableList()
         results.add(sim.create(reduced))
-        results.sortBy { it.index }
-        return results.map { it.value }
+        results.sortBy { it.v }
+        return results.map { it.item }
     }
 }
 

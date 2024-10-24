@@ -1,5 +1,32 @@
 package io.github.ezrnest.mathsymk.symbolic
 
+import io.github.ezrnest.mathsymk.util.WithInt
+
+
+interface SimRuleMatched<T : Node> : SimRule {
+
+
+    /**
+     * A matcher describing the nodes that the rule can be applied to.
+     */
+    override val matcher: NodeMatcherT<T>
+
+    /**
+     * Simplify the matched node.
+     */
+    fun simplifyMatched(node: T, matchContext: MatchContext): WithInt<Node>?
+
+
+    override fun simplify(node: Node, ctx: ExprContext, cal: ExprCal): WithInt<Node>? {
+        if (node[metaKeyApplied] == true) return null
+        val matchContext = MutableMatchContext(ctx)
+        val r = matcher.matches(node, matchContext) ?: return null
+        val res = simplifyMatched(r, matchContext)
+        if (res != null) return res
+        node[metaKeyApplied] = true // tried but not applicable
+        return null
+    }
+}
 
 object NodeBuilderForMatch : NodeBuilderScope {
 
@@ -131,11 +158,11 @@ class MatcherReplaceRule(
 
     override val metaKeyApplied: TypedKey<Boolean> = TypedKey(description)
 
-    override fun simplify(node: Node, context: ExprContext, cal : ExprCal): IndexedValue<Node>? {
+    override fun simplify(node: Node, context: ExprContext, cal : ExprCal): WithInt<Node>? {
         val matchCtx = MutableMatchContext(context)
         matcher.matches(node, matchCtx) ?: return null
         val replacementNode = ReplacementScope.create(matchCtx).replacement() ?: return null
-        return IndexedValue(afterDepth, replacementNode)
+        return WithInt(afterDepth, replacementNode)
     }
 }
 
@@ -164,7 +191,7 @@ class MatchNodeReplaceRule(
         }
     }
 
-    override fun simplify(node: Node, context: ExprContext, cal : ExprCal): IndexedValue<Node>? {
+    override fun simplify(node: Node, ctx: ExprContext, cal : ExprCal): WithInt<Node>? {
         throw IllegalStateException("Matcher is not initialized")
     }
 }

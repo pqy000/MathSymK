@@ -2,6 +2,8 @@ package io.github.ezrnest.mathsymk.symbolic
 // created at 2024/10/1
 import io.github.ezrnest.mathsymk.model.BigFrac
 import io.github.ezrnest.mathsymk.model.BigFracAsQuot
+import io.github.ezrnest.mathsymk.model.MTerm
+import io.github.ezrnest.mathsymk.model.TermChs
 import io.github.ezrnest.mathsymk.util.MathUtils
 import java.math.BigInteger
 import kotlin.contracts.ExperimentalContracts
@@ -68,6 +70,25 @@ object SimUtils {
     }
 
 
+    fun asMonomial(node : Node) : MTerm<BigFrac>?{
+        if (NodeMetas.asMonomial in node){
+            return node[NodeMetas.asMonomial]
+        }
+        if (node is NRational){
+            return MTerm(BigFracAsQuot.one, TermChs(emptyArray()))
+        }
+        TODO()
+    }
+
+    fun asMultinomial(node: Node): Multi? {
+        if (NodeMetas.asMulti in node) {
+            return node[NodeMetas.asMulti]
+        }
+        TODO()
+
+    }
+
+
     /**
      * Extract the rational part of a node, if it is a rational times something.
      *
@@ -99,10 +120,10 @@ object SimUtils {
         return Node.Mul(listOf(Node.Rational(r), n))
     }
 
-    fun createMulSim(nodes: List<Node>, context: ExprContext, cal : ExprCal): Node {
+    fun createMulSim(nodes: List<Node>, context: ExprContext, cal: ExprCal): Node {
         if (nodes.isEmpty()) return Node.ONE
         if (nodes.size == 1) return nodes[0]
-        return cal.reduceNode(Node.Mul(nodes),context)
+        return cal.reduceNode(Node.Mul(nodes), context)
     }
 
 

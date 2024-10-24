@@ -3,7 +3,7 @@ package io.github.ezrnest.mathsymk.symbolic
 
 
 /**
- * Describes
+ * Describes the assumptions of the expression.
  */
 interface ExprContext {
 

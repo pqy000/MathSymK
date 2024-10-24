@@ -12,7 +12,6 @@ package io.github.ezrnest.mathsymk.linear
 
 import io.github.ezrnest.mathsymk.discrete.Permutation
 import io.github.ezrnest.mathsymk.structure.*
-import io.github.ezrnest.structure.*
 import io.github.ezrnest.mathsymk.util.IterUtils
 import io.github.ezrnest.mathsymk.util.MathUtils
 import java.util.*

@@ -16,6 +16,7 @@ import io.github.ezrnest.mathsymk.symbolic.TypedKey
 import io.github.ezrnest.mathsymk.symbolic.buildMatcher
 import io.github.ezrnest.mathsymk.symbolic.buildNode
 import io.github.ezrnest.mathsymk.symbolic.set
+import io.github.ezrnest.mathsymk.util.WithInt
 
 
 object TrigonometricUtils {
@@ -132,10 +133,10 @@ class RuleSinSpecial : SimRuleMatched<Node1> {
     }
 
 
-    override fun simplifyMatched(node: Node1, matchContext: MatchContext): IndexedValue<Node>? {
+    override fun simplifyMatched(node: Node1, matchContext: MatchContext): WithInt<Node>? {
         val r = (matchContext.refMap["r"] as NRational).value
         val res = TrigonometricUtils.sinRPi(r) ?: return null
-        return IndexedValue(Int.MAX_VALUE, res)
+        return WithInt(Int.MAX_VALUE, res)
     }
 
 }
@@ -150,10 +151,10 @@ class RuleCosSpecial : SimRuleMatched<Node1> {
         cos(rational.named("r") * π)
     }
 
-    override fun simplifyMatched(node: Node1, matchContext: MatchContext): IndexedValue<Node>? {
+    override fun simplifyMatched(node: Node1, matchContext: MatchContext): WithInt<Node>? {
         val r = (matchContext.refMap["r"] as NRational).value
         val res = TrigonometricUtils.cosRPi(r) ?: return null
-        return IndexedValue(Int.MAX_VALUE, res)
+        return WithInt(Int.MAX_VALUE, res)
     }
 }
 
@@ -168,10 +169,10 @@ class RuleTanSpecial : SimRuleMatched<Node1> {
         tan(rational.named("r") * π)
     }
 
-    override fun simplifyMatched(node: Node1, matchContext: MatchContext): IndexedValue<Node>? {
+    override fun simplifyMatched(node: Node1, matchContext: MatchContext): WithInt<Node>? {
         val r = (matchContext.refMap["r"] as NRational).value
         val res = TrigonometricUtils.tanRPi(r) ?: return null
-        return IndexedValue(Int.MAX_VALUE, res)
+        return WithInt(Int.MAX_VALUE, res)
     }
 }
 

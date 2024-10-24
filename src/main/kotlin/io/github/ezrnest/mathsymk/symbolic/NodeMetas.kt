@@ -1,6 +1,7 @@
 package io.github.ezrnest.mathsymk.symbolic
 // created at 2024/10/05
 import io.github.ezrnest.mathsymk.model.BigFrac
+import io.github.ezrnest.mathsymk.model.MTerm
 import io.github.ezrnest.mathsymk.model.Multinomial
 import java.util.*
 
@@ -52,7 +53,8 @@ fun <T> Map<TypedKey<*>, Any?>.getTyped(key: TypedKey<T>, default: T): T = getOr
 
 object NodeMetas {
 
-    val asMulti = TypedKey<Multi>("asMulti")
+    val asMulti = TypedKey<Multi?>("asMulti")
+    val asMonomial = TypedKey<MTerm<BigFrac>?>("asMonomial")
 
     val sorted = TypedKey<Boolean>("sorted")
 
@@ -64,6 +66,8 @@ object NodeMetas {
     val rational = TypedKey<Boolean>("rational")
 
     val real = TypedKey<Boolean>("real")
+
+
 
     /**
      * Mark this node as fully simplified.
