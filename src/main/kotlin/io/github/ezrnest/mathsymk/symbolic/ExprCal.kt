@@ -44,8 +44,10 @@ interface ExprCal {
     fun reduceNode(node: Node, context: ExprContext, depth: Int = 0): Node
 
 
-    fun simplify(node: Node): List<Node> {
-        TODO()
+    fun simplify(node: Node): List<Node>
+
+    fun format(node: Node): String {
+        return node.plainToString()
     }
 }
 

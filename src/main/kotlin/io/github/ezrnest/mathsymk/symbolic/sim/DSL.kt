@@ -11,9 +11,9 @@ interface RuleBuilder {
 
     fun match(buildMatch: NodeBuilderScope.() -> Node)
 
-    fun to(buildReplacement: ReplacementScope.() -> Node)
+    fun to(buildReplacement: AfterMatchScope.() -> Node)
 
-    infix fun Unit.to(buildReplacement: ReplacementScope.() -> Node)
+    infix fun Unit.to(buildReplacement: AfterMatchScope.() -> Node)
 
 
     fun condition(buildCondition: MatchContext.() -> Boolean) {
@@ -48,11 +48,11 @@ internal class RuleBuilderImpl : RuleBuilder {
         replacement = builder
     }
 
-    override fun to(buildReplacement: ReplacementScope.() -> Node) {
+    override fun to(buildReplacement: AfterMatchScope.() -> Node) {
         setRep(buildReplacement)
     }
 
-    override fun Unit.to(buildReplacement: ReplacementScope.() -> Node) {
+    override fun Unit.to(buildReplacement: AfterMatchScope.() -> Node) {
         setRep(buildReplacement)
     }
 

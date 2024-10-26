@@ -19,9 +19,11 @@ interface SimRuleMatched<T : Node> : SimRule {
 
     override fun simplify(node: Node, ctx: ExprContext, cal: ExprCal): WithInt<Node>? {
         if (node[metaKeyApplied] == true) return null
-        val matchContext = MutableMatchContext(ctx)
-        val r = matcher.matches(node, matchContext) ?: return null
-        val res = simplifyMatched(r, matchContext)
+        var matchContext = MatchContext(ctx)
+        matchContext = matcher.matches(node, matchContext) ?: return null
+        @Suppress("UNCHECKED_CAST")
+        val nodeT = node as T
+        val res = simplifyMatched(nodeT, matchContext)
         if (res != null) return res
         node[metaKeyApplied] = true // tried but not applicable
         return null
@@ -29,6 +31,9 @@ interface SimRuleMatched<T : Node> : SimRule {
 }
 
 object NodeBuilderForMatch : NodeBuilderScope {
+
+    override val context: ExprContext
+        get() = BasicExprContext()
 
     override fun symbol(name: String): Node {
         return ref(name)
@@ -114,9 +119,13 @@ object NodeBuilderForMatch : NodeBuilderScope {
 }
 
 
-interface ReplacementScope : NodeBuilderScope {
+interface AfterMatchScope : NodeBuilderScope {
 
     val matchContext: MatchContext
+
+    override val context: ExprContext
+        get() = matchContext.exprContext
+
 
     fun ref(name: String): Node {
         return matchContext.refMap[name] ?: throw IllegalArgumentException("No reference found for $name")
@@ -140,14 +149,16 @@ interface ReplacementScope : NodeBuilderScope {
     val String.ref get() = ref(this)
 
     companion object {
-        private class ReplacementScopeImpl(override val matchContext: MatchContext) : ReplacementScope
+        private class AfterMatchScopeImpl(override val matchContext: MatchContext) : AfterMatchScope
 
-        fun create(matchContext: MatchContext): ReplacementScope = ReplacementScopeImpl(matchContext)
+        fun create(matchContext: MatchContext): AfterMatchScope = AfterMatchScopeImpl(matchContext)
+
+        operator fun invoke(matchContext: MatchContext): AfterMatchScope = AfterMatchScopeImpl(matchContext)
     }
 }
 
 
-typealias RepBuilder = ReplacementScope.() -> Node?
+typealias RepBuilder = AfterMatchScope.() -> Node?
 
 class MatcherReplaceRule(
     override val matcher: NodeMatcherT<*>,
@@ -158,10 +169,10 @@ class MatcherReplaceRule(
 
     override val metaKeyApplied: TypedKey<Boolean> = TypedKey(description)
 
-    override fun simplify(node: Node, context: ExprContext, cal : ExprCal): WithInt<Node>? {
-        val matchCtx = MutableMatchContext(context)
-        matcher.matches(node, matchCtx) ?: return null
-        val replacementNode = ReplacementScope.create(matchCtx).replacement() ?: return null
+    override fun simplify(node: Node, context: ExprContext, cal: ExprCal): WithInt<Node>? {
+        var matchCtx = MatchContext(context)
+        matchCtx = matcher.matches(node, matchCtx) ?: return null
+        val replacementNode = AfterMatchScope.create(matchCtx).replacement() ?: return null
         return WithInt(afterDepth, replacementNode)
     }
 }
@@ -191,7 +202,7 @@ class MatchNodeReplaceRule(
         }
     }
 
-    override fun simplify(node: Node, ctx: ExprContext, cal : ExprCal): WithInt<Node>? {
+    override fun simplify(node: Node, ctx: ExprContext, cal: ExprCal): WithInt<Node>? {
         throw IllegalStateException("Matcher is not initialized")
     }
 }

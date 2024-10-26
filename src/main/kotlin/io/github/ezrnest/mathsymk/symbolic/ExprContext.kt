@@ -6,10 +6,11 @@ package io.github.ezrnest.mathsymk.symbolic
  * Describes the assumptions of the expression.
  */
 interface ExprContext {
-
     val conditions : List<Any> // TODO
         get() = emptyList()
 }
+
+object EmptyExprContext : ExprContext
 
 class BasicExprContext : ExprContext {
 //    override val conditions: List<Any> = emptyList()
