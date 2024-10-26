@@ -244,7 +244,6 @@ interface LeafNode : Node {
 
 sealed class AbstractNode {
     var meta: Map<TypedKey<*>, Any?> = emptyMap()
-
 }
 
 

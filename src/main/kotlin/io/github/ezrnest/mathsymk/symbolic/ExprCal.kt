@@ -7,7 +7,6 @@ import io.github.ezrnest.mathsymk.symbolic.sim.RulesExponentialReduce
 import io.github.ezrnest.mathsymk.symbolic.sim.RulesTrigonometricReduce
 import io.github.ezrnest.mathsymk.util.WithInt
 import java.util.*
-import kotlin.collections.ArrayList
 import kotlin.math.max
 import kotlin.math.min
 
