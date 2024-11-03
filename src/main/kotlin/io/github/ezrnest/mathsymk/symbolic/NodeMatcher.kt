@@ -1,6 +1,7 @@
 package io.github.ezrnest.mathsymk.symbolic
 
 import io.github.ezrnest.mathsymk.structure.PartialOrder
+import io.github.ezrnest.mathsymk.symbolic.alg.SymAlg
 import java.util.PriorityQueue
 import java.util.SortedMap
 import io.github.ezrnest.mathsymk.util.WithInt
@@ -598,37 +599,12 @@ class NodeMatcherNPO(
 }
 
 
-object MatcherBuilderScope {
-
-    fun <T : Node, S : Node> pow(base: NodeMatcherT<T>, exp: NodeMatcherT<S>): NodeMatcherT<Node2T<T, S>> {
-        return NodeMatcher2Ordered(base, exp, NodeSig.POW)
-    }
-
-    fun <T : Node> exp(x: NodeMatcherT<T>): NodeMatcherT<Node2T<NSymbol, T>> {
-        return NodeMatcher2Ordered(NATURAL_E, x, NodeSig.POW)
-    }
-
-    fun <T : Node> sin(x: NodeMatcherT<T>): NodeMatcherT<Node1T<T>> {
-        return NodeMatcher1(x, NodeSig.F1_SIN)
-    }
-
-    fun <T : Node> cos(x: NodeMatcherT<T>): NodeMatcherT<Node1T<T>> {
-        return NodeMatcher1(x, NodeSig.F1_COS)
-    }
-
-    fun <T : Node> tan(x: NodeMatcherT<T>): NodeMatcherT<Node1T<T>> {
-        return NodeMatcher1(x, NodeSig.F1_TAN)
-    }
-
-
+interface MatcherBuilderScope {
     val x: MatcherRef get() = MatcherRef("x")
     val y: MatcherRef get() = MatcherRef("y")
     val z: MatcherRef get() = MatcherRef("z")
 
-    val any: NodeMatcherT<Node> get() = AnyMatcher
 
-    val NATURAL_E = symbol(Node.NATURAL_E)
-    val π: NodeMatcherT<NSymbol> get() = symbol(Node.PI)
 
     val String.ref: MatcherRef get() = MatcherRef(this)
     val String.s: NodeMatcherT<NSymbol> get() = symbol(NSymbol(this))
@@ -648,6 +624,37 @@ object MatcherBuilderScope {
     fun <T : Node> node(n: T): FixedNodeMatcher<T> {
         return FixedNodeMatcher(n)
     }
+}
+
+interface MatcherScopeAlg : MatcherBuilderScope {
+
+    fun <T : Node, S : Node> pow(base: NodeMatcherT<T>, exp: NodeMatcherT<S>): NodeMatcherT<Node2T<T, S>> {
+        return NodeMatcher2Ordered(base, exp, SymAlg.Signatures.POW)
+    }
+
+    fun <T : Node> exp(x: NodeMatcherT<T>): NodeMatcherT<Node2T<NSymbol, T>> {
+        return NodeMatcher2Ordered(NATURAL_E, x, SymAlg.Signatures.POW)
+    }
+
+    fun <T : Node> sin(x: NodeMatcherT<T>): NodeMatcherT<Node1T<T>> {
+        return NodeMatcher1(x, SymAlg.Signatures.F1_SIN)
+    }
+
+    fun <T : Node> cos(x: NodeMatcherT<T>): NodeMatcherT<Node1T<T>> {
+        return NodeMatcher1(x, SymAlg.Signatures.F1_COS)
+    }
+
+    fun <T : Node> tan(x: NodeMatcherT<T>): NodeMatcherT<Node1T<T>> {
+        return NodeMatcher1(x, SymAlg.Signatures.F1_TAN)
+    }
+
+
+
+    val any: NodeMatcherT<Node> get() = AnyMatcher
+
+    val NATURAL_E         get() = symbol(SymAlg.NATURAL_E)
+    val π: NodeMatcherT<NSymbol> get() = symbol(SymAlg.PI)
+
 
 
     val integer: NodeMatcherT<NRational> get() = AnyRationalMatcher
@@ -655,7 +662,7 @@ object MatcherBuilderScope {
     val rational: NodeMatcherT<NRational> get() = AnyRationalMatcher
 
 
-    val Int.e: NodeMatcherT<NRational> get() = node(Node.Int(this))
+    val Int.e: NodeMatcherT<NRational> get() = node(SymAlg.Int(this))
 
 
     private fun flatten(children: List<NodeMatcherT<Node>>, sig: NodeSig): NodeMatcher {
@@ -674,11 +681,11 @@ object MatcherBuilderScope {
     }
 
     operator fun NodeMatcherT<Node>.times(other: NodeMatcher): NodeMatcher {
-        return flatten(listOf(this, other), NodeSig.MUL)
+        return flatten(listOf(this, other), SymAlg.Signatures.MUL)
     }
 
     operator fun NodeMatcherT<Node>.plus(other: NodeMatcher): NodeMatcher {
-        return flatten(listOf(this, other), NodeSig.ADD)
+        return flatten(listOf(this, other), SymAlg.Signatures.ADD)
     }
 
 
@@ -698,7 +705,8 @@ object MatcherBuilderScope {
 }
 
 fun <T : Node> buildMatcher(action: MatcherBuilderScope.() -> NodeMatcherT<T>): NodeMatcherT<T> {
-    return action(MatcherBuilderScope)
+    TODO()
+//    return action(MatcherBuilderScope)
 }
 
 
@@ -954,9 +962,6 @@ class TreeDispatcher<T>() {
 
 
 fun main() {
-    with(MatcherBuilderScope) {
-//        val m1 = pow(x,y).also { context }
-    }
 }
 /*
     val dispatcher = TreeDispatcher<Int>()

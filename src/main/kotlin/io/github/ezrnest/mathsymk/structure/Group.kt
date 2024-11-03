@@ -332,7 +332,7 @@ interface MulSemigroup<T> : EqualPredicate<T> {
         get() = false
 
     fun power(x: T, n: Int): T {
-        return ModelPatterns.binaryProduce(n.toLong(), x) { a, b -> multiply(a, b) }
+        return ModelPatterns.binaryProduce(n.toLong(), x) { a, b -> this@MulSemigroup.multiply(a, b) }
     }
 
     fun product(elements: List<T>): T {
@@ -344,7 +344,7 @@ interface MulSemigroup<T> : EqualPredicate<T> {
      * Operator function of add for [T].
      * @see multiply
      */
-    operator fun T.times(y: T): T = multiply(this, y)
+    operator fun T.times(y: T): T = this@MulSemigroup.multiply(this, y)
 
 
     infix fun T.pow(n: Int): T = power(this, n)
@@ -459,7 +459,7 @@ interface MulGroup<T> : MulMonoid<T> {
      * @return `x / y`
      */
     fun divide(x: T, y: T): T {
-        return multiply(x, reciprocal(y))
+        return this@MulGroup.multiply(x, reciprocal(y))
     }
 
 
@@ -478,7 +478,7 @@ interface MulGroup<T> : MulMonoid<T> {
         if (n == 0) {
             return one
         }
-        val t = ModelPatterns.binaryProduce(abs(n).toLong(), x) { a, b -> multiply(a, b) }
+        val t = ModelPatterns.binaryProduce(abs(n).toLong(), x) { a, b -> this@MulGroup.multiply(a, b) }
         return if (n > 0) {
             t
         } else {

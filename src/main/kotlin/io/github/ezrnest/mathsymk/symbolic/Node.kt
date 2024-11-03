@@ -37,37 +37,7 @@ sealed interface Node {
     companion object {
 
 
-        val ZERO = Int(BigInteger.ZERO)
-
-        val ONE = Int(BigInteger.ONE)
-
-        val NEG_ONE = Int(BigInteger.ONE.negate())
-
-        val HALF = Rational(BigFracAsQuot.half)
-
-        val TWO = Int(BigInteger.TWO)
-
-        val TEN = Int(BigInteger.TEN)
-
-        val PI = Symbol(Names.Symbol_PI)
-
-        val NATURAL_E = Symbol(Names.Symbol_E)
-
-        val IMAGINARY_UNIT = Symbol(Names.Symbol_I)
-
         val UNDEFINED = NOther("undefined")
-
-        fun Int(value: BigInteger): NRational {
-            return NRational(BigFrac(value, BigInteger.ONE))
-        }
-
-        fun Int(value: Int): NRational {
-            return Int(value.toBigInteger())
-        }
-
-        fun Rational(value: BigFrac): NRational {
-            return NRational(value)
-        }
 
 
         //
@@ -79,30 +49,6 @@ sealed interface Node {
         fun NodeN(name: String, children: List<Node>): Node {
             require(children.isNotEmpty())
             return NodeNImpl(name, children)
-        }
-
-        fun Add(nodes: List<Node>): Node {
-            if (nodes.isEmpty()) return ZERO
-            if (nodes.size == 1) return nodes[0]
-            return NodeN(Names.ADD, nodes)
-        }
-
-        fun Add(vararg nodes: Node): Node {
-            return Add(nodes.asList())
-        }
-
-        fun Mul(nodes: List<Node>): Node {
-            if (nodes.isEmpty()) return ONE
-            if (nodes.size == 1) return nodes[0]
-            return NodeN(Names.MUL, nodes)
-        }
-
-        fun Mul(vararg nodes: Node): Node {
-            return Mul(nodes.asList())
-        }
-
-        fun Div(numerator: Node, denominator: Node): Node {
-            return Mul(numerator, Inv(denominator))
         }
 
 
@@ -120,90 +66,17 @@ sealed interface Node {
             return Node3Impl(first, second, third, name)
         }
 
-        fun Neg(child: Node): Node {
-            return Mul(listOf(NEG_ONE, child))
+        fun NodeNFlatten(name: String, children: List<Node>, empty: Node): Node {
+            return when (children.size) {
+                0 -> empty
+                1 -> children[0]
+                else -> NodeNImpl(name, children)
+            }
         }
 
-        fun Inv(child: Node): Node {
-            return Pow(child, NEG_ONE)
-        }
-
-        fun Pow(base: Node, exp: Node): Node {
-            return Node2(Names.POW, base, exp)
-        }
-
-        fun Exp(exp: Node): Node {
-            return Pow(NATURAL_E, exp)
-        }
-
-        fun Sin(node: Node): Node {
-            return Node1(Names.F1_SIN, node)
-        }
-
-        fun Cos(node: Node): Node {
-            return Node1(Names.F1_COS, node)
-        }
-
-        fun Tan(node: Node): Node {
-            return Node1(Names.F1_TAN, node)
-        }
-
-        fun Cot(node: Node): Node {
-            return Node1(Names.F1_COT, node)
-        }
-
-        fun ArcSin(node: Node): Node {
-            return Node1(Names.F1_ARCSIN, node)
-        }
-
-        fun ArcCos(node: Node): Node {
-            return Node1(Names.F1_ARCCOS, node)
-        }
-
-        fun ArcTan(node: Node): Node {
-            return Node1(Names.F1_ARCTAN, node)
-        }
-
-        fun Log(base: Node, x: Node): Node {
-            return Node2(Names.F2_LOG, base, x)
-        }
-
-        fun Ln(node: Node): Node {
-            return Log(NATURAL_E, node)
-        }
-
-        fun Log2(node: Node): Node {
-            return Log(TWO, node)
-        }
-
-        fun Log10(node: Node): Node {
-            return Log(TEN, node)
-        }
     }
 
     object Names {
-        const val MUL = "*"
-        const val ADD = "+"
-
-        //        const val NAME_DIV = "/"
-        const val POW = "^"
-
-
-        //        const val F1_EXP = "exp"
-        const val F2_LOG = "log"
-
-
-        const val Symbol_I = "𝑖"
-        const val Symbol_E = "𝑒"
-        const val Symbol_PI = "π"
-
-        const val F1_SIN = "sin"
-        const val F1_COS = "cos"
-        const val F1_TAN = "tan"
-        const val F1_COT = "cot"
-        const val F1_ARCSIN = "arcsin"
-        const val F1_ARCCOS = "arccos"
-        const val F1_ARCTAN = "arctan"
 
 
     }
@@ -682,18 +555,7 @@ data class NodeSig(val name: String, val type: NType) : Comparable<NodeSig> {
         }
 
 
-        val RATIONAL = NodeSig("", NType.Rational)
         val SYMBOL = NodeSig("", NType.Symbol)
-
-
-        val ADD = NodeSig(Node.Names.ADD, NType.NodeN)
-        val MUL = NodeSig(Node.Names.MUL, NType.NodeN)
-        val POW = NodeSig(Node.Names.POW, NType.Node2)
-
-        val F1_SIN = NodeSig(Node.Names.F1_SIN, NType.Node1)
-        val F1_COS = NodeSig(Node.Names.F1_COS, NType.Node1)
-        val F1_TAN = NodeSig(Node.Names.F1_TAN, NType.Node1)
-
 
     }
 }
@@ -702,7 +564,6 @@ data class NodeSig(val name: String, val type: NType) : Comparable<NodeSig> {
  * Describes the structural signature of a node.
  */
 val Node.signature get() = NodeSig.signatureOf(this)
-
 
 
 object NodeOrder : Comparator<Node> {
@@ -790,18 +651,12 @@ object NodeOrder : Comparator<Node> {
 
 interface NodeBuilderScope {
 
+    val context: ExprContext
+
     fun symbol(name: String): Node {
         return NSymbol(name)
     }
 
-    fun constant(name: String): Node {
-        return when (name) {
-            "pi", Node.Names.Symbol_PI -> Node.PI
-            "e", Node.Names.Symbol_E -> Node.NATURAL_E
-            "i", Node.Names.Symbol_I -> Node.IMAGINARY_UNIT
-            else -> throw IllegalArgumentException("Unknown constant: $name")
-        }
-    }
 
     val x: Node get() = symbol("x")
     val y: Node get() = symbol("y")
@@ -810,108 +665,13 @@ interface NodeBuilderScope {
     val b: Node get() = symbol("b")
     val c: Node get() = symbol("c")
 
-    val imagUnit: Node get() = Node.IMAGINARY_UNIT
-    val 𝑖: Node get() = Node.IMAGINARY_UNIT
 
-    val naturalE: Node get() = Node.NATURAL_E
-    val 𝑒: Node get() = Node.NATURAL_E
+    fun constant(name: String): Node {
+        throw IllegalArgumentException("Unknown constant: $name")
+    }
 
-    val pi: Node get() = Node.PI
-
-    val context: ExprContext
-    val π: Node get() = Node.PI
-
-
-    val Int.e: Node get() = Node.Int(this.toBigInteger())
-
-    val Long.e: Node get() = Node.Int(this.toBigInteger())
-
-    val BigInteger.e: Node get() = Node.Int(this)
-
-    val BigFrac.e: Node get() = Node.Rational(this)
 
     val String.s: Node get() = symbol(this)
-
-    fun rational(nume: Int, deno: Int): Node {
-        return Node.Rational(BigFracAsQuot.bfrac(nume, deno))
-    }
-
-    operator fun Node.plus(y: Node): Node {
-        return Node.Add(listOf(this, y))
-    }
-
-    operator fun Node.minus(y: Node): Node {
-        return Node.Add(listOf(this, Node.Mul(listOf(Node.NEG_ONE, y))))
-    }
-
-    fun negate(x: Node): Node {
-        return Node.Neg(x)
-    }
-
-    operator fun Node.unaryMinus(): Node {
-        return Node.Neg(this)
-    }
-
-    fun sum(vararg nodes: Node): Node {
-        return Node.Add(nodes.asList())
-    }
-
-    fun sum(elements: List<Node>): Node {
-        return Node.Add(elements)
-    }
-
-    fun product(vararg nodes: Node): Node {
-        return Node.Mul(nodes.asList())
-    }
-
-    fun product(elements: List<Node>): Node {
-        return Node.Mul(elements)
-    }
-
-
-    operator fun Node.times(y: Node): Node {
-        return Node.Mul(listOf(this, y))
-    }
-
-    operator fun Node.div(y: Node): Node {
-        return Node.Mul(listOf(this, Node.Inv(y)))
-    }
-
-    fun pow(base: Node, exp: Node): Node {
-        return Node.Node2(Node.Names.POW, base, exp)
-    }
-
-    fun sqrt(x: Node): Node {
-        return pow(x, Node.HALF)
-    }
-
-    fun inv(node: Node): Node {
-        return Node.Inv(node)
-    }
-
-    fun exp(x: Node): Node {
-        return Node.Exp(x)
-    }
-
-    fun log(base: Node, x: Node): Node {
-        return Node.Log(base, x)
-    }
-
-    fun ln(x: Node): Node {
-        return Node.Ln(x)
-    }
-
-    fun sin(x: Node): Node {
-        return Node.Node1(Node.Names.F1_SIN, x)
-    }
-
-    fun cos(x: Node): Node {
-        return Node.Node1(Node.Names.F1_COS, x)
-    }
-
-    fun tan(x: Node): Node {
-        return Node.Node1(Node.Names.F1_TAN, x)
-    }
 
 
     companion object {

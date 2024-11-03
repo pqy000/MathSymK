@@ -6,7 +6,7 @@ package io.github.ezrnest.mathsymk.symbolic
  * Describes the assumptions of the expression.
  */
 interface ExprContext {
-    val conditions : List<Any> // TODO
+    val conditions : List<Node> // TODO
         get() = emptyList()
 }
 

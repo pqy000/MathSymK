@@ -2,6 +2,8 @@ package io.github.ezrnest.mathsymk.symbolic
 
 import io.github.ezrnest.mathsymk.model.*
 import io.github.ezrnest.mathsymk.structure.Reals
+import io.github.ezrnest.mathsymk.symbolic.alg.NodeScopeAlg
+import io.github.ezrnest.mathsymk.symbolic.alg.SymAlg
 import io.github.ezrnest.mathsymk.symbolic.sim.RuleList
 import io.github.ezrnest.mathsymk.symbolic.sim.RulesExponentialReduce
 import io.github.ezrnest.mathsymk.symbolic.sim.RulesTrigonometricReduce
@@ -19,7 +21,7 @@ interface ExprCal {
 
     val rationals: BigFracAsQuot get() = BigFracAsQuot
     val multinomials: MultiOverField<BigFrac> get() = MultiOverField(rationals, Multinomial.DEFAULT_ORDER)
-    val polynomials : PolyOverField<BigFrac> get() = PolyOverField(rationals)
+    val polynomials: PolyOverField<BigFrac> get() = PolyOverField(rationals)
 
 
     object Options {
@@ -96,10 +98,10 @@ open class BasicExprCal : ExprCal, NodeBuilderScope {
 
     init {
         listOf(
-            Flatten(Node.Names.ADD),
-            Flatten(Node.Names.MUL),
-            RuleSort(NodeSig.ADD),
-            RuleSort(NodeSig.MUL),
+            Flatten(SymAlg.Names.ADD),
+            Flatten(SymAlg.Names.MUL),
+            RuleSort(SymAlg.Signatures.ADD),
+            RuleSort(SymAlg.Signatures.MUL),
             MergeAdditionRational,
             MergeProduct,
             ComputePow,
@@ -126,8 +128,8 @@ open class BasicExprCal : ExprCal, NodeBuilderScope {
 
     override fun isCommutative(name: String): Boolean {
         return when (name) {
-            Node.Names.ADD -> true
-            Node.Names.MUL -> true
+            SymAlg.Names.ADD -> true
+            SymAlg.Names.MUL -> true
             else -> false
         }
     }
@@ -330,8 +332,8 @@ open class BasicExprCal : ExprCal, NodeBuilderScope {
                 val transList = rule.transform(node, sim.context, this)
                 if (transList.isEmpty()) continue
                 log(Verbosity.WHEN_APPLIED) { "|>${rule.description}" }
-                for ((dep,trans) in transList) {
-                    val res = reduceNode(trans, sim.context, min(sim.depth,dep))
+                for ((dep, trans) in transList) {
+                    val res = reduceNode(trans, sim.context, min(sim.depth, dep))
                     val ns = sim.create(res)
                     if (results.add(ns)) {
                         pending += ns
@@ -360,7 +362,7 @@ open class BasicExprCal : ExprCal, NodeBuilderScope {
 }
 
 
-class ExprCalReal : BasicExprCal(), Reals<Node> {
+class ExprCalReal : BasicExprCal(), Reals<Node>, NodeScopeAlg {
 
 //    private fun addAllReduce(rules: RuleList) {
 //        rules.list.forEach { addReduceRule(it) }
@@ -376,17 +378,17 @@ class ExprCalReal : BasicExprCal(), Reals<Node> {
 
     override fun constantValue(name: String): Node {
         return when (name) {
-            "pi", Node.Names.Symbol_PI -> Node.PI
-            "e", Node.Names.Symbol_E -> Node.NATURAL_E
+            "pi", SymAlg.Names.Symbol_PI -> SymAlg.PI
+            "e", SymAlg.Names.Symbol_E -> SymAlg.NATURAL_E
             else -> throw IllegalArgumentException("Unknown constant: $name")
         }
     }
 
     override val one: Node
-        get() = Node.ONE
+        get() = SymAlg.ONE
 
     override val zero: Node
-        get() = Node.ZERO
+        get() = SymAlg.ZERO
 
 
     override fun contains(x: Node): Boolean = true // TODO
@@ -396,59 +398,31 @@ class ExprCalReal : BasicExprCal(), Reals<Node> {
     }
 
     override fun negate(x: Node): Node {
-        return reduce(Node.Neg(x), 0)
+        return reduce(super.negate(x), 0)
     }
 
     override fun add(x: Node, y: Node): Node {
-        return reduce(Node.Add(x, y), 0)
+        return reduce(super<NodeScopeAlg>.sum(x, y), 0)
     }
 
     override fun sum(elements: List<Node>): Node {
-        return reduce(Node.Add(elements), 0)
+        return reduce(super<NodeScopeAlg>.sum(elements), 0)
     }
 
     override fun multiply(x: Node, y: Node): Node {
-        return reduce(Node.Mul(x, y), 0)
+        return reduce(super.multiply(x, y), 0)
+    }
+
+    override fun product(elements: List<Node>): Node {
+        return super<NodeScopeAlg>.product(elements).also { reduce(it, 0) }
     }
 
     override fun reciprocal(x: Node): Node {
-        return reduce(Node.Inv(x), 0)
+        return super<NodeScopeAlg>.inv(x).also { reduce(it, 0) }
     }
 
     override fun divide(x: Node, y: Node): Node {
-        return reduce(Node.Div(x, y), 1)
-    }
-
-    override fun compare(o1: Node, o2: Node): Int {
-        TODO("Not yet implemented")
-    }
-
-    override fun sqrt(x: Node): Node {
-        return reduce(Node.Pow(x, Node.HALF), 0)
-    }
-
-    override fun exp(x: Node): Node {
-        return reduce(Node.Exp(x), 0)
-    }
-
-    override fun ln(x: Node): Node {
-        return reduce(Node.Ln(x), 0)
-    }
-
-    override fun sin(x: Node): Node {
-        return reduce(Node.Sin(x), 0)
-    }
-
-    override fun cos(x: Node): Node {
-        return reduce(Node.Cos(x), 0)
-    }
-
-    override fun arcsin(x: Node): Node {
-        return reduce(Node.ArcSin(x), 0)
-    }
-
-    override fun tan(x: Node): Node {
-        return reduce(Node.Tan(x), 0)
+        return super<NodeScopeAlg>.divide(x, y).also { reduce(it, 1) }
     }
 
     override fun Node.div(y: Node): Node {
@@ -457,10 +431,6 @@ class ExprCalReal : BasicExprCal(), Reals<Node> {
 
     override fun Node.times(y: Node): Node {
         return multiply(this, y)
-    }
-
-    override fun product(elements: List<Node>): Node {
-        return reduce(Node.Mul(elements), 0)
     }
 
     override fun Node.minus(y: Node): Node {
@@ -475,31 +445,68 @@ class ExprCalReal : BasicExprCal(), Reals<Node> {
         return add(this, y)
     }
 
+
+    override fun sqrt(x: Node): Node {
+        return super<NodeScopeAlg>.sqrt(x).also { reduce(it, 0) }
+    }
+
+    override fun exp(x: Node): Node {
+        return super<NodeScopeAlg>.exp(x).also { reduce(it, 0) }
+    }
+
     override fun exp(base: Node, pow: Node): Node {
-        return reduce(Node.Pow(base, pow), 0)
+        return super<NodeScopeAlg>.pow(base, pow).also { reduce(it, 0) }
+    }
+
+    override fun pow(base: Node, exp: Node): Node {
+        return super<NodeScopeAlg>.pow(base, exp).also { reduce(it, 0) }
     }
 
     override fun nroot(x: Node, n: Int): Node {
-        return reduce(Node.Pow(x, rational(1, n)), 0)
+        return pow(x, rational(1, n))
+    }
+
+    override fun ln(x: Node): Node {
+        return super<NodeScopeAlg>.ln(x).also { reduce(it, 0) }
     }
 
     override fun log(base: Node, x: Node): Node {
-        return reduce(Node.Log(base, x), 0)
+        return super<NodeScopeAlg>.log(base, x).also { reduce(it, 0) }
     }
 
-    override fun cot(x: Node): Node {
-        return reduce(Node.Cot(x), 0)
+    override fun sin(x: Node): Node {
+        return super<NodeScopeAlg>.sin(x).also { reduce(it, 0) }
+    }
+
+    override fun cos(x: Node): Node {
+        return super<NodeScopeAlg>.cos(x).also { reduce(it, 0) }
+    }
+
+    override fun tan(x: Node): Node {
+        return super<NodeScopeAlg>.tan(x).also { reduce(it, 0) }
+    }
+
+    //    override fun cot(x: Node): Node {
+//        return super<NodeScopeAlg>.cot(x).also { reduce(it, 0) }
+//    }
+
+    override fun arcsin(x: Node): Node {
+        return super<NodeScopeAlg>.arcsin(x).also { reduce(it, 0) }
     }
 
     override fun arccos(x: Node): Node {
-        return reduce(Node.ArcCos(x), 0)
+        return super<NodeScopeAlg>.arccos(x).also { reduce(it, 0) }
     }
 
     override fun arctan(x: Node): Node {
-        return reduce(Node.ArcTan(x), 0)
+        return super<NodeScopeAlg>.arctan(x).also { reduce(it, 0) }
     }
 
     override fun arctan2(y: Node, x: Node): Node {
         TODO()
+    }
+
+    override fun compare(o1: Node, o2: Node): Int {
+        TODO("Not yet implemented")
     }
 }

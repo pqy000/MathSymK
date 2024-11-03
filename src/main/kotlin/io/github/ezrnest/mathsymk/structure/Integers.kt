@@ -48,7 +48,7 @@ interface UniqueFactorizationDomain<T> : IntegralDomain<T> {
      * * `lcm(a,0) = 0`
      */
     fun lcm(a: T, b: T): T{
-        return exactDiv(multiply(a, b), gcd(a, b))
+        return exactDiv(this@UniqueFactorizationDomain.multiply(a, b), gcd(a, b))
     }
 
 
@@ -263,9 +263,9 @@ interface EuclideanDomain<T> : UniqueFactorizationDomain<T> {
         x = mod(x, m)
         while (p > 0) {
             if (p and 1 == 1L) {
-                ans = mod(multiply(x, ans), m)
+                ans = mod(this@EuclideanDomain.multiply(x, ans), m)
             }
-            x = mod(multiply(x, x), m)
+            x = mod(this@EuclideanDomain.multiply(x, x), m)
             p = p shr 1
         }
         return ans
@@ -716,9 +716,9 @@ interface Integers<T> : EuclideanDomain<T>, OrderedRing<T> {
         x = mod(x, m)
         while (!isZero(p)) {
             if (isOdd(p)) {
-                ans = mod(multiply(x, ans), m)
+                ans = mod(this@Integers.multiply(x, ans), m)
             }
-            x = mod(multiply(x, x), m)
+            x = mod(this@Integers.multiply(x, x), m)
             p = divToInt(p, two)
         }
         return ans
