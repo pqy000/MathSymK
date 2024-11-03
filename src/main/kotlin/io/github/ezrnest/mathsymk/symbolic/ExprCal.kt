@@ -7,7 +7,6 @@ import io.github.ezrnest.mathsymk.symbolic.sim.RulesExponentialReduce
 import io.github.ezrnest.mathsymk.symbolic.sim.RulesTrigonometricReduce
 import io.github.ezrnest.mathsymk.util.WithInt
 import java.util.*
-import kotlin.collections.ArrayList
 import kotlin.math.max
 import kotlin.math.min
 
@@ -44,8 +43,10 @@ interface ExprCal {
     fun reduceNode(node: Node, context: ExprContext, depth: Int = 0): Node
 
 
-    fun simplify(node: Node): List<Node> {
-        TODO()
+    fun simplify(node: Node): List<Node>
+
+    fun format(node: Node): String {
+        return node.plainToString()
     }
 }
 

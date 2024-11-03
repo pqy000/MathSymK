@@ -244,7 +244,6 @@ interface LeafNode : Node {
 
 sealed class AbstractNode {
     var meta: Map<TypedKey<*>, Any?> = emptyMap()
-
 }
 
 
@@ -820,7 +819,6 @@ interface NodeBuilderScope {
     val pi: Node get() = Node.PI
 
     val context: ExprContext
-        get() = BasicExprContext()
     val π: Node get() = Node.PI
 
 
@@ -924,6 +922,8 @@ interface NodeBuilderScope {
             override val a: Node = symbol("a")
             override val b: Node = symbol("b")
             override val c: Node = symbol("c")
+            override val context: ExprContext
+                get() = BasicExprContext()
         }
 
         operator fun invoke(): NodeBuilderScope {
