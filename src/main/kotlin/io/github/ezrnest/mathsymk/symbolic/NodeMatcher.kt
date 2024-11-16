@@ -265,7 +265,7 @@ object AnyRationalMatcher : LeafMatcher<NRational>, NodeMatcherFixSig<NRational>
 
     override val refNames: Set<String> get() = emptySet()
 
-    override val nodeSig: NodeSig get() = NodeSig.RATIONAL
+    override val nodeSig: NodeSig get() = SymAlg.Signatures.RATIONAL
 
     override fun toString(): String {
         return "AnyRational"
@@ -702,9 +702,12 @@ interface MatcherScopeAlg : MatcherBuilderScope {
             AfterMatchScope.create(matchContext).postCond()
         }
     }
+
+
+    companion object : MatcherScopeAlg
 }
 
-fun <T : Node> buildMatcher(action: MatcherBuilderScope.() -> NodeMatcherT<T>): NodeMatcherT<T> {
+fun <T : Node> buildMatcher(action: MatcherScopeAlg.() -> NodeMatcherT<T>): NodeMatcherT<T> {
     TODO()
 //    return action(MatcherBuilderScope)
 }

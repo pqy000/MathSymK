@@ -33,7 +33,6 @@ tasks.test {
 }
 
 java {
-
     toolchain {
         languageVersion.set(JavaLanguageVersion.of(21))
     }

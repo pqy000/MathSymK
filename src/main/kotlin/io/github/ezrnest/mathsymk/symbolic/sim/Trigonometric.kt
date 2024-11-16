@@ -13,6 +13,7 @@ import io.github.ezrnest.mathsymk.symbolic.NodeMatcherT
 import io.github.ezrnest.mathsymk.symbolic.SimRuleMatched
 import io.github.ezrnest.mathsymk.symbolic.SimUtils
 import io.github.ezrnest.mathsymk.symbolic.TypedKey
+import io.github.ezrnest.mathsymk.symbolic.alg.SymAlg
 import io.github.ezrnest.mathsymk.symbolic.buildMatcher
 import io.github.ezrnest.mathsymk.symbolic.buildNode
 import io.github.ezrnest.mathsymk.symbolic.set
@@ -34,16 +35,16 @@ object TrigonometricUtils {
          */
         val Q = BigFracAsQuot
         with(Q) {
-            values[ofN(0)] = Node.ZERO
+            values[ofN(0)] = SymAlg.ZERO
             val half = half
-            values[half] = Node.ONE
+            values[half] = SymAlg.ONE
             val sqrt2 = SimUtils.sqrt(2)
             val sqrt3 = SimUtils.sqrt(3)
             values[bfrac(1, 3)] = buildNode { half.e * sqrt3 }
             values[bfrac(1, 4)] = buildNode { half.e * sqrt2 }
-            values[bfrac(1, 6)] = Node.Rational(half)
+            values[bfrac(1, 6)] = SymAlg.Rational(half)
             values[bfrac(1, 12)] = buildNode {
-                product(bfrac(1, 4).e, sqrt2, sum(Node.NEG_ONE, sqrt3))
+                product(bfrac(1, 4).e, sqrt2, sum(SymAlg.NEG_ONE, sqrt3))
             }
         }
         for (v in values.values) {
@@ -97,9 +98,9 @@ object TrigonometricUtils {
         with(Q) {
             val sqrt2 = SimUtils.sqrt(2)
             val sqrt3 = SimUtils.sqrt(3)
-            values[ofN(0)] = Node.ZERO
+            values[ofN(0)] = SymAlg.ZERO
             values[bfrac(1, 6)] = buildNode { pow(3.e, (-half).e) }
-            values[bfrac(1, 4)] = Node.ONE
+            values[bfrac(1, 4)] = SymAlg.ONE
             values[bfrac(1, 3)] = sqrt3
             values[half] = Node.UNDEFINED
         }
@@ -191,7 +192,8 @@ class RulesTrigonometricReduce : RuleList() {
             match {
                 pow(sin(x), 2.e) + pow(cos(x), 2.e)
             } to {
-                1.e
+                TODO()
+//                1.e
             }
         }
     }
@@ -221,7 +223,8 @@ class RulesTrigonometricTransform : RuleList() {
             match {
                 sin(-x)
             } to {
-                -sin(x)
+                TODO()
+//                -sin(x)
             }
         }
         rule{
@@ -229,7 +232,8 @@ class RulesTrigonometricTransform : RuleList() {
             match {
                 cos(-x)
             } to {
-                cos(x)
+                TODO()
+//                cos(x)
             }
         }
 
@@ -238,7 +242,8 @@ class RulesTrigonometricTransform : RuleList() {
             match {
                 sin(x + y)
             } to {
-                sin(x) * cos(y) + cos(x) * sin(y)
+                TODO()
+//                sin(x) * cos(y) + cos(x) * sin(y)
             }
         }
         rule {
@@ -246,7 +251,8 @@ class RulesTrigonometricTransform : RuleList() {
             match {
                 sin(x) * cos(y) + cos(x) * sin(y)
             } to {
-                sin(x+y)
+                TODO()
+//                sin(x+y)
             }
         }
         rule {
@@ -254,16 +260,17 @@ class RulesTrigonometricTransform : RuleList() {
             match {
                 cos(x + y)
             } to {
-                cos(x) * cos(y) - sin(x) * sin(y)
+                TODO()
+//                cos(x) * cos(y) - sin(x) * sin(y)
             }
         }
         rule {
             name = "Trig: cos(x)cos(y) - sin(x)sin(y) -> cos(x+y) "
             match {
                 cos(x) * cos(y) - sin(x) * sin(y)
-
             } to {
-                cos(x + y)
+                TODO()
+//                cos(x + y)
             }
         }
     }

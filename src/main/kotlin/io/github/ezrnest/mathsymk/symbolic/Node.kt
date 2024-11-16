@@ -2,6 +2,7 @@ package io.github.ezrnest.mathsymk.symbolic
 // created at 2024/10/01
 import io.github.ezrnest.mathsymk.model.BigFrac
 import io.github.ezrnest.mathsymk.model.BigFracAsQuot
+import io.github.ezrnest.mathsymk.symbolic.alg.NodeScopeAlg
 import io.github.ezrnest.mathsymk.util.all2
 import java.math.BigInteger
 import kotlin.reflect.KClass
@@ -693,6 +694,6 @@ interface NodeBuilderScope {
 }
 
 
-fun buildNode(context: NodeBuilderScope = NodeBuilderScope(), builder: NodeBuilderScope.() -> Node): Node {
+fun buildNode(context: NodeScopeAlg = TODO(), builder: NodeScopeAlg.() -> Node): Node {
     return context.builder()
 }

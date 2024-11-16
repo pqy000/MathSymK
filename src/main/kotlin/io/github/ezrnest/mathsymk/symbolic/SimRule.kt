@@ -4,6 +4,7 @@ import io.github.ezrnest.mathsymk.model.BigFrac
 import io.github.ezrnest.mathsymk.model.BigFracAsQuot
 import io.github.ezrnest.mathsymk.model.isOdd
 import io.github.ezrnest.mathsymk.symbolic.Node.Names
+import io.github.ezrnest.mathsymk.symbolic.alg.SymAlg
 import io.github.ezrnest.mathsymk.util.IterUtils
 import io.github.ezrnest.mathsymk.util.WithInt
 import io.github.ezrnest.mathsymk.util.all2
@@ -139,7 +140,7 @@ class Flatten(targetName: String) : RuleForSpecificN(targetName) {
  * a + a -> 2a
  * ```
  */
-object MergeAdditionRational : RuleForSpecificN(Names.ADD) {
+object MergeAdditionRational : RuleForSpecificN(SymAlg.Names.ADD) {
     // created at 2024/10/05
 
 
@@ -170,14 +171,14 @@ object MergeAdditionRational : RuleForSpecificN(Names.ADD) {
             }
         }
         if (!simplified) return null
-        if (collect.isEmpty()) return WithInt(-1, Node.ZERO)
+        if (collect.isEmpty()) return WithInt(-1, SymAlg.ZERO)
         if (collect.size == 1) {
             val (n, r) = collect.entries.first()
             return WithInt(0, SimUtils.createWithRational(r, n))
         }
 
         val newChildren = collect.entries.map { (n, r) -> SimUtils.createWithRational(r, n) }
-        return WithInt(0, Node.Add(newChildren))
+        return WithInt(0, SymAlg.Add(newChildren))
 
     }
 
@@ -189,7 +190,7 @@ object MergeAdditionRational : RuleForSpecificN(Names.ADD) {
  * 1 * x * 2 -> 2x
  * ```
  */
-object MergeProduct : RuleForSpecificN(Names.MUL) {
+object MergeProduct : RuleForSpecificN(SymAlg.Names.MUL) {
     // created at 2024/10/05
 
     override val description: String
@@ -199,31 +200,31 @@ object MergeProduct : RuleForSpecificN(Names.MUL) {
 
 
     private fun getBase(node: Node): Node {
-        if (node is Node2 && node.name == Names.POW) {
+        if (node is Node2 && node.name == SymAlg.Names.POW) {
             return node.first
         }
         return node
     }
 
     private fun getPower(node: Node): Node {
-        if (node is Node2 && node.name == Names.POW) {
+        if (node is Node2 && node.name == SymAlg.Names.POW) {
             return node.second
         }
-        return Node.ONE
+        return SymAlg.ONE
     }
 
     private fun buildPower(base: Node, nodeList: List<Node>, context: ExprContext, cal: ExprCal): Node {
         if (nodeList.size == 1) return nodeList[0] // not merged
-        var exp = Node.Add(nodeList.map { getPower(it) })
+        var exp = SymAlg.Add(nodeList.map { getPower(it) })
         exp = cal.reduceNode(exp, context, 0)
-        if (exp == Node.ONE) return base
-        val res = Node.Pow(base, exp)
+        if (exp == SymAlg.ONE) return base
+        val res = SymAlg.Pow(base, exp)
         return cal.reduceNode(res, context, 0)
     }
 
     private fun simMulZero(collect: Map<Node, List<Node>>, context: ExprContext): WithInt<Node> {
         // possible further check for undefined or infinity
-        return WithInt(-1, Node.ZERO)
+        return WithInt(-1, SymAlg.ZERO)
     }
 
 
@@ -261,9 +262,9 @@ object MergeProduct : RuleForSpecificN(Names.MUL) {
 
         val addRational = rationalCount > 0 && !Q.isOne(rPart)
         val newChildren = ArrayList<Node>(collect.size + if (addRational) 1 else 0)
-        if (addRational) newChildren.add(Node.Rational(rPart))
+        if (addRational) newChildren.add(SymAlg.Rational(rPart))
         collect.entries.mapTo(newChildren) { (base, nodeList) -> buildPower(base, nodeList, context, cal) }
-        return WithInt(0, Node.Mul(newChildren))
+        return WithInt(0, SymAlg.Mul(newChildren))
         // need simplification by the rule again since the power may be added and simplified
     }
 }
@@ -275,7 +276,7 @@ object MergeProduct : RuleForSpecificN(Names.MUL) {
  * 1 * x -> x
  * ```
  */
-object ComputeProductRational : RuleForSpecificN(Names.MUL) {
+object ComputeProductRational : RuleForSpecificN(SymAlg.Names.MUL) {
     // created at 2024/10/05
     override val metaKeyApplied: TypedKey<Boolean> = TypedKey("Compute*")
 
@@ -299,13 +300,13 @@ object ComputeProductRational : RuleForSpecificN(Names.MUL) {
             }
         }
         if (count == 0) return null  // no rational to compute
-        if (Q.isZero(product)) return WithInt(-1, Node.ZERO)
-        if (nodes.isEmpty()) return WithInt(-1, Node.Rational(product)) // only rational
+        if (Q.isZero(product)) return WithInt(-1, SymAlg.ZERO)
+        if (nodes.isEmpty()) return WithInt(-1, SymAlg.Rational(product)) // only rational
         if (count == 1 && !Q.isOne(product)) return null // only one rational that can't be simplified
         if (!Q.isOne(product)) {
-            nodes.add(Node.Rational(product))
+            nodes.add(SymAlg.Rational(product))
         }
-        return Node.Mul(nodes).also { it[metaKeyApplied] = true }.let { WithInt(0, it) }
+        return SymAlg.Mul(nodes).also { it[metaKeyApplied] = true }.let { WithInt(0, it) }
     }
 }
 
@@ -334,7 +335,7 @@ abstract class RuleForSpecific2(targetName: String) : RuleForSpecificName(target
  * exp(exp(x,2),3) -> exp(x,6)
  * ```
  */
-object FlattenPow : RuleForSpecific2(Names.POW) {
+object FlattenPow : RuleForSpecific2(SymAlg.Names.POW) {
     // created at 2024/10/05
     override val metaKeyApplied: TypedKey<Boolean> = TypedKey("Flatten^")
 
@@ -346,8 +347,8 @@ object FlattenPow : RuleForSpecific2(Names.POW) {
      */
     private fun flattenPowPow(base: Node2, exp: Node): Node {
         val (baseBase, baseExp) = base
-        val newExp = Node.Mul(listOf(baseExp, exp))
-        return Node.Pow(baseBase, newExp)
+        val newExp = SymAlg.Mul(listOf(baseExp, exp))
+        return SymAlg.Pow(baseBase, newExp)
     }
 
     private fun flattenPowInt(base: Node, exp: NRational, context: ExprContext): WithInt<Node>? {
@@ -361,10 +362,10 @@ object FlattenPow : RuleForSpecific2(Names.POW) {
                 if (SimUtils.isPow(it)) {
                     flattenPowPow(it, exp)
                 } else {
-                    Node.Pow(it, exp)
+                    SymAlg.Pow(it, exp)
                 }
             }
-            return WithInt(2, Node.Mul(newChildren))
+            return WithInt(2, SymAlg.Mul(newChildren))
         }
         return null
     }
@@ -385,7 +386,7 @@ object FlattenPow : RuleForSpecific2(Names.POW) {
  * pow(r, p/q) -> pow(r^p, 1/q)
  * ```
  */
-object ComputePow : RuleForSpecific2(Names.POW) {
+object ComputePow : RuleForSpecific2(SymAlg.Names.POW) {
     // created at 2024/10/05
     override val metaKeyApplied: TypedKey<Boolean> = TypedKey("Compute^")
 
@@ -401,12 +402,12 @@ object ComputePow : RuleForSpecific2(Names.POW) {
      * ```
      */
     private fun computeNRootMinus1(exp: BigInteger, context: ExprContext, cal: ExprCal): Node {
-        if (exp == BigInteger.ONE) return Node.NEG_ONE
+        if (exp == BigInteger.ONE) return SymAlg.NEG_ONE
         if (cal.options[ExprCal.Options.forceReal] == true) throw ArithmeticException(
             "Cannot compute the value of (-1)^(1/n) in the real mode"
         )
 
-        if (exp == BigInteger.TWO) return Node.IMAGINARY_UNIT
+        if (exp == BigInteger.TWO) return SymAlg.IMAGINARY_UNIT
         return buildNode {
             val piOverN = pi / exp.e
             val cos = cos(piOverN)
@@ -430,14 +431,14 @@ object ComputePow : RuleForSpecific2(Names.POW) {
                 val p = asInteger(exp)
                 if (canExpandPow(base.nume, p) && canExpandPow(base.deno, p)) {
                     val res = power(base, p)
-                    return Node.Rational(res)
+                    return SymAlg.Rational(res)
                 }
                 // power too big
             }
-            if (isOne(base)) return Node.ONE
+            if (isOne(base)) return SymAlg.ONE
             if (isZero(base)) {
                 if (isZero(exp)) return Node.UNDEFINED
-                return Node.ZERO
+                return SymAlg.ZERO
             }
             val factorPow = factorizedPow(abs(base), exp)
             var rPart = one
@@ -454,12 +455,12 @@ object ComputePow : RuleForSpecific2(Names.POW) {
                             rPart *= integers.power(b, eInt).bfrac
                         }
                     }else{
-                        val node = Node.Pow(Node.Int(b), Node.Int(e1))
+                        val node = SymAlg.Pow(SymAlg.Int(b), SymAlg.Int(e1))
                         node[metaInfoKey] = true
                         nodes.add(node)
                     }
                 }else{
-                    val p = Node.Pow(Node.Int(b), Node.Rational(e))
+                    val p = SymAlg.Pow(SymAlg.Int(b), SymAlg.Rational(e))
                     p[metaInfoKey] = true
                     nodes.add(p)
                 }
@@ -475,7 +476,7 @@ object ComputePow : RuleForSpecific2(Names.POW) {
                             rPart *= integers.power(b, floorInt).bfrac
                         }
                     } else {
-                        val node = Node.Pow(Node.Int(b), Node.Int(floor))
+                        val node = SymAlg.Pow(SymAlg.Int(b), SymAlg.Int(floor))
                         node[metaKeyApplied] = true
                         node[NodeMetas.rational] = true
                         node[NodeMetas.positive] = true
@@ -484,7 +485,7 @@ object ComputePow : RuleForSpecific2(Names.POW) {
                     }
                 }
                 if (!isZero(rem)) {
-                    val p = Node.Pow(Node.Int(b), Node.Rational(rem))
+                    val p = SymAlg.Pow(SymAlg.Int(b), SymAlg.Rational(rem))
                     p[metaKeyApplied] = true
                     nodes.add(p)
                 }
@@ -498,9 +499,9 @@ object ComputePow : RuleForSpecific2(Names.POW) {
                 }
             }
             if (!isOne(rPart)) {
-                nodes.add(Node.Rational(rPart))
+                nodes.add(SymAlg.Rational(rPart))
             }
-            return Node.Mul(nodes)
+            return SymAlg.Mul(nodes)
         }
     }
 
@@ -517,7 +518,7 @@ object ComputePow : RuleForSpecific2(Names.POW) {
 }
 
 
-object RuleExpandMul : RuleForSpecificN(Names.MUL) {
+object RuleExpandMul : RuleForSpecificN(SymAlg.Names.MUL) {
     // created at 2024/10/05
     override val metaKeyApplied: TypedKey<Boolean> = TypedKey("Expand*")
 
@@ -546,8 +547,8 @@ object RuleExpandMul : RuleForSpecificN(Names.MUL) {
         val resultSize = children.fold(1) { s, n -> s * asFactorSize(n) }
         if (resultSize == 1 || resultSize >= defaultExpansionLimit) return null
         val newChildren = ArrayList<Node>(resultSize)
-        IterUtils.prod(children.map { asFactor(it) }).forEach { newChildren.add(Node.Mul(it)) }
-        val res = Node.Add(newChildren)
+        IterUtils.prod(children.map { asFactor(it) }).forEach { newChildren.add(SymAlg.Mul(it)) }
+        val res = SymAlg.Add(newChildren)
         return WithInt(1, res)
     }
 }

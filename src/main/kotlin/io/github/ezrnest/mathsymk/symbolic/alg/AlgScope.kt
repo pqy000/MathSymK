@@ -2,6 +2,7 @@ package io.github.ezrnest.mathsymk.symbolic.alg
 
 import io.github.ezrnest.mathsymk.model.BigFrac
 import io.github.ezrnest.mathsymk.model.BigFracAsQuot
+import io.github.ezrnest.mathsymk.symbolic.ExprContext
 import io.github.ezrnest.mathsymk.symbolic.NRational
 import io.github.ezrnest.mathsymk.symbolic.Node
 import io.github.ezrnest.mathsymk.symbolic.Node.Companion.Node1
@@ -165,6 +166,12 @@ interface NodeScopeAlg : NodeBuilderScope {
 
     fun arctan(x: Node): Node {
         return Node1(Names.F1_ARCTAN, x)
+    }
+
+    //TODO
+    companion object : NodeScopeAlg {
+        override val context: ExprContext
+            get() = TODO("Not yet implemented")
     }
 
 
