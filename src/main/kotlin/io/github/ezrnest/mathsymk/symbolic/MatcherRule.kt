@@ -30,12 +30,14 @@ interface SimRuleMatched<T : Node> : SimRule {
     }
 }
 
-class ForMatchScope(override val context: ExprContext) : NodeScope, NodeScopeWithPredefined {
 
+interface NodeScopeRef : NodeScope {
     fun ref(name: String): Node {
         return Node.Symbol("_$name")
     }
+}
 
+interface NodeScopePredefinedRef : NodeScopeRef, NodeScopeWithPredefined {
     override val x: Node get() = ref("x")
     override val y: Node get() = ref("y")
     override val z: Node get() = ref("z")
@@ -43,8 +45,11 @@ class ForMatchScope(override val context: ExprContext) : NodeScope, NodeScopeWit
     override val a: Node get() = ref("a")
     override val b: Node get() = ref("b")
     override val c: Node get() = ref("c")
+}
 
-    companion object{
+class ForMatchScope(override val context: ExprContext) : NodeScopePredefinedRef, NodeScopeWithPredefined {
+
+    companion object {
         private fun buildSymbol(node: NSymbol): NodeMatcher {
             val ref = node.ch
             if (ref.startsWith("_")) {
@@ -87,7 +92,7 @@ class ForMatchScope(override val context: ExprContext) : NodeScope, NodeScopeWit
             }
         }
 
-        fun buildMatcher(node:Node, cal: ExprCal): NodeMatcher {
+        fun buildMatcher(node: Node, cal: ExprCal): NodeMatcher {
             return buildMatcher0(node, cal)
         }
 
@@ -105,7 +110,7 @@ class ForMatchScope(override val context: ExprContext) : NodeScope, NodeScopeWit
                         if (!hasRef(remName)) {
                             sub
                         } else {
-                            Node.NodeN(sig.name, listOf(sub, ref(remName)))
+                            Node.NodeN(sig.name, listOf(sub, getRef(remName)))
                         }
                     }
                 }
@@ -117,7 +122,7 @@ class ForMatchScope(override val context: ExprContext) : NodeScope, NodeScopeWit
 }
 
 
-interface AfterMatchScope : NodeScope,NodeScopeWithPredefined {
+interface AfterMatchScope : NodeScope, NodeScopeWithPredefined {
 
     val matchContext: MatchContext
 
@@ -125,7 +130,7 @@ interface AfterMatchScope : NodeScope,NodeScopeWithPredefined {
         get() = matchContext.exprContext
 
 
-    fun ref(name: String): Node {
+    fun getRef(name: String): Node {
         return matchContext.refMap[name] ?: throw IllegalArgumentException("No reference found for $name")
     }
 
@@ -133,16 +138,16 @@ interface AfterMatchScope : NodeScope,NodeScopeWithPredefined {
         return matchContext.refMap.containsKey(name)
     }
 
-    override val x: Node get() = ref("x")
-    override val y: Node get() = ref("y")
-    override val z: Node get() = ref("z")
-    override val w: Node get() = ref("w")
+    override val x: Node get() = getRef("x")
+    override val y: Node get() = getRef("y")
+    override val z: Node get() = getRef("z")
+    override val w: Node get() = getRef("w")
 
-    override val a: Node get() = ref("a")
-    override val b: Node get() = ref("b")
-    override val c: Node get() = ref("c")
+    override val a: Node get() = getRef("a")
+    override val b: Node get() = getRef("b")
+    override val c: Node get() = getRef("c")
 
-    val String.ref get() = ref(this)
+    val String.ref get() = getRef(this)
 
     companion object {
         private class AfterMatchScopeImpl(override val matchContext: MatchContext) : AfterMatchScope
