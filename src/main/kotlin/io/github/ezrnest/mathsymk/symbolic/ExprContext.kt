@@ -3,17 +3,53 @@ package io.github.ezrnest.mathsymk.symbolic
 
 
 /**
+ * The context
+ *
  * Describes the assumptions of the expression.
  */
 interface ExprContext {
     val conditions : List<Node> // TODO
         get() = emptyList()
+
+
+    /**
+     * Gets a symbol node.
+     */
+    fun symbol(name: String): Node
+
+
+    fun constant(name: String): Node {
+        throw IllegalArgumentException("Unknown constant: $name")
+    }
+
+    val qualifiedSymbols : Set<NSymbol>
+
+    fun isFree(s : NSymbol) : Boolean{
+        return s !in qualifiedSymbols
+    }
+
+    fun isQualified(s : NSymbol) : Boolean{
+        return s in qualifiedSymbols
+    }
+
+    fun getFree() : NSymbol{
+        TODO()
+    }
+
+    fun getFreeSymbols() : Set<NSymbol>{
+        TODO()
+    }
+
 }
 
-object EmptyExprContext : ExprContext
+object EmptyExprContext : ExprContext {
 
-class BasicExprContext : ExprContext {
-//    override val conditions: List<Any> = emptyList()
+    override fun symbol(name: String): Node {
+        return NSymbol(name)
+    }
+
+    override val qualifiedSymbols = emptySet<NSymbol>()
+
 }
 
 

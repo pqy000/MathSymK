@@ -699,7 +699,7 @@ interface MatcherScopeAlg : MatcherBuilderScope {
 
     fun <T : Node> NodeMatcherT<T>.also(postCond: AfterMatchScope.() -> Boolean): NodeMatcherT<T> {
         return MatcherWithPostcondition(this) { node, matchContext ->
-            AfterMatchScope.create(matchContext).postCond()
+            AfterMatchScope(matchContext).postCond()
         }
     }
 

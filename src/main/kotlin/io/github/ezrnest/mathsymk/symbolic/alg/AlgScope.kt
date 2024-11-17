@@ -2,24 +2,35 @@ package io.github.ezrnest.mathsymk.symbolic.alg
 
 import io.github.ezrnest.mathsymk.model.BigFrac
 import io.github.ezrnest.mathsymk.model.BigFracAsQuot
-import io.github.ezrnest.mathsymk.symbolic.ExprContext
-import io.github.ezrnest.mathsymk.symbolic.NRational
-import io.github.ezrnest.mathsymk.symbolic.Node
+import io.github.ezrnest.mathsymk.symbolic.*
 import io.github.ezrnest.mathsymk.symbolic.Node.Companion.Node1
 import io.github.ezrnest.mathsymk.symbolic.Node.Companion.Node2
-import io.github.ezrnest.mathsymk.symbolic.NodeBuilderScope
 import io.github.ezrnest.mathsymk.symbolic.alg.SymAlg.Names
 import io.github.ezrnest.mathsymk.symbolic.alg.SymAlg.Pow
 import java.math.BigInteger
 
-interface NodeScopeAdd : NodeBuilderScope{
+interface NodeScopeAdd : NodeScope {
+    fun add(x: Node, y: Node): Node {
+        return sum(x, y)
+    }
 
+    operator fun Node.plus(y: Node): Node {
+        return sum(listOf(this, y))
+    }
+
+    fun sum(vararg nodes: Node): Node {
+        return sum(nodes.asList())
+    }
+
+    fun sum(elements: List<Node>): Node {
+        if (elements.isEmpty()) return SymAlg.ZERO
+        if (elements.size == 1) return elements[0]
+        return Node.NodeN(Names.ADD, elements)
+    }
 }
 
 
-
-
-interface NodeScopeAlg : NodeBuilderScope {
+interface NodeScopeAlg : NodeScopeAdd {
 
     val imagUnit: Node get() = SymAlg.IMAGINARY_UNIT
 
@@ -63,13 +74,8 @@ interface NodeScopeAlg : NodeBuilderScope {
         }
     }
 
-    fun add(x : Node, y : Node) : Node {
-        return sum(x, y)
-    }
 
-    operator fun Node.plus(y: Node): Node {
-        return sum(listOf(this, y))
-    }
+
 
     operator fun Node.minus(y: Node): Node {
         return sum(listOf(this, negate(y)))
@@ -83,17 +89,8 @@ interface NodeScopeAlg : NodeBuilderScope {
         return negate(this)
     }
 
-    fun sum(vararg nodes: Node): Node {
-        return sum(nodes.asList())
-    }
 
-    fun sum(elements: List<Node>): Node {
-        if (elements.isEmpty()) return SymAlg.ZERO
-        if (elements.size == 1) return elements[0]
-        return Node.Companion.NodeN(Names.ADD, elements)
-    }
-
-    fun multiply(x : Node, y : Node) : Node {
+    fun multiply(x: Node, y: Node): Node {
         return product(x, y)
     }
 
@@ -116,7 +113,7 @@ interface NodeScopeAlg : NodeBuilderScope {
         return Pow(node, SymAlg.NEG_ONE)
     }
 
-    fun divide(x : Node, y : Node) : Node {
+    fun divide(x: Node, y: Node): Node {
         return product(x, inv(y))
     }
 
@@ -168,11 +165,30 @@ interface NodeScopeAlg : NodeBuilderScope {
         return Node1(Names.F1_ARCTAN, x)
     }
 
-    //TODO
-    companion object : NodeScopeAlg {
-        override val context: ExprContext
-            get() = TODO("Not yet implemented")
+    companion object {
+        operator fun invoke(context: ExprContext): NodeScopeAlg {
+            return NodeScopeAlgImpl(context)
+        }
     }
-
-
 }
+
+data class NodeScopeAlgImpl(override val context: ExprContext) : NodeScopeAlg, NodeScopePredefinedSymbols
+
+
+
+inline fun buildAlg(context: ExprContext = EmptyExprContext, builder: NodeScopeAlgImpl.() -> Node): Node {
+    return NodeScopeAlgImpl(context).builder()
+}
+
+inline fun NodeScope.alg(builder: NodeScopeAlg.() -> Node): Node {
+    return NodeScopeAlg(this.context).builder()
+}
+
+//inline fun RuleBuilder.matchAlg(crossinline builder: NodeScopeAlg.() -> Node) {
+//    this.match { alg(builder) }
+//}
+//
+//inline fun RuleBuilder.toAlg(crossinline builder: NodeScopeAlg.() -> Node) {
+//    this.to { alg(builder) }
+//}
+

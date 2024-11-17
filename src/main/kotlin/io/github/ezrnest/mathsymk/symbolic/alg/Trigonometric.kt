@@ -1,22 +1,10 @@
-package io.github.ezrnest.mathsymk.symbolic.sim
+package io.github.ezrnest.mathsymk.symbolic.alg
 // created at 2024/10/19
 import io.github.ezrnest.mathsymk.model.BigFrac
 import io.github.ezrnest.mathsymk.model.BigFracAsQuot
 import io.github.ezrnest.mathsymk.model.Models
 import io.github.ezrnest.mathsymk.model.isEven
-import io.github.ezrnest.mathsymk.symbolic.NodeMetas
-import io.github.ezrnest.mathsymk.symbolic.MatchContext
-import io.github.ezrnest.mathsymk.symbolic.NRational
-import io.github.ezrnest.mathsymk.symbolic.Node
-import io.github.ezrnest.mathsymk.symbolic.Node1
-import io.github.ezrnest.mathsymk.symbolic.NodeMatcherT
-import io.github.ezrnest.mathsymk.symbolic.SimRuleMatched
-import io.github.ezrnest.mathsymk.symbolic.SimUtils
-import io.github.ezrnest.mathsymk.symbolic.TypedKey
-import io.github.ezrnest.mathsymk.symbolic.alg.SymAlg
-import io.github.ezrnest.mathsymk.symbolic.buildMatcher
-import io.github.ezrnest.mathsymk.symbolic.buildNode
-import io.github.ezrnest.mathsymk.symbolic.set
+import io.github.ezrnest.mathsymk.symbolic.*
 import io.github.ezrnest.mathsymk.util.WithInt
 
 
@@ -40,10 +28,10 @@ object TrigonometricUtils {
             values[half] = SymAlg.ONE
             val sqrt2 = SimUtils.sqrt(2)
             val sqrt3 = SimUtils.sqrt(3)
-            values[bfrac(1, 3)] = buildNode { half.e * sqrt3 }
-            values[bfrac(1, 4)] = buildNode { half.e * sqrt2 }
+            values[bfrac(1, 3)] = buildAlg { half.e * sqrt3 }
+            values[bfrac(1, 4)] = buildAlg { half.e * sqrt2 }
             values[bfrac(1, 6)] = SymAlg.Rational(half)
-            values[bfrac(1, 12)] = buildNode {
+            values[bfrac(1, 12)] = buildAlg {
                 product(bfrac(1, 4).e, sqrt2, sum(SymAlg.NEG_ONE, sqrt3))
             }
         }
@@ -74,7 +62,7 @@ object TrigonometricUtils {
             }
         }
         val res = sinTable[r] ?: return null
-        return if (pos) res else buildNode { -res }
+        return if (pos) res else buildAlg { -res }
     }
 
     fun cosRPi(k: BigFrac): Node? {
@@ -99,7 +87,7 @@ object TrigonometricUtils {
             val sqrt2 = SimUtils.sqrt(2)
             val sqrt3 = SimUtils.sqrt(3)
             values[ofN(0)] = SymAlg.ZERO
-            values[bfrac(1, 6)] = buildNode { pow(3.e, (-half).e) }
+            values[bfrac(1, 6)] = buildAlg { pow(3.e, (-half).e) }
             values[bfrac(1, 4)] = SymAlg.ONE
             values[bfrac(1, 3)] = sqrt3
             values[half] = Node.UNDEFINED
@@ -121,7 +109,7 @@ object TrigonometricUtils {
             }
         }
         val res = tanTable[r] ?: return null
-        return if (pos) res else buildNode { -res }
+        return if (pos) res else buildAlg(EmptyExprContext) { -res }
     }
 }
 
@@ -190,10 +178,13 @@ class RulesTrigonometricReduce : RuleList() {
         rule {
             name = "Trig: sin^2(x) + cos^2(x) = 1"
             match {
-                pow(sin(x), 2.e) + pow(cos(x), 2.e)
+                alg {
+                    pow(sin(x), 2.e) + pow(cos(x), 2.e)
+                }
             } to {
-                TODO()
-//                1.e
+                alg {
+                    1.e
+                }
             }
         }
     }
@@ -204,74 +195,101 @@ class RulesTrigonometricTransform : RuleList() {
     init {
 //        rule {
 //            name = "Trig: sin(x) = cos(π/2 - x)"
-//            match {
+//            match { alg {
 //                sin(x)
-//            } to {
+//            }
+//            toAlg {
 //                cos(π / 2.e - x)
 //            }
 //        }
 //        rule {
 //            name = "Trig: cos(x) = sin(π/2 - x)"
-//            match {
+//            match { alg {
 //                cos(x)
-//            } to {
+//            }
+//            toAlg {
 //                sin(π / 2.e - x)
 //            }
 //        }
-        rule{
+        rule {
             name = "Trig: sin(x) = -sin(-x)"
             match {
-                sin(-x)
+                alg {
+                    sin(-x)
+                }
             } to {
-                TODO()
-//                -sin(x)
+                alg {
+                    -sin(x)
+                }
             }
         }
-        rule{
+        rule {
             name = "Trig: cos(x) = cos(-x)"
             match {
-                cos(-x)
+                alg {
+                    cos(-x)
+                }
             } to {
-                TODO()
-//                cos(x)
+                alg {
+                    cos(x)
+                }
+
             }
         }
 
         rule {
             name = "Trig: sin(x+y) = sin(x)cos(y) + cos(x)sin(y)"
             match {
-                sin(x + y)
+                alg {
+                    sin(x + y)
+                }
             } to {
-                TODO()
-//                sin(x) * cos(y) + cos(x) * sin(y)
+                alg {
+                    sin(x) * cos(y) + cos(x) * sin(y)
+                }
             }
         }
         rule {
             name = "Trig: sin(x)cos(y) + cos(x)sin(y) -> sin(x+y)"
             match {
-                sin(x) * cos(y) + cos(x) * sin(y)
+                alg {
+                    sin(x) * cos(y) + cos(x) * sin(y)
+                }
             } to {
-                TODO()
-//                sin(x+y)
+                alg {
+                    sin(x + y)
+                }
             }
         }
+
         rule {
             name = "Trig: cos(x+y) = cos(x)cos(y) - sin(x)sin(y)"
             match {
-                cos(x + y)
+                alg {
+                    cos(x + y)
+                }
             } to {
-                TODO()
-//                cos(x) * cos(y) - sin(x) * sin(y)
+                alg {
+                    cos(x) * cos(y) - sin(x) * sin(y)
+                }
+
             }
         }
+
         rule {
-            name = "Trig: cos(x)cos(y) - sin(x)sin(y) -> cos(x+y) "
+            name = "Trig: cos(x)cos(y) - sin(x)sin(y) -> cos(x+y)"
             match {
-                cos(x) * cos(y) - sin(x) * sin(y)
+                alg {
+                    cos(x) * cos(y) - sin(x) * sin(y)
+                }
             } to {
-                TODO()
-//                cos(x + y)
+                alg {
+                    cos(x + y)
+                }
             }
         }
-    }
+
+
+    } // end of init block
+
 }

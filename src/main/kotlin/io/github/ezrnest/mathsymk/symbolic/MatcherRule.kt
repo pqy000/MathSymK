@@ -30,14 +30,7 @@ interface SimRuleMatched<T : Node> : SimRule {
     }
 }
 
-object NodeBuilderForMatch : NodeBuilderScope {
-
-    override val context: ExprContext
-        get() = BasicExprContext()
-
-    override fun symbol(name: String): Node {
-        return ref(name)
-    }
+class ForMatchScope(override val context: ExprContext) : NodeScope, NodeScopeWithPredefined {
 
     fun ref(name: String): Node {
         return Node.Symbol("_$name")
@@ -46,80 +39,85 @@ object NodeBuilderForMatch : NodeBuilderScope {
     override val x: Node get() = ref("x")
     override val y: Node get() = ref("y")
     override val z: Node get() = ref("z")
+    override val w: Node get() = ref("w")
+    override val a: Node get() = ref("a")
+    override val b: Node get() = ref("b")
+    override val c: Node get() = ref("c")
 
-    private fun buildSymbol(node: NSymbol): NodeMatcher {
-        val ref = node.ch
-        if (ref.startsWith("_")) {
-            return MatcherRef(ref.substring(1))
+    companion object{
+        private fun buildSymbol(node: NSymbol): NodeMatcher {
+            val ref = node.ch
+            if (ref.startsWith("_")) {
+                return MatcherRef(ref.substring(1))
+            }
+            return FixedNodeMatcher(node)
         }
-        return FixedNodeMatcher(node)
-    }
 
-    private fun buildMatcher0(node: Node, cal: ExprCal): NodeMatcher {
-        when (node) {
-            is NSymbol -> return buildSymbol(node)
-            is LeafNode -> return FixedNodeMatcher(node)
-            is Node1 -> {
-                val child = buildMatcher0(node.child, cal)
-                return NodeMatcher1(child, node.signature)
-            }
-
-            is Node2 -> {
-                val left = buildMatcher0(node.first, cal)
-                val right = buildMatcher0(node.second, cal)
-                return NodeMatcher2Ordered(left, right, node.signature)
-            }
-
-            is Node3 -> {
-                val first = buildMatcher0(node.first, cal)
-                val second = buildMatcher0(node.second, cal)
-                val third = buildMatcher0(node.third, cal)
-                return NodeMatcher3Ordered(first, second, third, node.signature)
-            }
-
-            is NodeChilded -> {
-                val children = node.children.map { buildMatcher0(it, cal) }
-                if (cal.isCommutative(node.name)) {
-                    return NodeMatcherNPO(children, node.signature)
+        private fun buildMatcher0(node: Node, cal: ExprCal): NodeMatcher {
+            when (node) {
+                is NSymbol -> return buildSymbol(node)
+                is LeafNode -> return FixedNodeMatcher(node)
+                is Node1 -> {
+                    val child = buildMatcher0(node.child, cal)
+                    return NodeMatcher1(child, node.signature)
                 }
-                return NMatcherNOrdered(children, node.signature)
+
+                is Node2 -> {
+                    val left = buildMatcher0(node.first, cal)
+                    val right = buildMatcher0(node.second, cal)
+                    return NodeMatcher2Ordered(left, right, node.signature)
+                }
+
+                is Node3 -> {
+                    val first = buildMatcher0(node.first, cal)
+                    val second = buildMatcher0(node.second, cal)
+                    val third = buildMatcher0(node.third, cal)
+                    return NodeMatcher3Ordered(first, second, third, node.signature)
+                }
+
+                is NodeChilded -> {
+                    val children = node.children.map { buildMatcher0(it, cal) }
+                    if (cal.isCommutative(node.name)) {
+                        return NodeMatcherNPO(children, node.signature)
+                    }
+                    return NMatcherNOrdered(children, node.signature)
+                }
+
+                else -> throw IllegalArgumentException("Unknown node type: ${node::class.simpleName}")
             }
-
-            else -> throw IllegalArgumentException("Unknown node type: ${node::class.simpleName}")
         }
-    }
 
-    fun buildMatcher(build: NodeBuilderScope.() -> Node, cal: ExprCal): NodeMatcher {
-        val node = cal.reduce(build(this))
-        return buildMatcher0(node, cal)
-    }
+        fun buildMatcher(node:Node, cal: ExprCal): NodeMatcher {
+            return buildMatcher0(node, cal)
+        }
 
-    fun warpPartialMatcherReplace(
-        matcher: NodeMatcher, rep: RepBuilder, description: String,
-        maxDepth: Int = Int.MAX_VALUE
-    ): MatcherReplaceRule {
-        if (matcher is NodeMatcherNPO && matcher.remMatcher is NothingMatcher) {
-            val sig = matcher.nodeSig
-            val remName = "_rem${matcher.nodeSig.name}"
-            val rem = MatcherRef(remName)
-            matcher.remMatcher = rem
-            val replacement: RepBuilder = {
-                rep()?.let { sub ->
-                    if (!hasRef(remName)) {
-                        sub
-                    } else {
-                        Node.NodeN(sig.name, listOf(sub, ref(remName)))
+        fun warpPartialMatcherReplace(
+            matcher: NodeMatcher, rep: RepBuilder, description: String,
+            maxDepth: Int = Int.MAX_VALUE
+        ): MatcherReplaceRule {
+            if (matcher is NodeMatcherNPO && matcher.remMatcher is NothingMatcher) {
+                val sig = matcher.nodeSig
+                val remName = "_rem${matcher.nodeSig.name}"
+                val rem = MatcherRef(remName)
+                matcher.remMatcher = rem
+                val replacement: RepBuilder = {
+                    rep()?.let { sub ->
+                        if (!hasRef(remName)) {
+                            sub
+                        } else {
+                            Node.NodeN(sig.name, listOf(sub, ref(remName)))
+                        }
                     }
                 }
+                return MatcherReplaceRule(matcher, replacement, description, maxDepth)
             }
-            return MatcherReplaceRule(matcher, replacement, description, maxDepth)
+            return MatcherReplaceRule(matcher, rep, description, maxDepth)
         }
-        return MatcherReplaceRule(matcher, rep, description, maxDepth)
     }
 }
 
 
-interface AfterMatchScope : NodeBuilderScope {
+interface AfterMatchScope : NodeScope,NodeScopeWithPredefined {
 
     val matchContext: MatchContext
 
@@ -135,13 +133,11 @@ interface AfterMatchScope : NodeBuilderScope {
         return matchContext.refMap.containsKey(name)
     }
 
-    override fun symbol(name: String): Node {
-        return ref(name)
-    }
-
     override val x: Node get() = ref("x")
     override val y: Node get() = ref("y")
     override val z: Node get() = ref("z")
+    override val w: Node get() = ref("w")
+
     override val a: Node get() = ref("a")
     override val b: Node get() = ref("b")
     override val c: Node get() = ref("c")
@@ -150,8 +146,6 @@ interface AfterMatchScope : NodeBuilderScope {
 
     companion object {
         private class AfterMatchScopeImpl(override val matchContext: MatchContext) : AfterMatchScope
-
-        fun create(matchContext: MatchContext): AfterMatchScope = AfterMatchScopeImpl(matchContext)
 
         operator fun invoke(matchContext: MatchContext): AfterMatchScope = AfterMatchScopeImpl(matchContext)
     }
@@ -169,16 +163,16 @@ class MatcherReplaceRule(
 
     override val metaKeyApplied: TypedKey<Boolean> = TypedKey(description)
 
-    override fun simplify(node: Node, context: ExprContext, cal: ExprCal): WithInt<Node>? {
-        var matchCtx = MatchContext(context)
+    override fun simplify(node: Node, ctx: ExprContext, cal: ExprCal): WithInt<Node>? {
+        var matchCtx = MatchContext(ctx)
         matchCtx = matcher.matches(node, matchCtx) ?: return null
-        val replacementNode = AfterMatchScope.create(matchCtx).replacement() ?: return null
+        val replacementNode = AfterMatchScope(matchCtx).replacement() ?: return null
         return WithInt(afterDepth, replacementNode)
     }
 }
 
 class MatchNodeReplaceRule(
-    private val nodeInit: NodeBuilderScope.() -> Node,
+    private val nodeInit: ForMatchScope.() -> Node,
     private val replacement: RepBuilder,
     override val description: String,
     private val afterDepth: Int = Int.MAX_VALUE,
@@ -191,12 +185,13 @@ class MatchNodeReplaceRule(
         get() = throw IllegalStateException("Matcher is not initialized")
 
 
-    override fun init(context: ExprCal): SimRule? {
+    override fun init(cal: ExprCal): SimRule? {
 //        val nodeMatch = context.simplify(nodeInit(context))
 //        val nodeRep = context.simplify()
-        val matcher = NodeBuilderForMatch.buildMatcher(nodeInit, context)
+        val node = cal.reduce(ForMatchScope(cal.context).nodeInit())
+        val matcher = ForMatchScope.buildMatcher(node, cal)
         return if (allowPartialMatch) {
-            NodeBuilderForMatch.warpPartialMatcherReplace(matcher, replacement, description, afterDepth)
+            ForMatchScope.warpPartialMatcherReplace(matcher, replacement, description, afterDepth)
         } else {
             MatcherReplaceRule(matcher, replacement, description, afterDepth)
         }

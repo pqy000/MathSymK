@@ -1,7 +1,7 @@
 package io.github.ezrnest.mathsymk.symbolic
 
 import io.github.ezrnest.mathsymk.model.BigFracAsQuot
-import io.github.ezrnest.mathsymk.symbolic.sim.*
+import io.github.ezrnest.mathsymk.symbolic.alg.*
 
 
 val TestExprCal = BasicExprCal()
@@ -29,7 +29,7 @@ fun main() {
     cal.addRule(RuleExpandMul)
 
 
-    val expr = buildNode {
+    val expr = buildAlg {
 //      1.e * 2.e + x * pow(x, 2.e) * 3.e - x * x * (2.e * x)
 //        pow((-1).e,2.e )
 //        val sub = pow(sin(x + y), 2.e) + pow(cos(x + y), 2.e)

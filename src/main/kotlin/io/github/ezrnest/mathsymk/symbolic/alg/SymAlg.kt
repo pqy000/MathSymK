@@ -32,6 +32,13 @@ object SymAlg {
     val IMAGINARY_UNIT = Symbol(Names.Symbol_I)
 
 
+    val INFINITY = Symbol("∞")
+
+    val POSITIVE_INFINITY = Symbol("+∞")
+
+    val NEGATIVE_INFINITY = Symbol("-∞")
+
+
     fun Int(value: BigInteger): NRational {
         return NRational(BigFrac(value, BigInteger.ONE))
     }
@@ -153,6 +160,11 @@ object SymAlg {
         const val F1_ARCCOS = "arccos"
         const val F1_ARCTAN = "arctan"
 
+        const val F2_GEQ = "≥"
+        const val F2_GTR = ">"
+        const val F2_LEQ = "≤"
+        const val F2_LSS = "<"
+
     }
 
     object Signatures {
@@ -166,7 +178,6 @@ object SymAlg {
         val F1_SIN = NodeSig(Names.F1_SIN, NType.Node1)
         val F1_COS = NodeSig(Names.F1_COS, NType.Node1)
         val F1_TAN = NodeSig(Names.F1_TAN, NType.Node1)
-
     }
 }
 

@@ -1,4 +1,7 @@
-package io.github.ezrnest.mathsymk.symbolic.sim
+package io.github.ezrnest.mathsymk.symbolic.alg
+
+import io.github.ezrnest.mathsymk.symbolic.RuleList
+
 // created at 2024/10/19
 
 class RulesExponentialReduce : RuleList() {
@@ -7,16 +10,20 @@ class RulesExponentialReduce : RuleList() {
         rule {
             name = "b^log_b(x) = x"
             match {
-                pow(b, log(b, x))
+                alg {
+                    pow(b, log(b, x))
+                }
             } to {
                 x
             }
         }
 
-        rule{
+        rule {
             name = "log_b(b^x) = x"
-            match{
-                log(b, pow(b, x))
+            match {
+                alg {
+                    log(b, pow(b, x))
+                }
             } to {
                 x
             }

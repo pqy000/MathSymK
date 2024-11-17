@@ -1,7 +1,4 @@
-package io.github.ezrnest.mathsymk.symbolic.sim
-
-import io.github.ezrnest.mathsymk.symbolic.*
-import io.github.ezrnest.mathsymk.symbolic.alg.NodeScopeAlg
+package io.github.ezrnest.mathsymk.symbolic
 
 
 interface RuleBuilder {
@@ -10,7 +7,7 @@ interface RuleBuilder {
 
     fun matcher(buildMatcher: MatcherBuilderScope.() -> NodeMatcherT<Node>)
 
-    fun match(buildMatch: NodeScopeAlg.() -> Node)
+    fun match(buildMatch: ForMatchScope.() -> Node)
 
     fun to(buildReplacement: AfterMatchScope.() -> Node)
 
@@ -24,18 +21,18 @@ interface RuleBuilder {
 
 internal class RuleBuilderImpl : RuleBuilder {
 
-    override var name: String = "None"
+    override var name: String = "Unnamed"
 
     var afterRuleDepth: Int = Int.MAX_VALUE
 
     private var matcher: NodeMatcherT<Node>? = null
-    private var matchNodeBuilder: (NodeScopeAlg.() -> Node)? = null
+    private var matchNodeBuilder: (ForMatchScope.() -> Node)? = null
 
     private var replacement: RepBuilder? = null
 
     private var remMatcher: MatcherRef? = null
 
-    override fun match(buildMatch: NodeScopeAlg.() -> Node) {
+    override fun match(buildMatch: ForMatchScope.() -> Node) {
         matchNodeBuilder = buildMatch
     }
 
@@ -64,10 +61,9 @@ internal class RuleBuilderImpl : RuleBuilder {
         require(matcher != null || matchNodeBuilder != null) { "Matcher or match node must be set" }
         require(replacement != null) { "Replacement must be set" }
         return if (matcher != null) {
-            NodeBuilderForMatch.warpPartialMatcherReplace(matcher, replacement, name, afterRuleDepth)
+            ForMatchScope.warpPartialMatcherReplace(matcher, replacement, name, afterRuleDepth)
         } else {
-            TODO()
-//            MatchNodeReplaceRule(matchNodeBuilder!!, replacement, name, afterRuleDepth)
+            MatchNodeReplaceRule(matchNodeBuilder!!, replacement, name, afterRuleDepth)
         }
     }
 

@@ -1,7 +1,6 @@
 package io.github.ezrnest.mathsymk.symbolic
 // created at 2024/10/01
 import io.github.ezrnest.mathsymk.model.BigFrac
-import io.github.ezrnest.mathsymk.model.BigFracAsQuot
 import io.github.ezrnest.mathsymk.symbolic.alg.NodeScopeAlg
 import io.github.ezrnest.mathsymk.util.all2
 import java.math.BigInteger
@@ -650,50 +649,59 @@ object NodeOrder : Comparator<Node> {
 }
 
 
-interface NodeBuilderScope {
+/**
+ * `NodeScope` defines a set of operations for building symbolic expressions.
+ */
+interface NodeScope {
 
     val context: ExprContext
 
     fun symbol(name: String): Node {
-        return NSymbol(name)
+        return context.symbol(name)
     }
-
-
-    val x: Node get() = symbol("x")
-    val y: Node get() = symbol("y")
-    val z: Node get() = symbol("z")
-    val a: Node get() = symbol("a")
-    val b: Node get() = symbol("b")
-    val c: Node get() = symbol("c")
-
 
     fun constant(name: String): Node {
-        throw IllegalArgumentException("Unknown constant: $name")
+        return context.constant(name)
     }
-
 
     val String.s: Node get() = symbol(this)
 
 
     companion object {
-        private object DefaultBuilderScope : NodeBuilderScope {
-            override val x: Node = symbol("x")
-            override val y: Node = symbol("y")
-            override val z: Node = symbol("z")
-            override val a: Node = symbol("a")
-            override val b: Node = symbol("b")
-            override val c: Node = symbol("c")
-            override val context: ExprContext
-                get() = BasicExprContext()
+
+        internal class NodeScopeImpl(override val context: ExprContext) : NodeScope {
+            override fun symbol(name: String): Node {
+                return context.symbol(name)
+            }
         }
 
-        operator fun invoke(): NodeBuilderScope {
-            return DefaultBuilderScope
-        }
+        operator fun invoke(context: ExprContext): NodeScope = NodeScopeImpl(context)
     }
 }
 
+interface NodeScopeWithPredefined : NodeScope {
+    val x: Node
+    val y: Node
+    val z: Node
+    val w: Node
 
-fun buildNode(context: NodeScopeAlg = TODO(), builder: NodeScopeAlg.() -> Node): Node {
-    return context.builder()
+    val a: Node
+    val b: Node
+    val c: Node
+}
+
+interface NodeScopePredefinedSymbols : NodeScopeWithPredefined {
+
+    override val x: Node get() = symbol("x")
+    override val y: Node get() = symbol("y")
+    override val z: Node get() = symbol("z")
+    override val w: Node get() = symbol("w")
+    override val a: Node get() = symbol("a")
+    override val b: Node get() = symbol("b")
+    override val c: Node get() = symbol("c")
+}
+
+
+inline fun buildNode(context: ExprContext = TODO(), builder: NodeScope.() -> Node): Node {
+    return NodeScope(context).builder()
 }

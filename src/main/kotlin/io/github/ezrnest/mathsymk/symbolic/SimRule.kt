@@ -3,8 +3,8 @@ package io.github.ezrnest.mathsymk.symbolic
 import io.github.ezrnest.mathsymk.model.BigFrac
 import io.github.ezrnest.mathsymk.model.BigFracAsQuot
 import io.github.ezrnest.mathsymk.model.isOdd
-import io.github.ezrnest.mathsymk.symbolic.Node.Names
 import io.github.ezrnest.mathsymk.symbolic.alg.SymAlg
+import io.github.ezrnest.mathsymk.symbolic.alg.buildAlg
 import io.github.ezrnest.mathsymk.util.IterUtils
 import io.github.ezrnest.mathsymk.util.WithInt
 import io.github.ezrnest.mathsymk.util.all2
@@ -32,7 +32,7 @@ interface SimRule : TransRule {
         get() = AnyMatcher
 
 
-    override fun init(context: ExprCal): SimRule? {
+    override fun init(cal: ExprCal): SimRule? {
         return this
     }
 }
@@ -408,7 +408,7 @@ object ComputePow : RuleForSpecific2(SymAlg.Names.POW) {
         )
 
         if (exp == BigInteger.TWO) return SymAlg.IMAGINARY_UNIT
-        return buildNode {
+        return buildAlg(context) {
             val piOverN = pi / exp.e
             val cos = cos(piOverN)
             val sin = sin(piOverN)

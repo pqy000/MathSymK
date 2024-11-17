@@ -4,9 +4,8 @@ import io.github.ezrnest.mathsymk.model.*
 import io.github.ezrnest.mathsymk.structure.Reals
 import io.github.ezrnest.mathsymk.symbolic.alg.NodeScopeAlg
 import io.github.ezrnest.mathsymk.symbolic.alg.SymAlg
-import io.github.ezrnest.mathsymk.symbolic.sim.RuleList
-import io.github.ezrnest.mathsymk.symbolic.sim.RulesExponentialReduce
-import io.github.ezrnest.mathsymk.symbolic.sim.RulesTrigonometricReduce
+import io.github.ezrnest.mathsymk.symbolic.alg.RulesExponentialReduce
+import io.github.ezrnest.mathsymk.symbolic.alg.RulesTrigonometricReduce
 import io.github.ezrnest.mathsymk.util.WithInt
 import java.util.*
 import kotlin.math.max
@@ -72,7 +71,7 @@ class SimProcess(
 }
 
 
-open class BasicExprCal : ExprCal, NodeBuilderScope {
+open class BasicExprCal : ExprCal, NodeScope {
 
     override val options: MutableMap<TypedKey<*>, Any> = mutableMapOf()
 
@@ -87,7 +86,7 @@ open class BasicExprCal : ExprCal, NodeBuilderScope {
         NONE, WHEN_APPLIED, ALL
     }
 
-    override val context: ExprContext = BasicExprContext()
+    override val context: ExprContext = EmptyExprContext // TODO
 
     var complexity: NodeComplexity = BasicComplexity
 
@@ -367,6 +366,7 @@ class ExprCalReal : BasicExprCal(), Reals<Node>, NodeScopeAlg {
 //    private fun addAllReduce(rules: RuleList) {
 //        rules.list.forEach { addReduceRule(it) }
 //    }
+
 
     init {
         options[ExprCal.Options.forceReal] = true
