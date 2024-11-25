@@ -2,10 +2,11 @@ package io.github.ezrnest.mathsymk.symbolic
 
 import io.github.ezrnest.mathsymk.model.*
 import io.github.ezrnest.mathsymk.structure.Reals
-import io.github.ezrnest.mathsymk.symbolic.alg.NodeScopeAlg
+import io.github.ezrnest.mathsymk.symbolic.alg.IAlgebraScope
 import io.github.ezrnest.mathsymk.symbolic.alg.SymAlg
 import io.github.ezrnest.mathsymk.symbolic.alg.RulesExponentialReduce
 import io.github.ezrnest.mathsymk.symbolic.alg.RulesTrigonometricReduce
+import io.github.ezrnest.mathsymk.symbolic.logic.SymLogic
 import io.github.ezrnest.mathsymk.util.WithInt
 import java.util.*
 import kotlin.math.max
@@ -43,6 +44,11 @@ interface ExprCal {
 
     fun reduceNode(node: Node, context: ExprContext, depth: Int = 0): Node
 
+
+    fun isSatisfied(ctx : ExprContext, condition : Node) : Boolean {
+//        return false
+        return reduceNode(condition, ctx,Int.MAX_VALUE) == SymLogic.TRUE
+    }
 
     fun simplify(node: Node): List<Node>
 
@@ -361,7 +367,7 @@ open class BasicExprCal : ExprCal, NodeScope {
 }
 
 
-class ExprCalReal : BasicExprCal(), Reals<Node>, NodeScopeAlg {
+class ExprCalReal : BasicExprCal(), Reals<Node>, IAlgebraScope {
 
 //    private fun addAllReduce(rules: RuleList) {
 //        rules.list.forEach { addReduceRule(it) }
@@ -402,11 +408,11 @@ class ExprCalReal : BasicExprCal(), Reals<Node>, NodeScopeAlg {
     }
 
     override fun add(x: Node, y: Node): Node {
-        return reduce(super<NodeScopeAlg>.sum(x, y), 0)
+        return reduce(super<IAlgebraScope>.sum(x, y), 0)
     }
 
     override fun sum(elements: List<Node>): Node {
-        return reduce(super<NodeScopeAlg>.sum(elements), 0)
+        return reduce(super<IAlgebraScope>.sum(elements), 0)
     }
 
     override fun multiply(x: Node, y: Node): Node {
@@ -414,15 +420,15 @@ class ExprCalReal : BasicExprCal(), Reals<Node>, NodeScopeAlg {
     }
 
     override fun product(elements: List<Node>): Node {
-        return super<NodeScopeAlg>.product(elements).also { reduce(it, 0) }
+        return super<IAlgebraScope>.product(elements).also { reduce(it, 0) }
     }
 
     override fun reciprocal(x: Node): Node {
-        return super<NodeScopeAlg>.inv(x).also { reduce(it, 0) }
+        return super<IAlgebraScope>.inv(x).also { reduce(it, 0) }
     }
 
     override fun divide(x: Node, y: Node): Node {
-        return super<NodeScopeAlg>.divide(x, y).also { reduce(it, 1) }
+        return super<IAlgebraScope>.divide(x, y).also { reduce(it, 1) }
     }
 
     override fun Node.div(y: Node): Node {
@@ -447,19 +453,19 @@ class ExprCalReal : BasicExprCal(), Reals<Node>, NodeScopeAlg {
 
 
     override fun sqrt(x: Node): Node {
-        return super<NodeScopeAlg>.sqrt(x).also { reduce(it, 0) }
+        return super<IAlgebraScope>.sqrt(x).also { reduce(it, 0) }
     }
 
     override fun exp(x: Node): Node {
-        return super<NodeScopeAlg>.exp(x).also { reduce(it, 0) }
+        return super<IAlgebraScope>.exp(x).also { reduce(it, 0) }
     }
 
     override fun exp(base: Node, pow: Node): Node {
-        return super<NodeScopeAlg>.pow(base, pow).also { reduce(it, 0) }
+        return super<IAlgebraScope>.pow(base, pow).also { reduce(it, 0) }
     }
 
     override fun pow(base: Node, exp: Node): Node {
-        return super<NodeScopeAlg>.pow(base, exp).also { reduce(it, 0) }
+        return super<IAlgebraScope>.pow(base, exp).also { reduce(it, 0) }
     }
 
     override fun nroot(x: Node, n: Int): Node {
@@ -467,23 +473,23 @@ class ExprCalReal : BasicExprCal(), Reals<Node>, NodeScopeAlg {
     }
 
     override fun ln(x: Node): Node {
-        return super<NodeScopeAlg>.ln(x).also { reduce(it, 0) }
+        return super<IAlgebraScope>.ln(x).also { reduce(it, 0) }
     }
 
     override fun log(base: Node, x: Node): Node {
-        return super<NodeScopeAlg>.log(base, x).also { reduce(it, 0) }
+        return super<IAlgebraScope>.log(base, x).also { reduce(it, 0) }
     }
 
     override fun sin(x: Node): Node {
-        return super<NodeScopeAlg>.sin(x).also { reduce(it, 0) }
+        return super<IAlgebraScope>.sin(x).also { reduce(it, 0) }
     }
 
     override fun cos(x: Node): Node {
-        return super<NodeScopeAlg>.cos(x).also { reduce(it, 0) }
+        return super<IAlgebraScope>.cos(x).also { reduce(it, 0) }
     }
 
     override fun tan(x: Node): Node {
-        return super<NodeScopeAlg>.tan(x).also { reduce(it, 0) }
+        return super<IAlgebraScope>.tan(x).also { reduce(it, 0) }
     }
 
     //    override fun cot(x: Node): Node {
@@ -491,15 +497,15 @@ class ExprCalReal : BasicExprCal(), Reals<Node>, NodeScopeAlg {
 //    }
 
     override fun arcsin(x: Node): Node {
-        return super<NodeScopeAlg>.arcsin(x).also { reduce(it, 0) }
+        return super<IAlgebraScope>.arcsin(x).also { reduce(it, 0) }
     }
 
     override fun arccos(x: Node): Node {
-        return super<NodeScopeAlg>.arccos(x).also { reduce(it, 0) }
+        return super<IAlgebraScope>.arccos(x).also { reduce(it, 0) }
     }
 
     override fun arctan(x: Node): Node {
-        return super<NodeScopeAlg>.arctan(x).also { reduce(it, 0) }
+        return super<IAlgebraScope>.arctan(x).also { reduce(it, 0) }
     }
 
     override fun arctan2(y: Node, x: Node): Node {

@@ -7,14 +7,14 @@ interface RuleBuilder {
 
     fun matcher(buildMatcher: MatcherBuilderScope.() -> NodeMatcherT<Node>)
 
-    fun match(buildMatch: ForMatchScope.() -> Node)
+    fun match(buildMatch: NodeScopeMatcher.() -> Node)
 
-    fun to(buildReplacement: AfterMatchScope.() -> Node)
+    fun to(buildReplacement: NodeScopeMatched.() -> Node)
 
-    infix fun Unit.to(buildReplacement: AfterMatchScope.() -> Node)
+    infix fun Unit.to(buildReplacement: NodeScopeMatched.() -> Node)
 
 
-    fun condition(buildCondition: MatchContext.() -> Boolean) {
+    fun where(buildCondition: MatchContext.() -> Boolean) {
         //TODO
     }
 }
@@ -26,13 +26,13 @@ internal class RuleBuilderImpl : RuleBuilder {
     var afterRuleDepth: Int = Int.MAX_VALUE
 
     private var matcher: NodeMatcherT<Node>? = null
-    private var matchNodeBuilder: (ForMatchScope.() -> Node)? = null
+    private var matchNodeBuilder: (NodeScopeMatcher.() -> Node)? = null
 
     private var replacement: RepBuilder? = null
 
     private var remMatcher: MatcherRef? = null
 
-    override fun match(buildMatch: ForMatchScope.() -> Node) {
+    override fun match(buildMatch: NodeScopeMatcher.() -> Node) {
         matchNodeBuilder = buildMatch
     }
 
@@ -46,11 +46,11 @@ internal class RuleBuilderImpl : RuleBuilder {
         replacement = builder
     }
 
-    override fun to(buildReplacement: AfterMatchScope.() -> Node) {
+    override fun to(buildReplacement: NodeScopeMatched.() -> Node) {
         setRep(buildReplacement)
     }
 
-    override fun Unit.to(buildReplacement: AfterMatchScope.() -> Node) {
+    override fun Unit.to(buildReplacement: NodeScopeMatched.() -> Node) {
         setRep(buildReplacement)
     }
 
@@ -61,7 +61,7 @@ internal class RuleBuilderImpl : RuleBuilder {
         require(matcher != null || matchNodeBuilder != null) { "Matcher or match node must be set" }
         require(replacement != null) { "Replacement must be set" }
         return if (matcher != null) {
-            ForMatchScope.warpPartialMatcherReplace(matcher, replacement, name, afterRuleDepth)
+            NodeScopeMatcher.warpPartialMatcherReplace(matcher, replacement, name, afterRuleDepth)
         } else {
             MatchNodeReplaceRule(matchNodeBuilder!!, replacement, name, afterRuleDepth)
         }

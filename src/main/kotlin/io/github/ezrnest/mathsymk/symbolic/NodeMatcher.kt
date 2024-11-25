@@ -11,23 +11,26 @@ import io.github.ezrnest.mathsymk.util.WithInt
 interface MatchContext {
     val exprContext: ExprContext
 
+    val cal : ExprCal
+
     val refMap: Map<String, Node>
 
 
     fun addRef(name: String, node: Node): MatchContext {
         val newMap = refMap.toMutableMap()
         newMap[name] = node
-        return MatchContextImpl(exprContext, newMap)
+        return MatchContextImpl(exprContext,cal, newMap)
     }
 
     companion object {
 
-        operator fun invoke(exprContext: ExprContext): MatchContext {
-            return MatchContextImpl(exprContext)
+        operator fun invoke(exprContext: ExprContext, cal: ExprCal): MatchContext {
+            return MatchContextImpl(exprContext,cal)
         }
 
         internal data class MatchContextImpl(
             override val exprContext: ExprContext,
+            override val cal: ExprCal,
             override val refMap: Map<String, Node> = mapOf()
         ) : MatchContext
     }
@@ -697,9 +700,9 @@ interface MatcherScopeAlg : MatcherBuilderScope {
         return MatcherNamed(this, ref.name)
     }
 
-    fun <T : Node> NodeMatcherT<T>.also(postCond: AfterMatchScope.() -> Boolean): NodeMatcherT<T> {
+    fun <T : Node> NodeMatcherT<T>.also(postCond: NodeScopeMatched.() -> Boolean): NodeMatcherT<T> {
         return MatcherWithPostcondition(this) { node, matchContext ->
-            AfterMatchScope(matchContext).postCond()
+            NodeScopeMatched(matchContext).postCond()
         }
     }
 

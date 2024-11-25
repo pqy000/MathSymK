@@ -30,7 +30,7 @@ interface NodeScopeAdd : NodeScope {
 }
 
 
-interface NodeScopeAlg : NodeScopeAdd {
+interface IAlgebraScope : NodeScopeAdd {
 
     val imagUnit: Node get() = SymAlg.IMAGINARY_UNIT
 
@@ -73,8 +73,6 @@ interface NodeScopeAlg : NodeScopeAdd {
             else -> super.constant(name)
         }
     }
-
-
 
 
     operator fun Node.minus(y: Node): Node {
@@ -165,30 +163,37 @@ interface NodeScopeAlg : NodeScopeAdd {
         return Node1(Names.F1_ARCTAN, x)
     }
 
-    companion object {
-        operator fun invoke(context: ExprContext): NodeScopeAlg {
-            return NodeScopeAlgImpl(context)
-        }
+
+    infix fun Node.gtr(y: Node): Node {
+        return Node2(Names.F2_GTR, this, y)
     }
+
+
 }
 
-data class NodeScopeAlgImpl(override val context: ExprContext) : NodeScopeAlg, NodeScopePredefinedSymbols
+data class AlgebraScope(override val context: ExprContext) : IAlgebraScope, NodeScopePredefinedSymbols
 
 
-
-inline fun buildAlg(context: ExprContext = EmptyExprContext, builder: NodeScopeAlgImpl.() -> Node): Node {
-    return NodeScopeAlgImpl(context).builder()
+inline fun buildAlg(context: ExprContext = EmptyExprContext, builder: AlgebraScope.() -> Node): Node {
+    return AlgebraScope(context).builder()
 }
 
-inline fun NodeScope.alg(builder: NodeScopeAlg.() -> Node): Node {
-    return NodeScopeAlg(this.context).builder()
+inline fun NodeScope.alg(builder: IAlgebraScope.() -> Node): Node {
+    return AlgebraScope(this.context).builder()
 }
 
-//inline fun RuleBuilder.matchAlg(crossinline builder: NodeScopeAlg.() -> Node) {
-//    this.match { alg(builder) }
-//}
-//
-//inline fun RuleBuilder.toAlg(crossinline builder: NodeScopeAlg.() -> Node) {
-//    this.to { alg(builder) }
-//}
+data class AlgScopeMatcher(override val context: ExprContext) : IAlgebraScope, NodeScopeMatcher{
+    constructor(scope : NodeScopeMatcher) : this(scope.context)
+}
+data class AlgScopeMatchedReferred(override val matchContext: MatchContext) : IAlgebraScope, NodeScopeMatched{
+    constructor(scope : NodeScopeMatched) : this(scope.matchContext)
+}
+
+inline fun RuleBuilder.matchAlg(crossinline builder: AlgScopeMatcher.() -> Node) {
+    this.match { AlgScopeMatcher(this).builder() }
+}
+
+inline fun RuleBuilder.toAlg(crossinline builder: AlgScopeMatchedReferred.() -> Node) {
+    this.to { AlgScopeMatchedReferred(this).builder() }
+}
 

@@ -264,15 +264,11 @@ class RulesTrigonometricTransform : RuleList() {
 
         rule {
             name = "Trig: cos(x+y) = cos(x)cos(y) - sin(x)sin(y)"
-            match {
-                alg {
-                    cos(x + y)
-                }
-            } to {
-                alg {
-                    cos(x) * cos(y) - sin(x) * sin(y)
-                }
-
+            matchAlg {
+                cos(x + y)
+            }
+            toAlg {
+                cos(x) * cos(y) - sin(x) * sin(y)
             }
         }
 

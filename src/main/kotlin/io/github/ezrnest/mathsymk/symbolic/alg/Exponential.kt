@@ -22,12 +22,12 @@ class RulesExponentialReduce : RuleList() {
             name = "log_b(b^x) = x"
             match {
                 alg {
-                    log(b, pow(b, x))
+                    log(b.where(b gtr 0.e), pow(b, x))
                 }
             } to {
                 x
             }
-            condition {
+            where {
                 TODO()
             }
         }

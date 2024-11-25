@@ -19,7 +19,7 @@ interface SimRuleMatched<T : Node> : SimRule {
 
     override fun simplify(node: Node, ctx: ExprContext, cal: ExprCal): WithInt<Node>? {
         if (node[metaKeyApplied] == true) return null
-        var matchContext = MatchContext(ctx)
+        var matchContext = MatchContext(ctx, cal)
         matchContext = matcher.matches(node, matchContext) ?: return null
         @Suppress("UNCHECKED_CAST")
         val nodeT = node as T
@@ -31,13 +31,14 @@ interface SimRuleMatched<T : Node> : SimRule {
 }
 
 
-interface NodeScopeRef : NodeScope {
+interface INodeScopeReferring : NodeScope {
     fun ref(name: String): Node {
         return Node.Symbol("_$name")
     }
+
 }
 
-interface NodeScopePredefinedRef : NodeScopeRef, NodeScopeWithPredefined {
+interface NodeScopeMatcher : INodeScopeReferring, NodeScopeWithPredefined {
     override val x: Node get() = ref("x")
     override val y: Node get() = ref("y")
     override val z: Node get() = ref("z")
@@ -45,11 +46,30 @@ interface NodeScopePredefinedRef : NodeScopeRef, NodeScopeWithPredefined {
     override val a: Node get() = ref("a")
     override val b: Node get() = ref("b")
     override val c: Node get() = ref("c")
-}
 
-class ForMatchScope(override val context: ExprContext) : NodeScopePredefinedRef, NodeScopeWithPredefined {
+    val String.ref get() = ref(this)
+
+    fun Node.named(name: String): Node {
+        return Node.Node2(F2_Named, this, ref(name))
+    }
+
+    fun Node.where(clause: Node): Node {
+        return Node.Node2(F2_Where, this, clause)
+    }
+
+    fun Node.where(clauseBuilder : ()->Node): Node {
+        return Node.Node2(F2_Where, this, clauseBuilder())
+    }
 
     companion object {
+
+        private data class NodeScopeMatcherImpl(override val context: ExprContext) : NodeScopeMatcher
+
+        operator fun invoke(context: ExprContext): NodeScopeMatcher = NodeScopeMatcherImpl(context)
+
+        val F2_Named = "_Named"
+        val F2_Where = "_Where"
+
         private fun buildSymbol(node: NSymbol): NodeMatcher {
             val ref = node.ch
             if (ref.startsWith("_")) {
@@ -58,7 +78,33 @@ class ForMatchScope(override val context: ExprContext) : NodeScopePredefinedRef,
             return FixedNodeMatcher(node)
         }
 
+        private fun buildNamed(node: Node, cal: ExprCal): NodeMatcher {
+            node as Node2
+            val child = buildMatcher0(node.first, cal)
+            val name = (node.second as NSymbol).ch
+            return MatcherNamed(child, name)
+        }
+
+        private fun buildWhere(node: Node, cal: ExprCal): NodeMatcher {
+            node as Node2
+            val child = buildMatcher0(node.first, cal)
+            TODO()
+//            val clause = buildMatcher0(node.second, cal)
+//            return MatcherWithPostcondition(child, post = { n, matchCtx ->
+//                matchCtx.cal.isSatisfied(matchCtx.exprContext, clause)
+//            })
+        }
+
         private fun buildMatcher0(node: Node, cal: ExprCal): NodeMatcher {
+            when (node.name) {
+                F2_Named -> {
+                    return buildNamed(node, cal)
+                }
+
+                F2_Where -> {
+                    return buildWhere(node, cal)
+                }
+            }
             when (node) {
                 is NSymbol -> return buildSymbol(node)
                 is LeafNode -> return FixedNodeMatcher(node)
@@ -110,7 +156,7 @@ class ForMatchScope(override val context: ExprContext) : NodeScopePredefinedRef,
                         if (!hasRef(remName)) {
                             sub
                         } else {
-                            Node.NodeN(sig.name, listOf(sub, getRef(remName)))
+                            Node.NodeN(sig.name, listOf(sub, ref(remName)))
                         }
                     }
                 }
@@ -121,8 +167,35 @@ class ForMatchScope(override val context: ExprContext) : NodeScopePredefinedRef,
     }
 }
 
+interface INodeScopeReferred : NodeScope {
+    /**
+     * Gets a reference to a node with the given name.
+     */
+    fun ref(name: String): Node
 
-interface AfterMatchScope : NodeScope, NodeScopeWithPredefined {
+    /**
+     * Checks if a reference with the given name exists.
+     */
+    fun hasRef(name: String): Boolean
+}
+
+interface NodeScopeReferred : NodeScopeWithPredefined, INodeScopeReferred {
+    override val x: Node get() = ref("x")
+    override val y: Node get() = ref("y")
+    override val z: Node get() = ref("z")
+    override val w: Node get() = ref("w")
+
+    override val a: Node get() = ref("a")
+    override val b: Node get() = ref("b")
+    override val c: Node get() = ref("c")
+
+
+    val String.ref
+        get() = ref(this)
+}
+
+
+interface NodeScopeMatched : NodeScope, NodeScopeReferred {
 
     val matchContext: MatchContext
 
@@ -130,34 +203,24 @@ interface AfterMatchScope : NodeScope, NodeScopeWithPredefined {
         get() = matchContext.exprContext
 
 
-    fun getRef(name: String): Node {
+    override fun ref(name: String): Node {
         return matchContext.refMap[name] ?: throw IllegalArgumentException("No reference found for $name")
     }
 
-    fun hasRef(name: String): Boolean {
+    override fun hasRef(name: String): Boolean {
         return matchContext.refMap.containsKey(name)
     }
 
-    override val x: Node get() = getRef("x")
-    override val y: Node get() = getRef("y")
-    override val z: Node get() = getRef("z")
-    override val w: Node get() = getRef("w")
-
-    override val a: Node get() = getRef("a")
-    override val b: Node get() = getRef("b")
-    override val c: Node get() = getRef("c")
-
-    val String.ref get() = getRef(this)
 
     companion object {
-        private class AfterMatchScopeImpl(override val matchContext: MatchContext) : AfterMatchScope
+        private class NodeScopeMatchedImpl(override val matchContext: MatchContext) : NodeScopeMatched
 
-        operator fun invoke(matchContext: MatchContext): AfterMatchScope = AfterMatchScopeImpl(matchContext)
+        operator fun invoke(matchContext: MatchContext): NodeScopeMatched = NodeScopeMatchedImpl(matchContext)
     }
 }
 
 
-typealias RepBuilder = AfterMatchScope.() -> Node?
+typealias RepBuilder = NodeScopeMatched.() -> Node?
 
 class MatcherReplaceRule(
     override val matcher: NodeMatcherT<*>,
@@ -169,15 +232,15 @@ class MatcherReplaceRule(
     override val metaKeyApplied: TypedKey<Boolean> = TypedKey(description)
 
     override fun simplify(node: Node, ctx: ExprContext, cal: ExprCal): WithInt<Node>? {
-        var matchCtx = MatchContext(ctx)
+        var matchCtx = MatchContext(ctx, cal)
         matchCtx = matcher.matches(node, matchCtx) ?: return null
-        val replacementNode = AfterMatchScope(matchCtx).replacement() ?: return null
+        val replacementNode = NodeScopeMatched(matchCtx).replacement() ?: return null
         return WithInt(afterDepth, replacementNode)
     }
 }
 
 class MatchNodeReplaceRule(
-    private val nodeInit: ForMatchScope.() -> Node,
+    private val nodeInit: NodeScopeMatcher.() -> Node,
     private val replacement: RepBuilder,
     override val description: String,
     private val afterDepth: Int = Int.MAX_VALUE,
@@ -193,10 +256,10 @@ class MatchNodeReplaceRule(
     override fun init(cal: ExprCal): SimRule? {
 //        val nodeMatch = context.simplify(nodeInit(context))
 //        val nodeRep = context.simplify()
-        val node = cal.reduce(ForMatchScope(cal.context).nodeInit())
-        val matcher = ForMatchScope.buildMatcher(node, cal)
+        val node = cal.reduce(NodeScopeMatcher(cal.context).nodeInit())
+        val matcher = NodeScopeMatcher.buildMatcher(node, cal)
         return if (allowPartialMatch) {
-            ForMatchScope.warpPartialMatcherReplace(matcher, replacement, description, afterDepth)
+            NodeScopeMatcher.warpPartialMatcherReplace(matcher, replacement, description, afterDepth)
         } else {
             MatcherReplaceRule(matcher, replacement, description, afterDepth)
         }

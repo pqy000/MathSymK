@@ -36,7 +36,7 @@ interface ExprContext {
         TODO()
     }
 
-    fun getFreeSymbols() : Set<NSymbol>{
+    fun freeSymbols() : Sequence<NSymbol>{
         TODO()
     }
 
