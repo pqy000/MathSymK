@@ -7,6 +7,7 @@ import io.github.ezrnest.mathsymk.symbolic.Node.Companion.Node1
 import io.github.ezrnest.mathsymk.symbolic.Node.Companion.Node2
 import io.github.ezrnest.mathsymk.symbolic.alg.SymAlg.Names
 import io.github.ezrnest.mathsymk.symbolic.alg.SymAlg.Pow
+import io.github.ezrnest.mathsymk.symbolic.logic.ILogicScope
 import java.math.BigInteger
 
 interface NodeScopeAdd : NodeScope {
@@ -30,7 +31,7 @@ interface NodeScopeAdd : NodeScope {
 }
 
 
-interface IAlgebraScope : NodeScopeAdd {
+interface IAlgebraScope : NodeScopeAdd,ILogicScope {
 
     val imagUnit: Node get() = SymAlg.IMAGINARY_UNIT
 
@@ -65,12 +66,14 @@ interface IAlgebraScope : NodeScopeAdd {
     val BigFrac.e: Node get() = SymAlg.Rational(this)
 
 
-    override fun constant(name: String): Node {
+    override fun constant(name: String): Node? {
         return when (name) {
             "pi", Names.Symbol_PI -> SymAlg.PI
             "e", Names.Symbol_E -> SymAlg.NATURAL_E
             "i", Names.Symbol_I -> SymAlg.IMAGINARY_UNIT
-            else -> super.constant(name)
+            else -> {
+                super<ILogicScope>.constant(name)
+            }
         }
     }
 

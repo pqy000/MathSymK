@@ -20,7 +20,7 @@ interface SimRuleMatched<T : Node> : SimRule {
     override fun simplify(node: Node, ctx: ExprContext, cal: ExprCal): WithInt<Node>? {
         if (node[metaKeyApplied] == true) return null
         var matchResult = MatchResult(cal)
-        matchResult = matcher.matches(node,ctx , matchResult) ?: return null
+        matchResult = matcher.matches(node, ctx, matchResult) ?: return null
         @Suppress("UNCHECKED_CAST")
         val nodeT = node as T
         val res = simplifyMatched(nodeT, matchResult)
@@ -71,9 +71,9 @@ interface NodeScopeMatcher : INodeScopeReferring, NodeScopeWithPredefined {
         val F2_Where = "_Where"
 
         private fun buildSymbol(node: NSymbol): NodeMatcher {
-            val ref = node.ch
-            if (ref.startsWith("_")) {
-                return MatcherRef(ref.substring(1))
+            val name = node.ch
+            if (name.startsWith("_")) {
+                return MatcherRef(name)
             }
             return FixedNodeMatcher(node)
         }
@@ -163,12 +163,21 @@ interface NodeScopeMatcher : INodeScopeReferring, NodeScopeWithPredefined {
         }
 
 
-        fun substituteIn(nodeRef: Node, ctx: MatchResult): Node {
-            TODO()
+        fun substituteIn(nodeRef: Node, rootCtx: ExprContext, matching: MatchResult): Node {
+            val cal = matching.cal
+            return cal.substitute(nodeRef, rootCtx) { node, ctx ->
+                val name = node.ch
+                if (name.startsWith("_")) {
+                    val ref = matching.getRef(name)
+                        ?: throw IllegalArgumentException("No reference found for [$name]")
+                    return@substitute ref
+                }
+                return@substitute node
+            }
         }
 
         fun testConditionRef(condRef: Node, ctx: ExprContext, matching: MatchResult): Boolean {
-            val reifiedCond = substituteIn(condRef, matching)
+            val reifiedCond = substituteIn(condRef, ctx, matching)
             val cal = matching.cal
             return cal.isSatisfied(ctx, reifiedCond)
         }

@@ -1,5 +1,6 @@
 package io.github.ezrnest.mathsymk.symbolic.logic
 
+import io.github.ezrnest.mathsymk.symbolic.NSymbol
 import io.github.ezrnest.mathsymk.symbolic.Node
 import io.github.ezrnest.mathsymk.symbolic.NodeSig
 import io.github.ezrnest.mathsymk.symbolic.NodeSig.NType
@@ -13,6 +14,9 @@ object SymLogic {
         val IMPLIES = "→"
         val TRUE = "true"
         val FALSE = "false"
+
+        val FOR_ALL = "∀"
+        val EXISTS = "∃"
     }
 
     object Signatures {
@@ -21,6 +25,11 @@ object SymLogic {
         val NOT = NodeSig(Names.NOT, NType.Node1)
         val IMPLIES = NodeSig(Names.IMPLIES, NType.Node2)
 
+        /**
+         * `∀(x, P(x))` or `∀x P(x)`
+         */
+        val FOR_ALL = NodeSig(Names.FOR_ALL, NType.Node2)
+        val EXISTS = NodeSig(Names.EXISTS, NType.Node2)
     }
 
     val TRUE = Node.Symbol(Names.TRUE)
@@ -74,4 +83,20 @@ object SymLogic {
         return Not(Xor(p, q))
     }
 
+
+    fun ForAll(x : NSymbol, p: Node): Node {
+        return Node.Node2(Names.FOR_ALL, x, p)
+    }
+
+    fun ForAll(x : String, p: Node): Node {
+        return ForAll(Node.Symbol(x), p)
+    }
+
+    fun Exists(x : NSymbol, p: Node): Node {
+        return Node.Node2(Names.EXISTS, x, p)
+    }
+
+    fun Exists(x : String, p: Node): Node {
+        return Exists(Node.Symbol(x), p)
+    }
 }

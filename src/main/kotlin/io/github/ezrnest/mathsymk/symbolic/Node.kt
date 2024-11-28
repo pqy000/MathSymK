@@ -659,7 +659,7 @@ interface NodeScope {
         return context.symbol(name)
     }
 
-    fun constant(name: String): Node {
+    fun constant(name: String): Node? {
         return context.constant(name)
     }
 
@@ -702,5 +702,6 @@ interface NodeScopePredefinedSymbols : NodeScopeWithPredefined {
 
 
 inline fun buildNode(context: ExprContext = TODO(), builder: NodeScope.() -> Node): Node {
-    return NodeScope(context).builder()
+    TODO()
+//    return NodeScope(context).builder()
 }

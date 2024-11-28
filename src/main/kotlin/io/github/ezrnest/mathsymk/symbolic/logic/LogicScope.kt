@@ -1,13 +1,23 @@
 package io.github.ezrnest.mathsymk.symbolic.logic
 
 import io.github.ezrnest.mathsymk.symbolic.ExprContext
+import io.github.ezrnest.mathsymk.symbolic.NSymbol
 import io.github.ezrnest.mathsymk.symbolic.Node
 import io.github.ezrnest.mathsymk.symbolic.NodeScope
 
-interface NodeScopeLogic : NodeScope{
+interface ILogicScope : NodeScope{
 
     val Boolean.n: Node
         get() = if(this) SymLogic.TRUE else SymLogic.FALSE
+
+    override fun constant(name: String): Node? {
+        return when(name){
+            "true" -> SymLogic.TRUE
+            "false" -> SymLogic.FALSE
+            else -> super.constant(name)
+        }
+    }
+
 
     operator fun Node.not(): Node = SymLogic.Not(this)
 
@@ -32,20 +42,26 @@ interface NodeScopeLogic : NodeScope{
 
     fun or(vararg nodes: Node): Node = SymLogic.Or(*nodes)
 
-    override fun constant(name: String): Node {
-        return when(name){
-            "true" -> SymLogic.TRUE
-            "false" -> SymLogic.FALSE
-            else -> super.constant(name)
-        }
-    }
+
+    fun allN(variable : Node, expr: Node): Node = SymLogic.ForAll(variable as NSymbol, expr)
+
+    fun exists(variable : Node, expr: Node): Node = SymLogic.Exists(variable as NSymbol, expr)
 
     companion object{
 
-        internal class LogicScopeImpl(override val context: ExprContext) : NodeScopeLogic{
+        internal class LogicScopeImplScope(override val context: ExprContext) : ILogicScope{
 
         }
 
-        operator fun invoke(context: ExprContext): NodeScopeLogic = LogicScopeImpl(context)
+        operator fun invoke(context: ExprContext): ILogicScope = LogicScopeImplScope(context)
     }
+}
+
+inline fun ILogicScope.all(variable : Node, expr: ILogicScope.()->Node): Node = SymLogic.ForAll(variable as NSymbol, expr())
+
+inline fun ILogicScope.exists(variable : Node, expr: ILogicScope.()->Node): Node = SymLogic.Exists(variable as NSymbol, expr())
+
+
+inline fun NodeScope.logic(builder: ILogicScope.() -> Node): Node {
+    return ILogicScope(this.context).builder()
 }

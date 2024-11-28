@@ -56,15 +56,15 @@ interface ExprCal {
         return node.plainToString()
     }
 
-    fun substitute(node: Node, src: NSymbol, dest: Node): Node {
-        return substitute(node) {
+    fun substitute(node: Node, src: NSymbol, dest: Node, rootCtx : ExprContext= this.context): Node {
+        return substitute(node,rootCtx) { it,ctx ->
             if (it == src) dest else null
         }
     }
 
-    fun substitute(root: Node, mapping: (NSymbol) -> Node?): Node {
-        return recurMapCtx(root, context, Int.MAX_VALUE) { n, ctx ->
-            if (n is NSymbol && !ctx.isQualified(n)) mapping(n) else null
+    fun substitute(root: Node, rootCtx : ExprContext = this.context, mapping: (NSymbol,ExprContext) -> Node?): Node {
+        return recurMapCtx(root, rootCtx, Int.MAX_VALUE) { n, ctx ->
+            if (n is NSymbol && !ctx.isQualified(n)) mapping(n,ctx) else null
         }
     }
 
@@ -241,6 +241,7 @@ open class BasicExprCal : ExprCal, NodeScope {
     }
 
     override fun enterContext(root: Node, context: ExprContext): List<ExprContext> {
+
         TODO()
     }
 
