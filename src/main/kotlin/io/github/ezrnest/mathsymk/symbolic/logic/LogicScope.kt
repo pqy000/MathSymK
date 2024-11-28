@@ -1,17 +1,15 @@
 package io.github.ezrnest.mathsymk.symbolic.logic
 
-import io.github.ezrnest.mathsymk.symbolic.ExprContext
-import io.github.ezrnest.mathsymk.symbolic.NSymbol
-import io.github.ezrnest.mathsymk.symbolic.Node
-import io.github.ezrnest.mathsymk.symbolic.NodeScope
+import io.github.ezrnest.mathsymk.symbolic.*
+import io.github.ezrnest.mathsymk.symbolic.alg.SymSets
 
-interface ILogicScope : NodeScope{
+interface ILogicScope : NodeScope {
 
     val Boolean.n: Node
-        get() = if(this) SymLogic.TRUE else SymLogic.FALSE
+        get() = if (this) SymLogic.TRUE else SymLogic.FALSE
 
     override fun constant(name: String): Node? {
-        return when(name){
+        return when (name) {
             "true" -> SymLogic.TRUE
             "false" -> SymLogic.FALSE
             else -> super.constant(name)
@@ -43,13 +41,18 @@ interface ILogicScope : NodeScope{
     fun or(vararg nodes: Node): Node = SymLogic.Or(*nodes)
 
 
-    fun allN(variable : Node, expr: Node): Node = SymLogic.ForAll(variable as NSymbol, expr)
+    fun all(varExpr: Node, expr: Node): Node {
+        return Node.Qualified2(SymLogic.Names.FOR_ALL, varExpr, expr)
+    }
 
-    fun exists(variable : Node, expr: Node): Node = SymLogic.Exists(variable as NSymbol, expr)
 
-    companion object{
+    fun exists(variable: Node, expr: Node): Node {
+        return Node.Qualified2(SymLogic.Names.EXISTS, variable, expr)
+    }
 
-        internal class LogicScopeImplScope(override val context: ExprContext) : ILogicScope{
+    companion object {
+
+        internal class LogicScopeImplScope(override val context: ExprContext) : ILogicScope {
 
         }
 
@@ -57,9 +60,9 @@ interface ILogicScope : NodeScope{
     }
 }
 
-inline fun ILogicScope.all(variable : Node, expr: ILogicScope.()->Node): Node = SymLogic.ForAll(variable as NSymbol, expr())
+inline fun ILogicScope.all(variable: Node, expr: ILogicScope.() -> Node): Node = all(variable, expr())
 
-inline fun ILogicScope.exists(variable : Node, expr: ILogicScope.()->Node): Node = SymLogic.Exists(variable as NSymbol, expr())
+inline fun ILogicScope.exists(variable: Node, expr: ILogicScope.() -> Node): Node = exists(variable, expr())
 
 
 inline fun NodeScope.logic(builder: ILogicScope.() -> Node): Node {

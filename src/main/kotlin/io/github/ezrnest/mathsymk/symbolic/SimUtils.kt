@@ -5,6 +5,7 @@ import io.github.ezrnest.mathsymk.model.BigFracAsQuot
 import io.github.ezrnest.mathsymk.model.MTerm
 import io.github.ezrnest.mathsymk.model.TermChs
 import io.github.ezrnest.mathsymk.symbolic.alg.SymAlg
+import io.github.ezrnest.mathsymk.symbolic.alg.SymSets
 import io.github.ezrnest.mathsymk.symbolic.alg.buildAlg
 import io.github.ezrnest.mathsymk.util.MathUtils
 import java.math.BigInteger
@@ -14,6 +15,13 @@ import kotlin.contracts.contract
 @OptIn(ExperimentalContracts::class)
 object SimUtils {
 
+    @Suppress("NOTHING_TO_INLINE")
+    inline fun isBelongs(node : Node) : Boolean{
+        contract {
+            returns(true) implies (node is Node2)
+        }
+        return node is Node2 && node.name == SymSets.Names.BELONGS
+    }
 
     fun asInteger(node: Node): BigInteger? {
         val Q = BigFracAsQuot

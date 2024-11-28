@@ -87,6 +87,6 @@ fun rule(f: RuleBuilder.() -> Unit): SimRule {
     return builder.build()
 }
 
-fun BasicExprCal.addAll(rules : RuleList) {
-    rules.list.forEach { addRule(it) }
+fun BasicExprCal.addAllRules(rules : RuleList) {
+    rules.list.forEach { registerRule(it) }
 }

@@ -2,6 +2,8 @@ package io.github.ezrnest.mathsymk.symbolic
 
 import io.github.ezrnest.mathsymk.model.BigFracAsQuot
 import io.github.ezrnest.mathsymk.symbolic.alg.*
+import io.github.ezrnest.mathsymk.symbolic.logic.SymLogic
+import io.github.ezrnest.mathsymk.symbolic.logic.all
 
 
 val TestExprCal = BasicExprCal()
@@ -20,16 +22,22 @@ fun main() {
 //            1.e
 //        }
 //    }.also { cal.addReduceRule(it) }
+    cal.registerContextInfo(QualiferNodeContextInfo(SymLogic.Signatures.FOR_ALL))
 
-    cal.addReduceRule(RuleSinSpecial())
-    cal.addReduceRule(RuleCosSpecial())
-    cal.addReduceRule(RuleTanSpecial())
-    cal.addReduceRuleAll(RulesTrigonometricReduce())
-    cal.addAll(RulesTrigonometricTransform())
-    cal.addRule(RuleExpandMul)
+//    cal.registerReduceRule(RuleSinSpecial())
+//    cal.registerReduceRule(RuleCosSpecial())
+//    cal.registerReduceRule(RuleTanSpecial())
+//    cal.registerReduceRuleAll(RulesTrigonometricReduce())
+//    cal.addAllRules(RulesTrigonometricTransform())
+//    cal.addRule(RuleExpandMul)
+    with(AlgebraScope(cal.context)){
+        val expr = all(x){
+            sin(x)
+        }
+        println(cal.substitute(expr, x, 1.e).plainToString())
+    }
 
-
-    val expr = buildAlg {
+//    val expr = buildAlg {
 //      1.e * 2.e + x * pow(x, 2.e) * 3.e - x * x * (2.e * x)
 //        pow((-1).e,2.e )
 //        val sub = pow(sin(x + y), 2.e) + pow(cos(x + y), 2.e)
@@ -37,8 +45,9 @@ fun main() {
 //        tan(pi / 2.e)
 //        sin(x+y) - sin(x-y)
 //        (x+y) * (x-y)
-        (x+1.e)*(x+2.e) * (x+3.e) - 1.e
-    }
+//        (x+1.e)*(x+2.e) * (x+3.e) - 1.e
+//    }
+
 //    val ss = sortedSetOf(compareBy<SimProcess.NodeStatus> { it.complexity }.thenBy(NodeOrder) { it.node })
 //    ss.add(SimProcess.NodeStatus(expr, BasicComplexity.complexity(expr, cal.context)))
 //
@@ -46,17 +55,16 @@ fun main() {
 //    buildNode { sin(x + y) }.also { ss.add(SimProcess.NodeStatus(it,BasicComplexity.complexity(it, cal.context))) }
 //    println(ss.joinToString())
 
-    println(expr.plainToString())
+//    println(expr.plainToString())
 //    println(expr.treeToString())
-    println()
-    val res = cal.simplify(expr)
+//    println()
 
-    println()
-    res.forEachIndexed { i, it ->
-        print("Result $i: ")
-        println(it.plainToString())
-//        println(it.treeToString())
-    }
+//    println()
+//    res.forEachIndexed { i, it ->
+//        print("Result $i: ")
+//        println(it.plainToString())
+////        println(it.treeToString())
+//    }
 
 //    println(res.plainToString())
 //    println(res.treeToString())

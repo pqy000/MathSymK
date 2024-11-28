@@ -6,10 +6,6 @@ import io.github.ezrnest.mathsymk.symbolic.alg.SymAlg.ZERO
 import io.github.ezrnest.mathsymk.symbolic.alg.alg
 import io.github.ezrnest.mathsymk.symbolic.alg.buildAlg
 import io.github.ezrnest.mathsymk.symbolic.logic.all
-import io.github.ezrnest.mathsymk.symbolic.logic.logic
-import java.util.PriorityQueue
-import java.util.SortedMap
-import io.github.ezrnest.mathsymk.util.WithInt
 
 //created at 2024/10/10
 
@@ -98,14 +94,9 @@ interface TransparentNodeMatcher<T : Node> : NodeMatcherT<T> {
     val matcher: NodeMatcherT<T>
 }
 
-interface LeafMatcher<T : Node> : NodeMatcherT<T> {
+interface LeafMatcher<T : Node> : NodeMatcherT<T>
 
-}
-
-abstract class AbsNMatcherFixSig<T : Node>(final override val nodeSig: NodeSig) : NodeMatcherFixSig<T> {
-
-
-}
+abstract class AbsNMatcherFixSig<T : Node>(final override val nodeSig: NodeSig) : NodeMatcherFixSig<T>
 
 class NodeMatcher1<C : Node>(val child: NodeMatcherT<C>, nodeName: NodeSig) :
     AbsNMatcherFixSig<Node1T<C>>(nodeName), NMatcherChildedOrdered<Node1T<C>> {

@@ -8,13 +8,17 @@ object SymSets {
 
     val EMPTY_SET = Node.Symbol(Names.EMPTY_SET)
 
-    val INTEGERS = Node.Symbol(Names.INTEGERS)
+    val INTEGERS = Node.Symbol(Names.INTEGER)
 
-    val NATURALS = Node.Symbol(Names.NATURALS)
+    val NATURALS = Node.Symbol(Names.NATURAL)
 
-    val RATIONALS = Node.Symbol(Names.RATIONALS)
+    val RATIONALS = Node.Symbol(Names.RATIONAL)
 
     val REALS = Node.Symbol(Names.REALS)
+
+    val COMPLEXES = Node.Symbol(Names.COMPLEX)
+
+    val UNIVERSE = Node.Symbol(Names.UNIVERSE)
 
 
     object Names {
@@ -30,15 +34,17 @@ object SymSets {
 
         val EMPTY_SET = "∅"
 
-        val INTEGERS = "ℤ"
+        val INTEGER = "ℤ"
 
-        val NATURALS = "ℕ"
+        val NATURAL = "ℕ"
 
-        val RATIONALS = "ℚ"
+        val RATIONAL = "ℚ"
 
         val REALS = "ℝ"
 
         val COMPLEX = "ℂ"
+
+        val UNIVERSE = "Universe"
     }
 
     object Signatures {
@@ -49,5 +55,10 @@ object SymSets {
         val UNION = NodeSig(Names.UNION, NType.NodeN)
 
         val SUBSET = NodeSig(Names.SUBSET, NType.Node2)
+    }
+
+
+    fun belongs(x: Node, y: Node): Node {
+        return Node.Node2(Names.BELONGS, x, y)
     }
 }

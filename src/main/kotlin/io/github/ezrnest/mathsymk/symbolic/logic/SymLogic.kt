@@ -4,6 +4,7 @@ import io.github.ezrnest.mathsymk.symbolic.NSymbol
 import io.github.ezrnest.mathsymk.symbolic.Node
 import io.github.ezrnest.mathsymk.symbolic.NodeSig
 import io.github.ezrnest.mathsymk.symbolic.NodeSig.NType
+import io.github.ezrnest.mathsymk.symbolic.alg.SymSets
 
 object SymLogic {
 
@@ -84,19 +85,12 @@ object SymLogic {
     }
 
 
-    fun ForAll(x : NSymbol, p: Node): Node {
-        return Node.Node2(Names.FOR_ALL, x, p)
+    fun ForAll(x: NSymbol, set: Node, p: Node): Node {
+        return Node.Node2(Names.FOR_ALL, SymSets.belongs(x, set), p)
     }
 
-    fun ForAll(x : String, p: Node): Node {
-        return ForAll(Node.Symbol(x), p)
+    fun Exists(x: NSymbol, set: Node, p: Node): Node {
+        return Node.Node2(Names.EXISTS, SymSets.belongs(x, set), p)
     }
 
-    fun Exists(x : NSymbol, p: Node): Node {
-        return Node.Node2(Names.EXISTS, x, p)
-    }
-
-    fun Exists(x : String, p: Node): Node {
-        return Exists(Node.Symbol(x), p)
-    }
 }

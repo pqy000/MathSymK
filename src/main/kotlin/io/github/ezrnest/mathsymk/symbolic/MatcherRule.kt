@@ -166,13 +166,14 @@ interface NodeScopeMatcher : INodeScopeReferring, NodeScopeWithPredefined {
         fun substituteIn(nodeRef: Node, rootCtx: ExprContext, matching: MatchResult): Node {
             val cal = matching.cal
             return cal.substitute(nodeRef, rootCtx) { node, ctx ->
+                if(node !is NSymbol) return@substitute null
                 val name = node.ch
-                if (name.startsWith("_")) {
-                    val ref = matching.getRef(name)
-                        ?: throw IllegalArgumentException("No reference found for [$name]")
-                    return@substitute ref
+                if (!name.startsWith("_")) {
+                    return@substitute null
                 }
-                return@substitute node
+                val ref = matching.getRef(name)
+                    ?: throw IllegalArgumentException("No reference found for [$name]")
+                return@substitute ref
             }
         }
 

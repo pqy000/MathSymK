@@ -1,5 +1,7 @@
 package io.github.ezrnest.mathsymk.symbolic
 
+import io.github.ezrnest.mathsymk.symbolic.alg.ExprCalReal
+
 object Symbolic {
 
     fun reals(): ExprCalReal {

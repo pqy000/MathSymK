@@ -1,6 +1,7 @@
 package io.github.ezrnest.mathsymk.symbolic
 // created at 2024/10/01
 import io.github.ezrnest.mathsymk.model.BigFrac
+import io.github.ezrnest.mathsymk.symbolic.alg.SymSets
 import io.github.ezrnest.mathsymk.util.all2
 import java.math.BigInteger
 import kotlin.reflect.KClass
@@ -72,6 +73,16 @@ sealed interface Node {
                 else -> NodeNImpl(name, children)
             }
         }
+
+        fun Qualified2(name : String, varExpr : Node, expr: Node): Node {
+            if (varExpr is NSymbol) {
+                return Node.Node2(name,SymSets.belongs(varExpr,SymSets.UNIVERSE), expr)
+            }
+            require(SimUtils.isBelongs(varExpr))
+            return Node.Node2(name,varExpr, expr)
+
+        }
+
 
     }
 
@@ -183,6 +194,7 @@ data class NOther(override val name: String) : AbstractNode(), LeafNode {
 
 sealed interface NodeChilded : Node {
     val children: List<Node>
+    val childCount: Int
 
     override fun <A : Appendable> treeTo(builder: A, level: Int, indent: String): A {
         builder.append(indent).append(name).append(";  ").append(meta.toString()).appendLine()
@@ -255,6 +267,9 @@ interface Node1T<out C : Node> : NodeChilded {
     override val children: List<Node>
         get() = listOf(child)
 
+    override val childCount: Int
+        get() = 1
+
     fun <S : Node> newWithChildren(child: S): Node1T<S>
 
     override fun newWithChildren(children: List<Node>): NodeChilded {
@@ -282,6 +297,8 @@ interface Node2T<out C1 : Node, out C2 : Node> : NodeChilded {
 
     override val children: List<Node>
         get() = listOf(first, second)
+
+    override val childCount: Int get() = 2
 
     fun <S1 : Node, S2 : Node> newWithChildren(first: S1, second: S2): Node2T<S1, S2>
 
@@ -315,6 +332,8 @@ interface Node3T<out C1 : Node, out C2 : Node, out C3 : Node> : NodeChilded {
     override val children: List<Node>
         get() = listOf(first, second, third)
 
+    override val childCount: Int get() = 3
+
     fun <S1 : Node, S2 : Node, S3 : Node> newWithChildren(first: S1, second: S2, third: S3): Node3T<S1, S2, S3>
 
     override fun newWithChildren(children: List<Node>): NodeChilded {
@@ -332,6 +351,8 @@ interface Node3T<out C1 : Node, out C2 : Node, out C3 : Node> : NodeChilded {
 
 interface NodeN : NodeChilded {
     override val children: List<Node>
+
+    override val childCount: Int get() = children.size
 
     override fun newWithChildren(children: List<Node>): NodeN
 }
@@ -675,6 +696,8 @@ interface NodeScope {
         }
 
         operator fun invoke(context: ExprContext): NodeScope = NodeScopeImpl(context)
+
+
     }
 }
 
