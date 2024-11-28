@@ -8,31 +8,28 @@ import io.github.ezrnest.mathsymk.util.WithInt
 
 //created at 2024/10/10
 
-interface MatchContext {
-    val exprContext: ExprContext
-
-    val cal : ExprCal
+interface MatchResult {
+    val cal: ExprCal
 
     val refMap: Map<String, Node>
 
 
-    fun addRef(name: String, node: Node): MatchContext {
+    fun addRef(name: String, node: Node): MatchResult {
         val newMap = refMap.toMutableMap()
         newMap[name] = node
-        return MatchContextImpl(exprContext,cal, newMap)
+        return MatchResultImpl(cal, newMap)
     }
 
     companion object {
 
-        operator fun invoke(exprContext: ExprContext, cal: ExprCal): MatchContext {
-            return MatchContextImpl(exprContext,cal)
+        operator fun invoke(cal: ExprCal): MatchResult {
+            return MatchResultImpl(cal)
         }
 
-        internal data class MatchContextImpl(
-            override val exprContext: ExprContext,
+        internal data class MatchResultImpl(
             override val cal: ExprCal,
             override val refMap: Map<String, Node> = mapOf()
-        ) : MatchContext
+        ) : MatchResult
     }
 }
 
@@ -46,13 +43,13 @@ sealed interface NodeMatcherT<out T : Node> {
      *
      * Returns the resulting context if the node matches the pattern, or `null` otherwise.
      */
-    fun matches(node: Node, matchCtx: MatchContext): MatchContext?
+    fun matches(node: Node, ctx: ExprContext, matching: MatchResult): MatchResult?
 
 
     /**
      * Determines whether this matcher requires a specifically determined node to match.
      */
-    fun requireSpecific(matchContext: MatchContext): Boolean {
+    fun requireSpecific(ctx: ExprContext, matching: MatchResult): Boolean {
         return false
     }
 
@@ -63,7 +60,7 @@ sealed interface NodeMatcherT<out T : Node> {
      * That is, if `spec = matcher.getSpecific(context)` is not `null`, then
      * `node != spec` will imply `matcher.matches(node, context) == null`.
      */
-    fun getSpecific(matchContext: MatchContext): Node? {
+    fun getSpecific(ctx: ExprContext, matching: MatchResult): Node? {
         return null
     }
 
@@ -110,22 +107,23 @@ class NodeMatcher1<C : Node>(val child: NodeMatcherT<C>, nodeName: NodeSig) :
     override val refNames: Set<String>
         get() = child.refNames
 
-    override fun matches(node: Node, matchCtx: MatchContext): MatchContext? {
+    override fun matches(node: Node, ctx: ExprContext, matching: MatchResult): MatchResult? {
         if (node !is Node1) return null
         if (!nodeSig.matches(node)) return null
-        return child.matches(node.child, matchCtx)
+        val subCtx = matching.cal.enterContext(node, ctx)[0]
+        return child.matches(node.child, subCtx, matching)
     }
 
     override fun toString(): String {
         return "${nodeSig.name}($child)"
     }
 
-    override fun requireSpecific(matchContext: MatchContext): Boolean {
-        return child.requireSpecific(matchContext)
+    override fun requireSpecific(ctx: ExprContext, matching: MatchResult): Boolean {
+        return child.requireSpecific(ctx, matching)
     }
 
-    override fun getSpecific(matchContext: MatchContext): Node1T<Node>? {
-        val c = child.getSpecific(matchContext) ?: return null
+    override fun getSpecific(ctx: ExprContext, matching: MatchResult): Node1T<Node>? {
+        val c = child.getSpecific(ctx, matching) ?: return null
         return Node.Node1(nodeSig.name, c)
     }
 }
@@ -141,26 +139,28 @@ class NodeMatcher2Ordered<C1 : Node, C2 : Node>(
         child1.refNames + child2.refNames
     }
 
-    override fun matches(node: Node, matchCtx: MatchContext): MatchContext? {
+    override fun matches(node: Node, ctx: ExprContext, matching: MatchResult): MatchResult? {
         if (node !is Node2) return null
         if (!nodeSig.matches(node)) return null
-        var ctx = matchCtx
-        ctx = child1.matches(node.first, ctx) ?: return null
-        ctx = child2.matches(node.second, ctx) ?: return null
-        return ctx
+        val (node1, node2) = node
+        val (subCtx1, subCtx2) = matching.cal.enterContext(node, ctx)
+        var newM = matching
+        newM = child1.matches(node1, subCtx1, newM) ?: return null
+        newM = child2.matches(node2, subCtx2, newM) ?: return null
+        return newM
     }
 
     override fun toString(): String {
         return "${nodeSig.name}($child1, $child2)"
     }
 
-    override fun requireSpecific(matchContext: MatchContext): Boolean {
-        return child1.requireSpecific(matchContext) && child2.requireSpecific(matchContext)
+    override fun requireSpecific(ctx: ExprContext, matching: MatchResult): Boolean {
+        return child1.requireSpecific(ctx, matching) && child2.requireSpecific(ctx, matching)
     }
 
-    override fun getSpecific(matchContext: MatchContext): Node2? {
-        val c1 = child1.getSpecific(matchContext) ?: return null
-        val c2 = child2.getSpecific(matchContext) ?: return null
+    override fun getSpecific(ctx: ExprContext, matching: MatchResult): Node2? {
+        val c1 = child1.getSpecific(ctx, matching) ?: return null
+        val c2 = child2.getSpecific(ctx, matching) ?: return null
         return Node.Node2(nodeSig.name, c1, c2)
     }
 }
@@ -175,30 +175,32 @@ class NodeMatcher3Ordered<C1 : Node, C2 : Node, C3 : Node>(
         child1.refNames + child2.refNames + child3.refNames
     }
 
-    override fun matches(node: Node, matchCtx: MatchContext): MatchContext? {
+    override fun matches(node: Node, ctx: ExprContext, matching: MatchResult): MatchResult? {
         if (node !is Node3) return null
         if (!nodeSig.matches(node)) return null
-        var ctx = matchCtx
-        ctx = child1.matches(node.first, ctx) ?: return null
-        ctx = child2.matches(node.second, ctx) ?: return null
-        ctx = child3.matches(node.third, ctx) ?: return null
-        return ctx
+        val (node1, node2, node3) = node
+        val (subCtx1, subCtx2, subCtx3) = matching.cal.enterContext(node, ctx)
+        var newM = matching
+        newM = child1.matches(node1, subCtx1, newM) ?: return null
+        newM = child2.matches(node2, subCtx2, newM) ?: return null
+        newM = child3.matches(node3, subCtx3, newM) ?: return null
+        return newM
     }
 
     override fun toString(): String {
         return "${nodeSig.name}($child1, $child2, $child3)"
     }
 
-    override fun requireSpecific(matchContext: MatchContext): Boolean {
-        return child1.requireSpecific(matchContext) && child2.requireSpecific(matchContext) && child3.requireSpecific(
-            matchContext
-        )
+    override fun requireSpecific(ctx: ExprContext, matching: MatchResult): Boolean {
+        return child1.requireSpecific(ctx, matching)
+                && child2.requireSpecific(ctx, matching)
+                && child3.requireSpecific(ctx, matching)
     }
 
-    override fun getSpecific(matchContext: MatchContext): Node3? {
-        val c1 = child1.getSpecific(matchContext) ?: return null
-        val c2 = child2.getSpecific(matchContext) ?: return null
-        val c3 = child3.getSpecific(matchContext) ?: return null
+    override fun getSpecific(ctx: ExprContext, matching: MatchResult): Node3? {
+        val c1 = child1.getSpecific(ctx, matching) ?: return null
+        val c2 = child2.getSpecific(ctx, matching) ?: return null
+        val c3 = child3.getSpecific(ctx, matching) ?: return null
         return Node.Node3(nodeSig.name, c1, c2, c3)
     }
 }
@@ -209,15 +211,16 @@ class NMatcherNOrdered(override val children: List<NodeMatcherT<Node>>, nodeName
         children.flatMap { it.refNames }.toSet()
     }
 
-    override fun matches(node: Node, matchCtx: MatchContext): MatchContext? {
+    override fun matches(node: Node, ctx: ExprContext, matching: MatchResult): MatchResult? {
         if (node !is NodeN) return null
         if (!nodeSig.matches(node)) return null
         if (node.children.size != children.size) return null
-        var ctx = matchCtx
+        val subCtxs = matching.cal.enterContext(node, ctx)
+        var newM = matching
         for (i in children.indices) {
-            ctx = children[i].matches(node.children[i], ctx) ?: return null
+            newM = children[i].matches(node.children[i], subCtxs[i], newM) ?: return null
         }
-        return ctx
+        return newM
     }
 
     override fun toString(): String {
@@ -229,7 +232,7 @@ object NothingMatcher : LeafMatcher<Node>, NodeMatcherFixSig<Node> {
 
     override val nodeSig: NodeSig = Node.UNDEFINED.signature
 
-    override fun matches(node: Node, matchCtx: MatchContext): MatchContext? {
+    override fun matches(node: Node, ctx: ExprContext, matching: MatchResult): MatchResult? {
         return null
     }
 
@@ -239,18 +242,18 @@ object NothingMatcher : LeafMatcher<Node>, NodeMatcherFixSig<Node> {
         return "Nothing"
     }
 
-    override fun requireSpecific(matchContext: MatchContext): Boolean {
+    override fun requireSpecific(ctx: ExprContext, matching: MatchResult): Boolean {
         return true
     }
 
-    override fun getSpecific(matchContext: MatchContext): Node? {
+    override fun getSpecific(ctx: ExprContext, matching: MatchResult): Node? {
         return Node.UNDEFINED
     }
 }
 
 object AnyMatcher : LeafMatcher<Node> {
-    override fun matches(node: Node, matchCtx: MatchContext): MatchContext? {
-        return matchCtx
+    override fun matches(node: Node, ctx: ExprContext, matching: MatchResult): MatchResult? {
+        return matching
     }
 
     override val refNames: Set<String> get() = emptySet()
@@ -261,8 +264,8 @@ object AnyMatcher : LeafMatcher<Node> {
 }
 
 object AnyRationalMatcher : LeafMatcher<NRational>, NodeMatcherFixSig<NRational> {
-    override fun matches(node: Node, matchCtx: MatchContext): MatchContext? {
-        if (node is NRational) return matchCtx
+    override fun matches(node: Node, ctx: ExprContext, matching: MatchResult): MatchResult? {
+        if (node is NRational) return matching
         return null
     }
 
@@ -276,8 +279,8 @@ object AnyRationalMatcher : LeafMatcher<NRational>, NodeMatcherFixSig<NRational>
 }
 
 object AnySymbolMatcher : LeafMatcher<NSymbol>, NodeMatcherFixSig<NSymbol> {
-    override fun matches(node: Node, matchCtx: MatchContext): MatchContext? {
-        if (node is NSymbol) return matchCtx
+    override fun matches(node: Node, ctx: ExprContext, matching: MatchResult): MatchResult? {
+        if (node is NSymbol) return matching
         return null
     }
 
@@ -292,12 +295,12 @@ object AnySymbolMatcher : LeafMatcher<NSymbol>, NodeMatcherFixSig<NSymbol> {
 
 
 class MatcherRef(val name: String) : LeafMatcher<Node> {
-    override fun matches(node: Node, matchCtx: MatchContext): MatchContext? {
-        val ref = matchCtx.refMap[name]
+    override fun matches(node: Node, ctx: ExprContext, matching: MatchResult): MatchResult? {
+        val ref = matching.refMap[name]
         if (ref == null) {
-            return matchCtx.addRef(name, node)
+            return matching.addRef(name, node)
         }
-        return if (ref == node) matchCtx else null
+        return if (ref == node) matching else null
     }
 
     override val refNames: Set<String> get() = setOf(name)
@@ -315,10 +318,10 @@ class MatcherNamed<T : Node>(override val matcher: NodeMatcherT<T>, val name: St
         return "Named(name=$name, $matcher)"
     }
 
-    override fun matches(node: Node, matchCtx: MatchContext): MatchContext? {
-        val ref = matchCtx.refMap[name]
+    override fun matches(node: Node, ctx: ExprContext, matching: MatchResult): MatchResult? {
+        val ref = matching.refMap[name]
         if (ref != null && ref != node) return null
-        val res = matcher.matches(node, matchCtx) ?: return null
+        val res = matcher.matches(node,ctx , matching) ?: return null
         return if (ref == null) {
             res.addRef(name, node)
         } else {
@@ -326,27 +329,27 @@ class MatcherNamed<T : Node>(override val matcher: NodeMatcherT<T>, val name: St
         }
     }
 
-    override fun requireSpecific(matchContext: MatchContext): Boolean {
-        if (name in matchContext.refMap) {
+    override fun requireSpecific(ctx: ExprContext, matching: MatchResult): Boolean {
+        if (name in matching.refMap) {
             return true // requires the specific node to match
         }
-        return matcher.requireSpecific(matchContext)
+        return matcher.requireSpecific(ctx, matching)
     }
 
-    override fun getSpecific(matchContext: MatchContext): Node? {
-        if (name in matchContext.refMap) {
-            return matchContext.refMap[name]
+    override fun getSpecific(ctx: ExprContext, matching: MatchResult): Node? {
+        if (name in matching.refMap) {
+            return matching.refMap[name]
         }
-        return matcher.getSpecific(matchContext)
+        return matcher.getSpecific(ctx, matching)
     }
 }
 
 
 class MatcherWithPrecondition<T : Node>(
-    override val matcher: NodeMatcherT<T>, val pre: (Node, MatchContext) -> Boolean
+    override val matcher: NodeMatcherT<T>, val pre: (Node, ExprContext, MatchResult) -> Boolean
 ) : TransparentNodeMatcher<T> {
-    override fun matches(node: Node, matchCtx: MatchContext): MatchContext? {
-        return if (pre(node, matchCtx)) matcher.matches(node, matchCtx) else null
+    override fun matches(node: Node, ctx: ExprContext, matching: MatchResult): MatchResult? {
+        return if (pre(node,ctx, matching)) matcher.matches(node,ctx , matching) else null
     }
 
     override val refNames: Set<String>
@@ -354,19 +357,33 @@ class MatcherWithPrecondition<T : Node>(
 }
 
 class MatcherWithPostcondition<T : Node>(
-    override val matcher: NodeMatcherT<T>, val post: (Node, MatchContext) -> Boolean
+    override val matcher: NodeMatcherT<T>, val post: (Node, ExprContext, MatchResult) -> Boolean
 ) : TransparentNodeMatcher<T> {
-    override fun matches(node: Node, matchCtx: MatchContext): MatchContext? {
-        return matcher.matches(node, matchCtx)?.takeIf { post(node, it) }
+    override fun matches(node: Node, ctx: ExprContext, matching: MatchResult): MatchResult? {
+        return matcher.matches(node,ctx , matching)?.takeIf { post(node,ctx, it) }
     }
 
     override val refNames: Set<String>
         get() = matcher.refNames
 }
 
+class MatcherWithPostConditionNode<T : Node>(
+    override val matcher: NodeMatcherT<T>, val condition: Node,
+) : TransparentNodeMatcher<T> {
+    override val refNames: Set<String>
+        get() = matcher.refNames
+
+    override fun matches(node: Node, ctx: ExprContext, matching: MatchResult): MatchResult? {
+        val newM = matcher.matches(node,ctx , matching) ?: return null
+        val satisfied = NodeScopeMatcher.testConditionRef(condition, ctx, newM)
+        if(satisfied) return newM
+        return null
+    }
+}
+
 class FixedNodeMatcher<T : Node>(val target: T) : LeafMatcher<T>, NodeMatcherFixSig<T> {
-    override fun matches(node: Node, matchCtx: MatchContext): MatchContext? {
-        return if (node == target) matchCtx else null
+    override fun matches(node: Node, ctx: ExprContext, matching: MatchResult): MatchResult? {
+        return if (node == target) matching else null
     }
 
     override val refNames: Set<String> get() = emptySet()
@@ -377,11 +394,11 @@ class FixedNodeMatcher<T : Node>(val target: T) : LeafMatcher<T>, NodeMatcherFix
         return target.plainToString()
     }
 
-    override fun requireSpecific(matchContext: MatchContext): Boolean {
+    override fun requireSpecific(ctx: ExprContext, matching: MatchResult): Boolean {
         return true
     }
 
-    override fun getSpecific(matchContext: MatchContext): T {
+    override fun getSpecific(ctx: ExprContext, matching: MatchResult): T {
         return target
     }
 }
@@ -392,9 +409,8 @@ class LeafMatcherFixSig<T : Node> private constructor(signature: NodeSig) :
     override val refNames: Set<String>
         get() = emptySet()
 
-    override fun matches(node: Node, matchCtx: MatchContext): MatchContext? {
-        @Suppress("UNCHECKED_CAST")
-        return if (nodeSig.matches(node)) matchCtx else null
+    override fun matches(node: Node, ctx: ExprContext, matching: MatchResult): MatchResult? {
+        return if (nodeSig.matches(node)) matching else null
     }
 
     companion object {
@@ -455,9 +471,10 @@ class NodeMatcherNPO(
     }
 
     private fun match0(
-        chainIndex: Int, pos: Int, ctx: MatchContext,
-        children: List<Node>, matched: BooleanArray, cur: Int
-    ): MatchContext? {
+        chainIndex: Int, pos: Int, ctx: MatchResult,
+        children: List<Node>, subCtxs : List<ExprContext>,
+        matched: BooleanArray, cur: Int
+    ): MatchResult? {
         val curChain = childrenChains[chainIndex]
         val curChainRem = curChain.size - pos
         val matcher = curChain[pos]
@@ -465,16 +482,17 @@ class NodeMatcherNPO(
         for (i in cur..(children.size - curChainRem)) {
             if (matched[i]) continue
             val child = children[i]
-            if (matcher.matches(child, ctx) != null) {
+            val subCtx = subCtxs[i]
+            if (matcher.matches(child,subCtx , ctx) != null) {
                 matched[i] = true
                 if (pos == curChain.size - 1) {
                     if (chainIndex == childrenChains.size - 1) {
                         return ctx
                     }
-                    val sub = match0(chainIndex + 1, 0, ctx, children, matched, 0)
+                    val sub = match0(chainIndex + 1, 0, ctx, children,subCtxs, matched, 0)
                     if (sub != null) return sub
                 } else {
-                    val sub = match0(chainIndex, pos + 1, ctx, children, matched, i + 1)
+                    val sub = match0(chainIndex, pos + 1, ctx, children,subCtxs, matched, i + 1)
                     if (sub != null) return sub
                 }
                 matched[i] = false
@@ -483,38 +501,41 @@ class NodeMatcherNPO(
         return null
     }
 
-    private fun fullMatchOrdered(node: NodeN, matchers: List<NodeMatcher>, matchContext: MatchContext): MatchContext? {
+    private fun fullMatchOrdered(node: NodeN, matchers: List<NodeMatcher>,ctx : ExprContext, matchResult: MatchResult): MatchResult? {
         val children = node.children
         if (children.size != matchers.size) return null
-        var ctx = matchContext
+        val subCtxs = matchResult.cal.enterContext(node, ctx)
+        var newM = matchResult
         for (i in children.indices) {
             val child = children[i]
+            val subCtx = subCtxs[i]
             val matcher = matchers[i]
-            ctx = matcher.matches(child, ctx) ?: return null
+            newM = matcher.matches(child,subCtx , newM) ?: return null
         }
-        return ctx
+        return newM
     }
 
 
-    override fun matches(node: Node, matchCtx: MatchContext): MatchContext? {
+    override fun matches(node: Node, ctx: ExprContext, matching: MatchResult): MatchResult? {
         if (node !is NodeN) return null
         if (node.name != nodeSig.name) return null
         if (requireFullMatch) {
-            return fullMatchOrdered(node, childrenChains[0], matchCtx)
+            return fullMatchOrdered(node, childrenChains[0],ctx, matching)
         }
         val nodeChildren = node.children
+        val subCtxs = matching.cal.enterContext(node, ctx)
         val nodeCount = nodeChildren.size
         if (nodeCount < totalChildren) return null
         if (nodeCount > totalChildren && remMatcher === NothingMatcher) return null
         val matched = BooleanArray(nodeChildren.size)
-        var ctx = match0(0, 0, matchCtx, nodeChildren, matched, 0) ?: return null
+        var newM = match0(0, 0, matching, nodeChildren,subCtxs, matched, 0) ?: return null
         if (nodeCount == totalChildren) {
-            return ctx
+            return newM
         }
         val remChildren = ArrayList<Node>(nodeCount - totalChildren)
         nodeChildren.filterIndexedTo(remChildren) { index, _ -> !matched[index] }
         val remNode = Node.NodeN(nodeSig.name, remChildren)
-        return remMatcher.matches(remNode, ctx)
+        return remMatcher.matches(remNode,ctx,newM)
     }
 
     companion object {
@@ -608,7 +629,6 @@ interface MatcherBuilderScope {
     val z: MatcherRef get() = MatcherRef("z")
 
 
-
     val String.ref: MatcherRef get() = MatcherRef(this)
     val String.s: NodeMatcherT<NSymbol> get() = symbol(NSymbol(this))
 
@@ -652,12 +672,10 @@ interface MatcherScopeAlg : MatcherBuilderScope {
     }
 
 
-
     val any: NodeMatcherT<Node> get() = AnyMatcher
 
-    val NATURAL_E         get() = symbol(SymAlg.NATURAL_E)
+    val NATURAL_E get() = symbol(SymAlg.NATURAL_E)
     val π: NodeMatcherT<NSymbol> get() = symbol(SymAlg.PI)
-
 
 
     val integer: NodeMatcherT<NRational> get() = AnyRationalMatcher
@@ -701,8 +719,8 @@ interface MatcherScopeAlg : MatcherBuilderScope {
     }
 
     fun <T : Node> NodeMatcherT<T>.also(postCond: NodeScopeMatched.() -> Boolean): NodeMatcherT<T> {
-        return MatcherWithPostcondition(this) { node, matchContext ->
-            NodeScopeMatched(matchContext).postCond()
+        return MatcherWithPostcondition(this) { node, ctx,matching ->
+            NodeScopeMatched(ctx,matching).postCond()
         }
     }
 

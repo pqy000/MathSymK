@@ -122,8 +122,8 @@ class RuleSinSpecial : SimRuleMatched<Node1> {
     }
 
 
-    override fun simplifyMatched(node: Node1, matchContext: MatchContext): WithInt<Node>? {
-        val r = (matchContext.refMap["r"] as NRational).value
+    override fun simplifyMatched(node: Node1, matchResult: MatchResult): WithInt<Node>? {
+        val r = (matchResult.refMap["r"] as NRational).value
         val res = TrigonometricUtils.sinRPi(r) ?: return null
         return WithInt(Int.MAX_VALUE, res)
     }
@@ -140,8 +140,8 @@ class RuleCosSpecial : SimRuleMatched<Node1> {
         cos(rational.named("r") * π)
     }
 
-    override fun simplifyMatched(node: Node1, matchContext: MatchContext): WithInt<Node>? {
-        val r = (matchContext.refMap["r"] as NRational).value
+    override fun simplifyMatched(node: Node1, matchResult: MatchResult): WithInt<Node>? {
+        val r = (matchResult.refMap["r"] as NRational).value
         val res = TrigonometricUtils.cosRPi(r) ?: return null
         return WithInt(Int.MAX_VALUE, res)
     }
@@ -158,8 +158,8 @@ class RuleTanSpecial : SimRuleMatched<Node1> {
         tan(rational.named("r") * π)
     }
 
-    override fun simplifyMatched(node: Node1, matchContext: MatchContext): WithInt<Node>? {
-        val r = (matchContext.refMap["r"] as NRational).value
+    override fun simplifyMatched(node: Node1, matchResult: MatchResult): WithInt<Node>? {
+        val r = (matchResult.refMap["r"] as NRational).value
         val res = TrigonometricUtils.tanRPi(r) ?: return null
         return WithInt(Int.MAX_VALUE, res)
     }

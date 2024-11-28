@@ -45,9 +45,9 @@ interface ExprCal {
     fun reduceNode(node: Node, context: ExprContext, depth: Int = 0): Node
 
 
-    fun isSatisfied(ctx : ExprContext, condition : Node) : Boolean {
+    fun isSatisfied(ctx: ExprContext, condition: Node): Boolean {
 //        return false
-        return reduceNode(condition, ctx,Int.MAX_VALUE) == SymLogic.TRUE
+        return reduceNode(condition, ctx, Int.MAX_VALUE) == SymLogic.TRUE
     }
 
     fun simplify(node: Node): List<Node>
@@ -55,7 +55,48 @@ interface ExprCal {
     fun format(node: Node): String {
         return node.plainToString()
     }
+
+    fun substitute(node: Node, src: NSymbol, dest: Node): Node {
+        return substitute(node) {
+            if (it == src) dest else null
+        }
+    }
+
+    fun substitute(root: Node, mapping: (NSymbol) -> Node?): Node {
+        return recurMapCtx(root, context, Int.MAX_VALUE) { n, ctx ->
+            if (n is NSymbol && !ctx.isQualified(n)) mapping(n) else null
+        }
+    }
+
+    fun enterContext(root: Node, context: ExprContext): List<ExprContext>
+
+
+    fun recurMapCtx(
+        root: Node, context: ExprContext = this.context,
+        depth: Int = Int.MAX_VALUE, mapping: (Node, ExprContext) -> Node?,
+    ): Node
+
+    companion object {
+
+//        internal fun
+    }
 }
+
+//fun ExprCal.enterContext1(root : Node1, context: ExprContext): ExprContext {
+//    return enterContext(root, context)[0]
+//}
+//
+//fun ExprCal.enterContext2(root : Node2, context: ExprContext): Pair<ExprContext, ExprContext> {
+//    val ctx = enterContext(root, context)
+//    return ctx[0] to ctx[1]
+//}
+//
+//fun ExprCal.enterContext3(root : Node3, context: ExprContext): Triple<ExprContext, ExprContext, ExprContext> {
+//    val ctx = enterContext(root, context)
+//    return Triple(ctx[0], ctx[1], ctx[2])
+//}
+//
+
 
 
 typealias NodeWithComplexity = WithInt<Node>
@@ -174,17 +215,18 @@ open class BasicExprCal : ExprCal, NodeScope {
                     else -> res
                 }
             }
-            val appliedRule = reduceRules.dispatchUntil(res) { rule ->
+            var appliedRule: SimRule? = null
+            for (rule in reduceRules.dispatchSeq(res)) {
                 log(Verbosity.ALL) { "|> ${rule.description}" }
-                val p = rule.simplify(res, context, this) ?: return@dispatchUntil false
-
+                val p = rule.simplify(res, context, this) ?: continue
                 if (verbose == Verbosity.WHEN_APPLIED) {
                     log(Verbosity.WHEN_APPLIED) { "|>${rule.description}" }
                 }
+                appliedRule = rule
                 depth = p.v
                 res = p.item
                 log(Verbosity.WHEN_APPLIED) { "|->  ${showNode(res)}" }
-                true
+                break
             }
             if (appliedRule == null) {
                 log(Verbosity.ALL) { "|> Nothing happened ..." }
@@ -198,39 +240,93 @@ open class BasicExprCal : ExprCal, NodeScope {
         return res
     }
 
-    private fun enterContext(node: Node, context: ExprContext): ExprContext {
-        return context // TODO
+    override fun enterContext(root: Node, context: ExprContext): List<ExprContext> {
+        TODO()
+    }
+
+    override fun recurMapCtx(
+        root: Node, context: ExprContext, depth: Int, mapping: (Node, ExprContext) -> Node?
+    ): Node {
+        if (depth <= 0) return mapping(root, context) ?: root
+        val depth1 = depth - 1
+        val res = when (root) {
+            is LeafNode -> root
+            is Node1 -> {
+                val ctx = enterContext(root, context)
+                val n1 = recurMapCtx(root.child, ctx[0], depth1, mapping)
+                if (n1 === root.child)
+                    root else root.newWithChildren(n1)
+            }
+
+            is Node2 -> {
+                val (c1, c2) = root
+                val (ctx1, ctx2) = enterContext(root, context)
+                val n1 = recurMapCtx(c1, ctx1, depth1, mapping)
+                val n2 = recurMapCtx(c2, ctx2, depth1, mapping)
+                if (n1 === c1 && n2 === c2) root
+                else root.newWithChildren(n1, n2)
+            }
+
+            is Node3 -> {
+                val (c1, c2, c3) = root
+                val (ctx1, ctx2, ctx3) = enterContext(root, context)
+                val n1 = recurMapCtx(c1, ctx1, depth1, mapping)
+                val n2 = recurMapCtx(c2, ctx2, depth1, mapping)
+                val n3 = recurMapCtx(c3, ctx3, depth1, mapping)
+                if (n1 === c1 && n2 === c2 && n3 === c3) root
+                else root.newWithChildren(n1, n2, n3)
+            }
+
+            is NodeN -> {
+                var changed = false
+                val children = root.children
+                val childContext = enterContext(root, context)
+                val newChildren = children.indices.map { i ->
+                    val child = children[i]
+                    recurMapCtx(child, childContext[i], depth1, mapping).also { if (it !== child) changed = true }
+                }
+                if (!changed) root else root.newWithChildren(newChildren)
+            }
+        }
+        return mapping(res, context) ?: res
     }
 
     private fun reduceRecur1(node: Node1, context: ExprContext, depth: Int): Node {
         val ctx = enterContext(node, context)
-        val n1 = reduceNode(node.child, ctx, depth)
+        val n1 = reduceNode(node.child, ctx[0], depth)
         if (n1 === node.child) return node
         return node.newWithChildren(n1)
     }
 
     private fun reduceRecur2(node: Node2, context: ExprContext, depth: Int): Node {
-        val n1 = reduceNode(node.first, context, depth)
-        val n2 = reduceNode(node.second, context, depth)
-        if (n1 === node.first && n2 === node.second) return node
+        val (c1, c2) = node
+        val (ctx1, ctx2) = enterContext(node, context)
+        val n1 = reduceNode(c1, ctx1, depth)
+        val n2 = reduceNode(c2, ctx2, depth)
+        if (n1 === c1 && n2 === c2) return node
         return node.newWithChildren(n1, n2)
     }
 
     private fun reduceRecur3(node: Node3, context: ExprContext, depth: Int): Node {
-        val n1 = reduceNode(node.first, context, depth)
-        val n2 = reduceNode(node.second, context, depth)
-        val n3 = reduceNode(node.third, context, depth)
-        if (n1 === node.first && n2 === node.second && n3 === node.third) return node
+        val (c1, c2, c3) = node
+        val (ctx1, ctx2, ctx3) = enterContext(node, context)
+        val n1 = reduceNode(c1, ctx1, depth)
+        val n2 = reduceNode(c2, ctx2, depth)
+        val n3 = reduceNode(c3, ctx3, depth)
+        if (n1 === c1 && n2 === c2 && n3 === c3) return node
         return node.newWithChildren(n1, n2, n3)
     }
 
     private fun reduceRecurN(node: NodeN, context: ExprContext, depth: Int): Node {
         var changed = false
-        val children = node.children.map { n ->
-            reduceNode(n, context, depth).also { if (n !== it) changed = true }
+        val children = node.children
+        val childContext = enterContext(node, context)
+        val newChildren = children.indices.map { i ->
+            val child = children[i]
+            reduceNode(child, childContext[i], depth).also { if (it !== child) changed = true }
         }
         if (!changed) return node
-        return node.newWithChildren(children)
+        return node.newWithChildren(newChildren)
     }
 
 

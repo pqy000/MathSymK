@@ -14,7 +14,7 @@ interface RuleBuilder {
     infix fun Unit.to(buildReplacement: NodeScopeMatched.() -> Node)
 
 
-    fun where(buildCondition: MatchContext.() -> Boolean) {
+    fun where(buildCondition: MatchResult.() -> Boolean) {
         //TODO
     }
 }

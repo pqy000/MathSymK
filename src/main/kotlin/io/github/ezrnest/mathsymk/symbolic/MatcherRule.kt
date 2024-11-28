@@ -14,16 +14,16 @@ interface SimRuleMatched<T : Node> : SimRule {
     /**
      * Simplify the matched node.
      */
-    fun simplifyMatched(node: T, matchContext: MatchContext): WithInt<Node>?
+    fun simplifyMatched(node: T, matchResult: MatchResult): WithInt<Node>?
 
 
     override fun simplify(node: Node, ctx: ExprContext, cal: ExprCal): WithInt<Node>? {
         if (node[metaKeyApplied] == true) return null
-        var matchContext = MatchContext(ctx, cal)
-        matchContext = matcher.matches(node, matchContext) ?: return null
+        var matchResult = MatchResult(cal)
+        matchResult = matcher.matches(node,ctx , matchResult) ?: return null
         @Suppress("UNCHECKED_CAST")
         val nodeT = node as T
-        val res = simplifyMatched(nodeT, matchContext)
+        val res = simplifyMatched(nodeT, matchResult)
         if (res != null) return res
         node[metaKeyApplied] = true // tried but not applicable
         return null
@@ -57,7 +57,7 @@ interface NodeScopeMatcher : INodeScopeReferring, NodeScopeWithPredefined {
         return Node.Node2(F2_Where, this, clause)
     }
 
-    fun Node.where(clauseBuilder : ()->Node): Node {
+    fun Node.where(clauseBuilder: () -> Node): Node {
         return Node.Node2(F2_Where, this, clauseBuilder())
     }
 
@@ -88,11 +88,8 @@ interface NodeScopeMatcher : INodeScopeReferring, NodeScopeWithPredefined {
         private fun buildWhere(node: Node, cal: ExprCal): NodeMatcher {
             node as Node2
             val child = buildMatcher0(node.first, cal)
-            TODO()
-//            val clause = buildMatcher0(node.second, cal)
-//            return MatcherWithPostcondition(child, post = { n, matchCtx ->
-//                matchCtx.cal.isSatisfied(matchCtx.exprContext, clause)
-//            })
+            val clauseRef = node.second
+            return MatcherWithPostConditionNode(child, clauseRef)
         }
 
         private fun buildMatcher0(node: Node, cal: ExprCal): NodeMatcher {
@@ -164,6 +161,17 @@ interface NodeScopeMatcher : INodeScopeReferring, NodeScopeWithPredefined {
             }
             return MatcherReplaceRule(matcher, rep, description, maxDepth)
         }
+
+
+        fun substituteIn(nodeRef: Node, ctx: MatchResult): Node {
+            TODO()
+        }
+
+        fun testConditionRef(condRef: Node, ctx: ExprContext, matching: MatchResult): Boolean {
+            val reifiedCond = substituteIn(condRef, matching)
+            val cal = matching.cal
+            return cal.isSatisfied(ctx, reifiedCond)
+        }
     }
 }
 
@@ -197,25 +205,26 @@ interface NodeScopeReferred : NodeScopeWithPredefined, INodeScopeReferred {
 
 interface NodeScopeMatched : NodeScope, NodeScopeReferred {
 
-    val matchContext: MatchContext
+    val matchResult: MatchResult
 
     override val context: ExprContext
-        get() = matchContext.exprContext
 
 
     override fun ref(name: String): Node {
-        return matchContext.refMap[name] ?: throw IllegalArgumentException("No reference found for $name")
+        return matchResult.refMap[name] ?: throw IllegalArgumentException("No reference found for $name")
     }
 
     override fun hasRef(name: String): Boolean {
-        return matchContext.refMap.containsKey(name)
+        return matchResult.refMap.containsKey(name)
     }
 
 
     companion object {
-        private class NodeScopeMatchedImpl(override val matchContext: MatchContext) : NodeScopeMatched
+        private class NodeScopeMatchedImpl(override val context: ExprContext, override val matchResult: MatchResult) :
+            NodeScopeMatched
 
-        operator fun invoke(matchContext: MatchContext): NodeScopeMatched = NodeScopeMatchedImpl(matchContext)
+        operator fun invoke(ctx: ExprContext, matchResult: MatchResult): NodeScopeMatched =
+            NodeScopeMatchedImpl(ctx, matchResult)
     }
 }
 
@@ -232,9 +241,9 @@ class MatcherReplaceRule(
     override val metaKeyApplied: TypedKey<Boolean> = TypedKey(description)
 
     override fun simplify(node: Node, ctx: ExprContext, cal: ExprCal): WithInt<Node>? {
-        var matchCtx = MatchContext(ctx, cal)
-        matchCtx = matcher.matches(node, matchCtx) ?: return null
-        val replacementNode = NodeScopeMatched(matchCtx).replacement() ?: return null
+        var matchCtx = MatchResult(cal)
+        matchCtx = matcher.matches(node, ctx, matchCtx) ?: return null
+        val replacementNode = NodeScopeMatched(ctx, matchCtx).replacement() ?: return null
         return WithInt(afterDepth, replacementNode)
     }
 }

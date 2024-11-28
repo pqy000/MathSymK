@@ -185,8 +185,8 @@ inline fun NodeScope.alg(builder: IAlgebraScope.() -> Node): Node {
 data class AlgScopeMatcher(override val context: ExprContext) : IAlgebraScope, NodeScopeMatcher{
     constructor(scope : NodeScopeMatcher) : this(scope.context)
 }
-data class AlgScopeMatchedReferred(override val matchContext: MatchContext) : IAlgebraScope, NodeScopeMatched{
-    constructor(scope : NodeScopeMatched) : this(scope.matchContext)
+data class AlgScopeMatchedReferred(override val context: ExprContext,override val matchResult: MatchResult) : IAlgebraScope, NodeScopeMatched{
+    constructor(scope : NodeScopeMatched) : this(scope.context,scope.matchResult)
 }
 
 inline fun RuleBuilder.matchAlg(crossinline builder: AlgScopeMatcher.() -> Node) {
