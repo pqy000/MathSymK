@@ -1,6 +1,10 @@
 package io.github.ezrnest.mathsymk.symbolic
 
 import io.github.ezrnest.mathsymk.model.*
+import io.github.ezrnest.mathsymk.symbolic.alg.ComputePow
+import io.github.ezrnest.mathsymk.symbolic.alg.FlattenPow
+import io.github.ezrnest.mathsymk.symbolic.alg.MergeAdditionRational
+import io.github.ezrnest.mathsymk.symbolic.alg.MergeProduct
 import io.github.ezrnest.mathsymk.symbolic.alg.SymAlg
 import io.github.ezrnest.mathsymk.symbolic.logic.SymLogic
 import io.github.ezrnest.mathsymk.util.WithInt
@@ -13,7 +17,7 @@ interface ExprCal {
 
     val options: Map<TypedKey<*>, Any> get() = emptyMap()
 
-    val context: ExprContext
+    val context: EContext
 
     val rationals: BigFracAsQuot get() = BigFracAsQuot
     val multinomials: MultiOverField<BigFrac> get() = MultiOverField(rationals, Multinomial.DEFAULT_ORDER)
@@ -32,33 +36,22 @@ interface ExprCal {
     }
 
 
-    fun isCommutative(name: String): Boolean
+    fun isCommutative(name: String): Boolean // TODO
 
-    fun reduce(root: Node, depth: Int = Int.MAX_VALUE): Node {
-        return reduceNode(root, context, depth)
-    }
+    fun enterContext(root: Node, context: EContext): List<EContext>
 
-    fun reduceNode(node: Node, context: ExprContext, depth: Int = 0): Node
+    fun recurMapCtx(
+        root: Node, context: EContext = this.context,
+        depth: Int = Int.MAX_VALUE, mapping: (Node, EContext) -> Node?,
+    ): Node
 
-
-    fun isSatisfied(ctx: ExprContext, condition: Node): Boolean {
-//        return false
-        return reduceNode(condition, ctx, Int.MAX_VALUE) == SymLogic.TRUE
-    }
-
-    fun simplify(node: Node): List<Node>
-
-    fun format(node: Node): String {
-        return node.plainToString()
-    }
-
-    fun substitute(node: Node, src: Node, dest: Node, rootCtx: ExprContext = this.context): Node {
+    fun substitute(node: Node, src: Node, dest: Node, rootCtx: EContext = this.context): Node {
         return substitute(node, rootCtx) { it, ctx ->
             if (it == src) dest else null
         }
     }
 
-    fun substitute(root: Node, rootCtx: ExprContext = this.context, mapping: (Node, ExprContext) -> Node?): Node {
+    fun substitute(root: Node, rootCtx: EContext = this.context, mapping: (Node, EContext) -> Node?): Node {
         return recurMapCtx(root, rootCtx, Int.MAX_VALUE) { n, ctx ->
             //TODO
             if (n is NSymbol && !ctx.isQualified(n)) mapping(n, ctx) else null
@@ -69,13 +62,34 @@ interface ExprCal {
         TODO()
     }
 
-    fun enterContext(root: Node, context: ExprContext): List<ExprContext>
+    fun variablesOf(node : Node) : Set<NSymbol>{
+        TODO()
+    }
 
 
-    fun recurMapCtx(
-        root: Node, context: ExprContext = this.context,
-        depth: Int = Int.MAX_VALUE, mapping: (Node, ExprContext) -> Node?,
-    ): Node
+    fun reduce(root: Node, depth: Int = Int.MAX_VALUE): Node {
+        return reduceNode(root, context, depth)
+    }
+
+    fun reduceNode(node: Node, context: EContext, depth: Int = 0): Node
+
+
+    fun isSatisfied(ctx: EContext, condition: Node): Boolean {
+//        return false
+        return reduceNode(condition, ctx, Int.MAX_VALUE) == SymLogic.TRUE
+    }
+
+    fun simplify(node: Node): List<Node>
+
+    fun format(node: Node): String {
+        return node.plainToString()
+    }
+
+
+
+
+
+
 
     companion object {
 
@@ -101,7 +115,7 @@ interface ExprCal {
 typealias NodeWithComplexity = WithInt<Node>
 
 class SimProcess(
-    var depth: Int = 0, var steps: Int = 0, var context: ExprContext,
+    var depth: Int = 0, var steps: Int = 0, var context: EContext,
     val complexity: NodeComplexity,
 ) {
     val order = compareBy<NodeWithComplexity> { it.v }.thenBy(NodeOrder) { it.item }
@@ -134,7 +148,7 @@ open class BasicExprCal : ExprCal, NodeScope {
         NONE, WHEN_APPLIED, ALL
     }
 
-    override val context: ExprContext = EmptyExprContext // TODO
+    override val context: EContext = EmptyEContext // TODO
 
     var complexity: NodeComplexity = BasicComplexity
 
@@ -198,7 +212,7 @@ open class BasicExprCal : ExprCal, NodeScope {
     }
 
 
-    override fun reduceNode(node: Node, context: ExprContext, depth: Int): Node {
+    override fun reduceNode(node: Node, context: EContext, depth: Int): Node {
         node[NodeMetas.reduceTo]?.let {
             return it
         }
@@ -241,11 +255,12 @@ open class BasicExprCal : ExprCal, NodeScope {
         }
 
         simLevel--
+        node[NodeMetas.reduceTo] = res
         res[NodeMetas.reduceTo] = res
         return res
     }
 
-    override fun enterContext(root: Node, context: ExprContext): List<ExprContext> {
+    override fun enterContext(root: Node, context: EContext): List<EContext> {
         if (root !is NodeChilded) {
             return emptyList()
         }
@@ -254,7 +269,7 @@ open class BasicExprCal : ExprCal, NodeScope {
     }
 
     override fun recurMapCtx(
-        root: Node, context: ExprContext, depth: Int, mapping: (Node, ExprContext) -> Node?
+        root: Node, context: EContext, depth: Int, mapping: (Node, EContext) -> Node?
     ): Node {
         if (depth <= 0) return mapping(root, context) ?: root
         val depth1 = depth - 1
@@ -300,14 +315,14 @@ open class BasicExprCal : ExprCal, NodeScope {
         return mapping(res, context) ?: res
     }
 
-    private fun reduceRecur1(node: Node1, context: ExprContext, depth: Int): Node {
+    private fun reduceRecur1(node: Node1, context: EContext, depth: Int): Node {
         val ctx = enterContext(node, context)
         val n1 = reduceNode(node.child, ctx[0], depth)
         if (n1 === node.child) return node
         return node.newWithChildren(n1)
     }
 
-    private fun reduceRecur2(node: Node2, context: ExprContext, depth: Int): Node {
+    private fun reduceRecur2(node: Node2, context: EContext, depth: Int): Node {
         val (c1, c2) = node
         val (ctx1, ctx2) = enterContext(node, context)
         val n1 = reduceNode(c1, ctx1, depth)
@@ -316,7 +331,7 @@ open class BasicExprCal : ExprCal, NodeScope {
         return node.newWithChildren(n1, n2)
     }
 
-    private fun reduceRecur3(node: Node3, context: ExprContext, depth: Int): Node {
+    private fun reduceRecur3(node: Node3, context: EContext, depth: Int): Node {
         val (c1, c2, c3) = node
         val (ctx1, ctx2, ctx3) = enterContext(node, context)
         val n1 = reduceNode(c1, ctx1, depth)
@@ -326,7 +341,7 @@ open class BasicExprCal : ExprCal, NodeScope {
         return node.newWithChildren(n1, n2, n3)
     }
 
-    private fun reduceRecurN(node: NodeN, context: ExprContext, depth: Int): Node {
+    private fun reduceRecurN(node: NodeN, context: EContext, depth: Int): Node {
         var changed = false
         val children = node.children
         val childContext = enterContext(node, context)

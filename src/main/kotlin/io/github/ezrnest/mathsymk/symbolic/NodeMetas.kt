@@ -68,7 +68,6 @@ object NodeMetas {
     val real = TypedKey<Boolean>("real")
 
 
-
     /**
      * Mark this node as fully simplified.
      *

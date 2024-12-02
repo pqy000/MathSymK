@@ -14,7 +14,7 @@ interface TransRule {
     val matcher: NodeMatcherT<Node>
         get() = AnyMatcher
 
-    fun transform(node : Node, ctx: ExprContext, cal: ExprCal) : List<WithInt<Node>>
+    fun transform(node : Node, ctx: EContext, cal: ExprCal) : List<WithInt<Node>>
 
     fun init(context: ExprCal): TransRule? {
         return this

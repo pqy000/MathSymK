@@ -11,9 +11,11 @@ object Symbolic {
 
 fun main() {
     with(Symbolic.reals()) {
+        verbose = BasicExprCal.Verbosity.ALL
         println(format(π - π))
-        sin(π / 2).also {
-            println(format(it))
-        }
+        println(format(1.e / 3.e))
+//        sin(π / 2).also {
+//            println(format(reduce(it)))
+//        }
     }
 }

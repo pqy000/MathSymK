@@ -109,7 +109,7 @@ object TrigonometricUtils {
             }
         }
         val res = tanTable[r] ?: return null
-        return if (pos) res else buildAlg(EmptyExprContext) { -res }
+        return if (pos) res else buildAlg(EmptyEContext) { -res }
     }
 }
 

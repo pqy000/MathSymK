@@ -59,15 +59,15 @@ class ExprCalReal : BasicExprCal(), Reals<Node>, IAlgebraScope {
     }
 
     override fun product(elements: List<Node>): Node {
-        return super<IAlgebraScope>.product(elements).also { reduce(it, 0) }
+        return reduce(super<IAlgebraScope>.product(elements), 0)
     }
 
     override fun reciprocal(x: Node): Node {
-        return super<IAlgebraScope>.inv(x).also { reduce(it, 0) }
+        return reduce(super<IAlgebraScope>.inv(x), 0)
     }
 
     override fun divide(x: Node, y: Node): Node {
-        return super<IAlgebraScope>.divide(x, y).also { reduce(it, 1) }
+        return reduce(super<IAlgebraScope>.divide(x, y), 1)
     }
 
     override fun Node.div(y: Node): Node {
@@ -92,19 +92,19 @@ class ExprCalReal : BasicExprCal(), Reals<Node>, IAlgebraScope {
 
 
     override fun sqrt(x: Node): Node {
-        return super<IAlgebraScope>.sqrt(x).also { reduce(it, 0) }
+        return reduce(super<IAlgebraScope>.sqrt(x), 0)
     }
 
     override fun exp(x: Node): Node {
-        return super<IAlgebraScope>.exp(x).also { reduce(it, 0) }
+        return reduce(super<IAlgebraScope>.exp(x), 0)
     }
 
     override fun exp(base: Node, pow: Node): Node {
-        return super<IAlgebraScope>.pow(base, pow).also { reduce(it, 0) }
+        return reduce(super<IAlgebraScope>.pow(base, pow), 0)
     }
 
     override fun pow(base: Node, exp: Node): Node {
-        return super<IAlgebraScope>.pow(base, exp).also { reduce(it, 0) }
+        return reduce(super<IAlgebraScope>.pow(base, exp), 0)
     }
 
     override fun nroot(x: Node, n: Int): Node {
@@ -112,39 +112,39 @@ class ExprCalReal : BasicExprCal(), Reals<Node>, IAlgebraScope {
     }
 
     override fun ln(x: Node): Node {
-        return super<IAlgebraScope>.ln(x).also { reduce(it, 0) }
+        return reduce(super<IAlgebraScope>.ln(x), 0)
     }
 
     override fun log(base: Node, x: Node): Node {
-        return super<IAlgebraScope>.log(base, x).also { reduce(it, 0) }
+        return reduce(super<IAlgebraScope>.log(base, x), 0)
     }
 
     override fun sin(x: Node): Node {
-        return super<IAlgebraScope>.sin(x).also { reduce(it, 0) }
+        return reduce(super<IAlgebraScope>.sin(x), 0)
     }
 
     override fun cos(x: Node): Node {
-        return super<IAlgebraScope>.cos(x).also { reduce(it, 0) }
+        return reduce(super<IAlgebraScope>.cos(x), 0)
     }
 
     override fun tan(x: Node): Node {
-        return super<IAlgebraScope>.tan(x).also { reduce(it, 0) }
+        return reduce(super<IAlgebraScope>.tan(x), 0)
     }
 
     //    override fun cot(x: Node): Node {
-//        return super<NodeScopeAlg>.cot(x).also { reduce(it, 0) }
+//        return super<NodeScopeAlg>.cot(x).let { reduce(it, 0) }
 //    }
 
     override fun arcsin(x: Node): Node {
-        return super<IAlgebraScope>.arcsin(x).also { reduce(it, 0) }
+        return reduce(super<IAlgebraScope>.arcsin(x), 0)
     }
 
     override fun arccos(x: Node): Node {
-        return super<IAlgebraScope>.arccos(x).also { reduce(it, 0) }
+        return reduce(super<IAlgebraScope>.arccos(x), 0)
     }
 
     override fun arctan(x: Node): Node {
-        return super<IAlgebraScope>.arctan(x).also { reduce(it, 0) }
+        return reduce(super<IAlgebraScope>.arctan(x), 0)
     }
 
     override fun arctan2(y: Node, x: Node): Node {

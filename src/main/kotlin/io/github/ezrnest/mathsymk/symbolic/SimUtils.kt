@@ -41,13 +41,13 @@ object SimUtils {
         }
     }
 
-    fun asPositiveInt(node: Node, context: ExprContext): BigInteger? {
+    fun asPositiveInt(node: Node, context: EContext): BigInteger? {
         return asInteger(node)?.takeIf { it > BigInteger.ZERO }
     }
 
 
     @Suppress("NOTHING_TO_INLINE")
-    inline fun isInteger(node: Node, context: ExprContext): Boolean {
+    inline fun isInteger(node: Node, context: EContext): Boolean {
         contract {
             returns(true) implies (node is NRational)
         }
@@ -106,7 +106,7 @@ object SimUtils {
      * - If the node itself is a rational, return the rational and 1.
      * - If the node is not a mul node, return 1 and the node.
      */
-    fun extractRational(node: Node, context: ExprContext): WithRational {
+    fun extractRational(node: Node, context: EContext): WithRational {
         if (node is NRational) return WithRational(node.value, SymAlg.ONE) // itself is a rational
         if (!isMul(node))
             return WithRational(BigFracAsQuot.one, node) // not a mul node
@@ -130,7 +130,7 @@ object SimUtils {
         return SymAlg.Mul(listOf(SymAlg.Rational(r), n))
     }
 
-    fun createMulSim(nodes: List<Node>, context: ExprContext, cal: ExprCal): Node {
+    fun createMulSim(nodes: List<Node>, context: EContext, cal: ExprCal): Node {
         if (nodes.isEmpty()) return SymAlg.ONE
         if (nodes.size == 1) return nodes[0]
         return cal.reduceNode(SymAlg.Mul(nodes), context)

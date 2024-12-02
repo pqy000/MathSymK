@@ -174,10 +174,10 @@ interface IAlgebraScope : NodeScopeAdd,ILogicScope {
 
 }
 
-data class AlgebraScope(override val context: ExprContext) : IAlgebraScope, NodeScopePredefinedSymbols
+data class AlgebraScope(override val context: EContext) : IAlgebraScope, NodeScopePredefinedSymbols
 
 
-inline fun buildAlg(context: ExprContext = EmptyExprContext, builder: AlgebraScope.() -> Node): Node {
+inline fun buildAlg(context: EContext = EmptyEContext, builder: AlgebraScope.() -> Node): Node {
     return AlgebraScope(context).builder()
 }
 
@@ -185,10 +185,10 @@ inline fun NodeScope.alg(builder: IAlgebraScope.() -> Node): Node {
     return AlgebraScope(this.context).builder()
 }
 
-data class AlgScopeMatcher(override val context: ExprContext) : IAlgebraScope, NodeScopeMatcher{
+data class AlgScopeMatcher(override val context: EContext) : IAlgebraScope, NodeScopeMatcher{
     constructor(scope : NodeScopeMatcher) : this(scope.context)
 }
-data class AlgScopeMatchedReferred(override val context: ExprContext,override val matchResult: MatchResult) : IAlgebraScope, NodeScopeMatched{
+data class AlgScopeMatchedReferred(override val context: EContext, override val matchResult: MatchResult) : IAlgebraScope, NodeScopeMatched{
     constructor(scope : NodeScopeMatched) : this(scope.context,scope.matchResult)
 }
 

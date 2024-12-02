@@ -1,7 +1,6 @@
 package io.github.ezrnest.mathsymk.symbolic.logic
 
 import io.github.ezrnest.mathsymk.symbolic.*
-import io.github.ezrnest.mathsymk.symbolic.alg.SymSets
 
 interface ILogicScope : NodeScope {
 
@@ -52,11 +51,11 @@ interface ILogicScope : NodeScope {
 
     companion object {
 
-        internal class LogicScopeImplScope(override val context: ExprContext) : ILogicScope {
+        internal class LogicScopeImplScope(override val context: EContext) : ILogicScope {
 
         }
 
-        operator fun invoke(context: ExprContext): ILogicScope = LogicScopeImplScope(context)
+        operator fun invoke(context: EContext): ILogicScope = LogicScopeImplScope(context)
     }
 }
 

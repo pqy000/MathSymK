@@ -3,7 +3,6 @@ package io.github.ezrnest.mathsymk.symbolic
 import io.github.ezrnest.mathsymk.model.BigFracAsQuot
 import io.github.ezrnest.mathsymk.symbolic.alg.*
 import io.github.ezrnest.mathsymk.symbolic.logic.SymLogic
-import io.github.ezrnest.mathsymk.symbolic.logic.all
 
 
 val TestExprCal = BasicExprCal()
@@ -22,7 +21,7 @@ fun main() {
 //            1.e
 //        }
 //    }.also { cal.addReduceRule(it) }
-    cal.registerContextInfo(QualiferNodeContextInfo(SymLogic.Signatures.FOR_ALL))
+    cal.registerContextInfo(QualifierNodeContextInfo(SymLogic.Signatures.FOR_ALL))
 
 //    cal.registerReduceRule(RuleSinSpecial())
 //    cal.registerReduceRule(RuleCosSpecial())
@@ -30,11 +29,17 @@ fun main() {
 //    cal.registerReduceRuleAll(RulesTrigonometricReduce())
 //    cal.addAllRules(RulesTrigonometricTransform())
 //    cal.addRule(RuleExpandMul)
-    with(AlgebraScope(cal.context)){
-        val expr = all(x){
-            sin(x)
+    with(cal) {
+        with(AlgebraScope(cal.context)) {
+            println(format(1.e / 3.e))
         }
-        println(cal.substitute(expr, x, 1.e).plainToString())
+    }
+
+    with(AlgebraScope(cal.context)){
+//        val expr = all(x){
+//            sin(x)
+//        }
+//        println(cal.substitute(expr, x, 1.e).plainToString())
     }
 
 //    val expr = buildAlg {

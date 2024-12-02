@@ -17,7 +17,7 @@ interface SimRuleMatched<T : Node> : SimRule {
     fun simplifyMatched(node: T, matchResult: MatchResult): WithInt<Node>?
 
 
-    override fun simplify(node: Node, ctx: ExprContext, cal: ExprCal): WithInt<Node>? {
+    override fun simplify(node: Node, ctx: EContext, cal: ExprCal): WithInt<Node>? {
         if (node[metaKeyApplied] == true) return null
         var matchResult = MatchResult(cal)
         matchResult = matcher.matches(node, ctx, matchResult) ?: return null
@@ -63,9 +63,9 @@ interface NodeScopeMatcher : INodeScopeReferring, NodeScopeWithPredefined {
 
     companion object {
 
-        private data class NodeScopeMatcherImpl(override val context: ExprContext) : NodeScopeMatcher
+        private data class NodeScopeMatcherImpl(override val context: EContext) : NodeScopeMatcher
 
-        operator fun invoke(context: ExprContext): NodeScopeMatcher = NodeScopeMatcherImpl(context)
+        operator fun invoke(context: EContext): NodeScopeMatcher = NodeScopeMatcherImpl(context)
 
         val F2_Named = "_Named"
         val F2_Where = "_Where"
@@ -163,7 +163,7 @@ interface NodeScopeMatcher : INodeScopeReferring, NodeScopeWithPredefined {
         }
 
 
-        fun substituteIn(nodeRef: Node, rootCtx: ExprContext, matching: MatchResult): Node {
+        fun substituteIn(nodeRef: Node, rootCtx: EContext, matching: MatchResult): Node {
             val cal = matching.cal
             return cal.substitute(nodeRef, rootCtx) { node, ctx ->
                 if(node !is NSymbol) return@substitute null
@@ -177,7 +177,7 @@ interface NodeScopeMatcher : INodeScopeReferring, NodeScopeWithPredefined {
             }
         }
 
-        fun testConditionRef(condRef: Node, ctx: ExprContext, matching: MatchResult): Boolean {
+        fun testConditionRef(condRef: Node, ctx: EContext, matching: MatchResult): Boolean {
             val reifiedCond = substituteIn(condRef, ctx, matching)
             val cal = matching.cal
             return cal.isSatisfied(ctx, reifiedCond)
@@ -217,7 +217,7 @@ interface NodeScopeMatched : NodeScope, NodeScopeReferred {
 
     val matchResult: MatchResult
 
-    override val context: ExprContext
+    override val context: EContext
 
 
     override fun ref(name: String): Node {
@@ -230,10 +230,10 @@ interface NodeScopeMatched : NodeScope, NodeScopeReferred {
 
 
     companion object {
-        private class NodeScopeMatchedImpl(override val context: ExprContext, override val matchResult: MatchResult) :
+        private class NodeScopeMatchedImpl(override val context: EContext, override val matchResult: MatchResult) :
             NodeScopeMatched
 
-        operator fun invoke(ctx: ExprContext, matchResult: MatchResult): NodeScopeMatched =
+        operator fun invoke(ctx: EContext, matchResult: MatchResult): NodeScopeMatched =
             NodeScopeMatchedImpl(ctx, matchResult)
     }
 }
@@ -250,7 +250,7 @@ class MatcherReplaceRule(
 
     override val metaKeyApplied: TypedKey<Boolean> = TypedKey(description)
 
-    override fun simplify(node: Node, ctx: ExprContext, cal: ExprCal): WithInt<Node>? {
+    override fun simplify(node: Node, ctx: EContext, cal: ExprCal): WithInt<Node>? {
         var matchCtx = MatchResult(cal)
         matchCtx = matcher.matches(node, ctx, matchCtx) ?: return null
         val replacementNode = NodeScopeMatched(ctx, matchCtx).replacement() ?: return null
@@ -284,7 +284,7 @@ class MatchNodeReplaceRule(
         }
     }
 
-    override fun simplify(node: Node, ctx: ExprContext, cal: ExprCal): WithInt<Node>? {
+    override fun simplify(node: Node, ctx: EContext, cal: ExprCal): WithInt<Node>? {
         throw IllegalStateException("Matcher is not initialized")
     }
 }

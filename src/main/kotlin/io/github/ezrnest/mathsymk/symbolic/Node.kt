@@ -399,6 +399,10 @@ data class Node1Impl<C : Node>(
         return result
     }
 
+    override fun toString(): String {
+        return plainToString()
+    }
+
     override fun <S : Node> newWithChildren(child: S): Node1T<S> {
         return Node1Impl(name, child)
     }
@@ -440,6 +444,10 @@ class Node2Impl<C1 : Node, C2 : Node>(
         if (newFirst === first && newSecond === second) return action(this)
         return action(Node2Impl(newFirst, newSecond, name))
     }
+
+    override fun toString(): String {
+        return plainToString()
+    }
 }
 
 data class Node3Impl<C1 : Node, C2 : Node, C3 : Node>(
@@ -458,6 +466,10 @@ data class Node3Impl<C1 : Node, C2 : Node, C3 : Node>(
         result = 31 * result + second.hashCode()
         result = 31 * result + third.hashCode()
         return result
+    }
+
+    override fun toString(): String {
+        return plainToString()
     }
 
     override fun <S1 : Node, S2 : Node, S3 : Node> newWithChildren(
@@ -491,6 +503,10 @@ data class NodeNImpl(
         var result = name.hashCode()
         result = 31 * result + children.hashCode()
         return result
+    }
+
+    override fun toString(): String {
+        return plainToString()
     }
 
     override fun newWithChildren(children: List<Node>): NodeN {
@@ -586,95 +602,13 @@ data class NodeSig(val name: String, val type: NType) : Comparable<NodeSig> {
 val Node.signature get() = NodeSig.signatureOf(this)
 
 
-object NodeOrder : Comparator<Node> {
-
-    fun nodeTypeOrdinal(node: Node): Int {
-        return when (node) {
-            is NOther -> -1
-            is NRational -> 0
-            is NSymbol -> 10
-            is LeafNode -> 99
-            is Node1 -> 100
-            is Node2 -> 110
-            is Node3 -> 120
-            is NodeN -> 1000
-//            is NodeChilded -> 9999
-        }
-    }
-
-    private fun compareRational(o1: NRational, o2: NRational): Int {
-        val (n1, d1) = o1.value
-        val (n2, d2) = o2.value
-        n1.compareTo(n2).let {
-            if (it != 0) return it
-        }
-        return d1.compareTo(d2)
-    }
-
-
-    override fun compare(o1: Node, o2: Node): Int {
-        (nodeTypeOrdinal(o1) - nodeTypeOrdinal(o2)).let {
-            if (it != 0) return it
-        }
-        o1.name.compareTo(o2.name).let {
-            if (it != 0) return it
-        }
-
-        if (o1 is NRational && o2 is NRational) {
-            return compareRational(o1, o2)
-        }
-        if (o1 is NSymbol && o2 is NSymbol) {
-            return o1.ch.compareTo(o2.ch)
-        }
-
-        if (o1 is Node1 && o2 is Node1) {
-            return compare(o1.child, o2.child)
-        }
-
-        if (o1 is Node2 && o2 is Node2) {
-            compare(o1.first, o2.first).let {
-                if (it != 0) return it
-            }
-            return compare(o1.second, o2.second)
-        }
-
-        if (o1 is Node3 && o2 is Node3) {
-            compare(o1.first, o2.first).let {
-                if (it != 0) return it
-            }
-            compare(o1.second, o2.second).let {
-                if (it != 0) return it
-            }
-            return compare(o1.third, o2.third)
-        }
-
-        if (o1 is NodeN && o2 is NodeN) {
-            val c1 = o1.children
-            val c2 = o2.children
-            c1.size.compareTo(c2.size).let {
-                if (it != 0) return it
-            }
-
-            val n = c1.size
-            for (i in 0 until n) {
-                compare(c1[i], c2[i]).let {
-                    if (it != 0) return it
-                }
-            }
-            return 0
-        }
-
-        throw IllegalArgumentException("Cannot compare $o1 and $o2")
-    }
-}
-
 
 /**
  * `NodeScope` defines a set of operations for building symbolic expressions.
  */
 interface NodeScope {
 
-    val context: ExprContext
+    val context: EContext
 
     fun symbol(name: String): Node {
         return context.symbol(name)
@@ -689,13 +623,13 @@ interface NodeScope {
 
     companion object {
 
-        internal class NodeScopeImpl(override val context: ExprContext) : NodeScope {
+        internal class NodeScopeImpl(override val context: EContext) : NodeScope {
             override fun symbol(name: String): Node {
                 return context.symbol(name)
             }
         }
 
-        operator fun invoke(context: ExprContext): NodeScope = NodeScopeImpl(context)
+        operator fun invoke(context: EContext): NodeScope = NodeScopeImpl(context)
 
 
     }
@@ -724,7 +658,7 @@ interface NodeScopePredefinedSymbols : NodeScopeWithPredefined {
 }
 
 
-inline fun buildNode(context: ExprContext = TODO(), builder: NodeScope.() -> Node): Node {
+inline fun buildNode(context: EContext = TODO(), builder: NodeScope.() -> Node): Node {
     TODO()
 //    return NodeScope(context).builder()
 }

@@ -10,7 +10,7 @@ import io.github.ezrnest.mathsymk.symbolic.alg.SymSets
  *
  * Describes the assumptions of the expression.
  */
-interface ExprContext {
+interface EContext {
     val conditions: Set<Node> // TODO
         get() = emptySet()
 
@@ -43,14 +43,14 @@ interface ExprContext {
         TODO()
     }
 
-    fun addQualified(symbol: NSymbol, cal : ExprCal) : ExprContext {
+    fun addQualified(symbol: NSymbol, cal : ExprCal) : EContext {
         val newQualified = mutableSetOf<NSymbol>()
         newQualified.addAll(qualifiedSymbols)
         newQualified.add(symbol)
-        return ExprContextImpl(qualifiedSymbols = newQualified, conditions = conditions)
+        return EContextImpl(qualifiedSymbols = newQualified, conditions = conditions)
     }
 
-    fun addRestrictedQualified(symbol: NSymbol, condition: Node, cal: ExprCal): ExprContext {
+    fun addRestrictedQualified(symbol: NSymbol, condition: Node, cal: ExprCal): EContext {
         val newQualified = mutableSetOf<NSymbol>()
         newQualified.addAll(qualifiedSymbols)
         newQualified.add(symbol)
@@ -60,23 +60,22 @@ interface ExprContext {
 //        }
         newConditions.addAll(conditions)
         newConditions.add(condition)
-        return ExprContextImpl(qualifiedSymbols = newQualified, conditions = newConditions)
+        return EContextImpl(qualifiedSymbols = newQualified, conditions = newConditions)
     }
 
-    fun removeQualified(symbols: List<NSymbol>): ExprContext {
+    fun removeQualified(symbols: List<NSymbol>): EContext {
         TODO()
     }
 
-    fun addConditions(conditions: List<Node>): ExprContext {
+    fun addConditions(conditions: List<Node>): EContext {
         val newConditions = sortedSetOf(NodeOrder)
         newConditions.addAll(this.conditions)
         newConditions.addAll(conditions)
-        return ExprContextImpl(qualifiedSymbols = qualifiedSymbols, conditions = newConditions)
+        return EContextImpl(qualifiedSymbols = qualifiedSymbols, conditions = newConditions)
     }
 }
 
-object EmptyExprContext : ExprContext {
-
+object EmptyEContext : EContext {
     override fun symbol(name: String): Node {
         return NSymbol(name)
     }
@@ -84,10 +83,10 @@ object EmptyExprContext : ExprContext {
     override val qualifiedSymbols = emptySet<NSymbol>()
 }
 
-data class ExprContextImpl(
+data class EContextImpl(
     override val qualifiedSymbols: Set<NSymbol> = emptySet(),
     override val conditions: Set<Node> = emptySet()
-) : ExprContext {
+) : EContext {
 
     override fun symbol(name: String): Node {
         return NSymbol(name)
@@ -102,36 +101,10 @@ data class ExprContextImpl(
     }
 
     override fun getFree(): NSymbol {
-        return qualifiedSymbols.first()
+        TODO()
     }
 
     override fun freeSymbols(): Sequence<NSymbol> {
-        return qualifiedSymbols.asSequence()
-    }
-}
-
-
-interface NodeContextInfo {
-    val nodeSignature: NodeSig
-    fun enterContext(root: Node, rootCtx: ExprContext, cal: ExprCal): List<ExprContext>
-}
-
-class QualiferNodeContextInfo(
-    override val nodeSignature: NodeSig,
-    val qualifierIdx: Int = 0,
-) : NodeContextInfo {
-    override fun enterContext(root: Node, rootCtx: ExprContext, cal: ExprCal): List<ExprContext> {
-        root as NodeChilded
-        val restrictedVarNode = root.children[qualifierIdx]
-        require(restrictedVarNode is Node2 && restrictedVarNode.name == SymSets.Names.BELONGS)
-        val variable = restrictedVarNode.children[0] as NSymbol
-        val ctxVariable = rootCtx.addQualified(variable, cal)
-        val ctxSubExpr =  rootCtx.addRestrictedQualified(variable, restrictedVarNode, cal)
-        val result = ArrayList<ExprContext>(root.childCount)
-        repeat(root.childCount) {
-            result.add(ctxSubExpr)
-        }
-        result[qualifierIdx] = ctxVariable
-        return result
+        TODO()
     }
 }
