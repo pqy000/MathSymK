@@ -33,9 +33,8 @@ interface SimRuleMatched<T : Node> : SimRule {
 
 interface INodeScopeReferring : NodeScope {
     fun ref(name: String): Node {
-        return Node.Symbol("_$name")
+        return Node.Symbol("${NodeScopeMatcher.MatcherSymbolPrefix}$name")
     }
-
 }
 
 interface NodeScopeMatcher : INodeScopeReferring, NodeScopeWithPredefined {
@@ -63,16 +62,18 @@ interface NodeScopeMatcher : INodeScopeReferring, NodeScopeWithPredefined {
 
     companion object {
 
+        const val MatcherSymbolPrefix = "$"
+
         private data class NodeScopeMatcherImpl(override val context: EContext) : NodeScopeMatcher
 
         operator fun invoke(context: EContext): NodeScopeMatcher = NodeScopeMatcherImpl(context)
 
-        val F2_Named = "_Named"
-        val F2_Where = "_Where"
+        const val F2_Named = "\$Named"
+        const val F2_Where = "\$Where"
 
         private fun buildSymbol(node: NSymbol): NodeMatcher {
             val name = node.ch
-            if (name.startsWith("_")) {
+            if (name.startsWith(MatcherSymbolPrefix)) {
                 return MatcherRef(name)
             }
             return FixedNodeMatcher(node)
@@ -145,7 +146,7 @@ interface NodeScopeMatcher : INodeScopeReferring, NodeScopeWithPredefined {
         ): MatcherReplaceRule {
             if (matcher is NodeMatcherNPO && matcher.remMatcher is NothingMatcher) {
                 val sig = matcher.nodeSig
-                val remName = "_rem${matcher.nodeSig.name}"
+                val remName = "${MatcherSymbolPrefix}rem${matcher.nodeSig.name}"
                 val rem = MatcherRef(remName)
                 matcher.remMatcher = rem
                 val replacement: RepBuilder = {
@@ -168,7 +169,7 @@ interface NodeScopeMatcher : INodeScopeReferring, NodeScopeWithPredefined {
             return cal.substitute(nodeRef, rootCtx) { node, ctx ->
                 if(node !is NSymbol) return@substitute null
                 val name = node.ch
-                if (!name.startsWith("_")) {
+                if (!name.startsWith(MatcherSymbolPrefix)) {
                     return@substitute null
                 }
                 val ref = matching.getRef(name)

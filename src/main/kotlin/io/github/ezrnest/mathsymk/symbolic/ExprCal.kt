@@ -45,6 +45,7 @@ interface ExprCal {
         depth: Int = Int.MAX_VALUE, mapping: (Node, EContext) -> Node?,
     ): Node
 
+
     fun substitute(node: Node, src: Node, dest: Node, rootCtx: EContext = this.context): Node {
         return substitute(node, rootCtx) { it, ctx ->
             if (it == src) dest else null
@@ -52,9 +53,10 @@ interface ExprCal {
     }
 
     fun substitute(root: Node, rootCtx: EContext = this.context, mapping: (Node, EContext) -> Node?): Node {
+        val normalized = normalizeQualifiedSymbols(root, rootCtx)
         return recurMapCtx(root, rootCtx, Int.MAX_VALUE) { n, ctx ->
             //TODO
-            if (n is NSymbol && !ctx.isQualified(n)) mapping(n, ctx) else null
+            if (n is NSymbol && !ctx.isDefined(n)) mapping(n, ctx) else null
         }
     }
 
@@ -64,6 +66,23 @@ interface ExprCal {
 
     fun variablesOf(node : Node) : Set<NSymbol>{
         TODO()
+    }
+
+    fun normalizeQualifiedSymbols(root : Node, rootCtx: EContext = this.context): Node {
+        val qualifiedSymbolRemapping = mutableMapOf<SymbolDeclaration, NSymbol>()
+        val usedNames = mutableSetOf<String>()
+
+        return recurMapCtx(root, rootCtx, Int.MAX_VALUE) { n, ctx ->
+            if (n !is NSymbol) return@recurMapCtx null
+            val decl = ctx.definedSymbols[n] ?: return@recurMapCtx null
+            if(decl !is SymbolDeclaration.Qualified) return@recurMapCtx null
+            qualifiedSymbolRemapping.getOrPut(decl) {
+                val newSymbol = findNextQualifiedName(usedNames, n)
+                usedNames.add(newSymbol.ch)
+                newSymbol[NodeMetas.displayOriginalName] = n.ch
+                newSymbol
+            }
+        }
     }
 
 
@@ -92,7 +111,17 @@ interface ExprCal {
 
 
     companion object {
+        val QualifiedSymbolRenamingPrefix = "_"
 
+        fun findNextQualifiedName(usedNames : Set<String>, s: NSymbol): NSymbol {
+            val ch = s.ch
+            var i = 0
+            while (true) {
+                val name = "$QualifiedSymbolRenamingPrefix$ch$i"
+                if (name !in usedNames) return NSymbol(name)
+                i++
+            }
+        }
     }
 }
 

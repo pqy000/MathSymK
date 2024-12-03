@@ -79,4 +79,6 @@ object NodeMetas {
 
     val transforms = TypedKey<List<NodeWithComplexity>>("transforms")
 
+    val displayOriginalName = TypedKey<String>("displayOriginalName")
+
 }

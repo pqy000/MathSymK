@@ -181,7 +181,7 @@ inline fun buildAlg(context: EContext = EmptyEContext, builder: AlgebraScope.() 
     return AlgebraScope(context).builder()
 }
 
-inline fun NodeScope.alg(builder: IAlgebraScope.() -> Node): Node {
+inline fun <R> NodeScope.alg(builder: IAlgebraScope.() -> R): R {
     return AlgebraScope(this.context).builder()
 }
 

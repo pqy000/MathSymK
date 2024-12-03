@@ -17,11 +17,14 @@ class QualifierNodeContextInfo(
         val restrictedVarNode = root.children[qualifierIdx]
         require(restrictedVarNode is Node2 && restrictedVarNode.name == SymSets.Names.BELONGS)
         val variable = restrictedVarNode.children[0] as NSymbol
-        val ctxVariable = rootCtx.addQualified(variable, cal)
-        val ctxSubExpr =  rootCtx.addRestrictedQualified(variable, restrictedVarNode, cal)
+        val ctxIntro = EContextImpl()
+        ctxIntro.addQualifiedSymbol(variable)
+        val ctxVariable = rootCtx.with(ctxIntro)
+        ctxIntro.addCondition(restrictedVarNode)
+        val subCtx = rootCtx.with(ctxIntro)
         val result = ArrayList<EContext>(root.childCount)
         repeat(root.childCount) {
-            result.add(ctxSubExpr)
+            result.add(subCtx)
         }
         result[qualifierIdx] = ctxVariable
         return result

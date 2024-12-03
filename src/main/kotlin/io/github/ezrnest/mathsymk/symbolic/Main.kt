@@ -3,6 +3,7 @@ package io.github.ezrnest.mathsymk.symbolic
 import io.github.ezrnest.mathsymk.model.BigFracAsQuot
 import io.github.ezrnest.mathsymk.symbolic.alg.*
 import io.github.ezrnest.mathsymk.symbolic.logic.SymLogic
+import io.github.ezrnest.mathsymk.symbolic.logic.all
 
 
 val TestExprCal = BasicExprCal()
@@ -30,8 +31,10 @@ fun main() {
 //    cal.addAllRules(RulesTrigonometricTransform())
 //    cal.addRule(RuleExpandMul)
     with(cal) {
-        with(AlgebraScope(cal.context)) {
-            println(format(1.e / 3.e))
+        with(AlgebraScope(cal.context)){
+            val expr = all(x,x) and all(x,x)
+            println(expr.plainToString())
+            println(cal.normalizeQualifiedSymbols(expr).plainToString())
         }
     }
 
