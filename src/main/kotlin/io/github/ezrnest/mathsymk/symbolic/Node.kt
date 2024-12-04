@@ -26,7 +26,7 @@ class ESymbol(
     }
 
     companion object {
-        var displayHash = true
+        var displayHash = false
     }
 }
 
@@ -62,16 +62,17 @@ sealed interface Node {
         val UNDEFINED = NOther("undefined")
 
 
-
-        fun <T:Node> Node1(symbol: ESymbol, child: T): Node1T<T> {
+        fun <T : Node> Node1(symbol: ESymbol, child: T): Node1T<T> {
             return Node1Impl(child, symbol)
         }
 
-        fun <T1:Node, T2:Node> Node2(symbol: ESymbol, first: T1, second: T2): Node2T<T1, T2> {
+        fun <T1 : Node, T2 : Node> Node2(symbol: ESymbol, first: T1, second: T2): Node2T<T1, T2> {
             return Node2Impl(first, second, symbol)
         }
 
-        fun <T1:Node, T2:Node, T3:Node> Node3(symbol: ESymbol, first: T1, second: T2, third: T3): Node3T<T1, T2, T3> {
+        fun <T1 : Node, T2 : Node, T3 : Node> Node3(
+            symbol: ESymbol, first: T1, second: T2, third: T3
+        ): Node3T<T1, T2, T3> {
             return Node3Impl(first, second, third, symbol)
         }
 
@@ -106,7 +107,6 @@ sealed interface Node {
 //        ): Node3T<T1, T2, T3> {
 //            return Node3Impl(first, second, third, ESymbol(name))
 //        }
-
 
 
         fun Qualified2(name: ESymbol, varExpr: Node, expr: Node): Node {
@@ -212,7 +212,7 @@ data class NOther(val name: String) : AbstractNode(), LeafNode {
 sealed interface NodeChilded : Node {
     val children: List<Node>
     val childCount: Int
-    val symbol : ESymbol
+    val symbol: ESymbol
 
     override fun <A : Appendable> treeTo(builder: A, level: Int, indent: String): A {
         builder.append(indent).append(symbol.toString()).append(";  ").append(meta.toString()).appendLine()
@@ -541,7 +541,6 @@ data class NodeNImpl(
 }
 
 
-
 //data class NodeSig(val name: ESymbol, val type: NType) : Comparable<NodeSig> {
 //
 //    override fun toString(): String {
@@ -622,64 +621,3 @@ data class NodeNImpl(
 // * Describes the structural signature of a node.
 // */
 //val Node.signature get() = NodeSig.signatureOf(this)
-
-
-/**
- * `NodeScope` defines a set of operations for building symbolic expressions.
- */
-interface NodeScope {
-
-    val context: EContext
-
-    fun symbol(name: String): Node {
-        return context.symbol(name)
-    }
-
-    fun constant(name: String): Node? {
-        return context.constant(name)
-    }
-
-    val String.s: Node get() = symbol(this)
-
-
-    companion object {
-
-        internal class NodeScopeImpl(override val context: EContext) : NodeScope {
-            override fun symbol(name: String): Node {
-                return context.symbol(name)
-            }
-        }
-
-        operator fun invoke(context: EContext): NodeScope = NodeScopeImpl(context)
-
-
-    }
-}
-
-interface NodeScopeWithPredefined : NodeScope {
-    val x: Node
-    val y: Node
-    val z: Node
-    val w: Node
-
-    val a: Node
-    val b: Node
-    val c: Node
-}
-
-interface NodeScopePredefinedSymbols : NodeScopeWithPredefined {
-
-    override val x: Node get() = symbol("x")
-    override val y: Node get() = symbol("y")
-    override val z: Node get() = symbol("z")
-    override val w: Node get() = symbol("w")
-    override val a: Node get() = symbol("a")
-    override val b: Node get() = symbol("b")
-    override val c: Node get() = symbol("c")
-}
-
-
-inline fun buildNode(context: EContext = TODO(), builder: NodeScope.() -> Node): Node {
-    TODO()
-//    return NodeScope(context).builder()
-}

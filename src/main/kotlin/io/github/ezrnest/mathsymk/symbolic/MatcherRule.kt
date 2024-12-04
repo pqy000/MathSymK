@@ -34,11 +34,15 @@ interface SimRuleMatched<T : Node> : SimRule {
 
 interface INodeScopeReferring : NodeScope {
 
-
+    val referenceMap: MutableMap<String, ESymbol>
+    val declaredRefs: MutableSet<ESymbol>
 
 
     fun ref(name: String): Node {
-        return Node.Symbol("$MatcherSymbolPrefix$name")
+        val sym = referenceMap.getOrPut(name) {
+            ESymbol(name).also { declaredRefs.add(it) }
+        }
+        return NSymbol(sym)
     }
 }
 
@@ -68,7 +72,9 @@ interface NodeScopeMatcher : INodeScopeReferring, NodeScopeWithPredefined {
     companion object {
 
 
-        private data class NodeScopeMatcherImpl(override val context: EContext) : NodeScopeMatcher
+        private class NodeScopeMatcherImpl(
+            context: EContext,
+        ) : AbstractNodeScopeMatcher(context), NodeScopeMatcher
 
         operator fun invoke(context: EContext): NodeScopeMatcher = NodeScopeMatcherImpl(context)
 
@@ -77,7 +83,11 @@ interface NodeScopeMatcher : INodeScopeReferring, NodeScopeWithPredefined {
 
         const val MatcherSymbolPrefix = "_"
 
-        private fun buildSymbol(node: NSymbol): NodeMatcher {
+        private fun NodeScopeMatcher.buildSymbol(node: NSymbol): NodeMatcher {
+            val sym = node.symbol
+            if (sym in this.referenceMap.values) {
+                return MatcherRef(sym.name)
+            }
             val name = node.symbol.name
             //TODO
             if (name.startsWith("_")) {
@@ -86,26 +96,27 @@ interface NodeScopeMatcher : INodeScopeReferring, NodeScopeWithPredefined {
             return FixedNodeMatcher(node)
         }
 
-        private fun buildNamed(node: Node, cal: ExprCal): NodeMatcher {
+        private fun NodeScopeMatcher.buildNamed(node: Node, cal: ExprCal): NodeMatcher {
             node as Node2
             val child = buildMatcher0(node.first, cal)
             val name = (node.second as NSymbol).symbol.name
             return MatcherNamed(child, name)
         }
 
-        private fun buildWhere(node: Node, cal: ExprCal): NodeMatcher {
+        private fun NodeScopeMatcher.buildWhere(node: Node, cal: ExprCal): NodeMatcher {
             node as Node2
             val child = buildMatcher0(node.first, cal)
             val clauseRef = node.second
             return MatcherWithPostConditionNode(child, clauseRef)
         }
 
-        private fun buildMatcher0(node: Node, cal: ExprCal): NodeMatcher {
-            if (node is NodeChilded){
+        private fun NodeScopeMatcher.buildMatcher0(node: Node, cal: ExprCal): NodeMatcher {
+            if (node is NodeChilded) {
                 when (node.symbol) {
                     F2_Named -> {
                         return buildNamed(node, cal)
                     }
+
                     F2_Where -> {
                         return buildWhere(node, cal)
                     }
@@ -144,8 +155,8 @@ interface NodeScopeMatcher : INodeScopeReferring, NodeScopeWithPredefined {
             }
         }
 
-        fun buildMatcher(node: Node, cal: ExprCal): NodeMatcher {
-            return buildMatcher0(node, cal)
+        fun buildMatcher(scope: NodeScopeMatcher, node: Node, cal: ExprCal): NodeMatcher {
+            return scope.buildMatcher0(node, cal)
         }
 
         fun warpPartialMatcherReplace(
@@ -175,7 +186,7 @@ interface NodeScopeMatcher : INodeScopeReferring, NodeScopeWithPredefined {
         fun substituteIn(nodeRef: Node, rootCtx: EContext, matching: MatchResult): Node {
             val cal = matching.cal
             return cal.substitute(nodeRef, rootCtx) { node, ctx ->
-                if(node !is NSymbol) return@substitute null
+                if (node !is NSymbol) return@substitute null
                 val name = node.symbol.name
                 if (!name.startsWith(MatcherSymbolPrefix)) {
                     return@substitute null
@@ -192,6 +203,11 @@ interface NodeScopeMatcher : INodeScopeReferring, NodeScopeWithPredefined {
             return cal.isSatisfied(ctx, reifiedCond)
         }
     }
+}
+
+abstract class AbstractNodeScopeMatcher(context: EContext) : AbstractNodeScope(context), INodeScopeReferring{
+    final override val referenceMap: MutableMap<String, ESymbol> = mutableMapOf()
+    final  override val declaredRefs: MutableSet<ESymbol> = mutableSetOf()
 }
 
 interface INodeScopeReferred : NodeScope {
@@ -239,13 +255,15 @@ interface NodeScopeMatched : NodeScope, NodeScopeReferred {
 
 
     companion object {
-        private class NodeScopeMatchedImpl(override val context: EContext, override val matchResult: MatchResult) :
-            NodeScopeMatched
+        private class NodeScopeMatchedImpl(context: EContext, override val matchResult: MatchResult) :
+        AbstractNodeScope(context), NodeScopeMatched
 
         operator fun invoke(ctx: EContext, matchResult: MatchResult): NodeScopeMatched =
             NodeScopeMatchedImpl(ctx, matchResult)
     }
 }
+
+
 
 
 typealias RepBuilder = NodeScopeMatched.() -> Node?
@@ -284,8 +302,9 @@ class MatchNodeReplaceRule(
     override fun init(cal: ExprCal): SimRule? {
 //        val nodeMatch = context.simplify(nodeInit(context))
 //        val nodeRep = context.simplify()
-        val node = cal.reduce(NodeScopeMatcher(cal.context).nodeInit())
-        val matcher = NodeScopeMatcher.buildMatcher(node, cal)
+        val matcherScope = NodeScopeMatcher(cal.context)
+        val node = cal.reduce(matcherScope.nodeInit())
+        val matcher = NodeScopeMatcher.buildMatcher(matcherScope, node, cal)
         return if (allowPartialMatch) {
             NodeScopeMatcher.warpPartialMatcherReplace(matcher, replacement, description, afterDepth)
         } else {

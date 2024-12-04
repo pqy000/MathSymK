@@ -2,6 +2,7 @@ package io.github.ezrnest.mathsymk.symbolic.alg
 
 import io.github.ezrnest.mathsymk.structure.Reals
 import io.github.ezrnest.mathsymk.symbolic.BasicExprCal
+import io.github.ezrnest.mathsymk.symbolic.ESymbol
 import io.github.ezrnest.mathsymk.symbolic.ExprCal
 import io.github.ezrnest.mathsymk.symbolic.Node
 
@@ -11,6 +12,8 @@ class ExprCalReal : BasicExprCal(), Reals<Node>, IAlgebraScope {
 //    private fun addAllReduce(rules: RuleList) {
 //        rules.list.forEach { addReduceRule(it) }
 //    }
+
+
 
 
     init {

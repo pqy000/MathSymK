@@ -31,11 +31,11 @@ interface NodeScopeAdd : NodeScope {
 }
 
 
-interface IAlgebraScope : NodeScopeAdd,ILogicScope {
+interface IAlgebraScope : NodeScopeAdd, ILogicScope {
 
-    val imagUnit: Node get() = SymAlg.IMAGINARY_UNIT
+    val imagUnit: Node get() = SymAlg.IMAGINARY_I
 
-    val 𝑖: Node get() = SymAlg.IMAGINARY_UNIT
+    val 𝑖: Node get() = SymAlg.IMAGINARY_I
     val naturalE: Node get() = SymAlg.NATURAL_E
 
     val 𝑒: Node get() = SymAlg.NATURAL_E
@@ -68,9 +68,9 @@ interface IAlgebraScope : NodeScopeAdd,ILogicScope {
 
     override fun constant(name: String): Node? {
         return when (name) {
-            "pi", Symbols.Symbol_PI -> SymAlg.PI
-            "e", Symbols.Symbol_E -> SymAlg.NATURAL_E
-            "i", Symbols.Imaginary_i -> SymAlg.IMAGINARY_UNIT
+            "pi", Symbols.π.name -> SymAlg.PI
+            "e", Symbols.Natural_e.name -> SymAlg.NATURAL_E
+            "i", Symbols.Imaginary_i.name -> SymAlg.IMAGINARY_I
             else -> {
                 super<ILogicScope>.constant(name)
             }
@@ -174,7 +174,7 @@ interface IAlgebraScope : NodeScopeAdd,ILogicScope {
 
 }
 
-data class AlgebraScope(override val context: EContext) : IAlgebraScope, NodeScopePredefinedSymbols
+class AlgebraScope(context: EContext) : AbstractNodeScope(context), IAlgebraScope, NodeScopePredefinedSymbols
 
 
 inline fun buildAlg(context: EContext = EmptyEContext, builder: AlgebraScope.() -> Node): Node {
@@ -185,11 +185,15 @@ inline fun <R> NodeScope.alg(builder: IAlgebraScope.() -> R): R {
     return AlgebraScope(this.context).builder()
 }
 
-data class AlgScopeMatcher(override val context: EContext) : IAlgebraScope, NodeScopeMatcher{
-    constructor(scope : NodeScopeMatcher) : this(scope.context)
+class AlgScopeMatcher(context: EContext) : AbstractNodeScopeMatcher(context), NodeScopeMatcher, IAlgebraScope {
+    constructor(scope: NodeScopeMatcher) : this(scope.context)
 }
-data class AlgScopeMatchedReferred(override val context: EContext, override val matchResult: MatchResult) : IAlgebraScope, NodeScopeMatched{
-    constructor(scope : NodeScopeMatched) : this(scope.context,scope.matchResult)
+
+data class AlgScopeMatchedReferred(override val context: EContext, override val matchResult: MatchResult,) :
+    IAlgebraScope, NodeScopeMatched {
+    constructor(scope: NodeScopeMatched) : this(scope.context, scope.matchResult)
+
+    override val namedSymbols: MutableMap<String, ESymbol> = mutableMapOf()
 }
 
 inline fun RuleBuilder.matchAlg(crossinline builder: AlgScopeMatcher.() -> Node) {

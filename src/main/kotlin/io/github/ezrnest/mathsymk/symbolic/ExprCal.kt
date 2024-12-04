@@ -53,11 +53,12 @@ interface ExprCal {
     }
 
     fun substitute(root: Node, rootCtx: EContext = this.context, mapping: (Node, EContext) -> Node?): Node {
-        val normalized = normalizeQualifiedSymbols(root, rootCtx)
-        return recurMapCtx(root, rootCtx, Int.MAX_VALUE) { n, ctx ->
-            //TODO
-            if (n is NSymbol && !ctx.isDefined(n)) mapping(n, ctx) else null
-        }
+        TODO()
+//        val normalized = normalizeQualifiedSymbols(root, rootCtx)
+//        return recurMapCtx(root, rootCtx, Int.MAX_VALUE) { n, ctx ->
+//            //TODO
+//            if (n is NSymbol && !ctx.isDefined(n)) mapping(n, ctx) else null
+//        }
     }
 
     fun freeIn(node: Node, symbol: NSymbol): Boolean {
@@ -159,7 +160,9 @@ class SimProcess(
 }
 
 
-open class BasicExprCal : ExprCal, NodeScope {
+open class BasicExprCal : ExprCal, NodeScopePredefinedSymbols {
+
+    override val namedSymbols: MutableMap<String, ESymbol> = mutableMapOf()
 
     override val options: MutableMap<TypedKey<*>, Any> = mutableMapOf()
 
@@ -189,8 +192,8 @@ open class BasicExprCal : ExprCal, NodeScope {
         listOf(
             Flatten(SymAlg.Symbols.ADD),
             Flatten(SymAlg.Symbols.MUL),
-            RuleSort(SymAlg.Signatures.ADD),
-            RuleSort(SymAlg.Signatures.MUL),
+            RuleSort(SymAlg.Symbols.ADD),
+            RuleSort(SymAlg.Symbols.MUL),
             MergeAdditionRational,
             MergeProduct,
             ComputePow,
@@ -215,7 +218,7 @@ open class BasicExprCal : ExprCal, NodeScope {
     }
 
     fun registerContextInfo(info: NodeContextInfo) {
-        ctxInfo.register(LeafMatcherFixSig(info.nodeSignature), info)
+        ctxInfo.register(LeafMatcherFixSig(info.nodeSym), info)
     }
 
 

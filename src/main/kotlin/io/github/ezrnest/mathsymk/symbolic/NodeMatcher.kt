@@ -616,23 +616,23 @@ interface MatcherBuilderScope {
 interface MatcherScopeAlg : MatcherBuilderScope {
 
     fun <T : Node, S : Node> pow(base: NodeMatcherT<T>, exp: NodeMatcherT<S>): NodeMatcherT<Node2T<T, S>> {
-        return NodeMatcher2Ordered(base, exp, SymAlg.Signatures.POW)
+        return NodeMatcher2Ordered(base, exp, SymAlg.Symbols.POW)
     }
 
     fun <T : Node> exp(x: NodeMatcherT<T>): NodeMatcherT<Node2T<NSymbol, T>> {
-        return NodeMatcher2Ordered(NATURAL_E, x, SymAlg.Signatures.POW)
+        return NodeMatcher2Ordered(NATURAL_E, x, SymAlg.Symbols.POW)
     }
 
     fun <T : Node> sin(x: NodeMatcherT<T>): NodeMatcherT<Node1T<T>> {
-        return NodeMatcher1(x, SymAlg.Signatures.F1_SIN)
+        return NodeMatcher1(x, SymAlg.Symbols.F1_SIN)
     }
 
     fun <T : Node> cos(x: NodeMatcherT<T>): NodeMatcherT<Node1T<T>> {
-        return NodeMatcher1(x, SymAlg.Signatures.F1_COS)
+        return NodeMatcher1(x, SymAlg.Symbols.F1_COS)
     }
 
     fun <T : Node> tan(x: NodeMatcherT<T>): NodeMatcherT<Node1T<T>> {
-        return NodeMatcher1(x, SymAlg.Signatures.F1_TAN)
+        return NodeMatcher1(x, SymAlg.Symbols.F1_TAN)
     }
 
 
@@ -666,11 +666,11 @@ interface MatcherScopeAlg : MatcherBuilderScope {
     }
 
     operator fun NodeMatcherT<Node>.times(other: NodeMatcher): NodeMatcher {
-        return flatten(listOf(this, other), SymAlg.Signatures.MUL)
+        return flatten(listOf(this, other), SymAlg.Symbols.MUL)
     }
 
     operator fun NodeMatcherT<Node>.plus(other: NodeMatcher): NodeMatcher {
-        return flatten(listOf(this, other), SymAlg.Signatures.ADD)
+        return flatten(listOf(this, other), SymAlg.Symbols.ADD)
     }
 
 
@@ -698,8 +698,9 @@ fun <T : Node> buildMatcher(action: MatcherScopeAlg.() -> NodeMatcherT<T>): Node
 }
 
 fun buildMatcherExpr(cal: ExprCal, action: NodeScopeMatcher.() -> Node): NodeMatcher {
-    val node = NodeScopeMatcher(cal.context).action()
-    return NodeScopeMatcher.buildMatcher(node, cal)
+    val scope =  NodeScopeMatcher(cal.context)
+    val node = scope.action()
+    return NodeScopeMatcher.buildMatcher(scope,node, cal)
 }
 
 

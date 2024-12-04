@@ -53,11 +53,11 @@ interface ILogicScope : NodeScope {
 
     companion object {
 
-        internal class LogicScopeImplScope(override val context: EContext) : ILogicScope {
+        internal class LogicScopeImpl(context: EContext) : AbstractNodeScope(context), ILogicScope {
 
         }
 
-        operator fun invoke(context: EContext): ILogicScope = LogicScopeImplScope(context)
+        operator fun invoke(context: EContext): ILogicScope = LogicScopeImpl(context)
     }
 }
 

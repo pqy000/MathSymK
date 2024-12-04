@@ -22,7 +22,7 @@ fun main() {
 //            1.e
 //        }
 //    }.also { cal.addReduceRule(it) }
-    cal.registerContextInfo(QualifierNodeContextInfo(SymLogic.FOR_ALL))
+    cal.registerContextInfo(QualifierNodeContextInfo(SymLogic.Symbols.FOR_ALL))
 
 //    cal.registerReduceRule(RuleSinSpecial())
 //    cal.registerReduceRule(RuleCosSpecial())

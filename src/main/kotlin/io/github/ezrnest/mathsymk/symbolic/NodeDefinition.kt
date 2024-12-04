@@ -4,21 +4,21 @@ import io.github.ezrnest.mathsymk.symbolic.alg.SymSets
 
 
 interface NodeContextInfo {
-    val nodeSignature: NodeSig
+    val nodeSym: ESymbol
     fun enterContext(root: Node, rootCtx: EContext, cal: ExprCal): List<EContext>
 }
 
 class QualifierNodeContextInfo(
-    override val nodeSignature: NodeSig,
+    override val nodeSym: ESymbol,
     val qualifierIdx: Int = 0,
 ) : NodeContextInfo {
     override fun enterContext(root: Node, rootCtx: EContext, cal: ExprCal): List<EContext> {
         root as NodeChilded
         val restrictedVarNode = root.children[qualifierIdx]
-        require(restrictedVarNode is Node2 && restrictedVarNode.symbol == SymSets.Names.BELONGS)
+        require(restrictedVarNode is Node2 && restrictedVarNode.symbol == SymSets.Symbols.BELONGS)
         val variable = restrictedVarNode.children[0] as NSymbol
         val ctxIntro = EContextImpl()
-        ctxIntro.addQualifiedSymbol(variable)
+        ctxIntro.addQualifiedSymbol(variable.symbol)
         val ctxVariable = rootCtx.with(ctxIntro)
         ctxIntro.addCondition(restrictedVarNode)
         val subCtx = rootCtx.with(ctxIntro)
