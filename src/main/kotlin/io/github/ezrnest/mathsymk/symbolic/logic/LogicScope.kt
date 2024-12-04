@@ -41,12 +41,14 @@ interface ILogicScope : NodeScope {
 
 
     fun all(varExpr: Node, expr: Node): Node {
-        return Node.Qualified2(SymLogic.Names.FOR_ALL, varExpr, expr)
+        //TODO
+        return Node.Qualified2(SymLogic.Symbols.FOR_ALL, varExpr, expr)
     }
 
 
     fun exists(variable: Node, expr: Node): Node {
-        return Node.Qualified2(SymLogic.Names.EXISTS, variable, expr)
+        //TODO
+        return Node.Qualified2(SymLogic.Symbols.EXISTS, variable, expr)
     }
 
     companion object {

@@ -32,15 +32,18 @@ object NodeOrder : Comparator<Node> {
         (nodeTypeOrdinal(o1) - nodeTypeOrdinal(o2)).let {
             if (it != 0) return it
         }
-        o1.name.compareTo(o2.name).let {
-            if (it != 0) return it
+
+        if(o1 is NodeChilded && o2 is NodeChilded){
+            o1.symbol.compareTo(o2.symbol).let {
+                if (it != 0) return it
+            }
         }
 
         if (o1 is NRational && o2 is NRational) {
             return compareRational(o1, o2)
         }
         if (o1 is NSymbol && o2 is NSymbol) {
-            return o1.ch.compareTo(o2.ch)
+            return o1.symbol.compareTo(o2.symbol)
         }
 
         if (o1 is Node1 && o2 is Node1) {

@@ -24,7 +24,8 @@ interface EContext {
      * Gets a symbol node.
      */
     fun symbol(name: String): Node{
-        return NSymbol(name)
+        return TODO()
+//        return NSymbol(name)
     }
 
 
@@ -109,9 +110,9 @@ interface MutableEContext : EContext {
 }
 
 object EmptyEContext : EContext {
-    override fun symbol(name: String): Node {
-        return NSymbol(name)
-    }
+//    override fun symbol(name: String): Node {
+//        return NSymbol(name)
+//    }
 
     override val definedSymbols = emptyMap<NSymbol,SymbolDeclaration>()
     override val conditions: Set<Node> = emptySet()

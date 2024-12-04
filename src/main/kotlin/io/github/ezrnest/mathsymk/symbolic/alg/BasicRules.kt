@@ -2,8 +2,6 @@ package io.github.ezrnest.mathsymk.symbolic.alg
 
 import io.github.ezrnest.mathsymk.model.BigFrac
 import io.github.ezrnest.mathsymk.model.BigFracAsQuot
-import io.github.ezrnest.mathsymk.model.BigFracAsQuot.div
-import io.github.ezrnest.mathsymk.model.BigFracAsQuot.times
 import io.github.ezrnest.mathsymk.model.isOdd
 import io.github.ezrnest.mathsymk.symbolic.*
 import io.github.ezrnest.mathsymk.util.IterUtils
@@ -17,7 +15,7 @@ import kotlin.math.absoluteValue
  * a + a -> 2a
  * ```
  */
-object MergeAdditionRational : RuleForSpecificN(SymAlg.Names.ADD) {
+object MergeAdditionRational : RuleForSpecificN(SymAlg.Symbols.ADD) {
     // created at 2024/10/05
 
 
@@ -67,7 +65,7 @@ object MergeAdditionRational : RuleForSpecificN(SymAlg.Names.ADD) {
  * 1 * x * 2 -> 2x
  * ```
  */
-object MergeProduct : RuleForSpecificN(SymAlg.Names.MUL) {
+object MergeProduct : RuleForSpecificN(SymAlg.Symbols.MUL) {
     // created at 2024/10/05
 
     override val description: String
@@ -77,14 +75,14 @@ object MergeProduct : RuleForSpecificN(SymAlg.Names.MUL) {
 
 
     private fun getBase(node: Node): Node {
-        if (node is Node2 && node.name == SymAlg.Names.POW) {
+        if (node is Node2 && node.symbol == SymAlg.Symbols.POW) {
             return node.first
         }
         return node
     }
 
     private fun getPower(node: Node): Node {
-        if (node is Node2 && node.name == SymAlg.Names.POW) {
+        if (node is Node2 && node.symbol == SymAlg.Symbols.POW) {
             return node.second
         }
         return SymAlg.ONE
@@ -153,7 +151,7 @@ object MergeProduct : RuleForSpecificN(SymAlg.Names.MUL) {
  * 1 * x -> x
  * ```
  */
-object ComputeProductRational : RuleForSpecificN(SymAlg.Names.MUL) {
+object ComputeProductRational : RuleForSpecificN(SymAlg.Symbols.MUL) {
     // created at 2024/10/05
     override val metaKeyApplied: TypedKey<Boolean> = TypedKey("Compute*")
 
@@ -193,7 +191,7 @@ object ComputeProductRational : RuleForSpecificN(SymAlg.Names.MUL) {
  * exp(exp(x,2),3) -> exp(x,6)
  * ```
  */
-object FlattenPow : RuleForSpecific2(SymAlg.Names.POW) {
+object FlattenPow : RuleForSpecific2(SymAlg.Symbols.POW) {
     // created at 2024/10/05
     override val metaKeyApplied: TypedKey<Boolean> = TypedKey("Flatten^")
 
@@ -244,7 +242,7 @@ object FlattenPow : RuleForSpecific2(SymAlg.Names.POW) {
  * pow(r, p/q) -> pow(r^p, 1/q)
  * ```
  */
-object ComputePow : RuleForSpecific2(SymAlg.Names.POW) {
+object ComputePow : RuleForSpecific2(SymAlg.Symbols.POW) {
     // created at 2024/10/05
     override val metaKeyApplied: TypedKey<Boolean> = TypedKey("Compute^")
 
@@ -265,7 +263,7 @@ object ComputePow : RuleForSpecific2(SymAlg.Names.POW) {
             "Cannot compute the value of (-1)^(1/n) in the real mode"
         )
 
-        if (exp == BigInteger.TWO) return SymAlg.IMAGINARY_UNIT
+        if (exp == BigInteger.TWO) return SymAlg.IMAGINARY_I
         return buildAlg(context) {
             val piOverN = pi / exp.e
             val cos = cos(piOverN)
@@ -376,7 +374,7 @@ object ComputePow : RuleForSpecific2(SymAlg.Names.POW) {
 }
 
 
-object RuleExpandMul : RuleForSpecificN(SymAlg.Names.MUL) {
+object RuleExpandMul : RuleForSpecificN(SymAlg.Symbols.MUL) {
     // created at 2024/10/05
     override val metaKeyApplied: TypedKey<Boolean> = TypedKey("Expand*")
 

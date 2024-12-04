@@ -6,9 +6,31 @@ import io.github.ezrnest.mathsymk.util.all2
 import java.math.BigInteger
 import kotlin.reflect.KClass
 
-sealed interface Node {
+class ESymbol(
+    /**
+     * The display name of the symbol.
+     */
     val name: String
+) : Comparable<ESymbol> {
+    override fun toString(): String {
+        return if (displayHash) {
+            // use first four digits of the hash code
+            "$name@${hashCode().toString(16).take(4)}"
+        } else name
+    }
 
+    override fun compareTo(other: ESymbol): Int {
+        val nameComp = name.compareTo(other.name)
+        if (nameComp != 0) return nameComp
+        return hashCode().compareTo(other.hashCode())
+    }
+
+    companion object {
+        var displayHash = true
+    }
+}
+
+sealed interface Node {
     var meta: Map<TypedKey<*>, Any?>
 
 
@@ -40,53 +62,60 @@ sealed interface Node {
         val UNDEFINED = NOther("undefined")
 
 
-        //
-        fun Symbol(name: String): NSymbol {
-            return NSymbol(name)
+
+        fun <T:Node> Node1(symbol: ESymbol, child: T): Node1T<T> {
+            return Node1Impl(child, symbol)
         }
 
+        fun <T1:Node, T2:Node> Node2(symbol: ESymbol, first: T1, second: T2): Node2T<T1, T2> {
+            return Node2Impl(first, second, symbol)
+        }
 
-        fun NodeN(name: String, children: List<Node>): Node {
+        fun <T1:Node, T2:Node, T3:Node> Node3(symbol: ESymbol, first: T1, second: T2, third: T3): Node3T<T1, T2, T3> {
+            return Node3Impl(first, second, third, symbol)
+        }
+
+        fun NodeN(symbol: ESymbol, children: List<Node>): Node {
             require(children.isNotEmpty())
-            return NodeNImpl(name, children)
+            return NodeNImpl(symbol, children)
         }
 
-
-        fun <T : Node> Node1(name: String, child: T): Node1T<T> {
-            return Node1Impl(name, child)
-        }
-
-        fun <T1 : Node, T2 : Node> Node2(name: String, first: T1, second: T2): Node2T<T1, T2> {
-            return Node2Impl(first, second, name)
-        }
-
-        fun <T1 : Node, T2 : Node, T3 : Node> Node3(
-            name: String, first: T1, second: T2, third: T3
-        ): Node3T<T1, T2, T3> {
-            return Node3Impl(first, second, third, name)
-        }
-
-        fun NodeNFlatten(name: String, children: List<Node>, empty: Node): Node {
+        fun NodeNFlatten(symbol: ESymbol, children: List<Node>, empty: Node): Node {
             return when (children.size) {
                 0 -> empty
                 1 -> children[0]
-                else -> NodeNImpl(name, children)
+                else -> NodeNImpl(symbol, children)
             }
         }
 
-        fun Qualified2(name : String, varExpr : Node, expr: Node): Node {
+        //        fun NodeN(name: String, children: List<Node>): Node {
+//            require(children.isNotEmpty())
+//            return NodeNImpl(ESymbol(name), children)
+//        }
+
+//        fun <T : Node> Node1(name: String, child: T): Node1T<T> {
+//            return Node1Impl(child, ESymbol(name))
+//        }
+//
+//        fun <T1 : Node, T2 : Node> Node2(name: String, first: T1, second: T2): Node2T<T1, T2> {
+//            return Node2Impl(first, second, ESymbol(name))
+//        }
+//
+//        fun <T1 : Node, T2 : Node, T3 : Node> Node3(
+//            name: String, first: T1, second: T2, third: T3
+//        ): Node3T<T1, T2, T3> {
+//            return Node3Impl(first, second, third, ESymbol(name))
+//        }
+
+
+
+        fun Qualified2(name: ESymbol, varExpr: Node, expr: Node): Node {
             if (varExpr is NSymbol) {
-                return Node.Node2(name,SymSets.belongs(varExpr,SymSets.UNIVERSE), expr)
+                return Node2(name, SymSets.belongs(varExpr, SymSets.UNIVERSE), expr)
             }
             require(SimUtils.isBelongs(varExpr))
-            return Node.Node2(name,varExpr, expr)
-
+            return Node2(name, varExpr, expr)
         }
-
-
-    }
-
-    object Names {
 
 
     }
@@ -94,8 +123,6 @@ sealed interface Node {
 
 
 interface LeafNode : Node {
-
-    override val name: String get() = ""
 
     override fun traverse(depth: Int, action: (Node) -> Unit) {
         action(this)
@@ -157,30 +184,20 @@ data class NRational(val value: BigFrac) : AbstractNode(), LeafNode {
 }
 
 
-data class NSymbol(val ch: String) : AbstractNode(), LeafNode {
+data class NSymbol(
+    val symbol: ESymbol
+) : AbstractNode(), LeafNode {
 
     override fun plainToString(): String {
-        return ch
-    }
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other !is NSymbol) return false
-        return ch == other.ch
-    }
-
-    override fun hashCode(): Int {
-        return ch.hashCode()
+        return symbol.toString()
     }
 
     override fun deepEquals(other: Node): Boolean {
-        if (this === other) return true
-        if (other !is NSymbol) return false
-        return ch == other.ch
+        return this === other || other is NSymbol && symbol == other.symbol
     }
 }
 
-data class NOther(override val name: String) : AbstractNode(), LeafNode {
+data class NOther(val name: String) : AbstractNode(), LeafNode {
     override fun plainToString(): String {
         return name
     }
@@ -195,16 +212,17 @@ data class NOther(override val name: String) : AbstractNode(), LeafNode {
 sealed interface NodeChilded : Node {
     val children: List<Node>
     val childCount: Int
+    val symbol : ESymbol
 
     override fun <A : Appendable> treeTo(builder: A, level: Int, indent: String): A {
-        builder.append(indent).append(name).append(";  ").append(meta.toString()).appendLine()
+        builder.append(indent).append(symbol.toString()).append(";  ").append(meta.toString()).appendLine()
         val newIndent = "$indent|  "
         children.forEach { it.treeTo(builder, level + 1, newIndent) }
         return builder
     }
 
     override fun plainToString(): String {
-        return name + children.joinToString(prefix = "(", postfix = ")") { it.plainToString() }
+        return symbol.toString() + children.joinToString(prefix = "(", postfix = ")") { it.plainToString() }
     }
 
     override fun traverse(depth: Int, action: (Node) -> Unit) {
@@ -246,7 +264,7 @@ sealed interface NodeChilded : Node {
     override fun deepEquals(other: Node): Boolean {
         if (this === other) return true
         if (other !is NodeChilded) return false
-        if (name != other.name) return false
+        if (symbol != other.symbol) return false
         val children = children
         val otherChildren = other.children
         if (children.size != otherChildren.size) return false
@@ -281,7 +299,7 @@ interface Node1T<out C : Node> : NodeChilded {
     override fun deepEquals(other: Node): Boolean {
         if (this === other) return true
         if (other !is Node1) return false
-        if (name != other.name) return false
+        if (symbol != other.symbol) return false
         return child.deepEquals(other.child)
     }
 }
@@ -311,7 +329,7 @@ interface Node2T<out C1 : Node, out C2 : Node> : NodeChilded {
     override fun deepEquals(other: Node): Boolean {
         if (this === other) return true
         if (other !is Node2) return false
-        if (name != other.name) return false
+        if (symbol != other.symbol) return false
         return first.deepEquals(other.first) && second.deepEquals(other.second)
     }
 
@@ -344,7 +362,7 @@ interface Node3T<out C1 : Node, out C2 : Node, out C3 : Node> : NodeChilded {
     override fun deepEquals(other: Node): Boolean {
         if (this === other) return true
         if (other !is Node3) return false
-        if (name != other.name) return false
+        if (symbol != other.symbol) return false
         return first.deepEquals(other.first) && second.deepEquals(other.second) && third.deepEquals(other.third)
     }
 }
@@ -384,57 +402,57 @@ interface NodeN : NodeChilded {
 
 
 data class Node1Impl<C : Node>(
-    override val name: String,
-    override val child: C
+    override val child: C,
+    override val symbol: ESymbol
 ) : AbstractNode(), Node1T<C> {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other !is Node1Impl<*>) return false
-        return name == other.name && child == other.child
-    }
-
-    override fun hashCode(): Int {
-        var result = name.hashCode()
-        result = 31 * result + child.hashCode()
-        return result
-    }
+//    override fun equals(other: Any?): Boolean {
+//        if (this === other) return true
+//        if (other !is Node1Impl<*>) return false
+//        return name == other.name && child == other.child
+//    }
+//
+//    override fun hashCode(): Int {
+//        var result = name.hashCode()
+//        result = 31 * result + child.hashCode()
+//        return result
+//    }
 
     override fun toString(): String {
         return plainToString()
     }
 
     override fun <S : Node> newWithChildren(child: S): Node1T<S> {
-        return Node1Impl(name, child)
+        return Node1Impl(child, symbol)
     }
 
     override fun recurMap(depth: Int, action: (Node) -> Node): Node {
         if (depth <= 0) return action(this)
         val newChild = child.recurMap(depth - 1, action)
         if (newChild === child) return action(this)
-        return action(Node1Impl(name, newChild))
+        return action(Node1Impl(newChild, symbol))
     }
 }
 
 
-class Node2Impl<C1 : Node, C2 : Node>(
+data class Node2Impl<C1 : Node, C2 : Node>(
     override val first: C1, override val second: C2,
-    override val name: String
+    override val symbol: ESymbol
 ) : AbstractNode(), Node2T<C1, C2> {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other !is Node2Impl<*, *>) return false
-        return name == other.name && first == other.first && second == other.second
-    }
-
-    override fun hashCode(): Int {
-        var result = name.hashCode()
-        result = 31 * result + first.hashCode()
-        result = 31 * result + second.hashCode()
-        return result
-    }
+//    override fun equals(other: Any?): Boolean {
+//        if (this === other) return true
+//        if (other !is Node2Impl<*, *>) return false
+//        return name == other.name && first == other.first && second == other.second
+//    }
+//
+//    override fun hashCode(): Int {
+//        var result = name.hashCode()
+//        result = 31 * result + first.hashCode()
+//        result = 31 * result + second.hashCode()
+//        return result
+//    }
 
     override fun <S1 : Node, S2 : Node> newWithChildren(first: S1, second: S2): Node2T<S1, S2> {
-        return Node2Impl(first, second, name)
+        return Node2Impl(first, second, symbol)
     }
 
     override fun recurMap(depth: Int, action: (Node) -> Node): Node {
@@ -442,7 +460,7 @@ class Node2Impl<C1 : Node, C2 : Node>(
         val newFirst = first.recurMap(depth - 1, action)
         val newSecond = second.recurMap(depth - 1, action)
         if (newFirst === first && newSecond === second) return action(this)
-        return action(Node2Impl(newFirst, newSecond, name))
+        return action(Node2Impl(newFirst, newSecond, symbol))
     }
 
     override fun toString(): String {
@@ -452,21 +470,21 @@ class Node2Impl<C1 : Node, C2 : Node>(
 
 data class Node3Impl<C1 : Node, C2 : Node, C3 : Node>(
     override val first: C1, override val second: C2, override val third: C3,
-    override val name: String
+    override val symbol: ESymbol
 ) : AbstractNode(), Node3T<C1, C2, C3> {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other !is Node3Impl<*, *, *>) return false
-        return name == other.name && first == other.first && second == other.second && third == other.third
-    }
-
-    override fun hashCode(): Int {
-        var result = name.hashCode()
-        result = 31 * result + first.hashCode()
-        result = 31 * result + second.hashCode()
-        result = 31 * result + third.hashCode()
-        return result
-    }
+//    override fun equals(other: Any?): Boolean {
+//        if (this === other) return true
+//        if (other !is Node3Impl<*, *, *>) return false
+//        return name == other.name && first == other.first && second == other.second && third == other.third
+//    }
+//
+//    override fun hashCode(): Int {
+//        var result = name.hashCode()
+//        result = 31 * result + first.hashCode()
+//        result = 31 * result + second.hashCode()
+//        result = 31 * result + third.hashCode()
+//        return result
+//    }
 
     override fun toString(): String {
         return plainToString()
@@ -475,7 +493,7 @@ data class Node3Impl<C1 : Node, C2 : Node, C3 : Node>(
     override fun <S1 : Node, S2 : Node, S3 : Node> newWithChildren(
         first: S1, second: S2, third: S3
     ): Node3T<S1, S2, S3> {
-        return Node3Impl(first, second, third, name)
+        return Node3Impl(first, second, third, symbol)
     }
 
     override fun recurMap(depth: Int, action: (Node) -> Node): Node {
@@ -484,23 +502,23 @@ data class Node3Impl<C1 : Node, C2 : Node, C3 : Node>(
         val newSecond = second.recurMap(depth - 1, action)
         val newThird = third.recurMap(depth - 1, action)
         if (newFirst === first && newSecond === second && newThird === third) return action(this)
-        return action(Node3Impl(newFirst, newSecond, newThird, name))
+        return action(Node3Impl(newFirst, newSecond, newThird, symbol))
     }
 }
 
 data class NodeNImpl(
-    override val name: String,
+    override val symbol: ESymbol,
     override val children: List<Node>
 ) : AbstractNode(), NodeN {
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is NodeNImpl) return false
-        return name == other.name && children == other.children
+        return symbol == other.symbol && children == other.children
     }
 
     override fun hashCode(): Int {
-        var result = name.hashCode()
+        var result = symbol.hashCode()
         result = 31 * result + children.hashCode()
         return result
     }
@@ -510,7 +528,7 @@ data class NodeNImpl(
     }
 
     override fun newWithChildren(children: List<Node>): NodeN {
-        return NodeNImpl(name, children)
+        return NodeNImpl(symbol, children)
     }
 
     override fun recurMap(depth: Int, action: (Node) -> Node): Node {
@@ -518,89 +536,92 @@ data class NodeNImpl(
         var changed = false
         val newChildren = children.map { it.recurMap(depth - 1, action).also { if (it !== children) changed = true } }
         if (!changed) return action(this)
-        return action(NodeNImpl(name, newChildren))
+        return action(NodeNImpl(symbol, newChildren))
     }
 }
 
 
-data class NodeSig(val name: String, val type: NType) : Comparable<NodeSig> {
 
-    override fun toString(): String {
-        return "$name:$type"
-    }
+//data class NodeSig(val name: ESymbol, val type: NType) : Comparable<NodeSig> {
+//
+//    override fun toString(): String {
+//        return "$name:$type"
+//    }
+//
+//    override fun compareTo(other: NodeSig): Int {
+//        type.compareTo(other.type).let {
+//            if (it != 0) return it
+//        }
+//        return name.compareTo(other.name)
+//    }
+//
+//    /**
+//     * Describes the structural type of nodes.
+//     */
+//    enum class NType {
+//        Rational, Symbol, Leaf, Node1, Node2, Node3, NodeN;
+//
+//        fun matches(node: Node): Boolean {
+//            return when (this) {
+//                Rational -> node is NRational
+//                Symbol -> node is NSymbol
+//                Leaf -> node is LeafNode
+//                Node1 -> node is Node1T<*>
+//                Node2 -> node is Node2T<*, *>
+//                Node3 -> node is Node3T<*, *, *>
+//                NodeN -> node is io.github.ezrnest.mathsymk.symbolic.NodeN
+//            }
+//        }
+//    }
+//
+//    fun matches(node: Node): Boolean {
+//        TODO()
+////        return type.matches(node) && node.name == name
+//    }
+//
+//    companion object {
+//        fun typeOf(node: Node): NType {
+//            return when (node) {
+//                is NRational -> NType.Rational
+//                is NSymbol -> NType.Symbol
+//                is LeafNode -> NType.Leaf
+//                is Node1 -> NType.Node1
+//                is Node2 -> NType.Node2
+//                is Node3 -> NType.Node3
+//                is NodeN -> NType.NodeN
+//                // all the cases are covered
+//            }
+//        }
+//
+//        fun toType(type: KClass<Node>): NType {
+//            return when (type) {
+//                NRational::class -> NType.Rational
+//                NSymbol::class -> NType.Symbol
+//                LeafNode::class -> NType.Leaf
+//                Node1T::class -> NType.Node1
+//                Node2T::class -> NType.Node2
+//                Node3T::class -> NType.Node3
+//                NodeN::class -> NType.NodeN
+//                else -> error("Unknown type $type")
+//            }
+//        }
+//
+//        fun signatureOf(node: Node): NodeSig {
+//            TODO()
+////            return NodeSig(node.name, typeOf(node))
+//        }
+//
+//
+////        val SYMBOL = NodeSig("", NType.Symbol)
+//        val SYMBOL : NodeSig = TODO()
+//
+//    }
+//}
 
-    override fun compareTo(other: NodeSig): Int {
-        type.compareTo(other.type).let {
-            if (it != 0) return it
-        }
-        return name.compareTo(other.name)
-    }
-
-    /**
-     * Describes the structural type of nodes.
-     */
-    enum class NType {
-        Rational, Symbol, Leaf, Node1, Node2, Node3, NodeN;
-
-        fun matches(node: Node): Boolean {
-            return when (this) {
-                Rational -> node is NRational
-                Symbol -> node is NSymbol
-                Leaf -> node is LeafNode
-                Node1 -> node is Node1T<*>
-                Node2 -> node is Node2T<*, *>
-                Node3 -> node is Node3T<*, *, *>
-                NodeN -> node is io.github.ezrnest.mathsymk.symbolic.NodeN
-            }
-        }
-    }
-
-    fun matches(node: Node): Boolean {
-        return type.matches(node) && node.name == name
-    }
-
-    companion object {
-        fun typeOf(node: Node): NType {
-            return when (node) {
-                is NRational -> NType.Rational
-                is NSymbol -> NType.Symbol
-                is LeafNode -> NType.Leaf
-                is Node1 -> NType.Node1
-                is Node2 -> NType.Node2
-                is Node3 -> NType.Node3
-                is NodeN -> NType.NodeN
-                // all the cases are covered
-            }
-        }
-
-        fun toType(type: KClass<Node>): NType {
-            return when (type) {
-                NRational::class -> NType.Rational
-                NSymbol::class -> NType.Symbol
-                LeafNode::class -> NType.Leaf
-                Node1T::class -> NType.Node1
-                Node2T::class -> NType.Node2
-                Node3T::class -> NType.Node3
-                NodeN::class -> NType.NodeN
-                else -> error("Unknown type $type")
-            }
-        }
-
-        fun signatureOf(node: Node): NodeSig {
-            return NodeSig(node.name, typeOf(node))
-        }
-
-
-        val SYMBOL = NodeSig("", NType.Symbol)
-
-    }
-}
-
-/**
- * Describes the structural signature of a node.
- */
-val Node.signature get() = NodeSig.signatureOf(this)
-
+///**
+// * Describes the structural signature of a node.
+// */
+//val Node.signature get() = NodeSig.signatureOf(this)
 
 
 /**

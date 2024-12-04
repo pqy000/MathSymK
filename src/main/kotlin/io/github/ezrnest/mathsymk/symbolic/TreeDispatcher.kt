@@ -16,8 +16,8 @@ class TreeDispatcher<T>() {
 
     private data class DispatchNode<T>(
         var wildcard: DispatchResult<T>? = null,
-        var fixed: MutableMap<NodeSig, DispatchResult<T>>? = null,
-        var variable: MutableMap<NodeSig, DispatchResult<T>>? = null,
+        var fixed: MutableMap<ESymbol, DispatchResult<T>>? = null,
+        var variable: MutableMap<ESymbol, DispatchResult<T>>? = null,
     )
 
     private data class DispatchResult<T>(
@@ -90,7 +90,7 @@ class TreeDispatcher<T>() {
         dispatchStack.add(WithInt(0, dispatchRoot))
         var node = root // the current node that is successfully matched
         var level = 0
-        val tempMap = LinkedHashMap<NodeSig, DispatchResult<T>>(4)
+        val tempMap = LinkedHashMap<ESymbol, DispatchResult<T>>(4)
         val tempList = ArrayList<WithInt<DispatchNode<T>>>(4)
         while (dispatchStack.isNotEmpty()) {
             // now we are at the same level: level==nextLevel
@@ -100,10 +100,13 @@ class TreeDispatcher<T>() {
                 val (_, p) = dispatchStack.poll()
                 val res = p.wildcard
                 applyDispatchSeq(res, tempList, level)
-                applyDispatchSeq(p.fixed?.get(node.signature), tempList, level)
-                p.variable?.let { va ->
-                    applyDispatchSeq(va[node.signature], tempList, level)
-                    tempMap.putAll(va)
+                if(node is NodeChilded){
+                    val sym = node.symbol
+                    applyDispatchSeq(p.fixed?.get(sym), tempList, level)
+                    p.variable?.let { va ->
+                        applyDispatchSeq(va[sym], tempList, level)
+                        tempMap.putAll(va)
+                    }
                 }
             }
             // retain the variable nodes
@@ -185,13 +188,13 @@ class TreeDispatcher<T>() {
         if (matcher is TransparentNodeMatcher) {
             return buildTo(matcher.matcher, node, variable)
         }
-        val nodeRes: DispatchResult<T> = if (matcher is NodeMatcherFixSig) {
+        val nodeRes: DispatchResult<T> = if (matcher is NodeBranchMatcher) {
             val map = if (variable) {
-                node.variable ?: mutableMapOf<NodeSig, DispatchResult<T>>().also { node.variable = it }
+                node.variable ?: mutableMapOf<ESymbol, DispatchResult<T>>().also { node.variable = it }
             } else {
-                node.fixed ?: mutableMapOf<NodeSig, DispatchResult<T>>().also { node.fixed = it }
+                node.fixed ?: mutableMapOf<ESymbol, DispatchResult<T>>().also { node.fixed = it }
             }
-            map.getOrPut(matcher.nodeSig) { DispatchResult() }
+            map.getOrPut(matcher.symbol) { DispatchResult() }
         } else {
             node.wildcard ?: DispatchResult<T>().also { node.wildcard = it }
         }

@@ -30,9 +30,9 @@ interface SimRule : TransRule {
 }
 
 
-class RuleSort(val targetSig: NodeSig) : SimRule {
+class RuleSort(val targetSym: ESymbol) : SimRule {
 
-    override val matcher: NodeMatcherT<Node> = LeafMatcherFixSig(targetSig)
+    override val matcher: NodeMatcherT<Node> = LeafMatcherFixSig(targetSym)
 
     override val description: String = "Sort"
 
@@ -60,7 +60,7 @@ class RuleSort(val targetSig: NodeSig) : SimRule {
 
     override fun simplify(node: Node, ctx: EContext, cal: ExprCal): WithInt<Node>? {
         if (node !is NodeChilded) return null
-        if (!cal.isCommutative(node.name)) return null
+        if (!cal.isCommutative(node.symbol)) return null
         return when (node) {
             is Node1 -> null
             is Node2 -> sort2(node)?.let { WithInt(0, it) }
@@ -70,11 +70,11 @@ class RuleSort(val targetSig: NodeSig) : SimRule {
 }
 
 
-abstract class RuleForSpecificName(val targetName: String) : SimRule {
-    protected inline fun <reified T : Node> simplifyNodeTyped(
+abstract class RuleForSpecificName(val targetSym: ESymbol) : SimRule {
+    protected inline fun <reified T : NodeChilded> simplifyNodeTyped(
         node: Node, nextSimplification: (T) -> WithInt<Node>?
     ): WithInt<Node>? {
-        if (node.name != targetName || node !is T || node[metaKeyApplied] == true)
+        if (node !is T || node.symbol != targetSym ||  node[metaKeyApplied] == true)
             return null
         val res = nextSimplification(node)
         if (res != null) return res
@@ -98,9 +98,31 @@ abstract class RuleForSpecificName(val targetName: String) : SimRule {
 //}
 
 
-abstract class RuleForSpecificN(targetName: String) : RuleForSpecificName(targetName) {
+abstract class RuleForSpecific1(targetName: ESymbol) : RuleForSpecificName(targetName) {
+    final override val matcher: NodeMatcherT<Node> = LeafMatcherFixSig(targetName)
 
-    final override val matcher: NodeMatcherT<NodeN> = LeafMatcherFixSig.forNodeN(targetName)
+    final override fun simplify(node: Node, ctx: EContext, cal: ExprCal): WithInt<Node>? {
+        return simplifyNodeTyped<Node1>(node) { n -> simplify1(n, ctx, cal) }
+    }
+
+    protected abstract fun simplify1(root: Node1, context: EContext, cal: ExprCal): WithInt<Node>?
+}
+
+abstract class RuleForSpecific2(targetName: ESymbol) : RuleForSpecificName(targetName) {
+    final override val matcher: NodeMatcherT<Node> = LeafMatcherFixSig(targetName)
+
+    final override fun simplify(node: Node, ctx: EContext, cal: ExprCal): WithInt<Node>? {
+        return simplifyNodeTyped<Node2>(node) { n -> simplify2(n, ctx, cal) }
+    }
+
+    protected abstract fun simplify2(root: Node2, context: EContext, cal: ExprCal): WithInt<Node>?
+}
+
+
+
+abstract class RuleForSpecificN(targetName: ESymbol) : RuleForSpecificName(targetName) {
+
+    final override val matcher: NodeMatcherT<NodeChilded> = LeafMatcherFixSig(targetName)
 
     final override fun simplify(node: Node, ctx: EContext, cal: ExprCal): WithInt<Node>? {
         return simplifyNodeTyped<NodeN>(node) { n -> simplifyN(n, ctx, cal) }
@@ -110,7 +132,7 @@ abstract class RuleForSpecificN(targetName: String) : RuleForSpecificName(target
 }
 
 
-class Flatten(targetName: String) : RuleForSpecificN(targetName) {
+class Flatten(targetName: ESymbol) : RuleForSpecificN(targetName) {
     // created at 2024/10/01
     override val description: String = "Flatten $targetName"
     override val metaKeyApplied: TypedKey<Boolean> = TypedKey("Flatten${targetName}")
@@ -118,32 +140,12 @@ class Flatten(targetName: String) : RuleForSpecificN(targetName) {
     override fun simplifyN(root: NodeN, context: EContext, cal: ExprCal): WithInt<Node>? {
         val children = root.children
         if (children.size == 1) return WithInt(0, children[0])
-        if (children.all { !(it is NodeN && it.name == targetName) }) return null
+        if (children.all { !(it is NodeN && it.symbol == targetSym) }) return null
         val newChildren = children.flatMap {
-            if (it is NodeN && it.name == targetName) it.children else listOf(it)
+            if (it is NodeN && it.symbol == targetSym) it.children else listOf(it)
         }
-        val res = Node.NodeN(targetName, newChildren).also { it[metaKeyApplied] = true }
+        val res = Node.NodeN(targetSym, newChildren).also { it[metaKeyApplied] = true }
         return WithInt(0, res)
     }
 }
 
-
-abstract class RuleForSpecific1(targetName: String) : RuleForSpecificName(targetName) {
-    final override val matcher: NodeMatcherT<Node> = LeafMatcherFixSig.forNode1(targetName)
-
-    final override fun simplify(node: Node, ctx: EContext, cal: ExprCal): WithInt<Node>? {
-        return simplifyNodeTyped<Node1>(node) { n -> simplify1(n, ctx, cal) }
-    }
-
-    protected abstract fun simplify1(root: Node1, context: EContext, cal: ExprCal): WithInt<Node>?
-}
-
-abstract class RuleForSpecific2(targetName: String) : RuleForSpecificName(targetName) {
-    final override val matcher: NodeMatcherT<Node> = LeafMatcherFixSig.forNode2(targetName)
-
-    final override fun simplify(node: Node, ctx: EContext, cal: ExprCal): WithInt<Node>? {
-        return simplifyNodeTyped<Node2>(node) { n -> simplify2(n, ctx, cal) }
-    }
-
-    protected abstract fun simplify2(root: Node2, context: EContext, cal: ExprCal): WithInt<Node>?
-}

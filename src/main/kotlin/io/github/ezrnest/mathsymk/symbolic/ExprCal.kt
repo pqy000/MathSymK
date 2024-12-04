@@ -36,7 +36,7 @@ interface ExprCal {
     }
 
 
-    fun isCommutative(name: String): Boolean // TODO
+    fun isCommutative(name: ESymbol): Boolean // TODO
 
     fun enterContext(root: Node, context: EContext): List<EContext>
 
@@ -69,20 +69,21 @@ interface ExprCal {
     }
 
     fun normalizeQualifiedSymbols(root : Node, rootCtx: EContext = this.context): Node {
-        val qualifiedSymbolRemapping = mutableMapOf<SymbolDeclaration, NSymbol>()
-        val usedNames = mutableSetOf<String>()
-
-        return recurMapCtx(root, rootCtx, Int.MAX_VALUE) { n, ctx ->
-            if (n !is NSymbol) return@recurMapCtx null
-            val decl = ctx.definedSymbols[n] ?: return@recurMapCtx null
-            if(decl !is SymbolDeclaration.Qualified) return@recurMapCtx null
-            qualifiedSymbolRemapping.getOrPut(decl) {
-                val newSymbol = findNextQualifiedName(usedNames, n)
-                usedNames.add(newSymbol.ch)
-                newSymbol[NodeMetas.displayOriginalName] = n.ch
-                newSymbol
-            }
-        }
+        TODO()
+//        val qualifiedSymbolRemapping = mutableMapOf<SymbolDeclaration, NSymbol>()
+//        val usedNames = mutableSetOf<String>()
+//
+//        return recurMapCtx(root, rootCtx, Int.MAX_VALUE) { n, ctx ->
+//            if (n !is NSymbol) return@recurMapCtx null
+//            val decl = ctx.definedSymbols[n] ?: return@recurMapCtx null
+//            if(decl !is SymbolDeclaration.Qualified) return@recurMapCtx null
+//            qualifiedSymbolRemapping.getOrPut(decl) {
+//                val newSymbol = findNextQualifiedName(usedNames, n)
+//                usedNames.add(newSymbol.ch)
+//                newSymbol[NodeMetas.displayOriginalName] = n.ch
+//                newSymbol
+//            }
+//        }
     }
 
 
@@ -111,17 +112,15 @@ interface ExprCal {
 
 
     companion object {
-        val QualifiedSymbolRenamingPrefix = "_"
-
-        fun findNextQualifiedName(usedNames : Set<String>, s: NSymbol): NSymbol {
-            val ch = s.ch
-            var i = 0
-            while (true) {
-                val name = "$QualifiedSymbolRenamingPrefix$ch$i"
-                if (name !in usedNames) return NSymbol(name)
-                i++
-            }
-        }
+//        fun findNextQualifiedName(usedNames : Set<String>, s: NSymbol): NSymbol {
+//            val ch = s.ch
+//            var i = 0
+//            while (true) {
+//                val name = "$QualifiedSymbolRenamingPrefix$ch$i"
+//                if (name !in usedNames) return NSymbol(name)
+//                i++
+//            }
+//        }
     }
 }
 
@@ -188,8 +187,8 @@ open class BasicExprCal : ExprCal, NodeScope {
 
     init {
         listOf(
-            Flatten(SymAlg.Names.ADD),
-            Flatten(SymAlg.Names.MUL),
+            Flatten(SymAlg.Symbols.ADD),
+            Flatten(SymAlg.Symbols.MUL),
             RuleSort(SymAlg.Signatures.ADD),
             RuleSort(SymAlg.Signatures.MUL),
             MergeAdditionRational,
@@ -220,10 +219,10 @@ open class BasicExprCal : ExprCal, NodeScope {
     }
 
 
-    override fun isCommutative(name: String): Boolean {
+    override fun isCommutative(name: ESymbol): Boolean {
         return when (name) {
-            SymAlg.Names.ADD -> true
-            SymAlg.Names.MUL -> true
+            SymAlg.Symbols.ADD -> true
+            SymAlg.Symbols.MUL -> true
             else -> false
         }
     }

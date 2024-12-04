@@ -20,7 +20,7 @@ object SimUtils {
         contract {
             returns(true) implies (node is Node2)
         }
-        return node is Node2 && node.name == SymSets.Names.BELONGS
+        return node is Node2 && node.symbol == SymSets.Names.BELONGS
     }
 
     fun asInteger(node: Node): BigInteger? {
@@ -60,7 +60,7 @@ object SimUtils {
         contract {
             returns(true) implies (node is NodeN)
         }
-        return (node.name == SymAlg.Names.ADD && node is NodeN)
+        return (node.name == SymAlg.Symbols.ADD && node is NodeN)
     }
 
     @Suppress("NOTHING_TO_INLINE")
@@ -68,7 +68,7 @@ object SimUtils {
         contract {
             returns(true) implies (node is NodeN)
         }
-        return (node.name == SymAlg.Names.MUL && node is NodeN)
+        return (node.name == SymAlg.Symbols.MUL && node is NodeN)
     }
 
     @Suppress("NOTHING_TO_INLINE")
@@ -76,7 +76,7 @@ object SimUtils {
         contract {
             returns(true) implies (node is Node2)
         }
-        return (node.name == SymAlg.Names.POW && node is Node2)
+        return (node.name == SymAlg.Symbols.POW && node is Node2)
     }
 
 

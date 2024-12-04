@@ -1,5 +1,6 @@
 package io.github.ezrnest.mathsymk.symbolic
 
+import io.github.ezrnest.mathsymk.symbolic.NodeScopeMatcher.Companion.MatcherSymbolPrefix
 import io.github.ezrnest.mathsymk.util.WithInt
 
 
@@ -32,8 +33,12 @@ interface SimRuleMatched<T : Node> : SimRule {
 
 
 interface INodeScopeReferring : NodeScope {
+
+
+
+
     fun ref(name: String): Node {
-        return Node.Symbol("${NodeScopeMatcher.MatcherSymbolPrefix}$name")
+        return Node.Symbol("$MatcherSymbolPrefix$name")
     }
 }
 
@@ -62,18 +67,20 @@ interface NodeScopeMatcher : INodeScopeReferring, NodeScopeWithPredefined {
 
     companion object {
 
-        const val MatcherSymbolPrefix = "$"
 
         private data class NodeScopeMatcherImpl(override val context: EContext) : NodeScopeMatcher
 
         operator fun invoke(context: EContext): NodeScopeMatcher = NodeScopeMatcherImpl(context)
 
-        const val F2_Named = "\$Named"
-        const val F2_Where = "\$Where"
+        val F2_Named = ESymbol("Named")
+        val F2_Where = ESymbol("Where")
+
+        const val MatcherSymbolPrefix = "_"
 
         private fun buildSymbol(node: NSymbol): NodeMatcher {
-            val name = node.ch
-            if (name.startsWith(MatcherSymbolPrefix)) {
+            val name = node.symbol.name
+            //TODO
+            if (name.startsWith("_")) {
                 return MatcherRef(name)
             }
             return FixedNodeMatcher(node)
@@ -82,7 +89,7 @@ interface NodeScopeMatcher : INodeScopeReferring, NodeScopeWithPredefined {
         private fun buildNamed(node: Node, cal: ExprCal): NodeMatcher {
             node as Node2
             val child = buildMatcher0(node.first, cal)
-            val name = (node.second as NSymbol).ch
+            val name = (node.second as NSymbol).symbol.name
             return MatcherNamed(child, name)
         }
 
@@ -94,13 +101,14 @@ interface NodeScopeMatcher : INodeScopeReferring, NodeScopeWithPredefined {
         }
 
         private fun buildMatcher0(node: Node, cal: ExprCal): NodeMatcher {
-            when (node.name) {
-                F2_Named -> {
-                    return buildNamed(node, cal)
-                }
-
-                F2_Where -> {
-                    return buildWhere(node, cal)
+            if (node is NodeChilded){
+                when (node.symbol) {
+                    F2_Named -> {
+                        return buildNamed(node, cal)
+                    }
+                    F2_Where -> {
+                        return buildWhere(node, cal)
+                    }
                 }
             }
             when (node) {
@@ -108,28 +116,28 @@ interface NodeScopeMatcher : INodeScopeReferring, NodeScopeWithPredefined {
                 is LeafNode -> return FixedNodeMatcher(node)
                 is Node1 -> {
                     val child = buildMatcher0(node.child, cal)
-                    return NodeMatcher1(child, node.signature)
+                    return NodeMatcher1(child, node.symbol)
                 }
 
                 is Node2 -> {
                     val left = buildMatcher0(node.first, cal)
                     val right = buildMatcher0(node.second, cal)
-                    return NodeMatcher2Ordered(left, right, node.signature)
+                    return NodeMatcher2Ordered(left, right, node.symbol)
                 }
 
                 is Node3 -> {
                     val first = buildMatcher0(node.first, cal)
                     val second = buildMatcher0(node.second, cal)
                     val third = buildMatcher0(node.third, cal)
-                    return NodeMatcher3Ordered(first, second, third, node.signature)
+                    return NodeMatcher3Ordered(first, second, third, node.symbol)
                 }
 
                 is NodeChilded -> {
                     val children = node.children.map { buildMatcher0(it, cal) }
-                    if (cal.isCommutative(node.name)) {
-                        return NodeMatcherNPO(children, node.signature)
+                    if (cal.isCommutative(node.symbol)) {
+                        return NodeMatcherNPO(children, node.symbol)
                     }
-                    return NMatcherNOrdered(children, node.signature)
+                    return NMatcherNOrdered(children, node.symbol)
                 }
 
                 else -> throw IllegalArgumentException("Unknown node type: ${node::class.simpleName}")
@@ -145,8 +153,8 @@ interface NodeScopeMatcher : INodeScopeReferring, NodeScopeWithPredefined {
             maxDepth: Int = Int.MAX_VALUE
         ): MatcherReplaceRule {
             if (matcher is NodeMatcherNPO && matcher.remMatcher is NothingMatcher) {
-                val sig = matcher.nodeSig
-                val remName = "${MatcherSymbolPrefix}rem${matcher.nodeSig.name}"
+                val sym = matcher.symbol
+                val remName = "${MatcherSymbolPrefix}rem${matcher.symbol.name}"
                 val rem = MatcherRef(remName)
                 matcher.remMatcher = rem
                 val replacement: RepBuilder = {
@@ -154,7 +162,7 @@ interface NodeScopeMatcher : INodeScopeReferring, NodeScopeWithPredefined {
                         if (!hasRef(remName)) {
                             sub
                         } else {
-                            Node.NodeN(sig.name, listOf(sub, ref(remName)))
+                            Node.NodeN(sym, listOf(sub, ref(remName)))
                         }
                     }
                 }
@@ -168,7 +176,7 @@ interface NodeScopeMatcher : INodeScopeReferring, NodeScopeWithPredefined {
             val cal = matching.cal
             return cal.substitute(nodeRef, rootCtx) { node, ctx ->
                 if(node !is NSymbol) return@substitute null
-                val name = node.ch
+                val name = node.symbol.name
                 if (!name.startsWith(MatcherSymbolPrefix)) {
                     return@substitute null
                 }

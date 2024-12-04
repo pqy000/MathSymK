@@ -2,14 +2,13 @@ package io.github.ezrnest.mathsymk.symbolic.alg
 
 import io.github.ezrnest.mathsymk.symbolic.NRational
 import io.github.ezrnest.mathsymk.symbolic.Node
-import io.github.ezrnest.mathsymk.symbolic.NodeSig
 
 import io.github.ezrnest.mathsymk.model.BigFrac
 import io.github.ezrnest.mathsymk.model.BigFracAsQuot
+import io.github.ezrnest.mathsymk.symbolic.ESymbol
+import io.github.ezrnest.mathsymk.symbolic.NSymbol
 import io.github.ezrnest.mathsymk.symbolic.Node.Companion.Node1
 import io.github.ezrnest.mathsymk.symbolic.Node.Companion.Node2
-import io.github.ezrnest.mathsymk.symbolic.Node.Companion.Symbol
-import io.github.ezrnest.mathsymk.symbolic.NodeSig.NType
 import java.math.BigInteger
 
 object SymAlg {
@@ -25,18 +24,14 @@ object SymAlg {
 
     val TEN = Int(BigInteger.TEN)
 
-    val PI = Symbol(Names.Symbol_PI)
+    val PI = NSymbol(Symbols.π)
+    val NATURAL_E = NSymbol(Symbols.Natural_e)
+    val IMAGINARY_I = NSymbol(Symbols.Imaginary_i)
 
-    val NATURAL_E = Symbol(Names.Symbol_E)
+    val INFINITY get() = NSymbol(Symbols.Infinity)
+    val POSITIVE_INFINITY get() = NSymbol(Symbols.POSITIVE_INFINITY)
+    val NEGATIVE_INFINITY get() = NSymbol(Symbols.NEGATIVE_INFINITY)
 
-    val IMAGINARY_UNIT = Symbol(Names.Symbol_I)
-
-
-    val INFINITY = Symbol("∞")
-
-    val POSITIVE_INFINITY = Symbol("+∞")
-
-    val NEGATIVE_INFINITY = Symbol("-∞")
 
 
     fun Int(value: BigInteger): NRational {
@@ -54,7 +49,7 @@ object SymAlg {
     fun Add(nodes: List<Node>): Node {
         if (nodes.isEmpty()) return ZERO
         if (nodes.size == 1) return nodes[0]
-        return Node.Companion.NodeN(Names.ADD, nodes)
+        return Node.Companion.NodeN(Symbols.ADD, nodes)
     }
 
     fun Add(vararg nodes: Node): Node {
@@ -64,7 +59,7 @@ object SymAlg {
     fun Mul(nodes: List<Node>): Node {
         if (nodes.isEmpty()) return ONE
         if (nodes.size == 1) return nodes[0]
-        return Node.Companion.NodeN(Names.MUL, nodes)
+        return Node.Companion.NodeN(Symbols.MUL, nodes)
     }
 
     fun Mul(vararg nodes: Node): Node {
@@ -85,7 +80,7 @@ object SymAlg {
     }
 
     fun Pow(base: Node, exp: Node): Node {
-        return Node2(Names.POW, base, exp)
+        return Node2(Symbols.POW, base, exp)
     }
 
     fun Exp(exp: Node): Node {
@@ -93,35 +88,35 @@ object SymAlg {
     }
 
     fun Sin(node: Node): Node {
-        return Node1(Names.F1_SIN, node)
+        return Node1(Symbols.F1_SIN, node)
     }
 
     fun Cos(node: Node): Node {
-        return Node1(Names.F1_COS, node)
+        return Node1(Symbols.F1_COS, node)
     }
 
     fun Tan(node: Node): Node {
-        return Node1(Names.F1_TAN, node)
+        return Node1(Symbols.F1_TAN, node)
     }
 
     fun Cot(node: Node): Node {
-        return Node1(Names.F1_COT, node)
+        return Node1(Symbols.F1_COT, node)
     }
 
     fun ArcSin(node: Node): Node {
-        return Node1(Names.F1_ARCSIN, node)
+        return Node1(Symbols.F1_ARCSIN, node)
     }
 
     fun ArcCos(node: Node): Node {
-        return Node1(Names.F1_ARCCOS, node)
+        return Node1(Symbols.F1_ARCCOS, node)
     }
 
     fun ArcTan(node: Node): Node {
-        return Node1(Names.F1_ARCTAN, node)
+        return Node1(Symbols.F1_ARCTAN, node)
     }
 
     fun Log(base: Node, x: Node): Node {
-        return Node2(Names.F2_LOG, base, x)
+        return Node2(Symbols.F2_LOG, base, x)
     }
 
     fun Ln(node: Node): Node {
@@ -136,48 +131,37 @@ object SymAlg {
         return Log(TEN, node)
     }
 
-    object Names {
-        const val MUL = "*"
-        const val ADD = "+"
+    object Symbols {
+        val MUL = ESymbol("*")
+        val ADD = ESymbol("+")
 
-        //        const val NAME_DIV = "/"
-        const val POW = "^"
+        val POW = ESymbol("^")
+
+        val π = ESymbol("π")
+        val Natural_e = ESymbol("𝑒")
+        val Imaginary_i = ESymbol("𝑖")
+
+        val Infinity = ESymbol("∞")
+        val POSITIVE_INFINITY = ESymbol("+∞")
+        val NEGATIVE_INFINITY = ESymbol("-∞")
 
 
-        //        const val F1_EXP = "exp"
-        const val F2_LOG = "log"
+        val F1_SIN = ESymbol("sin")
+        val F1_COS = ESymbol("cos")
+        val F1_TAN = ESymbol("tan")
+        val F1_COT = ESymbol("cot")
+        val F1_ARCSIN = ESymbol("arcsin")
+        val F1_ARCCOS = ESymbol("arccos")
+        val F1_ARCTAN = ESymbol("arctan")
 
+        val F2_LOG = ESymbol("log")
 
-        const val Symbol_I = "𝑖"
-        const val Symbol_E = "𝑒"
-        const val Symbol_PI = "π"
-
-        const val F1_SIN = "sin"
-        const val F1_COS = "cos"
-        const val F1_TAN = "tan"
-        const val F1_COT = "cot"
-        const val F1_ARCSIN = "arcsin"
-        const val F1_ARCCOS = "arccos"
-        const val F1_ARCTAN = "arctan"
-
-        const val F2_GEQ = "≥"
-        const val F2_GTR = ">"
-        const val F2_LEQ = "≤"
-        const val F2_LSS = "<"
+        val F2_GEQ = ESymbol("≥")
+        val F2_GTR = ESymbol(">")
+        val F2_LEQ = ESymbol("≤")
+        val F2_LSS = ESymbol("<")
 
     }
 
-    object Signatures {
-
-        val RATIONAL = NodeSig("", NType.Rational)
-
-        val ADD = NodeSig(Names.ADD, NType.NodeN)
-        val MUL = NodeSig(Names.MUL, NType.NodeN)
-        val POW = NodeSig(Names.POW, NType.Node2)
-
-        val F1_SIN = NodeSig(Names.F1_SIN, NType.Node1)
-        val F1_COS = NodeSig(Names.F1_COS, NType.Node1)
-        val F1_TAN = NodeSig(Names.F1_TAN, NType.Node1)
-    }
 }
 

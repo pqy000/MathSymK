@@ -1,64 +1,48 @@
 package io.github.ezrnest.mathsymk.symbolic.alg
 
+import io.github.ezrnest.mathsymk.symbolic.ESymbol
+import io.github.ezrnest.mathsymk.symbolic.NSymbol
 import io.github.ezrnest.mathsymk.symbolic.Node
-import io.github.ezrnest.mathsymk.symbolic.NodeSig
-import io.github.ezrnest.mathsymk.symbolic.NodeSig.NType
 
 object SymSets {
 
-    val EMPTY_SET = Node.Symbol(Names.EMPTY_SET)
+    val EMPTY_SET = NSymbol(Symbols.EMPTY_SET)
 
-    val INTEGERS = Node.Symbol(Names.INTEGER)
+    val UNIVERSE = NSymbol(Symbols.UNIVERSE)
 
-    val NATURALS = Node.Symbol(Names.NATURAL)
-
-    val RATIONALS = Node.Symbol(Names.RATIONAL)
-
-    val REALS = Node.Symbol(Names.REALS)
-
-    val COMPLEXES = Node.Symbol(Names.COMPLEX)
-
-    val UNIVERSE = Node.Symbol(Names.UNIVERSE)
+    val INTEGER = NSymbol(Symbols.INTEGER)
+    val NATURAL = NSymbol(Symbols.NATURAL)
+    val RATIONAL = NSymbol(Symbols.RATIONAL)
+    val REALS = NSymbol(Symbols.REALS)
+    val COMPLEX = NSymbol(Symbols.COMPLEX)
 
 
-    object Names {
-        val BELONGS = "∈"
 
-//        val CONTAINS = "∋"
+    object Symbols{
+        val EMPTY_SET = ESymbol("∅")
+        val UNIVERSE = ESymbol("Universe")
 
-        val SUBSET = "⊆"
+        val INTEGER = ESymbol("ℤ")
+        val NATURAL = ESymbol("ℕ")
+        val RATIONAL = ESymbol("ℚ")
+        val REALS = ESymbol("ℝ")
+        val COMPLEX = ESymbol("ℂ")
 
-        val INTERSECT = "∩"
 
-        val UNION = "∪"
 
-        val EMPTY_SET = "∅"
+        val BELONGS = ESymbol("∈")
+        val CONTAINS = ESymbol("∋")
+        val SUBSET = ESymbol("⊆")
+        val INTERSECT = ESymbol("∩")
+        val UNION = ESymbol("∪")
 
-        val INTEGER = "ℤ"
 
-        val NATURAL = "ℕ"
 
-        val RATIONAL = "ℚ"
-
-        val REALS = "ℝ"
-
-        val COMPLEX = "ℂ"
-
-        val UNIVERSE = "Universe"
     }
 
-    object Signatures {
-        val BELONGS = NodeSig(Names.BELONGS, NType.Node2)
-
-        val INTERSECT = NodeSig(Names.INTERSECT, NType.NodeN)
-
-        val UNION = NodeSig(Names.UNION, NType.NodeN)
-
-        val SUBSET = NodeSig(Names.SUBSET, NType.Node2)
-    }
 
 
     fun belongs(x: Node, y: Node): Node {
-        return Node.Node2(Names.BELONGS, x, y)
+        return Node.Node2(Symbols.BELONGS, x, y)
     }
 }

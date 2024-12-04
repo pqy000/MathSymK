@@ -23,8 +23,8 @@ class ExprCalReal : BasicExprCal(), Reals<Node>, IAlgebraScope {
 
     override fun constantValue(name: String): Node {
         return when (name) {
-            "pi", SymAlg.Names.Symbol_PI -> SymAlg.PI
-            "e", SymAlg.Names.Symbol_E -> SymAlg.NATURAL_E
+            "pi", SymAlg.Symbols.π.name -> SymAlg.PI
+            "e", SymAlg.Symbols.Natural_e.name -> SymAlg.NATURAL_E
             else -> throw IllegalArgumentException("Unknown constant: $name")
         }
     }
