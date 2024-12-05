@@ -1,9 +1,6 @@
 package io.github.ezrnest.mathsymk.symbolic.alg
 
-import io.github.ezrnest.mathsymk.symbolic.ESymbol
-import io.github.ezrnest.mathsymk.symbolic.NSymbol
-import io.github.ezrnest.mathsymk.symbolic.Node
-import io.github.ezrnest.mathsymk.symbolic.Node2T
+import io.github.ezrnest.mathsymk.symbolic.*
 
 object SymSets {
 
@@ -36,6 +33,6 @@ object SymSets {
 
 
     fun belongs(x: Node, y: Node): Node {
-        return Node2T(Symbols.BELONGS, x, y)
+        return Node2T(SymBasic.Symbols.BELONGS, x, y)
     }
 }
