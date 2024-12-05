@@ -293,7 +293,7 @@ object ComputePow : RuleForSpecific2(SymAlg.Symbols.POW) {
             }
             if (isOne(base)) return SymAlg.ONE
             if (isZero(base)) {
-                if (isZero(exp)) return Node.UNDEFINED
+                if (isZero(exp)) return SymBasic.UNDEFINED
                 return SymAlg.ZERO
             }
             val factorPow = factorizedPow(abs(base), exp)

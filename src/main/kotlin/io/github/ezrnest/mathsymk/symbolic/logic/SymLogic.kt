@@ -3,14 +3,13 @@ package io.github.ezrnest.mathsymk.symbolic.logic
 import io.github.ezrnest.mathsymk.symbolic.ESymbol
 import io.github.ezrnest.mathsymk.symbolic.NSymbol
 import io.github.ezrnest.mathsymk.symbolic.Node
+import io.github.ezrnest.mathsymk.symbolic.SymBasic
 import io.github.ezrnest.mathsymk.symbolic.alg.SymSets
 
 object SymLogic {
 
-    object Symbols {
-        val TRUE = ESymbol("true")
-        val FALSE = ESymbol("false")
 
+    object Symbols {
         val AND = ESymbol("⋀")
         val OR = ESymbol("⋁")
         val NOT = ESymbol("¬")
@@ -21,26 +20,11 @@ object SymLogic {
         val EXISTS = ESymbol("∃")
     }
 
-//    object Signatures {
-//        val AND = NodeSig(Symbols.AND, NType.NodeN)
-//        val OR = NodeSig(Symbols.OR, NType.NodeN)
-//        val NOT = NodeSig(Symbols.NOT, NType.Node1)
-//        val IMPLIES = NodeSig(Symbols.IMPLIES, NType.Node2)
-//
-//        /**
-//         * `∀(x, P(x))` or `∀x P(x)`
-//         */
-//        val FOR_ALL = NodeSig(Symbols.FOR_ALL, NType.Node2)
-//        val EXISTS = NodeSig(Symbols.EXISTS, NType.Node2)
-//    }
-
-    val TRUE = NSymbol(Symbols.TRUE)
-    val FALSE = NSymbol(Symbols.FALSE)
 
     fun And(nodes: List<Node>): Node {
-        if (nodes.isEmpty()) return TRUE
+        if (nodes.isEmpty()) return SymBasic.TRUE
         if (nodes.size == 1) return nodes[0]
-        return Node.NodeN(Symbols.AND, nodes)
+        return SymBasic.NodeN(Symbols.AND, nodes)
     }
 
     fun And(vararg nodes: Node): Node {
@@ -48,9 +32,9 @@ object SymLogic {
     }
 
     fun Or(nodes: List<Node>): Node {
-        if (nodes.isEmpty()) return FALSE
+        if (nodes.isEmpty()) return SymBasic.FALSE
         if (nodes.size == 1) return nodes[0]
-        return Node.NodeN(Symbols.OR, nodes)
+        return SymBasic.NodeN(Symbols.OR, nodes)
     }
 
     fun Or(vararg nodes: Node): Node {
@@ -58,11 +42,11 @@ object SymLogic {
     }
 
     fun Not(node: Node): Node {
-        return Node.Node1(Symbols.NOT, node)
+        return SymBasic.Node1(Symbols.NOT, node)
     }
 
     fun Implies(p: Node, q: Node): Node {
-        return Node.Node2(Symbols.IMPLIES, p, q)
+        return SymBasic.Node2(Symbols.IMPLIES, p, q)
     }
 
     fun Iff(p: Node, q: Node): Node {
@@ -88,12 +72,12 @@ object SymLogic {
 
     fun ForAll(x: NSymbol, set: Node, p: Node): Node {
         //TODO
-        return Node.Node2(Symbols.FOR_ALL, SymSets.belongs(x, set), p)
+        return SymBasic.Node2(Symbols.FOR_ALL, SymSets.belongs(x, set), p)
     }
 
     fun Exists(x: NSymbol, set: Node, p: Node): Node {
         //TODO
-        return Node.Node2(Symbols.EXISTS, SymSets.belongs(x, set), p)
+        return SymBasic.Node2(Symbols.EXISTS, SymSets.belongs(x, set), p)
     }
 
 }

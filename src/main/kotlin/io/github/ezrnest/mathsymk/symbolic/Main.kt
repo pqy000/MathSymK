@@ -1,49 +1,20 @@
 package io.github.ezrnest.mathsymk.symbolic
 
-import io.github.ezrnest.mathsymk.model.BigFracAsQuot
 import io.github.ezrnest.mathsymk.symbolic.alg.*
-import io.github.ezrnest.mathsymk.symbolic.logic.SymLogic
-import io.github.ezrnest.mathsymk.symbolic.logic.all
 
 
 val TestExprCal = BasicExprCal()
 
 fun main() {
-    val Q = BigFracAsQuot
-
     val cal = TestExprCal
-    cal.verbose = BasicExprCal.Verbosity.NONE
-//    cal.options[ExprContext.Options.forceReal] = true
-//    rule {
-//        name = "Trig[ sin^2(x) + cos^2(x) = 1 ]"
-//        match {
-//            pow(sin(x), 2.e) + pow(cos(x), 2.e)
-//        } to {
-//            1.e
-//        }
-//    }.also { cal.addReduceRule(it) }
-    cal.registerContextInfo(QualifierNodeContextInfo(SymLogic.Symbols.FOR_ALL))
-
-//    cal.registerReduceRule(RuleSinSpecial())
-//    cal.registerReduceRule(RuleCosSpecial())
-//    cal.registerReduceRule(RuleTanSpecial())
-//    cal.registerReduceRuleAll(RulesTrigonometricReduce())
-//    cal.addAllRules(RulesTrigonometricTransform())
-//    cal.addRule(RuleExpandMul)
+    cal.verbose = BasicExprCal.Verbosity.ALL
+//    cal.registerContextInfo(QualifierNodeContextInfo(SymLogic.Symbols.FOR_ALL))
     with(cal) {
         with(AlgebraScope(cal.context)){
-            val expr = all(x,x) and all(x,x)
-            println(expr.plainToString())
-            println(cal.normalizeQualifiedSymbols(expr).plainToString())
+            println(reduce(x/2.e))
         }
     }
 
-    with(AlgebraScope(cal.context)){
-//        val expr = all(x){
-//            sin(x)
-//        }
-//        println(cal.substitute(expr, x, 1.e).plainToString())
-    }
 
 //    val expr = buildAlg {
 //      1.e * 2.e + x * pow(x, 2.e) * 3.e - x * x * (2.e * x)

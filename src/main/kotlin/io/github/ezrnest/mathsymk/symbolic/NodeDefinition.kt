@@ -14,6 +14,7 @@ class QualifierNodeContextInfo(
 ) : NodeContextInfo {
     override fun enterContext(root: Node, rootCtx: EContext, cal: ExprCal): List<EContext> {
         root as NodeChilded
+        //TODO
         val restrictedVarNode = root.children[qualifierIdx]
         require(restrictedVarNode is Node2 && restrictedVarNode.symbol == SymSets.Symbols.BELONGS)
         val variable = restrictedVarNode.children[0] as NSymbol

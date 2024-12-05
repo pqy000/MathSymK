@@ -3,12 +3,11 @@ package io.github.ezrnest.mathsymk.symbolic.alg
 import io.github.ezrnest.mathsymk.symbolic.ESymbol
 import io.github.ezrnest.mathsymk.symbolic.NSymbol
 import io.github.ezrnest.mathsymk.symbolic.Node
+import io.github.ezrnest.mathsymk.symbolic.Node2T
 
 object SymSets {
 
-    val EMPTY_SET = NSymbol(Symbols.EMPTY_SET)
 
-    val UNIVERSE = NSymbol(Symbols.UNIVERSE)
 
     val INTEGER = NSymbol(Symbols.INTEGER)
     val NATURAL = NSymbol(Symbols.NATURAL)
@@ -19,8 +18,7 @@ object SymSets {
 
 
     object Symbols{
-        val EMPTY_SET = ESymbol("∅")
-        val UNIVERSE = ESymbol("Universe")
+
 
         val INTEGER = ESymbol("ℤ")
         val NATURAL = ESymbol("ℕ")
@@ -30,11 +28,6 @@ object SymSets {
 
 
 
-        val BELONGS = ESymbol("∈")
-        val CONTAINS = ESymbol("∋")
-        val SUBSET = ESymbol("⊆")
-        val INTERSECT = ESymbol("∩")
-        val UNION = ESymbol("∪")
 
 
 
@@ -43,6 +36,6 @@ object SymSets {
 
 
     fun belongs(x: Node, y: Node): Node {
-        return Node.Node2(Symbols.BELONGS, x, y)
+        return Node2T(Symbols.BELONGS, x, y)
     }
 }

@@ -1,14 +1,8 @@
 package io.github.ezrnest.mathsymk.symbolic.alg
 
-import io.github.ezrnest.mathsymk.symbolic.NRational
-import io.github.ezrnest.mathsymk.symbolic.Node
-
 import io.github.ezrnest.mathsymk.model.BigFrac
 import io.github.ezrnest.mathsymk.model.BigFracAsQuot
-import io.github.ezrnest.mathsymk.symbolic.ESymbol
-import io.github.ezrnest.mathsymk.symbolic.NSymbol
-import io.github.ezrnest.mathsymk.symbolic.Node.Companion.Node1
-import io.github.ezrnest.mathsymk.symbolic.Node.Companion.Node2
+import io.github.ezrnest.mathsymk.symbolic.*
 import java.math.BigInteger
 
 object SymAlg {
@@ -49,7 +43,7 @@ object SymAlg {
     fun Add(nodes: List<Node>): Node {
         if (nodes.isEmpty()) return ZERO
         if (nodes.size == 1) return nodes[0]
-        return Node.Companion.NodeN(Symbols.ADD, nodes)
+        return NodeN(Symbols.ADD, nodes)
     }
 
     fun Add(vararg nodes: Node): Node {
@@ -59,7 +53,7 @@ object SymAlg {
     fun Mul(nodes: List<Node>): Node {
         if (nodes.isEmpty()) return ONE
         if (nodes.size == 1) return nodes[0]
-        return Node.Companion.NodeN(Symbols.MUL, nodes)
+        return NodeN(Symbols.MUL, nodes)
     }
 
     fun Mul(vararg nodes: Node): Node {

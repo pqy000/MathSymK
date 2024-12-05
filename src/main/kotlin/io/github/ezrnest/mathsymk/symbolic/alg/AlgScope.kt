@@ -3,8 +3,6 @@ package io.github.ezrnest.mathsymk.symbolic.alg
 import io.github.ezrnest.mathsymk.model.BigFrac
 import io.github.ezrnest.mathsymk.model.BigFracAsQuot
 import io.github.ezrnest.mathsymk.symbolic.*
-import io.github.ezrnest.mathsymk.symbolic.Node.Companion.Node1
-import io.github.ezrnest.mathsymk.symbolic.Node.Companion.Node2
 import io.github.ezrnest.mathsymk.symbolic.alg.SymAlg.Symbols
 import io.github.ezrnest.mathsymk.symbolic.alg.SymAlg.Pow
 import io.github.ezrnest.mathsymk.symbolic.logic.ILogicScope
@@ -26,7 +24,7 @@ interface NodeScopeAdd : NodeScope {
     fun sum(elements: List<Node>): Node {
         if (elements.isEmpty()) return SymAlg.ZERO
         if (elements.size == 1) return elements[0]
-        return Node.NodeN(Symbols.ADD, elements)
+        return SymBasic.NodeN(Symbols.ADD, elements)
     }
 }
 
@@ -102,7 +100,7 @@ interface IAlgebraScope : NodeScopeAdd, ILogicScope {
     fun product(elements: List<Node>): Node {
         if (elements.isEmpty()) return SymAlg.ONE
         if (elements.size == 1) return elements[0]
-        return Node.Companion.NodeN(Symbols.MUL, elements)
+        return SymBasic.NodeN(Symbols.MUL, elements)
     }
 
 
@@ -123,7 +121,7 @@ interface IAlgebraScope : NodeScopeAdd, ILogicScope {
     }
 
     fun pow(base: Node, exp: Node): Node {
-        return Node2(Symbols.POW, base, exp)
+        return SymBasic.Node2(Symbols.POW, base, exp)
     }
 
     fun sqrt(x: Node): Node {
@@ -135,7 +133,7 @@ interface IAlgebraScope : NodeScopeAdd, ILogicScope {
     }
 
     fun log(base: Node, x: Node): Node {
-        return Node2(Symbols.F2_LOG, base, x)
+        return SymBasic.Node2(Symbols.F2_LOG, base, x)
     }
 
     fun ln(x: Node): Node {
@@ -143,32 +141,32 @@ interface IAlgebraScope : NodeScopeAdd, ILogicScope {
     }
 
     fun sin(x: Node): Node {
-        return Node1(Symbols.F1_SIN, x)
+        return SymBasic.Node1(Symbols.F1_SIN, x)
     }
 
     fun cos(x: Node): Node {
-        return Node1(Symbols.F1_COS, x)
+        return SymBasic.Node1(Symbols.F1_COS, x)
     }
 
     fun tan(x: Node): Node {
-        return Node1(Symbols.F1_TAN, x)
+        return SymBasic.Node1(Symbols.F1_TAN, x)
     }
 
     fun arcsin(x: Node): Node {
-        return Node1(Symbols.F1_ARCSIN, x)
+        return SymBasic.Node1(Symbols.F1_ARCSIN, x)
     }
 
     fun arccos(x: Node): Node {
-        return Node1(Symbols.F1_ARCCOS, x)
+        return SymBasic.Node1(Symbols.F1_ARCCOS, x)
     }
 
     fun arctan(x: Node): Node {
-        return Node1(Symbols.F1_ARCTAN, x)
+        return SymBasic.Node1(Symbols.F1_ARCTAN, x)
     }
 
 
     infix fun Node.gtr(y: Node): Node {
-        return Node2(Symbols.F2_GTR, this, y)
+        return SymBasic.Node2(Symbols.F2_GTR, this, y)
     }
 
 

@@ -40,16 +40,21 @@ interface ILogicScope : NodeScope {
     fun or(vararg nodes: Node): Node = SymLogic.Or(*nodes)
 
 
-    fun all(varExpr: Node, expr: Node): Node {
-        //TODO
-        return Node.Qualified2(SymLogic.Symbols.FOR_ALL, varExpr, expr)
+    fun all(varName : String = "#1", clause : (NSymbol)->Node) : Node{
+        val varNode = NSymbol(ESymbol(varName))
+        TODO()
     }
 
-
-    fun exists(variable: Node, expr: Node): Node {
-        //TODO
-        return Node.Qualified2(SymLogic.Symbols.EXISTS, variable, expr)
-    }
+//    fun all(varExpr: Node, expr: Node): Node {
+//        //TODO
+//        return Node.Qualified2(SymLogic.Symbols.FOR_ALL, varExpr, expr)
+//    }
+//
+//
+//    fun exists(variable: Node, expr: Node): Node {
+//        //TODO
+//        return Node.Qualified2(SymLogic.Symbols.EXISTS, variable, expr)
+//    }
 
     companion object {
 
@@ -61,9 +66,6 @@ interface ILogicScope : NodeScope {
     }
 }
 
-inline fun ILogicScope.all(variable: Node, expr: ILogicScope.() -> Node): Node = all(variable, expr())
-
-inline fun ILogicScope.exists(variable: Node, expr: ILogicScope.() -> Node): Node = exists(variable, expr())
 
 
 inline fun NodeScope.logic(builder: ILogicScope.() -> Node): Node {

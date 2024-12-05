@@ -65,6 +65,10 @@ class ExprCalReal : BasicExprCal(), Reals<Node>, IAlgebraScope {
         return reduce(super<IAlgebraScope>.product(elements), 0)
     }
 
+    override fun inv(node: Node): Node {
+        return reduce(super<IAlgebraScope>.inv(node), 0)
+    }
+
     override fun reciprocal(x: Node): Node {
         return reduce(super<IAlgebraScope>.inv(x), 0)
     }

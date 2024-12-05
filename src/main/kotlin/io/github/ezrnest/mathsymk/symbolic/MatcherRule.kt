@@ -58,15 +58,15 @@ interface NodeScopeMatcher : INodeScopeReferring, NodeScopeWithPredefined {
     val String.ref get() = ref(this)
 
     fun Node.named(name: String): Node {
-        return Node.Node2(F2_Named, this, ref(name))
+        return Node2(F2_Named, this, ref(name))
     }
 
     fun Node.where(clause: Node): Node {
-        return Node.Node2(F2_Where, this, clause)
+        return Node2(F2_Where, this, clause)
     }
 
     fun Node.where(clauseBuilder: () -> Node): Node {
-        return Node.Node2(F2_Where, this, clauseBuilder())
+        return Node2(F2_Where, this, clauseBuilder())
     }
 
     companion object {
@@ -173,7 +173,7 @@ interface NodeScopeMatcher : INodeScopeReferring, NodeScopeWithPredefined {
                         if (!hasRef(remName)) {
                             sub
                         } else {
-                            Node.NodeN(sym, listOf(sub, ref(remName)))
+                            NodeN(sym, listOf(sub, ref(remName)))
                         }
                     }
                 }

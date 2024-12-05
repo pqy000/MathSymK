@@ -90,7 +90,7 @@ object TrigonometricUtils {
             values[bfrac(1, 6)] = buildAlg { pow(3.e, (-half).e) }
             values[bfrac(1, 4)] = SymAlg.ONE
             values[bfrac(1, 3)] = sqrt3
-            values[half] = Node.UNDEFINED
+            values[half] = SymBasic.UNDEFINED
         }
         for (v in values.values) {
             v[NodeMetas.simplified] = true

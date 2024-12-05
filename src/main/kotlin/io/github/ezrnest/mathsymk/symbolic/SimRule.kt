@@ -144,7 +144,7 @@ class Flatten(targetName: ESymbol) : RuleForSpecificN(targetName) {
         val newChildren = children.flatMap {
             if (it is NodeN && it.symbol == targetSym) it.children else listOf(it)
         }
-        val res = Node.NodeN(targetSym, newChildren).also { it[metaKeyApplied] = true }
+        val res = NodeN(targetSym, newChildren).also { it[metaKeyApplied] = true }
         return WithInt(0, res)
     }
 }
