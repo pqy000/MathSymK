@@ -155,6 +155,9 @@ object SymAlg {
         val F2_LEQ = ESymbol("≤")
         val F2_LSS = ESymbol("<")
 
+
+        val SUM = ESymbol("∑")
+
     }
 
 }

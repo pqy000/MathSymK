@@ -4,7 +4,6 @@ import io.github.ezrnest.mathsymk.symbolic.ESymbol
 import io.github.ezrnest.mathsymk.symbolic.NSymbol
 import io.github.ezrnest.mathsymk.symbolic.Node
 import io.github.ezrnest.mathsymk.symbolic.SymBasic
-import io.github.ezrnest.mathsymk.symbolic.alg.SymSets
 
 object SymLogic {
 
@@ -67,17 +66,6 @@ object SymLogic {
 
     fun Xnor(p: Node, q: Node): Node {
         return Not(Xor(p, q))
-    }
-
-
-    fun ForAll(x: NSymbol, set: Node, p: Node): Node {
-        //TODO
-        return SymBasic.Node2(Symbols.FOR_ALL, SymSets.belongs(x, set), p)
-    }
-
-    fun Exists(x: NSymbol, set: Node, p: Node): Node {
-        //TODO
-        return SymBasic.Node2(Symbols.EXISTS, SymSets.belongs(x, set), p)
     }
 
 }

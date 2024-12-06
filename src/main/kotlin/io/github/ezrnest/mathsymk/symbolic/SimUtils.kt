@@ -20,7 +20,7 @@ object SimUtils {
         contract {
             returns(true) implies (node is Node2)
         }
-        return node is Node2 && node.symbol == SymSets.Symbols.BELONGS
+        return node is Node2 && node.symbol == SymBasic.Symbols.BELONGS
     }
 
     fun asInteger(node: Node): BigInteger? {

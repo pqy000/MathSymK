@@ -16,7 +16,6 @@ object SymSets {
 
     object Symbols{
 
-
         val INTEGER = ESymbol("ℤ")
         val NATURAL = ESymbol("ℕ")
         val RATIONAL = ESymbol("ℚ")
@@ -24,15 +23,21 @@ object SymSets {
         val COMPLEX = ESymbol("ℂ")
 
 
+        val IntRange = ESymbol("Range")
+
 
 
 
 
     }
-
 
 
     fun belongs(x: Node, y: Node): Node {
         return Node2T(SymBasic.Symbols.BELONGS, x, y)
     }
+
+    fun intRange(start: Node, end: Node): Node {
+        return Node2T(Symbols.IntRange, start, end)
+    }
 }
+

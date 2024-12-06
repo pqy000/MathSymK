@@ -3,6 +3,8 @@ package io.github.ezrnest.mathsymk.symbolic.alg
 import io.github.ezrnest.mathsymk.model.BigFrac
 import io.github.ezrnest.mathsymk.model.BigFracAsQuot
 import io.github.ezrnest.mathsymk.symbolic.*
+import io.github.ezrnest.mathsymk.symbolic.NodeScope.Companion.qualifiedConditioned
+import io.github.ezrnest.mathsymk.symbolic.NodeScope.Companion.qualifiedContained
 import io.github.ezrnest.mathsymk.symbolic.alg.SymAlg.Symbols
 import io.github.ezrnest.mathsymk.symbolic.alg.SymAlg.Pow
 import io.github.ezrnest.mathsymk.symbolic.logic.ILogicScope
@@ -169,7 +171,34 @@ interface IAlgebraScope : NodeScopeAdd, ILogicScope {
         return SymBasic.Node2(Symbols.F2_GTR, this, y)
     }
 
+    infix fun Node.geq(y: Node): Node {
+        return SymBasic.Node2(Symbols.F2_GEQ, this, y)
+    }
 
+    infix fun Node.`≥`(y: Node): Node {
+        return SymBasic.Node2(Symbols.F2_GEQ, this, y)
+    }
+
+    fun sum(x: Node, lower: Node = SymAlg.ONE, upper: Node = x, f: Node): Node {
+        require(x is NSymbol)
+        val range = SymSets.intRange(lower, upper)
+        return qualifiedContained(
+            Symbols.SUM, varName = x.symbol.name, set = range, clause = { x1 -> f.replace(x, x1) }
+        )
+//        return qualifiedConditioned(
+//            Symbols.SUM, varName_ = x.symbol.name,
+//            condition = { x1 -> SymSets.belongs(x1, SymSets.intRange(lower, upper)) },
+//            clause = { x1 -> f.replace(x, x1) }
+//        )
+    }
+
+    companion object {
+
+
+        inline fun IAlgebraScope.sum(lower: Node, upper: Node, f : () -> Node) : Node{
+            TODO()
+        }
+    }
 }
 
 class AlgebraScope(context: EContext) : AbstractNodeScope(context), IAlgebraScope, NodeScopePredefinedSymbols
@@ -187,7 +216,7 @@ class AlgScopeMatcher(context: EContext) : AbstractNodeScopeMatcher(context), No
     constructor(scope: NodeScopeMatcher) : this(scope.context)
 }
 
-data class AlgScopeMatchedReferred(override val context: EContext, override val matchResult: MatchResult,) :
+data class AlgScopeMatchedReferred(override val context: EContext, override val matchResult: MatchResult) :
     IAlgebraScope, NodeScopeMatched {
     constructor(scope: NodeScopeMatched) : this(scope.context, scope.matchResult)
 

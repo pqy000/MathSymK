@@ -15,7 +15,7 @@ class ESymbol(
     override fun toString(): String {
         return if (displayHash) {
             // use first four digits of the hash code
-            "$name@${hashCode().toString(16).take(4)}"
+            "$name@${hashCode().toString(10).take(2)}"
         } else name
     }
 
@@ -54,6 +54,9 @@ sealed interface Node {
     fun recurMap(depth: Int = Int.MAX_VALUE, action: (Node) -> Node): Node
 
 
+    /**
+     * Replacing every occurrence of [src] with [dest] in the tree.
+     */
     fun replace(src: Node, dest: Node): Node {
         return recurMap { if (it == src) dest else it }
     }

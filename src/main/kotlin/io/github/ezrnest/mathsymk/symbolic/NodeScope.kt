@@ -1,5 +1,6 @@
 package io.github.ezrnest.mathsymk.symbolic
 
+import io.github.ezrnest.mathsymk.symbolic.alg.SymSets
 
 
 /**
@@ -34,10 +35,75 @@ interface NodeScope {
             }
         }
 
-        operator fun invoke(context: EContext = EmptyEContext, namedSymbols: MutableMap<String, ESymbol> = mutableMapOf()): NodeScope {
+        operator fun invoke(
+            context: EContext = EmptyEContext, namedSymbols: MutableMap<String, ESymbol> = mutableMapOf()
+        ): NodeScope {
             return NodeScopeImpl(context, namedSymbols)
         }
 
+
+        inline fun NodeScope.qualifiedConditioned(
+            nodeName: ESymbol, varName_: String? = null, condition: (NSymbol) -> Node, clause: (NSymbol) -> Node
+        ): Node {
+            val varName = varName_ ?: getUnusedName("x")
+            val varSymbol = ESymbol(varName)
+            val varNode = NSymbol(varSymbol)
+            val conditionNode = condition(varNode)
+            val clauseNode = clause(varNode)
+            return SymBasic.QualifiedConstrained(nodeName, varNode, conditionNode, clauseNode)
+        }
+
+        inline fun NodeScope.qualified(nodeName: ESymbol, varName: String?, clause: (NSymbol) -> Node): Node {
+            return qualifiedConditioned(nodeName, varName, condition = { SymBasic.TRUE }, clause)
+        }
+
+        inline fun NodeScope.qualifiedContained(
+            nodeName: ESymbol, varName: String?, set: Node, clause: (NSymbol) -> Node
+        ): Node {
+            return qualifiedConditioned(nodeName, varName, condition = { x -> SymSets.belongs(x, set) }, clause)
+        }
+
+        fun NodeScope.qualifiedRep(nodeName: ESymbol, varNode: Node, clause: Node, replaceVar: Boolean = true): Node {
+            return qualifiedConditionedRep(nodeName, varNode, condition = null, clause, replaceVar)
+        }
+
+        fun NodeScope.qualifiedConditionedRep(
+            nodeName: ESymbol, varNode: Node, condition: Node?, clause: Node, replaceVar: Boolean = true
+        ): Node {
+            require(varNode is NSymbol)
+            return qualifiedConditioned(
+                nodeName, varNode.symbol.name,
+                condition = { x ->
+                    if (condition == null) return@qualifiedConditioned SymBasic.TRUE
+                    if (replaceVar) condition.replace(varNode, x) else condition
+                },
+                clause = { x ->
+                    if (replaceVar) clause.replace(varNode, x) else clause
+                }
+            )
+//            if (!replaceVar) {
+//                return SymBasic.QualifiedConstrained(nodeName, varNode, condition ?: SymBasic.TRUE, clause)
+//            }
+//            val varName = varNode.symbol.name
+//            val varSymbol = ESymbol(varName) // reusing the name, but creating a new symbol
+//            val newVarNode = NSymbol(varSymbol)
+//            val clauseNode = clause.replace(varNode, newVarNode)
+//            val conditionNode = condition?.replace(varNode, newVarNode) ?: SymBasic.TRUE
+//            return SymBasic.QualifiedConstrained(nodeName, newVarNode, conditionNode, clauseNode)
+        }
+
+
+        fun NodeScope.getUnusedName(prefix: String = "#"): String {
+            var i = 0
+            while (true) {
+                val name = "$prefix$i"
+                if (namedSymbols.containsKey(name)) {
+                    i++
+                } else {
+                    return name
+                }
+            }
+        }
 
     }
 }

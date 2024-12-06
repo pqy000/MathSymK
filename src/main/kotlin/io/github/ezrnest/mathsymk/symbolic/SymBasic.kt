@@ -6,10 +6,10 @@ object SymBasic {
     val EMPTY_SET = NSymbol(Symbols.EMPTY_SET)
     val UNIVERSE = NSymbol(Symbols.UNIVERSE)
 
-        val TRUE = NSymbol(Symbols.TRUE)
+    val TRUE = NSymbol(Symbols.TRUE)
     val FALSE = NSymbol(Symbols.FALSE)
 
-    object Symbols{
+    object Symbols {
 
         val EMPTY_SET = ESymbol("∅")
         val UNIVERSE = ESymbol("Universe")
@@ -65,12 +65,18 @@ object SymBasic {
     }
 
 
-    fun Qualified3(qualifierSymbol : ESymbol,variable: NSymbol, condition: Node, expr: Node): Node {
-        return Qualified3(qualifierSymbol,listOf(variable), condition, expr)
+    fun QualifiedConstrained(name: ESymbol, variable: NSymbol, condition: Node, expr: Node): Node {
+        return QualifiedConstrained(name, listOf(variable), condition, expr)
     }
 
-    fun Qualified3(qualifierSymbol : ESymbol,variables: List<NSymbol>, condition: Node, expr: Node): Node {
+    fun QualifiedConstrained(name: ESymbol, variables: List<NSymbol>, condition: Node, expr: Node): Node {
         val nodeVars = List(variables)
-        return Node3(qualifierSymbol, nodeVars, condition, expr)
+        return Node3(name, nodeVars, condition, expr)
     }
+
+
+//    fun qualified(name: ESymbol, variable: Node, expr: Node): Node {
+//        return QualifiedConstrained(name, variable, TRUE, expr)
+//    }
+
 }

@@ -97,7 +97,7 @@ interface ExprCal {
 
     fun isSatisfied(ctx: EContext, condition: Node): Boolean {
 //        return false
-        return reduceNode(condition, ctx, Int.MAX_VALUE) == SymLogic.TRUE
+        return reduceNode(condition, ctx, Int.MAX_VALUE) == SymBasic.TRUE
     }
 
     fun simplify(node: Node): List<Node>
