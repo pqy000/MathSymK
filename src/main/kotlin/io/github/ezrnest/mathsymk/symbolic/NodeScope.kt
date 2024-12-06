@@ -63,6 +63,11 @@ interface NodeScope {
             return qualifiedConditioned(nodeName, varName, condition = { x -> SymSets.belongs(x, set) }, clause)
         }
 
+        fun NodeScope.qualifiedContainedRep(nodeName: ESymbol, varNode: Node, set: Node, clause: Node): Node {
+            require(varNode is NSymbol)
+            return qualifiedContained(nodeName, varNode.symbol.name, set) { x -> clause.replace(varNode, x) }
+        }
+
         fun NodeScope.qualifiedRep(nodeName: ESymbol, varNode: Node, clause: Node, replaceVar: Boolean = true): Node {
             return qualifiedConditionedRep(nodeName, varNode, condition = null, clause, replaceVar)
         }

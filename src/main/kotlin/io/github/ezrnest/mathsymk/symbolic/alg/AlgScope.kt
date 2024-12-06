@@ -4,6 +4,7 @@ import io.github.ezrnest.mathsymk.model.BigFrac
 import io.github.ezrnest.mathsymk.model.BigFracAsQuot
 import io.github.ezrnest.mathsymk.symbolic.*
 import io.github.ezrnest.mathsymk.symbolic.NodeScope.Companion.qualifiedContained
+import io.github.ezrnest.mathsymk.symbolic.NodeScope.Companion.qualifiedContainedRep
 import io.github.ezrnest.mathsymk.symbolic.alg.SymAlg.Symbols
 import io.github.ezrnest.mathsymk.symbolic.alg.SymAlg.Pow
 import io.github.ezrnest.mathsymk.symbolic.logic.ILogicScope
@@ -179,11 +180,8 @@ interface IAlgebraScope : NodeScopeAdd, ILogicScope {
     }
 
     fun sum(x: Node, lower: Node = SymAlg.ONE, upper: Node = x, f: Node): Node {
-        require(x is NSymbol)
         val range = SymSets.intRange(lower, upper)
-        return qualifiedContained(
-            Symbols.SUM, varName = x.symbol.name, set = range, clause = { x1 -> f.replace(x, x1) }
-        )
+        return qualifiedContainedRep(Symbols.SUM, x, range, f)
 //        return qualifiedConditioned(
 //            Symbols.SUM, varName_ = x.symbol.name,
 //            condition = { x1 -> SymSets.belongs(x1, SymSets.intRange(lower, upper)) },
@@ -194,8 +192,11 @@ interface IAlgebraScope : NodeScopeAdd, ILogicScope {
     companion object {
 
 
-        inline fun IAlgebraScope.sum(lower: Node, upper: Node, f : () -> Node) : Node{
-            TODO()
+        inline fun IAlgebraScope.sum(lower: Node, upper: Node, varName: String = "i", f: (NSymbol) -> Node): Node {
+            val range = SymSets.intRange(lower, upper)
+            return qualifiedContained(
+                Symbols.SUM, varName = varName, set = range, clause = f
+            )
         }
     }
 }

@@ -1,7 +1,7 @@
 package io.github.ezrnest.mathsymk.symbolic
 
 import io.github.ezrnest.mathsymk.symbolic.alg.*
-import io.github.ezrnest.mathsymk.symbolic.logic.ILogicScope.Companion.forAll
+import io.github.ezrnest.mathsymk.symbolic.alg.IAlgebraScope.Companion.sum
 
 
 val TestExprCal = BasicExprCal()
@@ -11,16 +11,20 @@ fun main() {
     cal.verbose = BasicExprCal.Verbosity.ALL
 //    cal.registerContextInfo(QualifierNodeContextInfo(SymLogic.Symbols.FOR_ALL))
     with(cal) {
-        ESymbol.displayHash = true
+//        ESymbol.displayHash = true
         alg {
             var expr = x
 
-            expr = forAll(x, condition = x gtr y, x geq y)
+//            expr = forAll(x, condition = x gtr y, x geq y)
+//            expr = forAll { x ->
+//                x geq y
+//            }
+            val N = SymAlg.INFINITY
+            expr = sum(x, 1.e, N, sin(x))
             println(expr.plainToString())
-            expr = forAll { x ->
-                x geq y
+            expr = sum(1.e, N,"n") { x ->
+                sin(x)
             }
-            expr = sumOf(x, 1.e, x * x)
             println(expr.plainToString())
         }
     }
