@@ -104,7 +104,7 @@ abstract class AbstractMultinomial<T, K, C : Comparator<K>, R : AbstractMultinom
     protected fun addMultiTerms(terms: List<Term<T, K>>, tempList: ArrayList<T>): Term<T, K>? {
         tempList.clear()
         terms.mapTo(tempList) { it.c }
-        val sum = model.sum(tempList)
+        val sum = model.sumOf(tempList)
         return if (model.isZero(sum)) null else Term(sum, terms[0].key)
     }
 
@@ -179,7 +179,7 @@ abstract class AbstractMultinomial<T, K, C : Comparator<K>, R : AbstractMultinom
         ): Term<T, K>? {
             tempList.clear()
             terms.mapTo(tempList) { it.c }
-            val sum = model.sum(tempList)
+            val sum = model.sumOf(tempList)
             return if (model.isZero(sum)) null else Term(sum, terms[0].key)
         }
 

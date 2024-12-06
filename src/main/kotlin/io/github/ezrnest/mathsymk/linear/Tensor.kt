@@ -986,7 +986,7 @@ interface TensorOverAddMonoid<T> : TensorOverEqualPredicate<T>, AddMonoid<Tensor
         return add(this, y)
     }
 
-    override fun sum(elements: List<Tensor<T>>): Tensor<T> {
+    override fun sumOf(elements: List<Tensor<T>>): Tensor<T> {
 //        return super.sum(elements)
         if (elements.isEmpty()) {
             return zero

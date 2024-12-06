@@ -20,7 +20,7 @@ fun main() {
             expr = forAll { x ->
                 x geq y
             }
-            expr = sum(x, 1.e, x * x)
+            expr = sumOf(x, 1.e, x * x)
             println(expr.plainToString())
         }
     }

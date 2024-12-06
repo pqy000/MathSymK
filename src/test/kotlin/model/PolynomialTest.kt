@@ -4,7 +4,7 @@ import io.github.ezrnest.mathsymk.model.Fraction
 import io.github.ezrnest.mathsymk.model.Models
 import io.github.ezrnest.mathsymk.model.PTerm
 import io.github.ezrnest.mathsymk.model.Polynomial
-import io.github.ezrnest.mathsymk.structure.sum
+import io.github.ezrnest.mathsymk.structure.sumOf
 import org.junit.jupiter.api.Assertions.assertThrows
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -47,9 +47,9 @@ class PolynomialTest {
             assertEquals(f, zero + f)
 
             assertEquals(f * 3, f + f + f)
-            assertEquals(f * 3, sum(f, f, f))
-            assertEquals(f, sum(f, -f, f))
-            assertEquals(f + g, sum(f, g))
+            assertEquals(f * 3, sumOf(f, f, f))
+            assertEquals(f, sumOf(f, -f, f))
+            assertEquals(f + g, sumOf(f, g))
         }
     }
 

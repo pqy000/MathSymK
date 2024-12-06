@@ -470,7 +470,7 @@ open class PolyOverRing<T>(protected val modelRing: Ring<T>) :
     private fun addMultiTerm(list: List<PTerm<T>>, tempList: ArrayList<T>): PTerm<T>? {
         tempList.clear()
         list.mapTo(tempList) { it.value }
-        val sum = model.sum(tempList)
+        val sum = model.sumOf(tempList)
         return if (model.isZero(sum)) null else PTerm(list[0].pow, sum)
     }
 
@@ -515,7 +515,7 @@ open class PolyOverRing<T>(protected val modelRing: Ring<T>) :
         return Polynomial(result)
     }
 
-    final override fun sum(elements: List<Polynomial<T>>): Polynomial<T> {
+    final override fun sumOf(elements: List<Polynomial<T>>): Polynomial<T> {
         return when (elements.size) {
             0 -> zero
             1 -> elements[0]

@@ -698,7 +698,7 @@ open class MultiOverRing<T>(protected val _model: Ring<T>, val monomialOrder: Mo
         return x.isZero
     }
 
-    override fun sum(elements: List<Multinomial<T>>): Multinomial<T> {
+    override fun sumOf(elements: List<Multinomial<T>>): Multinomial<T> {
         return Multinomial.sum(model, *elements.toTypedArray())
     }
 }

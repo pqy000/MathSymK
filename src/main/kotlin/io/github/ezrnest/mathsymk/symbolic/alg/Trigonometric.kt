@@ -32,7 +32,7 @@ object TrigonometricUtils {
             values[bfrac(1, 4)] = buildAlg { half.e * sqrt2 }
             values[bfrac(1, 6)] = SymAlg.Rational(half)
             values[bfrac(1, 12)] = buildAlg {
-                product(bfrac(1, 4).e, sqrt2, sum(SymAlg.NEG_ONE, sqrt3))
+                product(bfrac(1, 4).e, sqrt2, sumOf(SymAlg.NEG_ONE, sqrt3))
             }
         }
         for (v in values.values) {

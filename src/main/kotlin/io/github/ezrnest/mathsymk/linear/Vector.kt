@@ -459,7 +459,7 @@ interface VecOverAMonoid<T> : VecOverASemigroup<T>, AddMonoid<Vector<T>> {
     override val zero: Vector<T>
         get() = Vector.zero(vectorLength, model)
 
-    override fun sum(elements: List<Vector<T>>): Vector<T> {
+    override fun sumOf(elements: List<Vector<T>>): Vector<T> {
         return VectorImpl.sum(elements, elements[0].size, model)
     }
 }

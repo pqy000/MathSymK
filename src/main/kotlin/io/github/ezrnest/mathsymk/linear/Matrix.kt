@@ -866,7 +866,7 @@ interface MatOverAddMonoid<T> : MatOverEqualPredicate<T>, AddMonoid<Matrix<T>> {
         return MatrixImpl.add(x, y, model)
     }
 
-    override fun sum(elements: List<Matrix<T>>): Matrix<T> {
+    override fun sumOf(elements: List<Matrix<T>>): Matrix<T> {
         if(elements.isEmpty()) return zero
         return MatrixImpl.sum(elements, model)
     }

@@ -3,7 +3,6 @@ package io.github.ezrnest.mathsymk.symbolic.alg
 import io.github.ezrnest.mathsymk.model.BigFrac
 import io.github.ezrnest.mathsymk.model.BigFracAsQuot
 import io.github.ezrnest.mathsymk.symbolic.*
-import io.github.ezrnest.mathsymk.symbolic.NodeScope.Companion.qualifiedConditioned
 import io.github.ezrnest.mathsymk.symbolic.NodeScope.Companion.qualifiedContained
 import io.github.ezrnest.mathsymk.symbolic.alg.SymAlg.Symbols
 import io.github.ezrnest.mathsymk.symbolic.alg.SymAlg.Pow
@@ -12,18 +11,18 @@ import java.math.BigInteger
 
 interface NodeScopeAdd : NodeScope {
     fun add(x: Node, y: Node): Node {
-        return sum(x, y)
+        return sumOf(x, y)
     }
 
     operator fun Node.plus(y: Node): Node {
-        return sum(listOf(this, y))
+        return sumOf(listOf(this, y))
     }
 
-    fun sum(vararg nodes: Node): Node {
-        return sum(nodes.asList())
+    fun sumOf(vararg nodes: Node): Node {
+        return sumOf(nodes.asList())
     }
 
-    fun sum(elements: List<Node>): Node {
+    fun sumOf(elements: List<Node>): Node {
         if (elements.isEmpty()) return SymAlg.ZERO
         if (elements.size == 1) return elements[0]
         return SymBasic.NodeN(Symbols.ADD, elements)
@@ -79,7 +78,7 @@ interface IAlgebraScope : NodeScopeAdd, ILogicScope {
 
 
     operator fun Node.minus(y: Node): Node {
-        return sum(listOf(this, negate(y)))
+        return sumOf(listOf(this, negate(y)))
     }
 
     fun negate(x: Node): Node {

@@ -2,7 +2,6 @@ package io.github.ezrnest.mathsymk.symbolic.alg
 
 import io.github.ezrnest.mathsymk.structure.Reals
 import io.github.ezrnest.mathsymk.symbolic.BasicExprCal
-import io.github.ezrnest.mathsymk.symbolic.ESymbol
 import io.github.ezrnest.mathsymk.symbolic.ExprCal
 import io.github.ezrnest.mathsymk.symbolic.Node
 
@@ -50,11 +49,11 @@ class ExprCalReal : BasicExprCal(), Reals<Node>, IAlgebraScope {
     }
 
     override fun add(x: Node, y: Node): Node {
-        return reduce(super<IAlgebraScope>.sum(x, y), 0)
+        return reduce(super<IAlgebraScope>.sumOf(x, y), 0)
     }
 
-    override fun sum(elements: List<Node>): Node {
-        return reduce(super<IAlgebraScope>.sum(elements), 0)
+    override fun sumOf(elements: List<Node>): Node {
+        return reduce(super<IAlgebraScope>.sumOf(elements), 0)
     }
 
     override fun multiply(x: Node, y: Node): Node {

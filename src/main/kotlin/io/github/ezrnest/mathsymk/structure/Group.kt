@@ -136,7 +136,7 @@ interface AddSemigroup<T> : EqualPredicate<T> {
      *
      * @param elements elements to sum
      */
-    fun sum(elements: List<T>): T {
+    fun sumOf(elements: List<T>): T {
         return elements.reduce(this::add)
     }
 
@@ -202,7 +202,7 @@ interface AddMonoid<T> : AddSemigroup<T> {
     /**
      * Returns the sum of all the elements.
      */
-    override fun sum(elements: List<T>): T {
+    override fun sumOf(elements: List<T>): T {
         return elements.fold(zero, this::add)
     }
 
@@ -214,8 +214,8 @@ interface AddMonoid<T> : AddSemigroup<T> {
 //        get() = zero.javaClass
 }
 
-fun <T> AddMonoid<T>.sum(vararg elements : T) : T{
-    return sum(elements.asList())
+fun <T> AddMonoid<T>.sumOf(vararg elements : T) : T{
+    return this.sumOf(elements.asList())
 }
 
 /**

@@ -144,10 +144,10 @@ open class ComplexOverURingStd<T>(_model: UnitRing<T>) : ComplexOverURing<T, Com
         return scalars.eval { Complex(x.re * n, x.im * n) }
     }
 
-    final override fun sum(elements: List<Complex<T>>): Complex<T> {
+    final override fun sumOf(elements: List<Complex<T>>): Complex<T> {
         return scalars.eval {
-            val a = scalars.sum(elements.map { it.re })
-            val b = scalars.sum(elements.map { it.im })
+            val a = scalars.sumOf(elements.map { it.re })
+            val b = scalars.sumOf(elements.map { it.im })
             Complex(a, b)
         }
     }
