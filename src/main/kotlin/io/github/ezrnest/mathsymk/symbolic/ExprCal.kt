@@ -6,7 +6,6 @@ import io.github.ezrnest.mathsymk.symbolic.alg.FlattenPow
 import io.github.ezrnest.mathsymk.symbolic.alg.MergeAdditionRational
 import io.github.ezrnest.mathsymk.symbolic.alg.MergeProduct
 import io.github.ezrnest.mathsymk.symbolic.alg.SymAlg
-import io.github.ezrnest.mathsymk.symbolic.logic.SymLogic
 import io.github.ezrnest.mathsymk.util.WithInt
 import java.util.*
 import kotlin.math.max
@@ -65,11 +64,11 @@ interface ExprCal {
         TODO()
     }
 
-    fun variablesOf(node : Node) : Set<NSymbol>{
+    fun variablesOf(node: Node): Set<NSymbol> {
         TODO()
     }
 
-    fun normalizeQualifiedSymbols(root : Node, rootCtx: EContext = this.context): Node {
+    fun normalizeQualifiedSymbols(root: Node, rootCtx: EContext = this.context): Node {
         TODO()
 //        val qualifiedSymbolRemapping = mutableMapOf<SymbolDeclaration, NSymbol>()
 //        val usedNames = mutableSetOf<String>()
@@ -105,11 +104,6 @@ interface ExprCal {
     fun format(node: Node): String {
         return node.plainToString()
     }
-
-
-
-
-
 
 
     companion object {
@@ -314,7 +308,7 @@ open class BasicExprCal : ExprCal, NodeScopePredefinedSymbols {
             }
 
             is Node2 -> {
-                val (c1, c2) = root
+                val (_, c1, c2) = root
                 val (ctx1, ctx2) = enterContext(root, context)
                 val n1 = recurMapCtx(c1, ctx1, depth1, mapping)
                 val n2 = recurMapCtx(c2, ctx2, depth1, mapping)
@@ -323,7 +317,7 @@ open class BasicExprCal : ExprCal, NodeScopePredefinedSymbols {
             }
 
             is Node3 -> {
-                val (c1, c2, c3) = root
+                val (symbol, c1, c2, c3) = root
                 val (ctx1, ctx2, ctx3) = enterContext(root, context)
                 val n1 = recurMapCtx(c1, ctx1, depth1, mapping)
                 val n2 = recurMapCtx(c2, ctx2, depth1, mapping)
@@ -354,7 +348,7 @@ open class BasicExprCal : ExprCal, NodeScopePredefinedSymbols {
     }
 
     private fun reduceRecur2(node: Node2, context: EContext, depth: Int): Node {
-        val (c1, c2) = node
+        val (_, c1, c2) = node
         val (ctx1, ctx2) = enterContext(node, context)
         val n1 = reduceNode(c1, ctx1, depth)
         val n2 = reduceNode(c2, ctx2, depth)
@@ -363,7 +357,7 @@ open class BasicExprCal : ExprCal, NodeScopePredefinedSymbols {
     }
 
     private fun reduceRecur3(node: Node3, context: EContext, depth: Int): Node {
-        val (c1, c2, c3) = node
+        val (symbol, c1, c2, c3) = node
         val (ctx1, ctx2, ctx3) = enterContext(node, context)
         val n1 = reduceNode(c1, ctx1, depth)
         val n2 = reduceNode(c2, ctx2, depth)

@@ -119,7 +119,7 @@ class NodeMatcher1<C : Node>(val child: NodeMatcherT<C>, symbol: ESymbol) :
 
     override fun getSpecific(ctx: EContext, matching: MatchResult): Node1T<Node>? {
         val c = child.getSpecific(ctx, matching) ?: return null
-        return Node1(symbol, c)
+        return Node1T(symbol, c)
     }
 }
 
@@ -137,7 +137,7 @@ class NodeMatcher2Ordered<C1 : Node, C2 : Node>(
     override fun matches(node: Node, ctx: EContext, matching: MatchResult): MatchResult? {
         if (node !is Node2) return null
         if (symbol != node.symbol) return null
-        val (node1, node2) = node
+        val (_,node1, node2) = node
         val (subCtx1, subCtx2) = matching.cal.enterContext(node, ctx)
         var newM = matching
         newM = child1.matches(node1, subCtx1, newM) ?: return null
@@ -156,7 +156,7 @@ class NodeMatcher2Ordered<C1 : Node, C2 : Node>(
     override fun getSpecific(ctx: EContext, matching: MatchResult): Node2? {
         val c1 = child1.getSpecific(ctx, matching) ?: return null
         val c2 = child2.getSpecific(ctx, matching) ?: return null
-        return Node2(symbol, c1, c2)
+        return Node2T(symbol,c1, c2)
     }
 }
 
@@ -173,7 +173,7 @@ class NodeMatcher3Ordered<C1 : Node, C2 : Node, C3 : Node>(
     override fun matches(node: Node, ctx: EContext, matching: MatchResult): MatchResult? {
         if (node !is Node3) return null
         if (symbol != node.symbol) return null
-        val (node1, node2, node3) = node
+        val (_, node1, node2, node3) = node
         val (subCtx1, subCtx2, subCtx3) = matching.cal.enterContext(node, ctx)
         var newM = matching
         newM = child1.matches(node1, subCtx1, newM) ?: return null
@@ -196,7 +196,7 @@ class NodeMatcher3Ordered<C1 : Node, C2 : Node, C3 : Node>(
         val c1 = child1.getSpecific(ctx, matching) ?: return null
         val c2 = child2.getSpecific(ctx, matching) ?: return null
         val c3 = child3.getSpecific(ctx, matching) ?: return null
-        return Node3T(c1, c2, c3, symbol)
+        return Node3T(symbol, c1, c2, c3)
     }
 }
 
@@ -492,7 +492,7 @@ class NodeMatcherNPO(
         if (nodeCount < totalChildren) return null
         if (nodeCount > totalChildren && remMatcher === NothingMatcher) return null
         val matched = BooleanArray(nodeChildren.size)
-        var newM = match0(0, 0, matching, nodeChildren, subCtxs, matched, 0) ?: return null
+        val newM = match0(0, 0, matching, nodeChildren, subCtxs, matched, 0) ?: return null
         if (nodeCount == totalChildren) {
             return newM
         }

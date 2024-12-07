@@ -1,8 +1,8 @@
 package io.github.ezrnest.mathsymk.symbolic.logic
 
 import io.github.ezrnest.mathsymk.symbolic.ESymbol
-import io.github.ezrnest.mathsymk.symbolic.NSymbol
 import io.github.ezrnest.mathsymk.symbolic.Node
+import io.github.ezrnest.mathsymk.symbolic.NodeN
 import io.github.ezrnest.mathsymk.symbolic.SymBasic
 
 object SymLogic {
@@ -23,7 +23,7 @@ object SymLogic {
     fun And(nodes: List<Node>): Node {
         if (nodes.isEmpty()) return SymBasic.TRUE
         if (nodes.size == 1) return nodes[0]
-        return SymBasic.NodeN(Symbols.AND, nodes)
+        return NodeN(Symbols.AND, nodes)
     }
 
     fun And(vararg nodes: Node): Node {
@@ -33,7 +33,7 @@ object SymLogic {
     fun Or(nodes: List<Node>): Node {
         if (nodes.isEmpty()) return SymBasic.FALSE
         if (nodes.size == 1) return nodes[0]
-        return SymBasic.NodeN(Symbols.OR, nodes)
+        return NodeN(Symbols.OR, nodes)
     }
 
     fun Or(vararg nodes: Node): Node {

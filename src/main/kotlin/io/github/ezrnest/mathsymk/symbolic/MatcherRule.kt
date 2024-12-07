@@ -1,6 +1,5 @@
 package io.github.ezrnest.mathsymk.symbolic
 
-import io.github.ezrnest.mathsymk.symbolic.NodeScopeMatcher.Companion.MatcherSymbolPrefix
 import io.github.ezrnest.mathsymk.util.WithInt
 
 
@@ -58,15 +57,15 @@ interface NodeScopeMatcher : INodeScopeReferring, NodeScopeWithPredefined {
     val String.ref get() = ref(this)
 
     fun Node.named(name: String): Node {
-        return Node2(F2_Named, this, ref(name))
+        return Node2T(F2_Named,this, ref(name))
     }
 
     fun Node.where(clause: Node): Node {
-        return Node2(F2_Where, this, clause)
+        return Node2T(F2_Where, this, clause)
     }
 
     fun Node.where(clauseBuilder: () -> Node): Node {
-        return Node2(F2_Where, this, clauseBuilder())
+        return Node2T(F2_Where, this, clauseBuilder())
     }
 
     companion object {
@@ -205,9 +204,9 @@ interface NodeScopeMatcher : INodeScopeReferring, NodeScopeWithPredefined {
     }
 }
 
-abstract class AbstractNodeScopeMatcher(context: EContext) : AbstractNodeScope(context), INodeScopeReferring{
+abstract class AbstractNodeScopeMatcher(context: EContext) : AbstractNodeScope(context), INodeScopeReferring {
     final override val referenceMap: MutableMap<String, ESymbol> = mutableMapOf()
-    final  override val declaredRefs: MutableSet<ESymbol> = mutableSetOf()
+    final override val declaredRefs: MutableSet<ESymbol> = mutableSetOf()
 }
 
 interface INodeScopeReferred : NodeScope {
@@ -256,14 +255,12 @@ interface NodeScopeMatched : NodeScope, NodeScopeReferred {
 
     companion object {
         private class NodeScopeMatchedImpl(context: EContext, override val matchResult: MatchResult) :
-        AbstractNodeScope(context), NodeScopeMatched
+            AbstractNodeScope(context), NodeScopeMatched
 
         operator fun invoke(ctx: EContext, matchResult: MatchResult): NodeScopeMatched =
             NodeScopeMatchedImpl(ctx, matchResult)
     }
 }
-
-
 
 
 typealias RepBuilder = NodeScopeMatched.() -> Node?

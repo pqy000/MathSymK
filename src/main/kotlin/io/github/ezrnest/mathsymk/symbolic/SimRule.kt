@@ -39,7 +39,7 @@ class RuleSort(val targetSym: ESymbol) : SimRule {
     override val metaKeyApplied: TypedKey<Boolean> = TypedKey("sorted")
 
     private fun sort2(node: Node2): Node2? {
-        val (first, second) = node
+        val (_,first, second) = node
         if (NodeOrder.compare(first, second) <= 0) {
             node[metaKeyApplied] = true
             return null

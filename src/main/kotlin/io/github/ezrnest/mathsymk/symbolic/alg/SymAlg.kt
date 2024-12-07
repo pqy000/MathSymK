@@ -3,6 +3,7 @@ package io.github.ezrnest.mathsymk.symbolic.alg
 import io.github.ezrnest.mathsymk.model.BigFrac
 import io.github.ezrnest.mathsymk.model.BigFracAsQuot
 import io.github.ezrnest.mathsymk.symbolic.*
+import io.github.ezrnest.mathsymk.symbolic.SymBasic.Node1
 import java.math.BigInteger
 
 object SymAlg {
@@ -74,7 +75,7 @@ object SymAlg {
     }
 
     fun Pow(base: Node, exp: Node): Node {
-        return Node2(Symbols.POW, base, exp)
+        return Node2T(Symbols.POW, base, exp)
     }
 
     fun Exp(exp: Node): Node {
@@ -110,7 +111,7 @@ object SymAlg {
     }
 
     fun Log(base: Node, x: Node): Node {
-        return Node2(Symbols.F2_LOG, base, x)
+        return Node2T(Symbols.F2_LOG, base, x)
     }
 
     fun Ln(node: Node): Node {

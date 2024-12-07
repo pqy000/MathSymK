@@ -26,7 +26,7 @@ interface NodeScopeAdd : NodeScope {
     fun sumOf(elements: List<Node>): Node {
         if (elements.isEmpty()) return SymAlg.ZERO
         if (elements.size == 1) return elements[0]
-        return SymBasic.NodeN(Symbols.ADD, elements)
+        return NodeN(Symbols.ADD, elements)
     }
 }
 
@@ -102,7 +102,7 @@ interface IAlgebraScope : NodeScopeAdd, ILogicScope {
     fun product(elements: List<Node>): Node {
         if (elements.isEmpty()) return SymAlg.ONE
         if (elements.size == 1) return elements[0]
-        return SymBasic.NodeN(Symbols.MUL, elements)
+        return NodeN(Symbols.MUL, elements)
     }
 
 

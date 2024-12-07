@@ -202,7 +202,7 @@ object FlattenPow : RuleForSpecific2(SymAlg.Symbols.POW) {
      * Flatten `exp(base = pow(b0, e0), exp) = pow(b0, e0*exp)`
      */
     private fun flattenPowPow(base: Node2, exp: Node): Node {
-        val (baseBase, baseExp) = base
+        val (_,baseBase, baseExp) = base
         val newExp = SymAlg.Mul(listOf(baseExp, exp))
         return SymAlg.Pow(baseBase, newExp)
     }
@@ -227,7 +227,7 @@ object FlattenPow : RuleForSpecific2(SymAlg.Symbols.POW) {
     }
 
     override fun simplify2(root: Node2, context: EContext, cal: ExprCal): WithInt<Node>? {
-        val (base, exp) = root
+        val (_,base, exp) = root
         if (SimUtils.isInteger(exp, context)) {
             return flattenPowInt(base, exp, context)
         }
@@ -366,7 +366,7 @@ object ComputePow : RuleForSpecific2(SymAlg.Symbols.POW) {
 //    }
 
     override fun simplify2(root: Node2, context: EContext, cal: ExprCal): WithInt<Node>? {
-        val (base, exp) = root
+        val (_,base, exp) = root
         if (base !is NRational) return null
         if (exp is NRational) return WithInt(Int.MAX_VALUE, powRational(base.value, exp.value, context, cal))
         return null

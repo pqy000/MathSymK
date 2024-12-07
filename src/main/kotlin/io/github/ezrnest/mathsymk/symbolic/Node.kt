@@ -1,10 +1,8 @@
 package io.github.ezrnest.mathsymk.symbolic
 // created at 2024/10/01
 import io.github.ezrnest.mathsymk.model.BigFrac
-import io.github.ezrnest.mathsymk.symbolic.alg.SymSets
 import io.github.ezrnest.mathsymk.util.all2
 import java.math.BigInteger
-import kotlin.reflect.KClass
 
 class ESymbol(
     /**
@@ -61,6 +59,61 @@ sealed interface Node {
         return recurMap { if (it == src) dest else it }
     }
 
+    /**
+     * Replacing every occurrence of the symbol [src] with [dest] in the tree, including the symbol of the node.
+     */
+    fun replaceSymbol(src: NSymbol, dest: NSymbol): Node {
+        // a bit more efficient than the general replace
+        when (this) {
+            is NSymbol -> return if (this == src) dest else this
+            is Node1 -> {
+                val newChild = child.replaceSymbol(src, dest)
+                if (symbol != src.symbol && newChild === child) return this
+                val newSymbol = if (symbol == src.symbol) dest.symbol else symbol
+                return Node1T(newSymbol, newChild)
+            }
+
+            is Node2 -> {
+                val new1 = first.replaceSymbol(src, dest)
+                val new2 = second.replaceSymbol(src, dest)
+                if (symbol != src.symbol && new1 === first && new2 === second) return this
+                val newSymbol = if (symbol == src.symbol) dest.symbol else symbol
+                return Node2T(newSymbol, new1, new2)
+            }
+
+            is Node3 -> {
+                val new1 = first.replaceSymbol(src, dest)
+                val new2 = second.replaceSymbol(src, dest)
+                val new3 = third.replaceSymbol(src, dest)
+                if (symbol != src.symbol && new1 === first && new2 === second && new3 === third) return this
+                val newSymbol = if (symbol == src.symbol) dest.symbol else symbol
+                return Node3T(newSymbol, new1, new2, new3)
+            }
+
+            is NodeChilded -> {
+                var changed = false
+                val newChildren = children.map { c ->
+                    c.replaceSymbol(src, dest).also {
+                        if (it !== src) changed = true
+                    }
+                }
+                if (symbol != src.symbol && !changed) return this
+                val newSymbol = if (symbol == src.symbol) dest.symbol else symbol
+                return NodeN(newSymbol, newChildren)
+            }
+
+            else -> return this
+        }
+//        return recurMap {
+//            when (it) {
+//                is NSymbol -> if (it == src) dest else it
+//                is NodeChilded -> if (it.symbol == src.symbol) it.copyWith(dest.symbol) else it
+//                else -> it
+//            }
+//        }
+    }
+
+
     fun deepEquals(other: Node): Boolean
 
 
@@ -101,7 +154,7 @@ sealed interface LeafNode : Node {
 }
 
 
-sealed class AbstractNode : Node{
+sealed class AbstractNode : Node {
     override var meta: Map<TypedKey<*>, Any?> = emptyMap()
 
     override fun toString(): String {
@@ -208,6 +261,8 @@ sealed interface NodeChilded : Node {
 
     fun newWithChildren(children: List<Node>): NodeChilded
 
+    fun copyWith(newSymbol: ESymbol): NodeChilded
+
     override fun recurMap(depth: Int, action: (Node) -> Node): Node {
         if (depth <= 0) return action(this)
         val res = newWithChildren(children.map { it.recurMap(depth - 1, action) })
@@ -232,8 +287,7 @@ sealed interface NodeChilded : Node {
 
 typealias Node1 = Node1T<*>
 
-sealed interface Node1T<out C : Node> : NodeChilded {
-    val child: C
+data class Node1T<out C : Node>(override val symbol: ESymbol, val child: C) : AbstractNode(), NodeChilded {
 
     override val children: List<Node>
         get() = listOf(child)
@@ -241,13 +295,11 @@ sealed interface Node1T<out C : Node> : NodeChilded {
     override val childCount: Int
         get() = 1
 
-    fun <S : Node> newWithChildren(child: S): Node1T<S>
 
     override fun newWithChildren(children: List<Node>): NodeChilded {
         require(children.size == 1)
         return newWithChildren(children[0])
     }
-
 
     override fun deepEquals(other: Node): Boolean {
         if (this === other) return true
@@ -256,35 +308,58 @@ sealed interface Node1T<out C : Node> : NodeChilded {
         return child.deepEquals(other.child)
     }
 
-    companion object {
-        @JvmStatic
-        operator fun <C : Node> invoke(symbol: ESymbol, child: C): Node1T<C> {
-            return Node1Impl(child, symbol)
-        }
+    override fun toString(): String {
+        return plainToString()
+    }
+
+    fun <S : Node> newWithChildren(child: S): Node1T<S> {
+        return Node1T(symbol, child)
+    }
+
+    override fun copyWith(newSymbol: ESymbol): NodeChilded {
+        return Node1T(newSymbol, child)
+    }
+
+    override fun recurMap(depth: Int, action: (Node) -> Node): Node {
+        if (depth <= 0) return action(this)
+        val newChild = child.recurMap(depth - 1, action)
+        if (newChild === child) return action(this)
+        return action(Node1T(symbol, newChild))
     }
 }
 
 typealias Node2 = Node2T<*, *>
 
-sealed interface Node2T<out C1 : Node, out C2 : Node> : NodeChilded {
-    val first: C1
-    val second: C2
-
-    operator fun component1() = first
-    operator fun component2() = second
+data class Node2T<C1 : Node, C2 : Node>(
+    override val symbol: ESymbol,
+    val first: C1, val second: C2
+) : AbstractNode(), NodeChilded {
+//    override fun equals(other: Any?): Boolean {
+//        if (this === other) return true
+//        if (other !is Node2Impl<*, *>) return false
+//        return name == other.name && first == other.first && second == other.second
+//    }
+//
+//    override fun hashCode(): Int {
+//        var result = name.hashCode()
+//        result = 31 * result + first.hashCode()
+//        result = 31 * result + second.hashCode()
+//        return result
+//    }
 
     override val children: List<Node>
         get() = listOf(first, second)
 
     override val childCount: Int get() = 2
 
-    fun <S1 : Node, S2 : Node> newWithChildren(first: S1, second: S2): Node2T<S1, S2>
-
     override fun newWithChildren(children: List<Node>): NodeChilded {
         require(children.size == 2)
         return newWithChildren(children[0], children[1])
     }
 
+    override fun copyWith(newSymbol: ESymbol): NodeChilded {
+        return Node2T(newSymbol, first, second)
+    }
 
     override fun deepEquals(other: Node): Boolean {
         if (this === other) return true
@@ -293,19 +368,28 @@ sealed interface Node2T<out C1 : Node, out C2 : Node> : NodeChilded {
         return first.deepEquals(other.first) && second.deepEquals(other.second)
     }
 
-    companion object{
-        @JvmStatic
-        operator fun <C1 : Node, C2 : Node> invoke(symbol: ESymbol, first: C1, second: C2): Node2T<C1, C2> {
-            return Node2Impl(first, second, symbol)
-        }
+    fun <S1 : Node, S2 : Node> newWithChildren(first: S1, second: S2): Node2T<S1, S2> {
+        return Node2T(symbol, first, second)
+    }
+
+    override fun recurMap(depth: Int, action: (Node) -> Node): Node {
+        if (depth <= 0) return action(this)
+        val newFirst = first.recurMap(depth - 1, action)
+        val newSecond = second.recurMap(depth - 1, action)
+        if (newFirst === first && newSecond === second) return action(this)
+        return action(Node2T(symbol, newFirst, newSecond))
+    }
+
+    override fun toString(): String {
+        return plainToString()
     }
 }
 
 typealias Node3 = Node3T<*, *, *>
 
 data class Node3T<out C1 : Node, out C2 : Node, out C3 : Node>(
-    val first: C1, val second: C2, val third: C3,
-    override val symbol: ESymbol
+    override val symbol: ESymbol, val first: C1, val second: C2,
+    val third: C3
 ) : AbstractNode(), NodeChilded {
 
     override fun toString(): String {
@@ -322,6 +406,10 @@ data class Node3T<out C1 : Node, out C2 : Node, out C3 : Node>(
         return newWithChildren(children[0], children[1], children[2])
     }
 
+    override fun copyWith(newSymbol: ESymbol): NodeChilded {
+        return Node3T(newSymbol, first, second, third)
+    }
+
     override fun deepEquals(other: Node): Boolean {
         if (this === other) return true
         if (other !is Node3) return false
@@ -330,9 +418,8 @@ data class Node3T<out C1 : Node, out C2 : Node, out C3 : Node>(
     }
 
 
-
     fun <S1 : Node, S2 : Node, S3 : Node> newWithChildren(first: S1, second: S2, third: S3): Node3T<S1, S2, S3> {
-        return Node3T(first, second, third, symbol)
+        return Node3T(symbol, first, second, third)
     }
 
     override fun recurMap(depth: Int, action: (Node) -> Node): Node {
@@ -341,97 +428,19 @@ data class Node3T<out C1 : Node, out C2 : Node, out C3 : Node>(
         val newSecond = second.recurMap(depth - 1, action)
         val newThird = third.recurMap(depth - 1, action)
         if (newFirst === first && newSecond === second && newThird === third) return action(this)
-        return action(Node3T(newFirst, newSecond, newThird, symbol))
+        return action(Node3T(symbol, newFirst, newSecond, newThird))
     }
 
 }
 
-sealed interface NodeN : NodeChilded {
-    override val children: List<Node>
 
-    override val childCount: Int get() = children.size
-
-    override fun newWithChildren(children: List<Node>): NodeN
-
-
-    companion object {
-        operator fun invoke(symbol: ESymbol, children: List<Node>): NodeN {
-            return NodeNImpl(symbol, children)
-        }
-    }
-}
-
-
-internal data class Node1Impl<C : Node>(
-    override val child: C,
-    override val symbol: ESymbol
-) : AbstractNode(), Node1T<C> {
-
-    override fun toString(): String {
-        return plainToString()
-    }
-
-    override fun <S : Node> newWithChildren(child: S): Node1T<S> {
-        return Node1Impl(child, symbol)
-    }
-
-    override fun recurMap(depth: Int, action: (Node) -> Node): Node {
-        if (depth <= 0) return action(this)
-        val newChild = child.recurMap(depth - 1, action)
-        if (newChild === child) return action(this)
-        return action(Node1Impl(newChild, symbol))
-    }
-}
-
-
-internal data class Node2Impl<C1 : Node, C2 : Node>(
-    override val first: C1, override val second: C2,
-    override val symbol: ESymbol
-) : AbstractNode(), Node2T<C1, C2> {
-//    override fun equals(other: Any?): Boolean {
-//        if (this === other) return true
-//        if (other !is Node2Impl<*, *>) return false
-//        return name == other.name && first == other.first && second == other.second
-//    }
-//
-//    override fun hashCode(): Int {
-//        var result = name.hashCode()
-//        result = 31 * result + first.hashCode()
-//        result = 31 * result + second.hashCode()
-//        return result
-//    }
-
-    override fun <S1 : Node, S2 : Node> newWithChildren(first: S1, second: S2): Node2T<S1, S2> {
-        return Node2Impl(first, second, symbol)
-    }
-
-    override fun recurMap(depth: Int, action: (Node) -> Node): Node {
-        if (depth <= 0) return action(this)
-        val newFirst = first.recurMap(depth - 1, action)
-        val newSecond = second.recurMap(depth - 1, action)
-        if (newFirst === first && newSecond === second) return action(this)
-        return action(Node2Impl(newFirst, newSecond, symbol))
-    }
-
-    override fun toString(): String {
-        return plainToString()
-    }
-}
-
-//internal data class Node3Impl<C1 : Node, C2 : Node, C3 : Node>(
-//    override
-//) : AbstractNode(), Node3T<C1, C2, C3> {
-//
-//}
-
-data class NodeNImpl(
-    override val symbol: ESymbol,
-    override val children: List<Node>
-) : AbstractNode(), NodeN {
+data class NodeN(
+    override val symbol: ESymbol, override val children: List<Node>
+) : AbstractNode(), NodeChilded {
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
-        if (other !is NodeNImpl) return false
+        if (other !is NodeN) return false
         return symbol == other.symbol && children == other.children
     }
 
@@ -441,12 +450,19 @@ data class NodeNImpl(
         return result
     }
 
+    override val childCount: Int
+        get() = children.size
+
     override fun toString(): String {
         return plainToString()
     }
 
     override fun newWithChildren(children: List<Node>): NodeN {
-        return NodeNImpl(symbol, children)
+        return NodeN(symbol, children)
+    }
+
+    override fun copyWith(newSymbol: ESymbol): NodeChilded {
+        return NodeN(newSymbol, children)
     }
 
     override fun recurMap(depth: Int, action: (Node) -> Node): Node {
@@ -454,7 +470,7 @@ data class NodeNImpl(
         var changed = false
         val newChildren = children.map { it.recurMap(depth - 1, action).also { if (it !== children) changed = true } }
         if (!changed) return action(this)
-        return action(NodeNImpl(symbol, newChildren))
+        return action(NodeN(symbol, newChildren))
     }
 }
 

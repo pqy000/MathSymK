@@ -65,7 +65,7 @@ interface NodeScope {
 
         fun NodeScope.qualifiedContainedRep(nodeName: ESymbol, varNode: Node, set: Node, clause: Node): Node {
             require(varNode is NSymbol)
-            return qualifiedContained(nodeName, varNode.symbol.name, set) { x -> clause.replace(varNode, x) }
+            return qualifiedContained(nodeName, varNode.symbol.name, set) { x -> clause.replaceSymbol(varNode, x) }
         }
 
         fun NodeScope.qualifiedRep(nodeName: ESymbol, varNode: Node, clause: Node, replaceVar: Boolean = true): Node {
@@ -80,10 +80,10 @@ interface NodeScope {
                 nodeName, varNode.symbol.name,
                 condition = { x ->
                     if (condition == null) return@qualifiedConditioned SymBasic.TRUE
-                    if (replaceVar) condition.replace(varNode, x) else condition
+                    if (replaceVar) condition.replaceSymbol(varNode, x) else condition
                 },
                 clause = { x ->
-                    if (replaceVar) clause.replace(varNode, x) else clause
+                    if (replaceVar) clause.replaceSymbol(varNode, x) else clause
                 }
             )
 //            if (!replaceVar) {

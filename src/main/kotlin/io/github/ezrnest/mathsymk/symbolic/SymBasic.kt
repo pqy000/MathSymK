@@ -6,8 +6,8 @@ object SymBasic {
     val EMPTY_SET = NSymbol(Symbols.EMPTY_SET)
     val UNIVERSE = NSymbol(Symbols.UNIVERSE)
 
-    val TRUE = NSymbol(Symbols.TRUE)
-    val FALSE = NSymbol(Symbols.FALSE)
+    val TRUE = NSymbol(Symbols.True)
+    val FALSE = NSymbol(Symbols.False)
 
     object Symbols {
 
@@ -19,10 +19,10 @@ object SymBasic {
         val INTERSECT = ESymbol("∩")
         val UNION = ESymbol("∪")
 
-        val TRUE = ESymbol("true")
-        val FALSE = ESymbol("false")
+        val True = ESymbol("true")
+        val False = ESymbol("false")
 
-        val LIST = ESymbol("list")
+        val Tuple = ESymbol("")
 
     }
 
@@ -30,29 +30,25 @@ object SymBasic {
 
 
     fun <T : Node> Node1(symbol: ESymbol, child: T): Node1T<T> {
-        return Node1Impl(child, symbol)
+        return Node1T(symbol, child)
     }
 
     fun <T1 : Node, T2 : Node> Node2(symbol: ESymbol, first: T1, second: T2): Node2T<T1, T2> {
-        return Node2Impl(first, second, symbol)
+        return Node2T(symbol, first, second)
     }
 
     fun <T1 : Node, T2 : Node, T3 : Node> Node3(
         symbol: ESymbol, first: T1, second: T2, third: T3
     ): Node3T<T1, T2, T3> {
-        return Node3T(first, second, third, symbol)
+        return Node3T(symbol, first, second, third)
     }
 
-    fun NodeN(symbol: ESymbol, children: List<Node>): Node {
-        require(children.isNotEmpty())
-        return NodeNImpl(symbol, children)
-    }
 
     fun NodeNFlatten(symbol: ESymbol, children: List<Node>, empty: Node): Node {
         return when (children.size) {
             0 -> empty
             1 -> children[0]
-            else -> NodeNImpl(symbol, children)
+            else -> NodeN(symbol, children)
         }
     }
 
@@ -61,7 +57,7 @@ object SymBasic {
     }
 
     fun List(nodes: List<Node>): Node {
-        return NodeN(Symbols.LIST, nodes)
+        return NodeN(Symbols.Tuple, nodes)
     }
 
 
