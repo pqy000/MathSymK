@@ -43,6 +43,11 @@ sealed interface Node {
 
     fun traverse(depth: Int = Int.MAX_VALUE, action: (Node) -> Unit)
 
+    /**
+     * Check if the tree contains any node that satisfies the [action].
+     */
+    fun recurAny(depth: Int = Int.MAX_VALUE, action: (Node) -> Boolean): Boolean
+
     fun traversePostOrder(depth: Int = Int.MAX_VALUE, action: (Node) -> Unit)
 
     fun traverseLeveled(depth: Int = Int.MAX_VALUE, level: Int = 0, action: (Node, Int) -> Unit)
@@ -60,52 +65,19 @@ sealed interface Node {
     }
 
     /**
-     * Replacing every occurrence of the symbol [src] with [dest] in the tree, including the symbol of the node.
+     * Check if the tree contains any node with the symbol [symbol].
      */
-    fun replaceSymbol(src: NSymbol, dest: NSymbol): Node {
-        // a bit more efficient than the general replace
-        when (this) {
-            is NSymbol -> return if (this == src) dest else this
-            is Node1 -> {
-                val newChild = child.replaceSymbol(src, dest)
-                if (symbol != src.symbol && newChild === child) return this
-                val newSymbol = if (symbol == src.symbol) dest.symbol else symbol
-                return Node1T(newSymbol, newChild)
-            }
-
-            is Node2 -> {
-                val new1 = first.replaceSymbol(src, dest)
-                val new2 = second.replaceSymbol(src, dest)
-                if (symbol != src.symbol && new1 === first && new2 === second) return this
-                val newSymbol = if (symbol == src.symbol) dest.symbol else symbol
-                return Node2T(newSymbol, new1, new2)
-            }
-
-            is Node3 -> {
-                val new1 = first.replaceSymbol(src, dest)
-                val new2 = second.replaceSymbol(src, dest)
-                val new3 = third.replaceSymbol(src, dest)
-                if (symbol != src.symbol && new1 === first && new2 === second && new3 === third) return this
-                val newSymbol = if (symbol == src.symbol) dest.symbol else symbol
-                return Node3T(newSymbol, new1, new2, new3)
-            }
-
-            is NodeChilded -> {
-                var changed = false
-                val newChildren = children.map { c ->
-                    c.replaceSymbol(src, dest).also {
-                        if (it !== src) changed = true
-                    }
-                }
-                if (symbol != src.symbol && !changed) return this
-                val newSymbol = if (symbol == src.symbol) dest.symbol else symbol
-                return NodeN(newSymbol, newChildren)
-            }
-
-            else -> return this
+    fun containSymbol(symbol: ESymbol): Boolean {
+        return recurAny { node ->
+            node is SymbolNode && node.symbol == symbol
         }
     }
 
+    /**
+     * Replacing every occurrence of the symbol [src] with [dest] in the tree, including the symbol of the node.
+     */
+    fun replaceSymbol(src: NSymbol, dest: NSymbol): Node
+    // a bit more efficient than the general replace method
 
     fun deepEquals(other: Node): Boolean
 
@@ -116,6 +88,18 @@ sealed interface Node {
     }
 }
 
+
+sealed class AbstractNode : Node {
+    override var meta: Map<TypedKey<*>, Any?> = emptyMap()
+
+    override fun toString(): String {
+        return plainToString()
+    }
+}
+
+sealed interface SymbolNode : Node {
+    val symbol: ESymbol
+}
 
 sealed interface LeafNode : Node {
 
@@ -144,17 +128,11 @@ sealed interface LeafNode : Node {
         return builder
     }
 
-}
 
-
-sealed class AbstractNode : Node {
-    override var meta: Map<TypedKey<*>, Any?> = emptyMap()
-
-    override fun toString(): String {
-        return plainToString()
+    override fun recurAny(depth: Int, action: (Node) -> Boolean): Boolean {
+        return action(this)
     }
 }
-
 
 data class NRational(val value: BigFrac) : AbstractNode(), LeafNode {
 
@@ -180,12 +158,16 @@ data class NRational(val value: BigFrac) : AbstractNode(), LeafNode {
         if (deno == BigInteger.ONE) return nume.toString()
         return "$nume/$deno"
     }
+
+    override fun replaceSymbol(src: NSymbol, dest: NSymbol): Node {
+        return this
+    }
 }
 
 
 data class NSymbol(
-    val symbol: ESymbol
-) : AbstractNode(), LeafNode {
+    override val symbol: ESymbol
+) : AbstractNode(), LeafNode, SymbolNode {
 
     override fun plainToString(): String {
         return symbol.toString()
@@ -193,6 +175,10 @@ data class NSymbol(
 
     override fun deepEquals(other: Node): Boolean {
         return this === other || other is NSymbol && symbol == other.symbol
+    }
+
+    override fun replaceSymbol(src: NSymbol, dest: NSymbol): Node {
+        return if (this == src) dest else this
     }
 }
 
@@ -206,12 +192,17 @@ data class NOther(val name: String) : AbstractNode(), LeafNode {
         if (other !is NOther) return false
         return name == other.name
     }
+
+    override fun replaceSymbol(src: NSymbol, dest: NSymbol): Node {
+        return this
+    }
 }
 
-sealed interface NodeChilded : Node {
+sealed interface NodeChilded : Node, SymbolNode {
+    override val symbol: ESymbol
+
     val children: List<Node>
     val childCount: Int
-    val symbol: ESymbol
 
     override fun <A : Appendable> treeTo(builder: A, level: Int, indent: String): A {
         builder.append(indent).append(symbol.toString()).append(";  ").append(meta.toString()).appendLine()
@@ -294,6 +285,13 @@ data class Node1T<out C : Node>(override val symbol: ESymbol, val child: C) : Ab
         return newWithChildren(children[0])
     }
 
+    override fun replaceSymbol(src: NSymbol, dest: NSymbol): Node {
+        val newChild = child.replaceSymbol(src, dest)
+        if (symbol != src.symbol && newChild === child) return this
+        val newSymbol = if (symbol == src.symbol) dest.symbol else symbol
+        return Node1T(newSymbol, newChild)
+    }
+
     override fun deepEquals(other: Node): Boolean {
         if (this === other) return true
         if (other !is Node1) return false
@@ -318,6 +316,12 @@ data class Node1T<out C : Node>(override val symbol: ESymbol, val child: C) : Ab
         val newChild = child.recurMap(depth - 1, action)
         if (newChild === child) return action(this)
         return action(Node1T(symbol, newChild))
+    }
+
+    override fun recurAny(depth: Int, action: (Node) -> Boolean): Boolean {
+        if (action(this)) return true
+        if (depth <= 0) return false
+        return child.recurAny(depth - 1, action)
     }
 }
 
@@ -354,6 +358,14 @@ data class Node2T<C1 : Node, C2 : Node>(
         return Node2T(newSymbol, first, second)
     }
 
+    override fun replaceSymbol(src: NSymbol, dest: NSymbol): Node {
+        val new1 = first.replaceSymbol(src, dest)
+        val new2 = second.replaceSymbol(src, dest)
+        if (symbol != src.symbol && new1 === first && new2 === second) return this
+        val newSymbol = if (symbol == src.symbol) dest.symbol else symbol
+        return Node2T(newSymbol, new1, new2)
+    }
+
     override fun deepEquals(other: Node): Boolean {
         if (this === other) return true
         if (other !is Node2) return false
@@ -371,6 +383,12 @@ data class Node2T<C1 : Node, C2 : Node>(
         val newSecond = second.recurMap(depth - 1, action)
         if (newFirst === first && newSecond === second) return action(this)
         return action(Node2T(symbol, newFirst, newSecond))
+    }
+
+    override fun recurAny(depth: Int, action: (Node) -> Boolean): Boolean {
+        if (action(this)) return true
+        if (depth <= 0) return false
+        return first.recurAny(depth - 1, action) || second.recurAny(depth - 1, action)
     }
 
     override fun toString(): String {
@@ -403,6 +421,15 @@ data class Node3T<out C1 : Node, out C2 : Node, out C3 : Node>(
         return Node3T(newSymbol, first, second, third)
     }
 
+    override fun replaceSymbol(src: NSymbol, dest: NSymbol): Node {
+        val new1 = first.replaceSymbol(src, dest)
+        val new2 = second.replaceSymbol(src, dest)
+        val new3 = third.replaceSymbol(src, dest)
+        if (symbol != src.symbol && new1 === first && new2 === second && new3 === third) return this
+        val newSymbol = if (symbol == src.symbol) dest.symbol else symbol
+        return Node3T(newSymbol, new1, new2, new3)
+    }
+
     override fun deepEquals(other: Node): Boolean {
         if (this === other) return true
         if (other !is Node3) return false
@@ -424,6 +451,13 @@ data class Node3T<out C1 : Node, out C2 : Node, out C3 : Node>(
         return action(Node3T(symbol, newFirst, newSecond, newThird))
     }
 
+    override fun recurAny(depth: Int, action: (Node) -> Boolean): Boolean {
+        if (action(this)) return true
+        if (depth <= 0) return false
+        return first.recurAny(depth - 1, action)
+                || second.recurAny(depth - 1, action)
+                || third.recurAny(depth - 1, action)
+    }
 }
 
 
@@ -464,6 +498,24 @@ data class NodeN(
         val newChildren = children.map { it.recurMap(depth - 1, action).also { if (it !== children) changed = true } }
         if (!changed) return action(this)
         return action(NodeN(symbol, newChildren))
+    }
+
+    override fun recurAny(depth: Int, action: (Node) -> Boolean): Boolean {
+        if (action(this)) return true
+        if (depth <= 0) return false
+        return children.any { it.recurAny(depth - 1, action) }
+    }
+
+    override fun replaceSymbol(src: NSymbol, dest: NSymbol): Node {
+        var changed = false
+        val newChildren = children.map { c ->
+            c.replaceSymbol(src, dest).also {
+                if (it !== src) changed = true
+            }
+        }
+        if (symbol != src.symbol && !changed) return this
+        val newSymbol = if (symbol == src.symbol) dest.symbol else symbol
+        return NodeN(newSymbol, newChildren)
     }
 }
 

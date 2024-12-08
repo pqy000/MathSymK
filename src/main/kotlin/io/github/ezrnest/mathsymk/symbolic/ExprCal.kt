@@ -39,6 +39,10 @@ interface ExprCal {
 
     fun enterContext(root: Node, context: EContext): List<EContext>
 
+    fun getDefinition(symbol: ESymbol): NodeProperties? {
+        return null
+    }
+
 
     fun traverseCtx(root: Node, context: EContext, depth: Int = Int.MAX_VALUE, action: (Node, EContext) -> Unit) {
         TODO()
@@ -99,45 +103,70 @@ interface ExprCal {
 
         private fun ExprCal.symbolEquals(
             symbol1: ESymbol, symbol2: ESymbol,
-            symbolMap: MutableMap<ESymbol, ESymbol>
+            symbolMap: MutableMap<ESymbol, ESymbol?>
         ): Boolean {
             if (symbol1 == symbol2) return true
+            if (symbol1 !in symbolMap) return false
             val sym1Mapped = symbolMap[symbol1]
             if (sym1Mapped != null) return sym1Mapped == symbol2
             symbolMap[symbol1] = symbol2
             return true
         }
 
+        private fun ExprCal.addQualifiedSymbols(
+            node: NodeChilded, ctx: EContext, symbolMap: MutableMap<ESymbol, ESymbol?>
+        ) {
+            val def = getDefinition(node.symbol) ?: return
+            def.qualifiedVariables(node, ctx, this).forEach { symbol ->
+                symbolMap[symbol] = null
+            }
+        }
+
         internal fun ExprCal.directEqualsCtx0(
-            n1: Node, n2: Node, ctx: EContext, symbolMap: MutableMap<ESymbol, ESymbol>
+            n1: Node, n2: Node, ctx: EContext, symbolMap: MutableMap<ESymbol, ESymbol?>
         ): Boolean {
             if (n1 === n2) return true
-            when {
-                n1 is NSymbol && n2 is NSymbol -> {
+            if (n1::class != n2::class) return false
+            when (n1) {
+                is NSymbol -> {
+                    if (n2 !is NSymbol) return false
                     return symbolEquals(n1.symbol, n2.symbol, symbolMap)
                 }
-                n1 is Node1 && n2 is Node1 -> {
-                    if(!symbolEquals(n1.symbol, n2.symbol, symbolMap)) return false
+
+                is Node1 -> {
+                    if (n2 !is Node1) return false
+                    if (!symbolEquals(n1.symbol, n2.symbol, symbolMap)) return false
+                    addQualifiedSymbols(n1, ctx, symbolMap)
                     return directEqualsCtx0(n1.child, n2.child, ctx, symbolMap)
                 }
-                n1 is Node2 && n2 is Node2 -> {
-                    if(!symbolEquals(n1.symbol, n2.symbol, symbolMap)) return false
+
+                is Node2 -> {
+                    if (n2 !is Node2) return false
+                    if (!symbolEquals(n1.symbol, n2.symbol, symbolMap)) return false
+                    addQualifiedSymbols(n1, ctx, symbolMap)
                     return directEqualsCtx0(n1.first, n2.first, ctx, symbolMap) &&
                             directEqualsCtx0(n1.second, n2.second, ctx, symbolMap)
                 }
-                n1 is Node3 && n2 is Node3 -> {
-                    if(!symbolEquals(n1.symbol, n2.symbol, symbolMap)) return false
+
+                is Node3 -> {
+                    if (n2 !is Node3) return false
+                    if (!symbolEquals(n1.symbol, n2.symbol, symbolMap)) return false
+                    addQualifiedSymbols(n1, ctx, symbolMap)
                     return directEqualsCtx0(n1.first, n2.first, ctx, symbolMap) &&
                             directEqualsCtx0(n1.second, n2.second, ctx, symbolMap) &&
                             directEqualsCtx0(n1.third, n2.third, ctx, symbolMap)
                 }
-                n1 is NodeChilded && n2 is NodeChilded -> {
-                    if(!symbolEquals(n1.symbol, n2.symbol, symbolMap)) return false
+
+                is NodeChilded -> {
+                    if (n2 !is NodeChilded) return false
+                    if (!symbolEquals(n1.symbol, n2.symbol, symbolMap)) return false
+                    addQualifiedSymbols(n1, ctx, symbolMap)
                     if (n1.children.size != n2.children.size) return false
                     return n1.children.indices.all { i ->
                         directEqualsCtx0(n1.children[i], n2.children[i], ctx, symbolMap)
                     }
                 }
+
                 else -> return n1 == n2
             }
         }
@@ -189,7 +218,9 @@ open class BasicExprCal : ExprCal, NodeScopePredefinedSymbols {
 
     val transRules: TreeDispatcher<TransRule> = TreeDispatcher()
 
-    val ctxInfo: TreeDispatcher<NodeProperties> = TreeDispatcher()
+//    val ctxInfo: TreeDispatcher<NodeProperties> = TreeDispatcher()
+    val symbolDefinitions : MutableMap<ESymbol, NodeProperties> = mutableMapOf()
+
 
     var verbose: Verbosity = Verbosity.NONE
     var showMeta = false
@@ -237,7 +268,11 @@ open class BasicExprCal : ExprCal, NodeScopePredefinedSymbols {
     }
 
     fun registerContextInfo(info: NodeProperties) {
-        ctxInfo.register(LeafMatcherFixSig(info.nodeSym), info)
+        symbolDefinitions[info.symbol] = info
+    }
+
+    override fun getDefinition(symbol: ESymbol): NodeProperties? {
+        return symbolDefinitions[symbol]
     }
 
 
@@ -314,7 +349,7 @@ open class BasicExprCal : ExprCal, NodeScopePredefinedSymbols {
         if (root !is NodeChilded) {
             return emptyList()
         }
-        val info = ctxInfo.dispatchSeq(root).firstOrNull() ?: return Collections.nCopies(root.children.size, context)
+        val info = symbolDefinitions[root.symbol] ?: return Collections.nCopies(root.children.size, context)
         return info.enterContext(root, context, this)
     }
 

@@ -11,6 +11,7 @@ fun main() {
     val cal = TestExprCal
     cal.verbose = BasicExprCal.Verbosity.ALL
     cal.registerContextInfo(QualifierNodeProperties(SymLogic.Symbols.FOR_ALL))
+    cal.registerContextInfo(QualifierNodeProperties(SymAlg.Symbols.SUM))
     with(cal) {
 //        ESymbol.displayHash = true
         alg {
