@@ -123,7 +123,7 @@ interface IAlgebraScope : NodeScopeAdd, ILogicScope {
     }
 
     fun pow(base: Node, exp: Node): Node {
-        return SymBasic.Node2(Symbols.POW, base, exp)
+        return SymBasic.node2(Symbols.POW, base, exp)
     }
 
     fun sqrt(x: Node): Node {
@@ -135,7 +135,7 @@ interface IAlgebraScope : NodeScopeAdd, ILogicScope {
     }
 
     fun log(base: Node, x: Node): Node {
-        return SymBasic.Node2(Symbols.F2_LOG, base, x)
+        return SymBasic.node2(Symbols.F2_LOG, base, x)
     }
 
     fun ln(x: Node): Node {
@@ -143,50 +143,45 @@ interface IAlgebraScope : NodeScopeAdd, ILogicScope {
     }
 
     fun sin(x: Node): Node {
-        return SymBasic.Node1(Symbols.F1_SIN, x)
+        return SymBasic.node1(Symbols.F1_SIN, x)
     }
 
     fun cos(x: Node): Node {
-        return SymBasic.Node1(Symbols.F1_COS, x)
+        return SymBasic.node1(Symbols.F1_COS, x)
     }
 
     fun tan(x: Node): Node {
-        return SymBasic.Node1(Symbols.F1_TAN, x)
+        return SymBasic.node1(Symbols.F1_TAN, x)
     }
 
     fun arcsin(x: Node): Node {
-        return SymBasic.Node1(Symbols.F1_ARCSIN, x)
+        return SymBasic.node1(Symbols.F1_ARCSIN, x)
     }
 
     fun arccos(x: Node): Node {
-        return SymBasic.Node1(Symbols.F1_ARCCOS, x)
+        return SymBasic.node1(Symbols.F1_ARCCOS, x)
     }
 
     fun arctan(x: Node): Node {
-        return SymBasic.Node1(Symbols.F1_ARCTAN, x)
+        return SymBasic.node1(Symbols.F1_ARCTAN, x)
     }
 
 
     infix fun Node.gtr(y: Node): Node {
-        return SymBasic.Node2(Symbols.F2_GTR, this, y)
+        return SymBasic.node2(Symbols.F2_GTR, this, y)
     }
 
     infix fun Node.geq(y: Node): Node {
-        return SymBasic.Node2(Symbols.F2_GEQ, this, y)
+        return SymBasic.node2(Symbols.F2_GEQ, this, y)
     }
 
     infix fun Node.`≥`(y: Node): Node {
-        return SymBasic.Node2(Symbols.F2_GEQ, this, y)
+        return SymBasic.node2(Symbols.F2_GEQ, this, y)
     }
 
     fun sum(x: Node, lower: Node = SymAlg.ONE, upper: Node = x, f: Node): Node {
         val range = SymSets.intRange(lower, upper)
         return qualifiedContainedRep(Symbols.SUM, x, range, f)
-//        return qualifiedConditioned(
-//            Symbols.SUM, varName_ = x.symbol.name,
-//            condition = { x1 -> SymSets.belongs(x1, SymSets.intRange(lower, upper)) },
-//            clause = { x1 -> f.replace(x, x1) }
-//        )
     }
 
     companion object {

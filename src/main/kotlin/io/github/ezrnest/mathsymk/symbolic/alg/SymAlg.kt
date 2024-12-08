@@ -3,7 +3,7 @@ package io.github.ezrnest.mathsymk.symbolic.alg
 import io.github.ezrnest.mathsymk.model.BigFrac
 import io.github.ezrnest.mathsymk.model.BigFracAsQuot
 import io.github.ezrnest.mathsymk.symbolic.*
-import io.github.ezrnest.mathsymk.symbolic.SymBasic.Node1
+import io.github.ezrnest.mathsymk.symbolic.SymBasic.node1
 import java.math.BigInteger
 
 object SymAlg {
@@ -83,31 +83,31 @@ object SymAlg {
     }
 
     fun Sin(node: Node): Node {
-        return Node1(Symbols.F1_SIN, node)
+        return node1(Symbols.F1_SIN, node)
     }
 
     fun Cos(node: Node): Node {
-        return Node1(Symbols.F1_COS, node)
+        return node1(Symbols.F1_COS, node)
     }
 
     fun Tan(node: Node): Node {
-        return Node1(Symbols.F1_TAN, node)
+        return node1(Symbols.F1_TAN, node)
     }
 
     fun Cot(node: Node): Node {
-        return Node1(Symbols.F1_COT, node)
+        return node1(Symbols.F1_COT, node)
     }
 
     fun ArcSin(node: Node): Node {
-        return Node1(Symbols.F1_ARCSIN, node)
+        return node1(Symbols.F1_ARCSIN, node)
     }
 
     fun ArcCos(node: Node): Node {
-        return Node1(Symbols.F1_ARCCOS, node)
+        return node1(Symbols.F1_ARCCOS, node)
     }
 
     fun ArcTan(node: Node): Node {
-        return Node1(Symbols.F1_ARCTAN, node)
+        return node1(Symbols.F1_ARCTAN, node)
     }
 
     fun Log(base: Node, x: Node): Node {

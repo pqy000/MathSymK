@@ -39,6 +39,16 @@ interface ExprCal {
 
     fun enterContext(root: Node, context: EContext): List<EContext>
 
+
+    fun traverseCtx(root: Node, context: EContext, depth: Int = Int.MAX_VALUE, action: (Node, EContext) -> Unit) {
+        TODO()
+    }
+
+    fun directEqualsCtx(node1: Node, node2: Node, ctx: EContext = this.context): Boolean {
+        return directEqualsCtx0(node1, node2, ctx, mutableMapOf())
+    }
+
+
     fun recurMapCtx(
         root: Node, context: EContext = this.context,
         depth: Int = Int.MAX_VALUE, mapping: (Node, EContext) -> Node?,
@@ -46,9 +56,10 @@ interface ExprCal {
 
 
     fun substitute(node: Node, src: Node, dest: Node, rootCtx: EContext = this.context): Node {
-        return substitute(node, rootCtx) { it, ctx ->
-            if (it == src) dest else null
-        }
+        TODO()
+//        return substitute(node, rootCtx) { it, ctx ->
+//            if (it == src) dest else null
+//        }
     }
 
     fun substitute(root: Node, rootCtx: EContext = this.context, mapping: (Node, EContext) -> Node?): Node {
@@ -60,30 +71,8 @@ interface ExprCal {
 //        }
     }
 
-    fun freeIn(node: Node, symbol: NSymbol): Boolean {
-        TODO()
-    }
-
     fun variablesOf(node: Node): Set<NSymbol> {
         TODO()
-    }
-
-    fun normalizeQualifiedSymbols(root: Node, rootCtx: EContext = this.context): Node {
-        TODO()
-//        val qualifiedSymbolRemapping = mutableMapOf<SymbolDeclaration, NSymbol>()
-//        val usedNames = mutableSetOf<String>()
-//
-//        return recurMapCtx(root, rootCtx, Int.MAX_VALUE) { n, ctx ->
-//            if (n !is NSymbol) return@recurMapCtx null
-//            val decl = ctx.definedSymbols[n] ?: return@recurMapCtx null
-//            if(decl !is SymbolDeclaration.Qualified) return@recurMapCtx null
-//            qualifiedSymbolRemapping.getOrPut(decl) {
-//                val newSymbol = findNextQualifiedName(usedNames, n)
-//                usedNames.add(newSymbol.ch)
-//                newSymbol[NodeMetas.displayOriginalName] = n.ch
-//                newSymbol
-//            }
-//        }
     }
 
 
@@ -107,15 +96,51 @@ interface ExprCal {
 
 
     companion object {
-//        fun findNextQualifiedName(usedNames : Set<String>, s: NSymbol): NSymbol {
-//            val ch = s.ch
-//            var i = 0
-//            while (true) {
-//                val name = "$QualifiedSymbolRenamingPrefix$ch$i"
-//                if (name !in usedNames) return NSymbol(name)
-//                i++
-//            }
-//        }
+
+        private fun ExprCal.symbolEquals(
+            symbol1: ESymbol, symbol2: ESymbol,
+            symbolMap: MutableMap<ESymbol, ESymbol>
+        ): Boolean {
+            if (symbol1 == symbol2) return true
+            val sym1Mapped = symbolMap[symbol1]
+            if (sym1Mapped != null) return sym1Mapped == symbol2
+            symbolMap[symbol1] = symbol2
+            return true
+        }
+
+        internal fun ExprCal.directEqualsCtx0(
+            n1: Node, n2: Node, ctx: EContext, symbolMap: MutableMap<ESymbol, ESymbol>
+        ): Boolean {
+            if (n1 === n2) return true
+            when {
+                n1 is NSymbol && n2 is NSymbol -> {
+                    return symbolEquals(n1.symbol, n2.symbol, symbolMap)
+                }
+                n1 is Node1 && n2 is Node1 -> {
+                    if(!symbolEquals(n1.symbol, n2.symbol, symbolMap)) return false
+                    return directEqualsCtx0(n1.child, n2.child, ctx, symbolMap)
+                }
+                n1 is Node2 && n2 is Node2 -> {
+                    if(!symbolEquals(n1.symbol, n2.symbol, symbolMap)) return false
+                    return directEqualsCtx0(n1.first, n2.first, ctx, symbolMap) &&
+                            directEqualsCtx0(n1.second, n2.second, ctx, symbolMap)
+                }
+                n1 is Node3 && n2 is Node3 -> {
+                    if(!symbolEquals(n1.symbol, n2.symbol, symbolMap)) return false
+                    return directEqualsCtx0(n1.first, n2.first, ctx, symbolMap) &&
+                            directEqualsCtx0(n1.second, n2.second, ctx, symbolMap) &&
+                            directEqualsCtx0(n1.third, n2.third, ctx, symbolMap)
+                }
+                n1 is NodeChilded && n2 is NodeChilded -> {
+                    if(!symbolEquals(n1.symbol, n2.symbol, symbolMap)) return false
+                    if (n1.children.size != n2.children.size) return false
+                    return n1.children.indices.all { i ->
+                        directEqualsCtx0(n1.children[i], n2.children[i], ctx, symbolMap)
+                    }
+                }
+                else -> return n1 == n2
+            }
+        }
     }
 }
 
@@ -164,7 +189,7 @@ open class BasicExprCal : ExprCal, NodeScopePredefinedSymbols {
 
     val transRules: TreeDispatcher<TransRule> = TreeDispatcher()
 
-    val ctxInfo: TreeDispatcher<NodeContextInfo> = TreeDispatcher()
+    val ctxInfo: TreeDispatcher<NodeProperties> = TreeDispatcher()
 
     var verbose: Verbosity = Verbosity.NONE
     var showMeta = false
@@ -211,7 +236,7 @@ open class BasicExprCal : ExprCal, NodeScopePredefinedSymbols {
         transRules.register(inited.matcher, inited)
     }
 
-    fun registerContextInfo(info: NodeContextInfo) {
+    fun registerContextInfo(info: NodeProperties) {
         ctxInfo.register(LeafMatcherFixSig(info.nodeSym), info)
     }
 

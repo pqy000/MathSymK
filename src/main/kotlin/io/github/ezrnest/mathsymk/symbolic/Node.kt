@@ -104,13 +104,6 @@ sealed interface Node {
 
             else -> return this
         }
-//        return recurMap {
-//            when (it) {
-//                is NSymbol -> if (it == src) dest else it
-//                is NodeChilded -> if (it.symbol == src.symbol) it.copyWith(dest.symbol) else it
-//                else -> it
-//            }
-//        }
     }
 
 

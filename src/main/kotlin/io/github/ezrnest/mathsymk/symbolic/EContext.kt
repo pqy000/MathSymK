@@ -15,7 +15,7 @@ sealed interface SymbolDeclaration{
  */
 interface EContext {
 
-    val definedSymbols : Set<ESymbol>
+    val qualifiedSymbols : Set<ESymbol>
 
     val namedSymbols: Map<String,ESymbol>
 
@@ -53,8 +53,8 @@ interface EContext {
 //    }
 
     fun with(ctx : EContext) : EContext{
-        val newDefinedSymbols = definedSymbols.toMutableSet()
-        newDefinedSymbols.addAll(ctx.definedSymbols)
+        val newDefinedSymbols = qualifiedSymbols.toMutableSet()
+        newDefinedSymbols.addAll(ctx.qualifiedSymbols)
         val newNamedSymbols = namedSymbols.toMutableMap()
         newNamedSymbols.putAll(ctx.namedSymbols)
         val newConditions = conditions.toMutableSet()
@@ -93,15 +93,13 @@ interface EContext {
 }
 
 interface MutableEContext : EContext {
-    override val definedSymbols: MutableSet<ESymbol>
+    override val qualifiedSymbols: MutableSet<ESymbol>
     override val namedSymbols: MutableMap<String, ESymbol>
     override val conditions: MutableSet<Node>
 
 
-    fun addQualifiedSymbol(symbol: ESymbol) : SymbolDeclaration {
-        val declaration = SymbolDeclaration.Qualified()
-        definedSymbols.add(symbol)
-        return declaration
+    fun addQualifiedSymbol(symbol: ESymbol) {
+        qualifiedSymbols.add(symbol)
     }
 //
 //    fun addDeclaredSymbol(symbol: NSymbol, decl : SymbolDeclaration) {
@@ -118,13 +116,13 @@ object EmptyEContext : EContext {
 //        return NSymbol(name)
 //    }
 
-    override val definedSymbols = emptySet<ESymbol>()
+    override val qualifiedSymbols = emptySet<ESymbol>()
     override val namedSymbols = emptyMap<String, ESymbol>()
     override val conditions: Set<Node> = emptySet()
 }
 
 data class EContextImpl(
-    override val definedSymbols: MutableSet<ESymbol> = mutableSetOf(),
+    override val qualifiedSymbols: MutableSet<ESymbol> = mutableSetOf(),
     override val namedSymbols: MutableMap<String,ESymbol> = mutableMapOf(),
     override val conditions: MutableSet<Node> = sortedSetOf(NodeOrder),
 ) : MutableEContext {

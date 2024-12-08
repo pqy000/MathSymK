@@ -41,11 +41,11 @@ object SymLogic {
     }
 
     fun Not(node: Node): Node {
-        return SymBasic.Node1(Symbols.NOT, node)
+        return SymBasic.node1(Symbols.NOT, node)
     }
 
     fun Implies(p: Node, q: Node): Node {
-        return SymBasic.Node2(Symbols.IMPLIES, p, q)
+        return SymBasic.node2(Symbols.IMPLIES, p, q)
     }
 
     fun Iff(p: Node, q: Node): Node {
