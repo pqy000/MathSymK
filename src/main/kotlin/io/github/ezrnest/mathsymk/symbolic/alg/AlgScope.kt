@@ -184,15 +184,21 @@ interface IAlgebraScope : NodeScopeAdd, ILogicScope {
         return qualifiedContainedRep(Symbols.SUM, x, range, f)
     }
 
+
+    fun sum(lower: Node, upper: Node, varName: String = "i", f: (NSymbol) -> Node): Node {
+        val range = SymSets.intRange(lower, upper)
+        return qualifiedContained(Symbols.SUM, varName = varName, set = range, clause = f)
+    }
+
     companion object {
 
 
-        inline fun IAlgebraScope.sum(lower: Node, upper: Node, varName: String = "i", f: (NSymbol) -> Node): Node {
-            val range = SymSets.intRange(lower, upper)
-            return qualifiedContained(
-                Symbols.SUM, varName = varName, set = range, clause = f
-            )
-        }
+//        inline fun IAlgebraScope.sum(lower: Node, upper: Node, varName: String = "i", f: (NSymbol) -> Node): Node {
+//            val range = SymSets.intRange(lower, upper)
+//            return qualifiedContained(
+//                Symbols.SUM, varName = varName, set = range, clause = f
+//            )
+//        }
     }
 }
 

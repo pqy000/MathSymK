@@ -1,7 +1,6 @@
 package io.github.ezrnest.mathsymk.symbolic
 
 import io.github.ezrnest.mathsymk.symbolic.alg.*
-import io.github.ezrnest.mathsymk.symbolic.alg.IAlgebraScope.Companion.sum
 import io.github.ezrnest.mathsymk.symbolic.logic.SymLogic
 
 
@@ -21,13 +20,14 @@ fun main() {
 //            expr = forAll { x ->
 //                x geq y
 //            }
-            val N = SymAlg.INFINITY
+            val N = SymAlg.Infinity
             val a = sum(x, 1.e, N, sin(x))
-            println(expr.plainToString())
-            val b = sum(1.e, N,"n") { x ->
-                sin(x)
+            println(a.plainToString())
+            val b = sum(1.e, N, "n") { x ->
+                sin(x) / pow(x, 2.e)
             }
-            println(directEqualsCtx(a,b))
+            println(b.plainToString())
+            println(directEqualsCtx(a, b))
             println(expr.plainToString())
         }
     }

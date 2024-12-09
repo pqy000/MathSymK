@@ -23,7 +23,7 @@ object SymAlg {
     val NATURAL_E = NSymbol(Symbols.Natural_e)
     val IMAGINARY_I = NSymbol(Symbols.Imaginary_i)
 
-    val INFINITY get() = NSymbol(Symbols.Infinity)
+    val Infinity get() = NSymbol(Symbols.INFINITY)
     val POSITIVE_INFINITY get() = NSymbol(Symbols.POSITIVE_INFINITY)
     val NEGATIVE_INFINITY get() = NSymbol(Symbols.NEGATIVE_INFINITY)
 
@@ -136,7 +136,7 @@ object SymAlg {
         val Natural_e = ESymbol("𝑒")
         val Imaginary_i = ESymbol("𝑖")
 
-        val Infinity = ESymbol("∞")
+        val INFINITY = ESymbol("∞")
         val POSITIVE_INFINITY = ESymbol("+∞")
         val NEGATIVE_INFINITY = ESymbol("-∞")
 
