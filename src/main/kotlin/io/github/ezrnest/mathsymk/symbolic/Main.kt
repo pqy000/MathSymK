@@ -27,7 +27,7 @@ fun main() {
                 sin(x) / pow(x, 2.e)
             }
             println(b.plainToString())
-            println(directEqualsCtx(a, b))
+            println(directEquals(a, b))
             println(expr.plainToString())
         }
     }

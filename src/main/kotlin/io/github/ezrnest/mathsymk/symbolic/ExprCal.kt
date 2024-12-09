@@ -48,8 +48,8 @@ interface ExprCal {
         TODO()
     }
 
-    fun directEqualsCtx(node1: Node, node2: Node, ctx: EContext = this.context): Boolean {
-        return directEqualsCtx0(node1, node2, ctx, mutableMapOf())
+    fun directEquals(node1: Node, node2: Node): Boolean {
+        return directEquals0(node1, node2, mutableMapOf())
     }
 
 
@@ -101,7 +101,7 @@ interface ExprCal {
 
     companion object {
 
-        private fun ExprCal.symbolEquals(
+        private fun symbolEquals(
             symbol1: ESymbol, symbol2: ESymbol,
             symbolMap: MutableMap<ESymbol, ESymbol?>
         ): Boolean {
@@ -114,16 +114,16 @@ interface ExprCal {
         }
 
         private fun ExprCal.addQualifiedSymbols(
-            node: NodeChilded, ctx: EContext, symbolMap: MutableMap<ESymbol, ESymbol?>
+            node: NodeChilded, symbolMap: MutableMap<ESymbol, ESymbol?>
         ) {
             val def = getDefinition(node.symbol) ?: return
-            def.qualifiedVariables(node, ctx, this).forEach { symbol ->
+            def.qualifiedVariables(node).forEach { symbol ->
                 symbolMap[symbol] = null
             }
         }
 
-        internal fun ExprCal.directEqualsCtx0(
-            n1: Node, n2: Node, ctx: EContext, symbolMap: MutableMap<ESymbol, ESymbol?>
+        internal fun ExprCal.directEquals0(
+            n1: Node, n2: Node, symbolMap: MutableMap<ESymbol, ESymbol?>
         ): Boolean {
             if (n1 === n2) return true
             if (n1::class != n2::class) return false
@@ -136,34 +136,34 @@ interface ExprCal {
                 is Node1 -> {
                     if (n2 !is Node1) return false
                     if (!symbolEquals(n1.symbol, n2.symbol, symbolMap)) return false
-                    addQualifiedSymbols(n1, ctx, symbolMap)
-                    return directEqualsCtx0(n1.child, n2.child, ctx, symbolMap)
+                    addQualifiedSymbols(n1, symbolMap)
+                    return directEquals0(n1.child, n2.child, symbolMap)
                 }
 
                 is Node2 -> {
                     if (n2 !is Node2) return false
                     if (!symbolEquals(n1.symbol, n2.symbol, symbolMap)) return false
-                    addQualifiedSymbols(n1, ctx, symbolMap)
-                    return directEqualsCtx0(n1.first, n2.first, ctx, symbolMap) &&
-                            directEqualsCtx0(n1.second, n2.second, ctx, symbolMap)
+                    addQualifiedSymbols(n1, symbolMap)
+                    return directEquals0(n1.first, n2.first, symbolMap) &&
+                            directEquals0(n1.second, n2.second, symbolMap)
                 }
 
                 is Node3 -> {
                     if (n2 !is Node3) return false
                     if (!symbolEquals(n1.symbol, n2.symbol, symbolMap)) return false
-                    addQualifiedSymbols(n1, ctx, symbolMap)
-                    return directEqualsCtx0(n1.first, n2.first, ctx, symbolMap) &&
-                            directEqualsCtx0(n1.second, n2.second, ctx, symbolMap) &&
-                            directEqualsCtx0(n1.third, n2.third, ctx, symbolMap)
+                    addQualifiedSymbols(n1, symbolMap)
+                    return directEquals0(n1.first, n2.first, symbolMap) &&
+                            directEquals0(n1.second, n2.second, symbolMap) &&
+                            directEquals0(n1.third, n2.third, symbolMap)
                 }
 
                 is NodeChilded -> {
                     if (n2 !is NodeChilded) return false
                     if (!symbolEquals(n1.symbol, n2.symbol, symbolMap)) return false
-                    addQualifiedSymbols(n1, ctx, symbolMap)
+                    addQualifiedSymbols(n1, symbolMap)
                     if (n1.children.size != n2.children.size) return false
                     return n1.children.indices.all { i ->
-                        directEqualsCtx0(n1.children[i], n2.children[i], ctx, symbolMap)
+                        directEquals0(n1.children[i], n2.children[i], symbolMap)
                     }
                 }
 
