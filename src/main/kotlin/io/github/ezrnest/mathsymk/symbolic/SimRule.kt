@@ -3,6 +3,8 @@ package io.github.ezrnest.mathsymk.symbolic
 import io.github.ezrnest.mathsymk.util.WithInt
 import io.github.ezrnest.mathsymk.util.all2
 
+
+
 // created at 2024/10/1
 interface SimRule : TransRule {
     override val description: String
@@ -24,15 +26,20 @@ interface SimRule : TransRule {
         get() = AnyMatcher
 
 
-    override fun init(cal: ExprCal): SimRule? {
-        return this
-    }
+//    override fun init(cal: ExprCal): SimRule? {
+//        return this
+//    }
+}
+
+@FunctionalInterface
+fun interface BuilderSimRule : BuilderTransRule{
+    override fun init(context: ExprCal): SimRule?
 }
 
 
 class RuleSort(val targetSym: ESymbol) : SimRule {
 
-    override val matcher: NodeMatcherT<Node> = LeafMatcherFixSig(targetSym)
+    override val matcher: NodeMatcherT<Node> = LeafMatcherFixSym(targetSym)
 
     override val description: String = "Sort"
 
@@ -99,7 +106,7 @@ abstract class RuleForSpecificName(val targetSym: ESymbol) : SimRule {
 
 
 abstract class RuleForSpecific1(targetName: ESymbol) : RuleForSpecificName(targetName) {
-    final override val matcher: NodeMatcherT<Node> = LeafMatcherFixSig(targetName)
+    final override val matcher: NodeMatcherT<Node> = LeafMatcherFixSym(targetName)
 
     final override fun simplify(node: Node, ctx: EContext, cal: ExprCal): WithInt<Node>? {
         return simplifyNodeTyped<Node1>(node) { n -> simplify1(n, ctx, cal) }
@@ -109,7 +116,7 @@ abstract class RuleForSpecific1(targetName: ESymbol) : RuleForSpecificName(targe
 }
 
 abstract class RuleForSpecific2(targetName: ESymbol) : RuleForSpecificName(targetName) {
-    final override val matcher: NodeMatcherT<Node> = LeafMatcherFixSig(targetName)
+    final override val matcher: NodeMatcherT<Node> = LeafMatcherFixSym(targetName)
 
     final override fun simplify(node: Node, ctx: EContext, cal: ExprCal): WithInt<Node>? {
         return simplifyNodeTyped<Node2>(node) { n -> simplify2(n, ctx, cal) }
@@ -122,7 +129,7 @@ abstract class RuleForSpecific2(targetName: ESymbol) : RuleForSpecificName(targe
 
 abstract class RuleForSpecificN(targetName: ESymbol) : RuleForSpecificName(targetName) {
 
-    final override val matcher: NodeMatcherT<NodeChilded> = LeafMatcherFixSig(targetName)
+    final override val matcher: NodeMatcherT<NodeChilded> = LeafMatcherFixSym(targetName)
 
     final override fun simplify(node: Node, ctx: EContext, cal: ExprCal): WithInt<Node>? {
         return simplifyNodeTyped<NodeN>(node) { n -> simplifyN(n, ctx, cal) }

@@ -4,7 +4,6 @@ import io.github.ezrnest.mathsymk.util.WithInt
 import java.util.*
 import kotlin.Comparator
 import kotlin.collections.ArrayList
-import kotlin.collections.LinkedHashMap
 
 
 class TreeDispatcher<T>() {
@@ -185,10 +184,10 @@ class TreeDispatcher<T>() {
     private fun buildTo(
         matcher: NodeMatcherT<*>, node: DispatchNode<T>, variable: Boolean = false
     ): WithInt<DispatchResult<T>> {
-        if (matcher is TransparentNodeMatcher) {
+        if (matcher is TransparentMatcher) {
             return buildTo(matcher.matcher, node, variable)
         }
-        val nodeRes: DispatchResult<T> = if (matcher is NodeBranchMatcher) {
+        val nodeRes: DispatchResult<T> = if (matcher is BranchMatcher) {
             val map = if (variable) {
                 node.variable ?: mutableMapOf<ESymbol, DispatchResult<T>>().also { node.variable = it }
             } else {
@@ -198,7 +197,7 @@ class TreeDispatcher<T>() {
         } else {
             node.wildcard ?: DispatchResult<T>().also { node.wildcard = it }
         }
-        if (matcher is NMatcherChildedOrdered) {
+        if (matcher is BranchMatcherChildedOrdered) {
             return buildChildrenTo(nodeRes, matcher.children)
         }
         if (matcher is NodeMatcherNPO) {

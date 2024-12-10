@@ -10,10 +10,11 @@ object NodeOrder : Comparator<Node> {
             is NRational -> 0
             is NSymbol -> 10
             is LeafNode -> 99
-            is Node1 -> 100
-            is Node2 -> 110
-            is Node3 -> 120
-            is NodeN -> 1000
+            is NodeChilded -> 100
+//            is Node1 -> 100
+//            is Node2 -> 110
+//            is Node3 -> 120
+//            is NodeN -> 1000
 //            is NodeChilded -> 9999
         }
     }

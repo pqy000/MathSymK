@@ -39,7 +39,7 @@ interface ExprCal {
 
     fun enterContext(root: Node, context: EContext): List<EContext>
 
-    fun getDefinition(symbol: ESymbol): NodeProperties? {
+    fun getDefinition(symbol: ESymbol): SymbolDefinition? {
         return null
     }
 
@@ -219,7 +219,7 @@ open class BasicExprCal : ExprCal, NodeScopePredefinedSymbols {
     val transRules: TreeDispatcher<TransRule> = TreeDispatcher()
 
 //    val ctxInfo: TreeDispatcher<NodeProperties> = TreeDispatcher()
-    val symbolDefinitions : MutableMap<ESymbol, NodeProperties> = mutableMapOf()
+    val symbolDefinitions : MutableMap<ESymbol, SymbolDefinition> = mutableMapOf()
 
 
     var verbose: Verbosity = Verbosity.NONE
@@ -229,7 +229,7 @@ open class BasicExprCal : ExprCal, NodeScopePredefinedSymbols {
         NONE, WHEN_APPLIED, ALL
     }
 
-    override val context: EContext = EmptyEContext // TODO
+    override var context: EContext = EmptyEContext // TODO
 
     var complexity: NodeComplexity = BasicComplexity
 
@@ -254,8 +254,12 @@ open class BasicExprCal : ExprCal, NodeScopePredefinedSymbols {
     }
 
     fun registerReduceRule(rule: SimRule) {
-        val rule = rule.init(this) ?: return
         reduceRules.register(rule.matcher, rule)
+    }
+
+    fun registerReduceRule(rb: BuilderSimRule) {
+        val rule = rb.init(this) ?: return
+        registerReduceRule(rule)
     }
 
     fun registerReduceRuleAll(rules: RuleList) {
@@ -263,15 +267,19 @@ open class BasicExprCal : ExprCal, NodeScopePredefinedSymbols {
     }
 
     fun registerRule(rule: TransRule) {
-        val inited = rule.init(this) ?: return
-        transRules.register(inited.matcher, inited)
+        transRules.register(rule.matcher, rule)
     }
 
-    fun registerContextInfo(info: NodeProperties) {
+    fun registerRule(rb: BuilderTransRule) {
+        val rule = rb.init(this) ?: return
+        registerRule(rule)
+    }
+
+    fun registerSymbol(info: SymbolDefinition) {
         symbolDefinitions[info.symbol] = info
     }
 
-    override fun getDefinition(symbol: ESymbol): NodeProperties? {
+    override fun getDefinition(symbol: ESymbol): SymbolDefinition? {
         return symbolDefinitions[symbol]
     }
 

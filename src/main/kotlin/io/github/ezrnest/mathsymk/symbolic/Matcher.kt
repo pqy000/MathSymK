@@ -10,16 +10,16 @@ import io.github.ezrnest.mathsymk.symbolic.alg.SymAlg
 interface MatchResult {
     val cal: ExprCal
 
-    val refMap: Map<String, Node>
+    val refMap: Map<ESymbol, Node>
 
 
-    fun addRef(name: String, node: Node): MatchResult {
+    fun addRef(name: ESymbol, node: Node): MatchResult {
         val newMap = refMap.toMutableMap()
         newMap[name] = node
         return MatchResultImpl(cal, newMap)
     }
 
-    fun getRef(name: String): Node? {
+    fun getRef(name: ESymbol): Node? {
         return refMap[name]
     }
 
@@ -31,8 +31,12 @@ interface MatchResult {
 
         internal data class MatchResultImpl(
             override val cal: ExprCal,
-            override val refMap: Map<String, Node> = mapOf()
-        ) : MatchResult
+            override val refMap: Map<ESymbol, Node> = emptyMap()
+        ) : MatchResult{
+            override fun toString(): String {
+                return "MatchResult($refMap)"
+            }
+        }
     }
 }
 
@@ -68,38 +72,37 @@ sealed interface NodeMatcherT<out T : Node> {
     }
 
 
-    val refNames: Set<String>
-}
-
-
-interface NodeBranchMatcher<T : Node> : NodeMatcherT<T> {
-    val symbol: ESymbol
-}
-
-interface NMatcherChilded<T : Node> : NodeBranchMatcher<T> {
-    val children: List<NodeMatcherT<Node>>
-
-}
-
-interface NMatcherChildedOrdered<T : Node> : NMatcherChilded<T> {
-    override val children: List<NodeMatcherT<Node>>
-}
-
-interface TransparentNodeMatcher<T : Node> : NodeMatcherT<T> {
-    val matcher: NodeMatcherT<T>
+    val refNames: Set<ESymbol>
 }
 
 interface LeafMatcher<T : Node> : NodeMatcherT<T>
 
-abstract class AbsNMatcherFixSig<T : Node>(final override val symbol: ESymbol) : NodeBranchMatcher<T>
+interface TransparentMatcher<T : Node> : NodeMatcherT<T> {
+    val matcher: NodeMatcherT<T>
+}
+
+interface BranchMatcher<T : Node> : NodeMatcherT<T> {
+    val symbol: ESymbol
+}
+
+interface BranchMatcherChilded<T : Node> : BranchMatcher<T> {
+    val children: List<NodeMatcherT<Node>>
+}
+
+interface BranchMatcherChildedOrdered<T : Node> : BranchMatcherChilded<T> {
+    override val children: List<NodeMatcherT<Node>>
+}
+
+
+abstract class AbsBranchMatcher<T : Node>(final override val symbol: ESymbol) : BranchMatcher<T>
 
 class NodeMatcher1<C : Node>(val child: NodeMatcherT<C>, symbol: ESymbol) :
-    AbsNMatcherFixSig<Node1T<C>>(symbol), NMatcherChildedOrdered<Node1T<C>> {
+    AbsBranchMatcher<Node1T<C>>(symbol), BranchMatcherChildedOrdered<Node1T<C>> {
 
     override val children: List<NodeMatcherT<Node>>
         get() = listOf(child)
 
-    override val refNames: Set<String>
+    override val refNames: Set<ESymbol>
         get() = child.refNames
 
     override fun matches(node: Node, ctx: EContext, matching: MatchResult): MatchResult? {
@@ -126,11 +129,11 @@ class NodeMatcher1<C : Node>(val child: NodeMatcherT<C>, symbol: ESymbol) :
 class NodeMatcher2Ordered<C1 : Node, C2 : Node>(
     val child1: NodeMatcherT<C1>, val child2: NodeMatcherT<C2>, symbol: ESymbol
 ) :
-    AbsNMatcherFixSig<Node2T<C1, C2>>(symbol), NMatcherChildedOrdered<Node2T<C1, C2>> {
+    AbsBranchMatcher<Node2T<C1, C2>>(symbol), BranchMatcherChildedOrdered<Node2T<C1, C2>> {
     override val children: List<NodeMatcherT<Node>>
         get() = listOf(child1, child2)
 
-    override val refNames: Set<String> by lazy(LazyThreadSafetyMode.NONE) {
+    override val refNames: Set<ESymbol> by lazy(LazyThreadSafetyMode.NONE) {
         child1.refNames + child2.refNames
     }
 
@@ -162,11 +165,11 @@ class NodeMatcher2Ordered<C1 : Node, C2 : Node>(
 
 class NodeMatcher3Ordered<C1 : Node, C2 : Node, C3 : Node>(
     val child1: NodeMatcherT<C1>, val child2: NodeMatcherT<C2>, val child3: NodeMatcherT<C3>, symbol: ESymbol
-) : AbsNMatcherFixSig<Node3T<C1, C2, C3>>(symbol),
-    NMatcherChildedOrdered<Node3T<C1, C2, C3>> {
+) : AbsBranchMatcher<Node3T<C1, C2, C3>>(symbol),
+    BranchMatcherChildedOrdered<Node3T<C1, C2, C3>> {
     override val children: List<NodeMatcherT<Node>>
         get() = listOf(child1, child2, child3)
-    override val refNames: Set<String> by lazy(LazyThreadSafetyMode.NONE) {
+    override val refNames: Set<ESymbol> by lazy(LazyThreadSafetyMode.NONE) {
         child1.refNames + child2.refNames + child3.refNames
     }
 
@@ -200,9 +203,9 @@ class NodeMatcher3Ordered<C1 : Node, C2 : Node, C3 : Node>(
     }
 }
 
-class NMatcherNOrdered(override val children: List<NodeMatcherT<Node>>, symbol: ESymbol) :
-    AbsNMatcherFixSig<NodeN>(symbol), NMatcherChildedOrdered<NodeN> {
-    override val refNames: Set<String> by lazy(LazyThreadSafetyMode.NONE) {
+class NodeMatcherNOrdered(override val children: List<NodeMatcherT<Node>>, symbol: ESymbol) :
+    AbsBranchMatcher<NodeN>(symbol), BranchMatcherChildedOrdered<NodeN> {
+    override val refNames: Set<ESymbol> by lazy(LazyThreadSafetyMode.NONE) {
         children.flatMap { it.refNames }.toSet()
     }
 
@@ -229,7 +232,7 @@ object NothingMatcher : LeafMatcher<Node> {
         return null
     }
 
-    override val refNames: Set<String> get() = emptySet()
+    override val refNames: Set<ESymbol> get() = emptySet()
 
     override fun toString(): String {
         return "Nothing"
@@ -249,7 +252,7 @@ object AnyMatcher : LeafMatcher<Node> {
         return matching
     }
 
-    override val refNames: Set<String> get() = emptySet()
+    override val refNames: Set<ESymbol> get() = emptySet()
 
     override fun toString(): String {
         return "Any"
@@ -262,7 +265,7 @@ object AnyRationalMatcher : LeafMatcher<NRational> {
         return null
     }
 
-    override val refNames: Set<String> get() = emptySet()
+    override val refNames: Set<ESymbol> get() = emptySet()
 
 
     override fun toString(): String {
@@ -276,7 +279,7 @@ object AnySymbolMatcher : LeafMatcher<NSymbol> {
         return null
     }
 
-    override val refNames: Set<String> get() = emptySet()
+    override val refNames: Set<ESymbol> get() = emptySet()
 
     override fun toString(): String {
         return "AnySymbol"
@@ -284,7 +287,7 @@ object AnySymbolMatcher : LeafMatcher<NSymbol> {
 }
 
 
-class MatcherRef(val name: String) : LeafMatcher<Node> {
+class MatcherRef(val name: ESymbol) : LeafMatcher<Node> {
     override fun matches(node: Node, ctx: EContext, matching: MatchResult): MatchResult? {
         val ref = matching.refMap[name]
         if (ref == null) {
@@ -293,15 +296,15 @@ class MatcherRef(val name: String) : LeafMatcher<Node> {
         return if (ref == node) matching else null
     }
 
-    override val refNames: Set<String> get() = setOf(name)
+    override val refNames: Set<ESymbol> get() = setOf(name)
 
     override fun toString(): String {
         return "Ref($name)"
     }
 }
 
-class MatcherNamed<T : Node>(override val matcher: NodeMatcherT<T>, val name: String) : TransparentNodeMatcher<T> {
-    override val refNames: Set<String>
+class MatcherNamed<T : Node>(override val matcher: NodeMatcherT<T>, val name: ESymbol) : TransparentMatcher<T> {
+    override val refNames: Set<ESymbol>
         get() = matcher.refNames + name
 
     override fun toString(): String {
@@ -337,30 +340,31 @@ class MatcherNamed<T : Node>(override val matcher: NodeMatcherT<T>, val name: St
 
 class MatcherWithPrecondition<T : Node>(
     override val matcher: NodeMatcherT<T>, val pre: (Node, EContext, MatchResult) -> Boolean
-) : TransparentNodeMatcher<T> {
+) : TransparentMatcher<T> {
     override fun matches(node: Node, ctx: EContext, matching: MatchResult): MatchResult? {
         return if (pre(node, ctx, matching)) matcher.matches(node, ctx, matching) else null
     }
 
-    override val refNames: Set<String>
+    override val refNames: Set<ESymbol>
         get() = matcher.refNames
 }
 
 class MatcherWithPostcondition<T : Node>(
     override val matcher: NodeMatcherT<T>, val post: (Node, EContext, MatchResult) -> Boolean
-) : TransparentNodeMatcher<T> {
+) : TransparentMatcher<T> {
     override fun matches(node: Node, ctx: EContext, matching: MatchResult): MatchResult? {
         return matcher.matches(node, ctx, matching)?.takeIf { post(node, ctx, it) }
     }
 
-    override val refNames: Set<String>
+    override val refNames: Set<ESymbol>
         get() = matcher.refNames
 }
 
 class MatcherWithPostConditionNode<T : Node>(
     override val matcher: NodeMatcherT<T>, val condition: Node,
-) : TransparentNodeMatcher<T> {
-    override val refNames: Set<String>
+//    val ref
+) : TransparentMatcher<T> {
+    override val refNames: Set<ESymbol>
         get() = matcher.refNames
 
     override fun matches(node: Node, ctx: EContext, matching: MatchResult): MatchResult? {
@@ -377,7 +381,7 @@ class FixedNodeMatcher<T : Node>(val target: T) : LeafMatcher<T> {
         return if (node == target) matching else null
     }
 
-    override val refNames: Set<String> get() = emptySet()
+    override val refNames: Set<ESymbol> get() = emptySet()
 
 
     override fun toString(): String {
@@ -393,10 +397,10 @@ class FixedNodeMatcher<T : Node>(val target: T) : LeafMatcher<T> {
     }
 }
 
-class LeafMatcherFixSig(symbol: ESymbol) :
-    AbsNMatcherFixSig<NodeChilded>(symbol), LeafMatcher<NodeChilded> {
+class LeafMatcherFixSym(symbol: ESymbol) :
+    AbsBranchMatcher<NodeChilded>(symbol), LeafMatcher<NodeChilded> {
 
-    override val refNames: Set<String>
+    override val refNames: Set<ESymbol>
         get() = emptySet()
 
     override fun matches(node: Node, ctx: EContext, matching: MatchResult): MatchResult? {
@@ -410,7 +414,7 @@ class LeafMatcherFixSig(symbol: ESymbol) :
 class NodeMatcherNPO(
     children: List<NodeMatcherT<Node>>, symbol: ESymbol,
     var remMatcher: NodeMatcherT<Node> = NothingMatcher
-) : AbsNMatcherFixSig<NodeN>(symbol), NMatcherChilded<NodeN> {
+) : AbsBranchMatcher<NodeN>(symbol), BranchMatcherChilded<NodeN> {
 
     override fun toString(): String {
         return "${symbol}(${childrenChains.flatten().joinToString(", ")})"
@@ -428,7 +432,7 @@ class NodeMatcherNPO(
     private val requireFullMatch: Boolean
         get() = childrenChains.size == 1 && remMatcher === NothingMatcher
 
-    override val refNames: Set<String> by lazy(LazyThreadSafetyMode.NONE) {
+    override val refNames: Set<ESymbol> by lazy(LazyThreadSafetyMode.NONE) {
         children.flatMap { it.refNames }.toSet()
     }
 
@@ -505,7 +509,7 @@ class NodeMatcherNPO(
     companion object {
         private fun NodeMatcherT<*>.unwrap(): NodeMatcherT<Node> {
             var m = this
-            while (m is TransparentNodeMatcher<*>) {
+            while (m is TransparentMatcher<*>) {
                 m = m.matcher
             }
             return m
@@ -514,8 +518,8 @@ class NodeMatcherNPO(
 
     object ChainPreference : Comparator<List<NodeMatcherT<*>>> {
 
-        fun compareChildren(o1: NodeBranchMatcher<*>, o2: NodeBranchMatcher<*>): Int {
-            if (o1 is NMatcherChildedOrdered && o2 is NMatcherChildedOrdered) {
+        fun compareChildren(o1: BranchMatcher<*>, o2: BranchMatcher<*>): Int {
+            if (o1 is BranchMatcherChildedOrdered && o2 is BranchMatcherChildedOrdered) {
                 val c = o1.children.size - o2.children.size
                 if (c != 0) return c
                 for (i in o1.children.indices) {
@@ -529,13 +533,13 @@ class NodeMatcherNPO(
         fun compareNode(o1: NodeMatcherT<*>, o2: NodeMatcherT<*>): Int {
             val a = o1.unwrap()
             val b = o2.unwrap()
-            if (a is NodeBranchMatcher<*> && b is NodeBranchMatcher<*>) {
+            if (a is BranchMatcher<*> && b is BranchMatcher<*>) {
                 val c = a.symbol.compareTo(b.symbol)
                 if (c != 0) return c
                 return compareChildren(a, b)
             }
-            if (a is NodeBranchMatcher) return -1
-            if (b is NodeBranchMatcher) return 1
+            if (a is BranchMatcher) return -1
+            if (b is BranchMatcher) return 1
 
             return 0
         }
@@ -557,8 +561,8 @@ class NodeMatcherNPO(
      */
     object MatcherPartialOrder : PartialOrder<NodeMatcherT<*>> {
 
-        fun compareChildren(o1: NodeBranchMatcher<*>, o2: NodeBranchMatcher<*>): PartialOrder.Result {
-            if (o1 is NMatcherChildedOrdered && o2 is NMatcherChildedOrdered) {
+        fun compareChildren(o1: BranchMatcher<*>, o2: BranchMatcher<*>): PartialOrder.Result {
+            if (o1 is BranchMatcherChildedOrdered && o2 is BranchMatcherChildedOrdered) {
                 val c = o1.children.size - o2.children.size
                 if (c != 0) return PartialOrder.Result.ofInt(c)
                 for (i in o1.children.indices) {
@@ -574,7 +578,7 @@ class NodeMatcherNPO(
         override fun compare(o1: NodeMatcherT<*>, o2: NodeMatcherT<*>): PartialOrder.Result {
             val a = o1.unwrap()
             val b = o2.unwrap()
-            if (a is NodeBranchMatcher<*> && b is NodeBranchMatcher<*>) {
+            if (a is BranchMatcher<*> && b is BranchMatcher<*>) {
                 val c = a.symbol.compareTo(b.symbol)
                 if (c != 0) return PartialOrder.Result.ofInt(c)
                 return compareChildren(a, b)
@@ -588,16 +592,16 @@ class NodeMatcherNPO(
 
 
 interface MatcherBuilderScope {
-    val x: MatcherRef get() = MatcherRef("x")
-    val y: MatcherRef get() = MatcherRef("y")
-    val z: MatcherRef get() = MatcherRef("z")
+    val x: MatcherRef get() = ref("x")
+    val y: MatcherRef get() = ref("y")
+    val z: MatcherRef get() = ref("z")
 
 
-    val String.ref: MatcherRef get() = MatcherRef(this)
+    val String.ref: MatcherRef get() = ref(this)
 //    val String.s: NodeMatcherT<NSymbol> get() = symbol(NSymbol(this))
 
     fun ref(name: String): MatcherRef {
-        return MatcherRef(name)
+        return MatcherRef(ESymbol(name))
     }
 
     fun symbol(name: ESymbol): NodeMatcherT<NSymbol> {
@@ -654,7 +658,7 @@ interface MatcherScopeAlg : MatcherBuilderScope {
         // flatten the children
         val newChildren = ArrayList<NodeMatcherT<Node>>(children.size)
         for (c in children) {
-            if (c is NMatcherNOrdered && c.symbol == sig) {
+            if (c is NodeMatcherNOrdered && c.symbol == sig) {
                 newChildren.addAll(c.children)
             } else if (c is NodeMatcherNPO && c.symbol == sig) {
                 newChildren.addAll(c.childrenChains[0])
@@ -674,7 +678,7 @@ interface MatcherScopeAlg : MatcherBuilderScope {
     }
 
 
-    fun <T : Node> NodeMatcherT<T>.named(name: String): NodeMatcherT<T> {
+    fun <T : Node> NodeMatcherT<T>.named(name: ESymbol): NodeMatcherT<T> {
         return MatcherNamed(this, name)
     }
 
@@ -697,9 +701,192 @@ fun <T : Node> buildMatcher(action: MatcherScopeAlg.() -> NodeMatcherT<T>): Node
     return action(MatcherScopeAlg)
 }
 
+
+interface INodeScopeReferring : NodeScope {
+
+    val referenceMap: MutableMap<String, ESymbol>
+    val declaredRefs: MutableSet<ESymbol>
+
+
+    fun ref(name: String): Node {
+        val sym = referenceMap.getOrPut(name) {
+            ESymbol(name).also { declaredRefs.add(it) }
+        }
+        return NSymbol(sym)
+    }
+}
+
+interface NodeScopeMatcher : INodeScopeReferring, NodeScopeWithPredefined {
+    override val x: Node get() = ref("x")
+    override val y: Node get() = ref("y")
+    override val z: Node get() = ref("z")
+    override val w: Node get() = ref("w")
+    override val a: Node get() = ref("a")
+    override val b: Node get() = ref("b")
+    override val c: Node get() = ref("c")
+
+    val String.ref get() = ref(this)
+
+    fun Node.named(name: String): Node {
+        return Node2T(F2_Named,this, ref(name))
+    }
+
+    fun Node.where(clause: Node): Node {
+        return Node2T(F2_Where, this, clause)
+    }
+
+    fun Node.where(clauseBuilder: () -> Node): Node {
+        return Node2T(F2_Where, this, clauseBuilder())
+    }
+
+    companion object {
+
+
+        private class NodeScopeMatcherImpl(
+            context: EContext,
+        ) : AbstractNodeScopeMatcher(context), NodeScopeMatcher
+
+        operator fun invoke(context: EContext): NodeScopeMatcher = NodeScopeMatcherImpl(context)
+
+        val F2_Named = ESymbol("Named")
+        val F2_Where = ESymbol("Where")
+
+        const val MatcherSymbolPrefix = "_"
+
+        private fun NodeScopeMatcher.buildSymbol(node: NSymbol): NodeMatcher {
+            val sym = node.symbol
+            if (sym in declaredRefs) {
+                // TODO: add conditioned symbol
+                return MatcherRef(sym)
+            }
+            return FixedNodeMatcher(node)
+        }
+
+        private fun NodeScopeMatcher.buildNamed(node: Node, cal: ExprCal): NodeMatcher {
+            require(node is Node2)
+            val child = buildMatcher0(node.first, cal)
+            val name = (node.second as NSymbol).symbol
+            return MatcherNamed(child, name)
+        }
+
+        private fun NodeScopeMatcher.buildWhere(node: Node, cal: ExprCal): NodeMatcher {
+            require(node is Node2)
+            val child = buildMatcher0(node.first, cal)
+            val clauseRef = node.second
+            return MatcherWithPostConditionNode(child, clauseRef)
+        }
+
+        private fun NodeScopeMatcher.buildMatcher0(node: Node, cal: ExprCal): NodeMatcher {
+            if (node is NodeChilded) {
+                when (node.symbol) {
+                    F2_Named -> {
+                        return buildNamed(node, cal)
+                    }
+
+                    F2_Where -> {
+                        return buildWhere(node, cal)
+                    }
+                }
+            }
+            if (node is NodeChilded) {
+                val def = cal.getDefinition(node.symbol)
+                if(def != null){
+                    declaredRefs.addAll(def.qualifiedVariables(node))
+                }
+            }
+            when (node) {
+                is NSymbol -> return buildSymbol(node)
+                is LeafNode -> return FixedNodeMatcher(node)
+                is Node1 -> {
+                    val child = buildMatcher0(node.child, cal)
+                    return NodeMatcher1(child, node.symbol)
+                }
+
+                is Node2 -> {
+                    val left = buildMatcher0(node.first, cal)
+                    val right = buildMatcher0(node.second, cal)
+                    return NodeMatcher2Ordered(left, right, node.symbol)
+                }
+
+                is Node3 -> {
+                    val first = buildMatcher0(node.first, cal)
+                    val second = buildMatcher0(node.second, cal)
+                    val third = buildMatcher0(node.third, cal)
+                    return NodeMatcher3Ordered(first, second, third, node.symbol)
+                }
+
+                is NodeChilded -> {
+                    val children = node.children.map { buildMatcher0(it, cal) }
+                    if (cal.isCommutative(node.symbol)) {
+                        return NodeMatcherNPO(children, node.symbol)
+                    }
+                    return NodeMatcherNOrdered(children, node.symbol)
+                }
+
+//                else -> throw IllegalArgumentException("Unknown node type: ${node::class.simpleName}")
+            }
+        }
+
+        fun buildMatcher(scope: NodeScopeMatcher, node: Node, cal: ExprCal): NodeMatcher {
+            return scope.buildMatcher0(node, cal)
+        }
+
+        fun warpPartialMatcherReplace(
+            matcher: NodeMatcher, rep: RepBuilder, description: String,
+            maxDepth: Int = Int.MAX_VALUE
+        ): MatcherReplaceRule {
+            if (matcher is NodeMatcherNPO && matcher.remMatcher is NothingMatcher) {
+                val sym = matcher.symbol
+                val remName = ESymbol("rem${matcher.symbol.name}")
+                val rem = MatcherRef(remName)
+                matcher.remMatcher = rem
+                val replacement: RepBuilder = {
+                    TODO()
+//                    rep()?.let { sub ->
+//                        if (!hasRef(remName)) {
+//                            sub
+//                        } else {
+//                            NodeN(sym, listOf(sub, ref(remName)))
+//                        }
+//                    }
+                }
+                return MatcherReplaceRule(matcher, replacement, description, maxDepth)
+            }
+            return MatcherReplaceRule(matcher, rep, description, maxDepth)
+        }
+
+
+        fun substituteIn(nodeRef: Node, rootCtx: EContext, matching: MatchResult): Node {
+            val cal = matching.cal
+            return cal.substitute(nodeRef, rootCtx) { node, ctx ->
+                if (node !is NSymbol) return@substitute null
+                val name = node.symbol.name
+                if (!name.startsWith(MatcherSymbolPrefix)) {
+                    return@substitute null
+                }
+                val ref = matching.getRef(name)
+                    ?: throw IllegalArgumentException("No reference found for [$name]")
+                return@substitute ref
+            }
+        }
+
+        fun testConditionRef(condRef: Node, ctx: EContext, matching: MatchResult): Boolean {
+            val reifiedCond = substituteIn(condRef, ctx, matching)
+            val cal = matching.cal
+            return cal.isSatisfied(ctx, reifiedCond)
+        }
+    }
+}
+
+abstract class AbstractNodeScopeMatcher(context: EContext) : AbstractNodeScope(context), INodeScopeReferring {
+    final override val referenceMap: MutableMap<String, ESymbol> = mutableMapOf()
+    final override val declaredRefs: MutableSet<ESymbol> = mutableSetOf()
+}
+
 fun buildMatcherExpr(cal: ExprCal, action: NodeScopeMatcher.() -> Node): NodeMatcher {
     val scope = NodeScopeMatcher(cal.context)
-    val node = scope.action()
+    val node = cal.reduce(scope.action())
+    println(node.plainToString())
     return NodeScopeMatcher.buildMatcher(scope, node, cal)
 }
 

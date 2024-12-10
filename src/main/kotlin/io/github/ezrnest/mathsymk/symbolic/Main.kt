@@ -8,9 +8,9 @@ val TestExprCal = BasicExprCal()
 
 fun main() {
     val cal = TestExprCal
-    cal.verbose = BasicExprCal.Verbosity.ALL
-    cal.registerContextInfo(QualifierNodeProperties(SymLogic.Symbols.FOR_ALL))
-    cal.registerContextInfo(QualifierNodeProperties(SymAlg.Symbols.SUM))
+    cal.verbose = BasicExprCal.Verbosity.WHEN_APPLIED
+    cal.registerSymbol(QualifierSymbolDef(SymLogic.Symbols.FOR_ALL))
+    cal.registerSymbol(QualifierSymbolDef(SymAlg.Symbols.SUM))
     with(cal) {
 //        ESymbol.displayHash = true
         alg {
@@ -25,10 +25,20 @@ fun main() {
             println(a.plainToString())
             val b = sum(1.e, N, "n") { x ->
                 sin(x) / pow(x, 2.e)
-            }
+            }.let(::reduce)
+
+//            expr = (sin(x) / pow(x, 2.e)).let(::reduce)
+
             println(b.plainToString())
             println(directEquals(a, b))
             println(expr.plainToString())
+
+            val matcher = buildMatcherExpr(cal){
+                alg{
+                    sum(1.e,"N".ref){ x -> sin(x) / pow(x, 2.e) }
+                }
+            }
+            println(matcher.matches(b,cal.context,MatchResult(cal)))
         }
     }
 
