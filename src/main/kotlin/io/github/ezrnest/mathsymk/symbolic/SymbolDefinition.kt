@@ -4,19 +4,19 @@ import java.util.Collections
 
 
 
-interface NodeProperties {
+interface SymbolDefinition {
     val symbol: ESymbol
 
     fun enterContext(root: Node, rootCtx: EContext, cal: ExprCal): List<EContext>
 
-    fun qualifiedVariables(root: Node, rootCtx: EContext, cal: ExprCal): List<ESymbol>
+    fun qualifiedVariables(root: Node): List<ESymbol>
 }
 
-class QualifierNodeProperties(
+class QualifierSymbolDef(
     override val symbol: ESymbol,
-) : NodeProperties {
+) : SymbolDefinition {
 
-    override fun qualifiedVariables(root: Node, rootCtx: EContext, cal: ExprCal): List<ESymbol> {
+    override fun qualifiedVariables(root: Node): List<ESymbol> {
         require(root is NodeChilded)
         val variablesNode = root.children[0]
         require(variablesNode is NodeN)

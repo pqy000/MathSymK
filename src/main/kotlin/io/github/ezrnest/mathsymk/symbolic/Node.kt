@@ -169,6 +169,10 @@ data class NSymbol(
     override val symbol: ESymbol
 ) : AbstractNode(), LeafNode, SymbolNode {
 
+    override fun toString(): String {
+        return "Symbol($symbol)"
+    }
+
     override fun plainToString(): String {
         return symbol.toString()
     }

@@ -3,6 +3,8 @@ package io.github.ezrnest.mathsymk.symbolic
 import io.github.ezrnest.mathsymk.util.WithInt
 import io.github.ezrnest.mathsymk.util.all2
 
+
+
 // created at 2024/10/1
 interface SimRule : TransRule {
     override val description: String
@@ -24,9 +26,14 @@ interface SimRule : TransRule {
         get() = AnyMatcher
 
 
-    override fun init(cal: ExprCal): SimRule? {
-        return this
-    }
+//    override fun init(cal: ExprCal): SimRule? {
+//        return this
+//    }
+}
+
+@FunctionalInterface
+fun interface BuilderSimRule : BuilderTransRule{
+    override fun init(context: ExprCal): SimRule?
 }
 
 

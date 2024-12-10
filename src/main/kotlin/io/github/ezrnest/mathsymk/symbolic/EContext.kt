@@ -19,7 +19,6 @@ interface EContext {
 
     val namedSymbols: Map<String,ESymbol>
 
-    val conditions: Set<Node> // TODO
 
     /**
      * Gets a symbol node.
@@ -44,13 +43,10 @@ interface EContext {
 //        return s in definedSymbols
 //    }
 
-//    fun getFree(): NSymbol {
-//        TODO()
-//    }
-//
-//    fun freeSymbols(): Sequence<NSymbol> {
-//        TODO()
-//    }
+    val conditions: Set<Node>
+
+
+
 
     fun with(ctx : EContext) : EContext{
         val newDefinedSymbols = qualifiedSymbols.toMutableSet()

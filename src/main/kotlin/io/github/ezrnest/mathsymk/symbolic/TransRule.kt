@@ -16,7 +16,12 @@ interface TransRule {
 
     fun transform(node : Node, ctx: EContext, cal: ExprCal) : List<WithInt<Node>>
 
-    fun init(context: ExprCal): TransRule? {
-        return this
-    }
+//    fun init(context: ExprCal): TransRule? {
+//        return this
+//    }
+}
+
+@FunctionalInterface
+fun interface BuilderTransRule {
+    fun init(context: ExprCal): TransRule?
 }

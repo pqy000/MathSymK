@@ -54,16 +54,15 @@ internal class RuleBuilderImpl : RuleBuilder {
         setRep(buildReplacement)
     }
 
-    fun build(): SimRule {
+    fun build(): BuilderSimRule {
         val matcher = this.matcher
         val matchNodeBuilder = this.matchNodeBuilder
         val replacement = this.replacement
         require(matcher != null || matchNodeBuilder != null) { "Matcher or match node must be set" }
         require(replacement != null) { "Replacement must be set" }
-        return if (matcher != null) {
-            NodeScopeMatcher.warpPartialMatcherReplace(matcher, replacement, name, afterRuleDepth)
+        return if (matcher != null) { BuilderSimRule { NodeScopeMatcher.warpPartialMatcherReplace(matcher, replacement, name, afterRuleDepth) }
         } else {
-            MatchNodeReplaceRule(matchNodeBuilder!!, replacement, name, afterRuleDepth)
+            BuilderMatchNodeReplaceRule(matchNodeBuilder!!, replacement, name, afterRuleDepth)
         }
     }
 
@@ -72,7 +71,7 @@ internal class RuleBuilderImpl : RuleBuilder {
 
 open class RuleList {
 
-    val list: MutableList<SimRule> = mutableListOf()
+    val list: MutableList<BuilderSimRule> = mutableListOf()
 
     fun rule(f: RuleBuilder.() -> Unit) {
         val builder = RuleBuilderImpl()
@@ -81,12 +80,12 @@ open class RuleList {
     }
 }
 
-fun rule(f: RuleBuilder.() -> Unit): SimRule {
+fun rule(f: RuleBuilder.() -> Unit): BuilderSimRule {
     val builder = RuleBuilderImpl()
     builder.f()
     return builder.build()
 }
 
-fun BasicExprCal.addAllRules(rules : RuleList) {
+fun BasicExprCal.addAllRules(rules: RuleList) {
     rules.list.forEach { registerRule(it) }
 }

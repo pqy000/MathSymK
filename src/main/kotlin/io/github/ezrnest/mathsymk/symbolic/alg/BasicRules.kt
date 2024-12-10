@@ -210,7 +210,7 @@ object FlattenPow : RuleForSpecific2(SymAlg.Symbols.POW) {
     private fun flattenPowInt(base: Node, exp: NRational, context: EContext): WithInt<Node>? {
         if (BigFracAsQuot.isOne(exp.value)) return WithInt(0, base)
         if (SimUtils.isPow(base)) {
-            return WithInt(0, flattenPowPow(base, exp))
+            return WithInt(1, flattenPowPow(base, exp))
         }
         if (SimUtils.isMul(base)) {
             val children = base.children

@@ -169,9 +169,9 @@ class RuleTanSpecial : SimRuleMatched<Node1> {
 class RulesTrigonometricReduce : RuleList() {
 
     init {
-        list.add(RuleSinSpecial())
-        list.add(RuleCosSpecial())
-        list.add(RuleTanSpecial())
+        list.add(BuilderSimRule { RuleSinSpecial() })
+        list.add(BuilderSimRule { RuleCosSpecial() })
+        list.add(BuilderSimRule { RuleTanSpecial() })
     }
 
     init {
