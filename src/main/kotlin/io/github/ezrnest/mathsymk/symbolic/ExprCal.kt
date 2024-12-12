@@ -16,7 +16,7 @@ interface ExprCal {
 
     val options: Map<TypedKey<*>, Any> get() = emptyMap()
 
-    val context: EContext
+    val context: MutableEContext
 
     val rationals: BigFracAsQuot get() = BigFracAsQuot
     val multinomials: MultiOverField<BigFrac> get() = MultiOverField(rationals, Multinomial.DEFAULT_ORDER)
@@ -32,6 +32,10 @@ interface ExprCal {
         val simMaxStep: TypedKey<Int> = TypedKey("simMaxStep")
 
         val simTruncationFactor: TypedKey<Double> = TypedKey("simTruncationFactor")
+    }
+
+    fun format(node: Node): String {
+        return node.plainToString() // TODO
     }
 
 
@@ -120,15 +124,18 @@ interface ExprCal {
     fun reduceNode(node: Node, context: EContext, depth: Int = 0): Node
 
 
-    fun isSatisfied(ctx: EContext, condition: Node): Boolean {
-//        return false
-        return reduceNode(condition, ctx, Int.MAX_VALUE) == SymBasic.TRUE
-    }
-
     fun simplify(node: Node): List<Node>
 
-    fun format(node: Node): String {
-        return node.plainToString()
+
+
+    fun isSatisfied(ctx: EContext, condition: Node): Boolean {
+//        return false
+        val res =  reduceNode(condition, ctx, Int.MAX_VALUE)
+        return res == SymBasic.True || res in ctx.conditions
+    }
+
+    fun assume(condition : Node) {
+        context.conditions.add(condition)
     }
 
 
@@ -275,7 +282,7 @@ open class BasicExprCal : ExprCal, NodeScopePredefinedSymbols {
         NONE, WHEN_APPLIED, ALL
     }
 
-    override var context: EContext = EmptyEContext // TODO
+    override var context: MutableEContext = EContextImpl() // TODO
 
     var complexity: NodeComplexity = BasicComplexity
 

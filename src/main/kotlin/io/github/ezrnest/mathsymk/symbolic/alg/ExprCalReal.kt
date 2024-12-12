@@ -6,7 +6,7 @@ import io.github.ezrnest.mathsymk.symbolic.ExprCal
 import io.github.ezrnest.mathsymk.symbolic.Node
 
 
-class ExprCalReal : BasicExprCal(), Reals<Node>, NScopeExtAlgebra {
+class ExprCalReal : BasicExprCal(), Reals<Node>, SymAlg {
 
 //    private fun addAllReduce(rules: RuleList) {
 //        rules.list.forEach { addReduceRule(it) }
@@ -20,8 +20,9 @@ class ExprCalReal : BasicExprCal(), Reals<Node>, NScopeExtAlgebra {
 
         registerReduceRule(RulesExponentialReduce)
         registerReduceRule(RulesTrigonometricReduce)
-//        registerReduceRuleAll(RulesExponentialReduce())
+        registerReduceRule(RulesSummationReduce)
 
+        registerRule(RulesTrigonometricTransform)
     }
 
     override fun constantValue(name: String): Node {
@@ -50,31 +51,31 @@ class ExprCalReal : BasicExprCal(), Reals<Node>, NScopeExtAlgebra {
     }
 
     override fun add(x: Node, y: Node): Node {
-        return reduce(super<NScopeExtAlgebra>.sumOf(x, y), 0)
+        return reduce(super<SymAlg>.sumOf(x, y), 0)
     }
 
     override fun sumOf(elements: List<Node>): Node {
-        return reduce(super<NScopeExtAlgebra>.sumOf(elements), 0)
+        return reduce(super<SymAlg>.sumOf(elements), 0)
     }
 
     override fun multiply(x: Node, y: Node): Node {
         return reduce(super.multiply(x, y), 0)
     }
 
-    override fun product(elements: List<Node>): Node {
-        return reduce(super<NScopeExtAlgebra>.product(elements), 0)
+    override fun productOf(elements: List<Node>): Node {
+        return reduce(super<SymAlg>.productOf(elements), 0)
     }
 
     override fun inv(node: Node): Node {
-        return reduce(super<NScopeExtAlgebra>.inv(node), 0)
+        return reduce(super<SymAlg>.inv(node), 0)
     }
 
     override fun reciprocal(x: Node): Node {
-        return reduce(super<NScopeExtAlgebra>.inv(x), 0)
+        return reduce(super<SymAlg>.inv(x), 0)
     }
 
     override fun divide(x: Node, y: Node): Node {
-        return reduce(super<NScopeExtAlgebra>.divide(x, y), 1)
+        return reduce(super<SymAlg>.divide(x, y), 1)
     }
 
     override fun Node.div(y: Node): Node {
@@ -99,19 +100,19 @@ class ExprCalReal : BasicExprCal(), Reals<Node>, NScopeExtAlgebra {
 
 
     override fun sqrt(x: Node): Node {
-        return reduce(super<NScopeExtAlgebra>.sqrt(x), 0)
+        return reduce(super<SymAlg>.sqrt(x), 0)
     }
 
     override fun exp(x: Node): Node {
-        return reduce(super<NScopeExtAlgebra>.exp(x), 0)
+        return reduce(super<SymAlg>.exp(x), 0)
     }
 
     override fun exp(base: Node, pow: Node): Node {
-        return reduce(super<NScopeExtAlgebra>.pow(base, pow), 0)
+        return reduce(super<SymAlg>.pow(base, pow), 0)
     }
 
     override fun pow(base: Node, exp: Node): Node {
-        return reduce(super<NScopeExtAlgebra>.pow(base, exp), 0)
+        return reduce(super<SymAlg>.pow(base, exp), 0)
     }
 
     override fun nroot(x: Node, n: Int): Node {
@@ -119,23 +120,23 @@ class ExprCalReal : BasicExprCal(), Reals<Node>, NScopeExtAlgebra {
     }
 
     override fun ln(x: Node): Node {
-        return reduce(super<NScopeExtAlgebra>.ln(x), 0)
+        return reduce(super<SymAlg>.ln(x), 0)
     }
 
     override fun log(base: Node, x: Node): Node {
-        return reduce(super<NScopeExtAlgebra>.log(base, x), 0)
+        return reduce(super<SymAlg>.log(base, x), 0)
     }
 
     override fun sin(x: Node): Node {
-        return reduce(super<NScopeExtAlgebra>.sin(x), 0)
+        return reduce(super<SymAlg>.sin(x), 0)
     }
 
     override fun cos(x: Node): Node {
-        return reduce(super<NScopeExtAlgebra>.cos(x), 0)
+        return reduce(super<SymAlg>.cos(x), 0)
     }
 
     override fun tan(x: Node): Node {
-        return reduce(super<NScopeExtAlgebra>.tan(x), 0)
+        return reduce(super<SymAlg>.tan(x), 0)
     }
 
     //    override fun cot(x: Node): Node {
@@ -143,15 +144,19 @@ class ExprCalReal : BasicExprCal(), Reals<Node>, NScopeExtAlgebra {
 //    }
 
     override fun arcsin(x: Node): Node {
-        return reduce(super<NScopeExtAlgebra>.arcsin(x), 0)
+        return reduce(super<SymAlg>.arcsin(x), 0)
     }
 
     override fun arccos(x: Node): Node {
-        return reduce(super<NScopeExtAlgebra>.arccos(x), 0)
+        return reduce(super<SymAlg>.arccos(x), 0)
     }
 
     override fun arctan(x: Node): Node {
-        return reduce(super<NScopeExtAlgebra>.arctan(x), 0)
+        return reduce(super<SymAlg>.arctan(x), 0)
+    }
+
+    override fun abs(x: Node): Node {
+        return reduce(super<SymAlg>.abs(x), 0)
     }
 
     override fun arctan2(y: Node, x: Node): Node {

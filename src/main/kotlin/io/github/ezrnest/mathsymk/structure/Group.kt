@@ -335,7 +335,7 @@ interface MulSemigroup<T> : EqualPredicate<T> {
         return ModelPatterns.binaryProduce(n.toLong(), x) { a, b -> this@MulSemigroup.multiply(a, b) }
     }
 
-    fun product(elements: List<T>): T {
+    fun productOf(elements: List<T>): T {
         return elements.reduce(this::multiply)
     }
 
@@ -399,7 +399,7 @@ interface MulMonoid<T> : MulSemigroup<T> {
         }
     }
 
-    override fun product(elements: List<T>): T {
+    override fun productOf(elements: List<T>): T {
         return elements.fold(one, this::multiply)
     }
 

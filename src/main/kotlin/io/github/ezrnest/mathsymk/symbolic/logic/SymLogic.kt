@@ -5,8 +5,12 @@ import io.github.ezrnest.mathsymk.symbolic.Node
 import io.github.ezrnest.mathsymk.symbolic.NodeN
 import io.github.ezrnest.mathsymk.symbolic.SymBasic
 
-object SymLogic {
 
+import io.github.ezrnest.mathsymk.symbolic.*
+import io.github.ezrnest.mathsymk.symbolic.NodeScope.Companion.qualifiedConditioned
+import io.github.ezrnest.mathsymk.symbolic.NodeScope.Companion.qualifiedConditionedRep
+
+interface SymLogic : SymBasic {
 
     object Symbols {
         val AND = ESymbol("⋀")
@@ -19,53 +23,73 @@ object SymLogic {
         val EXISTS = ESymbol("∃")
     }
 
+    companion object Instance : SymLogic {
 
-    fun And(nodes: List<Node>): Node {
-        if (nodes.isEmpty()) return SymBasic.TRUE
+
+    }
+
+
+    val Boolean.n: Node
+        get() = if (this) SymBasic.True else SymBasic.False
+
+    operator fun Node.not(): Node {
+        return Node1T(Symbols.NOT, this)
+    }
+
+    fun conjunction(vararg nodes: Node): Node {
+        return conjunction(nodes.asList())
+    }
+
+    fun conjunction(nodes: List<Node>): Node {
+        if (nodes.isEmpty()) return SymBasic.True
         if (nodes.size == 1) return nodes[0]
         return NodeN(Symbols.AND, nodes)
     }
 
-    fun And(vararg nodes: Node): Node {
-        return And(nodes.asList())
+    fun disjunction(vararg nodes: Node): Node {
+        return disjunction(nodes.asList())
     }
 
-    fun Or(nodes: List<Node>): Node {
-        if (nodes.isEmpty()) return SymBasic.FALSE
+    fun disjunction(nodes: List<Node>): Node {
+        if (nodes.isEmpty()) return SymBasic.False
         if (nodes.size == 1) return nodes[0]
         return NodeN(Symbols.OR, nodes)
     }
 
-    fun Or(vararg nodes: Node): Node {
-        return Or(nodes.asList())
+    infix fun Node.and(that: Node): Node {
+        return conjunction(this, that)
     }
 
-    fun Not(node: Node): Node {
-        return SymBasic.node1(Symbols.NOT, node)
+    infix fun Node.or(that: Node): Node {
+        return disjunction(this, that)
     }
 
-    fun Implies(p: Node, q: Node): Node {
-        return SymBasic.node2(Symbols.IMPLIES, p, q)
+    infix fun Node.implies(that: Node): Node {
+        return Node2T(Symbols.IMPLIES, this, that)
     }
 
-    fun Iff(p: Node, q: Node): Node {
-        return And(Implies(p, q), Implies(q, p))
+    infix fun Node.iff(that: Node): Node {
+        return (this implies that) and (that implies this)
     }
 
-    fun Xor(p: Node, q: Node): Node {
-        return Or(And(p, Not(q)), And(Not(p), q))
+
+    fun NodeScope.forAll(x: Node, condition: Node = SymBasic.True, clause: Node): Node {
+        return qualifiedConditionedRep(SymLogic.Symbols.FOR_ALL, x, condition, clause)
     }
 
-    fun Nand(p: Node, q: Node): Node {
-        return Not(And(p, q))
+    fun NodeScope.forAll(
+        varName: String? = null, condition: (NSymbol) -> Node = { SymBasic.True }, clause: (NSymbol) -> Node
+    ): Node {
+        return qualifiedConditioned(SymLogic.Symbols.FOR_ALL, varName, condition, clause)
     }
 
-    fun Nor(p: Node, q: Node): Node {
-        return Not(Or(p, q))
+    fun NodeScope.forAll(x: Node, condition: Node = SymBasic.True, clause: () -> Node): Node {
+        return forAll(x, condition, clause())
     }
 
-    fun Xnor(p: Node, q: Node): Node {
-        return Not(Xor(p, q))
-    }
+}
 
+
+inline fun logic(builder: SymLogic.() -> Node): Node {
+    return SymLogic.Instance.builder()
 }

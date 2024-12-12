@@ -30,9 +30,9 @@ object TrigonometricUtils {
             val sqrt3 = SimUtils.sqrt(3)
             values[bfrac(1, 3)] = alg { half.e * sqrt3 }
             values[bfrac(1, 4)] = alg { half.e * sqrt2 }
-            values[bfrac(1, 6)] = SymAlg.Rational(half)
+            values[bfrac(1, 6)] = SymAlg.rationalOf(half)
             values[bfrac(1, 12)] = alg {
-                product(bfrac(1, 4).e, sqrt2, sumOf(SymAlg.NEG_ONE, sqrt3))
+                productOf(bfrac(1, 4).e, sqrt2, SymAlg.NEG_ONE + sqrt3)
             }
         }
         for (v in values.values) {
@@ -90,7 +90,7 @@ object TrigonometricUtils {
             values[bfrac(1, 6)] = alg { pow(3.e, (-half).e) }
             values[bfrac(1, 4)] = SymAlg.ONE
             values[bfrac(1, 3)] = sqrt3
-            values[half] = SymBasic.UNDEFINED
+            values[half] = SymBasic.Undefined
         }
         for (v in values.values) {
             v[NodeMetas.simplified] = true
@@ -196,17 +196,14 @@ val RulesTrigonometricTransform = RuleSet {
             result = -sin(x)
         }
 
-        rule {
-            name = "Trig: cos(x) = cos(-x)"
-            target = cos(-x)
-            result = cos(x)
-        }
 
-        rule {
-            name = "Trig: sin(x+y) = sin(x)cos(y) + cos(x)sin(y)"
-            target = sin(x + y)
-            result = sin(x) * cos(y) + cos(x) * sin(y)
-        }
+        rule(cos(-x), cos(x))
+
+        rule(
+            "Trig: sin(x+y) -> sin(x)cos(y) + cos(x)sin(y)",
+            sin(x + y),
+            sin(x) * cos(y) + cos(x) * sin(y)
+        )
 
         rule {
             name = "Trig: sin(x)cos(y) + cos(x)sin(y) -> sin(x+y)"

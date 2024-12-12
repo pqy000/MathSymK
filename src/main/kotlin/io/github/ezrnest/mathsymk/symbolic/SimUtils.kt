@@ -19,7 +19,7 @@ object SimUtils {
         contract {
             returns(true) implies (node is Node2)
         }
-        return node is Node2 && node.symbol == SymBasic.Symbols.BELONGS
+        return node is Node2 && node.symbol == SymBasic.Symbols.Belongs
     }
 
     fun asInteger(node: Node): BigInteger? {
@@ -115,24 +115,25 @@ object SimUtils {
         return when (children.size) {
             1 -> WithRational(rational, SymAlg.ONE)
             2 -> WithRational(rational, children[1])
-            else -> WithRational(rational, SymAlg.Mul(children.subList(1, children.size)))
+            else -> WithRational(rational, SymAlg.productOf(children.subList(1, children.size)))
         }
     }
 
 
     fun createWithRational(r: BigFrac, n: Node): Node {
         val Q = BigFracAsQuot
-        if (n === SymAlg.ONE) return SymAlg.Rational(r)
-        if (n is NRational) return SymAlg.Rational(Q.multiply(r, n.value))
+        if (n === SymAlg.ONE) return SymAlg.rationalOf(r)
+        if (n is NRational) return SymAlg.rationalOf(Q.multiply(r, n.value))
         if (Q.isZero(r)) return SymAlg.ZERO
         if (Q.isOne(r)) return n
-        return SymAlg.Mul(listOf(SymAlg.Rational(r), n))
+        return alg { r.e * n }
+//        return SymAlg.Mul(listOf(SymAlg.rationalOf(r), n))
     }
 
     fun createMulSim(nodes: List<Node>, context: EContext, cal: ExprCal): Node {
         if (nodes.isEmpty()) return SymAlg.ONE
         if (nodes.size == 1) return nodes[0]
-        return cal.reduceNode(SymAlg.Mul(nodes), context)
+        return cal.reduceNode(SymAlg.productOf(nodes), context)
     }
 
 

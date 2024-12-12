@@ -1,7 +1,6 @@
 package io.github.ezrnest.mathsymk.symbolic
 
 import io.github.ezrnest.mathsymk.symbolic.alg.ExprCalReal
-import io.github.ezrnest.mathsymk.symbolic.alg.SymAlg.Infinity
 
 object Symbolic {
 
@@ -13,10 +12,10 @@ object Symbolic {
 fun main() {
     with(Symbolic.reals()) {
 //        verbose = BasicExprCal.Verbosity.ALL
-        val r = sum(1.e, Infinity, "n") { n ->
-            sin(π / 2)
-        }
-        println(reduce(r))
+//        val r = sum(1.e, Infinity, "n") { n ->
+//            pow(n, -2)
+//        }
+//        println(reduce(r))
 
 //        println(sin(π / 2))
 //        println(format(1.e / 3.e))

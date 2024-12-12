@@ -12,16 +12,22 @@ interface NodeScope {
 
     val namedSymbols: MutableMap<String, ESymbol>
 
-    fun symbol(name: String): Node {
-        val sym = namedSymbols.getOrPut(name) { ESymbol(name) }
+    fun symbolNode(name: String): Node {
+        val sym = getSymbol(name)
         return NSymbol(sym)
     }
+
+    fun getSymbol(name: String): ESymbol{
+        return namedSymbols.getOrPut(name) { ESymbol(name) }
+    }
+
+
 
     fun constant(name: String): Node? {
         return context.constant(name)
     }
 
-    val String.s: Node get() = symbol(this)
+    val String.s: Node get() = symbolNode(this)
 
 
     companion object {
@@ -30,7 +36,7 @@ interface NodeScope {
             override val context: EContext,
             override val namedSymbols: MutableMap<String, ESymbol> = mutableMapOf()
         ) : NodeScope {
-            override fun symbol(name: String): Node {
+            override fun symbolNode(name: String): Node {
                 return context.symbol(name)
             }
         }
@@ -54,7 +60,7 @@ interface NodeScope {
         }
 
         inline fun NodeScope.qualified(nodeName: ESymbol, varName: String?, clause: (NSymbol) -> Node): Node {
-            return qualifiedConditioned(nodeName, varName, condition = { SymBasic.TRUE }, clause)
+            return qualifiedConditioned(nodeName, varName, condition = { SymBasic.True }, clause)
         }
 
         inline fun NodeScope.qualifiedContained(
@@ -79,7 +85,7 @@ interface NodeScope {
             return qualifiedConditioned(
                 nodeName, varNode.symbol.name,
                 condition = { x ->
-                    if (condition == null) return@qualifiedConditioned SymBasic.TRUE
+                    if (condition == null) return@qualifiedConditioned SymBasic.True
                     if (replaceVar) condition.replaceSymbol(varNode, x) else condition
                 },
                 clause = { x ->
@@ -129,13 +135,13 @@ interface NodeScopeWithPredefined : NodeScope {
 }
 
 interface NodeScopePredefinedSymbols : NodeScopeWithPredefined {
-    override val x: Node get() = symbol("x")
-    override val y: Node get() = symbol("y")
-    override val z: Node get() = symbol("z")
-    override val w: Node get() = symbol("w")
-    override val a: Node get() = symbol("a")
-    override val b: Node get() = symbol("b")
-    override val c: Node get() = symbol("c")
+    override val x: Node get() = symbolNode("x")
+    override val y: Node get() = symbolNode("y")
+    override val z: Node get() = symbolNode("z")
+    override val w: Node get() = symbolNode("w")
+    override val a: Node get() = symbolNode("a")
+    override val b: Node get() = symbolNode("b")
+    override val c: Node get() = symbolNode("c")
 }
 
 

@@ -256,7 +256,7 @@ object NothingMatcher : LeafMatcher<Node> {
     }
 
     override fun getSpecific(ctx: EContext, matching: Matching): Node? {
-        return SymBasic.UNDEFINED
+        return SymBasic.Undefined
     }
 }
 
@@ -661,7 +661,7 @@ interface MatcherScopeAlg : MatcherBuilderScope {
     val rational: NodeMatcherT<NRational> get() = AnyRationalMatcher
 
 
-    val Int.e: NodeMatcherT<NRational> get() = node(SymAlg.Int(this))
+    val Int.e: NodeMatcherT<NRational> get() = node(SymAlg.intOf(this))
 
 
     private fun flatten(children: List<NodeMatcherT<Node>>, sig: ESymbol): NodeMatcher {
@@ -714,6 +714,8 @@ interface INodeScopeReferring : NodeScope {
 
     val namedRef: MutableMap<String, ESymbol>
     val declaredRefs: MutableSet<ESymbol>
+
+
 
 
     fun ref(name: String): Node {

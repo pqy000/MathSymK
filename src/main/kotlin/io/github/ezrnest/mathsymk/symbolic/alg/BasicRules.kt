@@ -53,7 +53,7 @@ object MergeAdditionRational : RuleForSpecificN(SymAlg.Symbols.ADD) {
         }
 
         val newChildren = collect.entries.map { (n, r) -> SimUtils.createWithRational(r, n) }
-        return WithInt(0, SymAlg.Add(newChildren))
+        return WithInt(0, SymAlg.sumOf(newChildren))
 
     }
 
@@ -90,10 +90,10 @@ object MergeProduct : RuleForSpecificN(SymAlg.Symbols.MUL) {
 
     private fun buildPower(base: Node, nodeList: List<Node>, context: EContext, cal: ExprCal): Node {
         if (nodeList.size == 1) return nodeList[0] // not merged
-        var exp = SymAlg.Add(nodeList.map { getPower(it) })
+        var exp = SymAlg.sumOf(nodeList.map { getPower(it) })
         exp = cal.reduceNode(exp, context, 0)
         if (exp == SymAlg.ONE) return base
-        val res = SymAlg.Pow(base, exp)
+        val res = SymAlg.pow(base, exp)
         return cal.reduceNode(res, context, 0)
     }
 
@@ -137,9 +137,9 @@ object MergeProduct : RuleForSpecificN(SymAlg.Symbols.MUL) {
 
         val addRational = rationalCount > 0 && !Q.isOne(rPart)
         val newChildren = ArrayList<Node>(collect.size + if (addRational) 1 else 0)
-        if (addRational) newChildren.add(SymAlg.Rational(rPart))
+        if (addRational) newChildren.add(SymAlg.rationalOf(rPart))
         collect.entries.mapTo(newChildren) { (base, nodeList) -> buildPower(base, nodeList, context, cal) }
-        return WithInt(0, SymAlg.Mul(newChildren))
+        return WithInt(0, SymAlg.productOf(newChildren))
         // need simplification by the rule again since the power may be added and simplified
     }
 }
@@ -176,12 +176,12 @@ object ComputeProductRational : RuleForSpecificN(SymAlg.Symbols.MUL) {
         }
         if (count == 0) return null  // no rational to compute
         if (Q.isZero(product)) return WithInt(-1, SymAlg.ZERO)
-        if (nodes.isEmpty()) return WithInt(-1, SymAlg.Rational(product)) // only rational
+        if (nodes.isEmpty()) return WithInt(-1, SymAlg.rationalOf(product)) // only rational
         if (count == 1 && !Q.isOne(product)) return null // only one rational that can't be simplified
         if (!Q.isOne(product)) {
-            nodes.add(SymAlg.Rational(product))
+            nodes.add(SymAlg.rationalOf(product))
         }
-        return SymAlg.Mul(nodes).also { it[metaKeyApplied] = true }.let { WithInt(0, it) }
+        return SymAlg.productOf(nodes).also { it[metaKeyApplied] = true }.let { WithInt(0, it) }
     }
 }
 
@@ -203,8 +203,11 @@ object FlattenPow : RuleForSpecific2(SymAlg.Symbols.POW) {
      */
     private fun flattenPowPow(base: Node2, exp: Node): Node {
         val (_, baseBase, baseExp) = base
-        val newExp = SymAlg.Mul(listOf(baseExp, exp))
-        return SymAlg.Pow(baseBase, newExp)
+        return alg {
+            pow(baseBase, (baseExp * exp))
+        }
+//        val newExp = SymAlg.product(baseExp, exp)
+//        return SymAlg.Pow(baseBase, newExp)
     }
 
     private fun flattenPowInt(base: Node, exp: NRational, context: EContext): WithInt<Node>? {
@@ -218,10 +221,10 @@ object FlattenPow : RuleForSpecific2(SymAlg.Symbols.POW) {
                 if (SimUtils.isPow(it)) {
                     flattenPowPow(it, exp)
                 } else {
-                    SymAlg.Pow(it, exp)
+                    SymAlg.pow(it, exp)
                 }
             }
-            return WithInt(2, SymAlg.Mul(newChildren))
+            return WithInt(2, SymAlg.productOf(newChildren))
         }
         return null
     }
@@ -289,13 +292,13 @@ object ComputePow : RuleForSpecific2(SymAlg.Symbols.POW) {
                 val p = asInteger(exp)
                 if (canExpandPow(base.nume, p) && canExpandPow(base.deno, p)) {
                     val res = power(base, p)
-                    return SymAlg.Rational(res)
+                    return SymAlg.rationalOf(res)
                 }
                 // power too big
             }
             if (isOne(base)) return SymAlg.ONE
             if (isZero(base)) {
-                if (isZero(exp)) return SymBasic.UNDEFINED
+                if (isZero(exp)) return SymBasic.Undefined
                 return SymAlg.ZERO
             }
             val factorPow = factorizedPow(abs(base), exp)
@@ -334,7 +337,9 @@ object ComputePow : RuleForSpecific2(SymAlg.Symbols.POW) {
                             rPart *= integers.power(b, floorInt).bfrac
                         }
                     } else {
-                        val node = SymAlg.Pow(SymAlg.Int(b), SymAlg.Int(floor))
+                        val node = alg {
+                            pow(b.e, floor.e)
+                        }
                         node[metaKeyApplied] = true
                         node[NodeMetas.rational] = true
                         node[NodeMetas.positive] = true
@@ -343,7 +348,9 @@ object ComputePow : RuleForSpecific2(SymAlg.Symbols.POW) {
                     }
                 }
                 if (!isZero(rem)) {
-                    val p = SymAlg.Pow(SymAlg.Int(b), SymAlg.Rational(rem))
+                    val p = alg {
+                        pow(b.e, rem.e)
+                    }
                     p[metaKeyApplied] = true
                     nodes.add(p)
                 }
@@ -357,9 +364,9 @@ object ComputePow : RuleForSpecific2(SymAlg.Symbols.POW) {
                 }
             }
             if (!isOne(rPart)) {
-                nodes.add(SymAlg.Rational(rPart))
+                nodes.add(SymAlg.rationalOf(rPart))
             }
-            return SymAlg.Mul(nodes)
+            return SymAlg.productOf(nodes)
         }
     }
 
@@ -405,8 +412,8 @@ object RuleExpandMul : RuleForSpecificN(SymAlg.Symbols.MUL) {
         val resultSize = children.fold(1) { s, n -> s * asFactorSize(n) }
         if (resultSize == 1 || resultSize >= defaultExpansionLimit) return null
         val newChildren = ArrayList<Node>(resultSize)
-        IterUtils.prod(children.map { asFactor(it) }).forEach { newChildren.add(SymAlg.Mul(it)) }
-        val res = SymAlg.Add(newChildren)
+        IterUtils.prod(children.map { asFactor(it) }).forEach { newChildren.add(SymAlg.productOf(it)) }
+        val res = SymAlg.sumOf(newChildren)
         return WithInt(1, res)
     }
 }

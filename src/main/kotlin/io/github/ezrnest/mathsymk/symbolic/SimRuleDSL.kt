@@ -7,6 +7,15 @@ interface RuleSetBuildingScope : NodeScopeMatcher {
 
     fun rule(name: String?, target: Node, result: Node, condition: Node? = null)
 
+
+    fun rule(target: Node, result: Node, condition: Node? = null){
+        rule(null,target,result,condition)
+    }
+
+//    fun rule(entry : Pair<Node,Node>){
+//        rule(null,entry.first,entry.second,null)
+//    }
+
     fun addRules(vararg rule: SimRule)
 
     fun addRules(vararg rule: SimRuleProvider)
@@ -103,7 +112,7 @@ class RuleSetProvider(val buildingAction: RuleSetBuildingScope.() -> Unit) : Sim
             // first reduce it
             val target = cal.reduce(target)
             val result = cal.reduce(result)
-            val name = name ?: "${cal.format(target)} -> ${cal.format(result)}"
+            val name = name ?: "Rule: ${cal.format(target)} -> ${cal.format(result)}"
 
             if(cal.directEquals(target,result)) return // no need to replace
 

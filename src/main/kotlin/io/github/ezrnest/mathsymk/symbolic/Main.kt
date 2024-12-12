@@ -8,37 +8,28 @@ val TestExprCal = BasicExprCal()
 
 fun main() {
     val cal = TestExprCal
-    cal.verbose = BasicExprCal.Verbosity.WHEN_APPLIED
+
     cal.registerSymbol(QualifierSymbolDef(SymLogic.Symbols.FOR_ALL))
     cal.registerSymbol(QualifierSymbolDef(SymAlg.Symbols.SUM))
-    with(cal) {
+    cal.registerReduceRule(RulesSummationReduce)
+    cal.registerReduceRule(RulesPrimaryFunctions)
+
+
+//    cal.verbose = BasicExprCal.Verbosity.WHEN_APPLIED
 //        ESymbol.displayHash = true
+    with(cal) {
         alg {
-            var expr = x
+            assume(x leq 0.e)
 
-//            expr = forAll(x, condition = x gtr y, x geq y)
-//            expr = forAll { x ->
-//                x geq y
+//            val r = sum(1.e, Infinity) { x ->
+//                pow(x, -2)
 //            }
-            val N = SymAlg.Infinity
-            val a = sum(x, 1.e, N, sin(x))
-            println(a.plainToString())
-            val b = sum(1.e, N, "n") { x ->
-                sin(x) / pow(x, 2.e)
-            }.let(::reduce)
+            val r = sum(
+                x, 1.e, infinity,
+                pow(x, -2)
+            )
 
-//            expr = (sin(x) / pow(x, 2.e)).let(::reduce)
-
-            println(b.plainToString())
-            println(directEquals(a, b))
-            println(expr.plainToString())
-
-            val matcher = buildMatcherExpr(cal){
-                alg{
-                    sum(1.e,"N".ref){ x -> sin(x) / pow(x, 2.e) }
-                }
-            }
-            println(matcher.matches(b,cal))
+            println(reduce(r))
         }
     }
 

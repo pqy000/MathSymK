@@ -1,28 +1,22 @@
 package io.github.ezrnest.mathsymk.symbolic
 
-import io.github.ezrnest.mathsymk.symbolic.NodeScope.Companion.qualified
 
 
-object SymBasic {
-
-    val EMPTY_SET = NSymbol(Symbols.EMPTY_SET)
-    val UNIVERSE = NSymbol(Symbols.UNIVERSE)
-
-    val TRUE = NSymbol(Symbols.True)
-    val FALSE = NSymbol(Symbols.False)
+interface SymBasic {
 
     object Symbols {
 
         val EMPTY_SET = ESymbol("∅")
         val UNIVERSE = ESymbol("Universe")
-        val BELONGS = ESymbol("∈")
-//        val CONTAINS = ESymbol("∋")
+        val Belongs = ESymbol("∈")
+        //        val CONTAINS = ESymbol("∋")
         val SUBSET = ESymbol("⊆")
         val INTERSECT = ESymbol("∩")
         val UNION = ESymbol("∪")
 
-        val True = ESymbol("true")
-        val False = ESymbol("false")
+        val TRUE = ESymbol("true")
+        val FALSE = ESymbol("false")
+
 
         val Tuple = ESymbol("")
 
@@ -30,7 +24,33 @@ object SymBasic {
 
     }
 
-    val UNDEFINED = NOther("undefined")
+    companion object Instance : SymBasic{
+        val True = NSymbol(Symbols.TRUE)
+        val False = NSymbol(Symbols.FALSE)
+
+        val EmptySet = NSymbol(Symbols.EMPTY_SET)
+        val Universe = NSymbol(Symbols.UNIVERSE)
+
+        val Undefined = NOther("undefined")
+    }
+
+
+//    val True: Node
+//        get() = Contants.TRUE
+
+
+    infix fun Node.belongTo(set: Node): Node {
+        return Node2T(Symbols.Belongs, this, set)
+    }
+
+    fun tuple(vararg nodes: Node): Node {
+        return tuple(nodes.asList())
+    }
+
+    fun tuple(nodes: List<Node>): Node {
+        return NodeN(Symbols.Tuple, nodes)
+    }
+
 
 
     fun <T : Node> node1(symbol: ESymbol, child: T): Node1T<T> {
@@ -56,13 +76,7 @@ object SymBasic {
         }
     }
 
-    fun tuple(vararg nodes: Node): Node {
-        return tuple(nodes.asList())
-    }
 
-    fun tuple(nodes: List<Node>): Node {
-        return NodeN(Symbols.Tuple, nodes)
-    }
 
 
     fun QualifiedConstrained(name: ESymbol, variable: NSymbol, condition: Node, expr: Node): Node {
@@ -85,20 +99,9 @@ object SymBasic {
 
 
     fun qualified(name: ESymbol, variable: NSymbol, expr: Node): Node {
-        return QualifiedConstrained(name, variable, TRUE, expr)
+        return QualifiedConstrained(name, variable, True, expr)
     }
 
-}
-
-interface NScopeExtBasic {
-
-    infix fun Node.belongTo(set: Node): Node {
-        return SymBasic.node2(SymBasic.Symbols.BELONGS, this, set)
-    }
-
-//    fun NodeScope.qualified(name : ESymbol, varName : String, expr : Node) : Node {
-//        qualified(name, varName) { NSymbol(varName) } expr
-//    }
 
 
 
