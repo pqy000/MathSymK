@@ -176,7 +176,6 @@ val RulesTrigonometricReduce = RuleSet {
 
     addRules(RuleSinSpecial(), RuleCosSpecial(), RuleTanSpecial())
 
-
     alg {
 
         rule {

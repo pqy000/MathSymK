@@ -3,9 +3,9 @@ package io.github.ezrnest.mathsymk.symbolic
 
 interface RuleSetBuildingScope : NodeScopeMatcher {
 
-    fun rule(name : String = "Unnamed",f: SimRuleBuilderScope.() -> Unit)
+    fun rule(name : String? = null,f: SimRuleBuilderScope.() -> Unit)
 
-    fun rule(name: String, target: Node, result: Node, condition: Node? = null)
+    fun rule(name: String?, target: Node, result: Node, condition: Node? = null)
 
     fun addRules(vararg rule: SimRule)
 
@@ -15,7 +15,7 @@ interface RuleSetBuildingScope : NodeScopeMatcher {
 
 interface SimRuleBuilderScope {
 
-    var name: String
+    var name: String?
 
     var target: Node?
 
@@ -46,7 +46,7 @@ fun RuleSet(f: RuleSetBuildingScope.() -> Unit): SimRuleProvider {
 class RuleSetProvider(val buildingAction: RuleSetBuildingScope.() -> Unit) : SimRuleProvider {
 
     internal class RuleBuilderImpl : SimRuleBuilderScope {
-        override var name: String = "Unnamed"
+        override var name: String? = null
         override var target: Node? = null
             set(value) {
                 field = requireNotNull(value)
@@ -76,14 +76,14 @@ class RuleSetProvider(val buildingAction: RuleSetBuildingScope.() -> Unit) : Sim
             rules.addAll(rule)
         }
 
-        override fun rule(name: String, f: SimRuleBuilderScope.() -> Unit) {
+        override fun rule(name: String?, f: SimRuleBuilderScope.() -> Unit) {
             val builder = RuleBuilderImpl()
             builder.name = name
             builder.f()
             rule(builder.name, builder.target!!, builder.result!!, builder.condition)
         }
 
-        override fun rule(name: String, target: Node, result: Node, condition: Node?) {
+        override fun rule(name: String?, target: Node, result: Node, condition: Node?) {
             buildRule(name, target, result, condition)
         }
 
@@ -99,10 +99,11 @@ class RuleSetProvider(val buildingAction: RuleSetBuildingScope.() -> Unit) : Sim
         }
 
         @Suppress("NAME_SHADOWING")
-        private fun buildRule(name: String, target: Node, result: Node, condition: Node?){
+        private fun buildRule(name: String?, target: Node, result: Node, condition: Node?){
             // first reduce it
             val target = cal.reduce(target)
             val result = cal.reduce(result)
+            val name = name ?: "${cal.format(target)} -> ${cal.format(result)}"
 
             if(cal.directEquals(target,result)) return // no need to replace
 
