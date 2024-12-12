@@ -1,36 +1,30 @@
 package io.github.ezrnest.mathsymk.symbolic.alg
 
-import io.github.ezrnest.mathsymk.symbolic.RuleList
+import io.github.ezrnest.mathsymk.symbolic.RuleSet
 
 // created at 2024/10/19
 
-class RulesExponentialReduce : RuleList() {
 
-    init {
+val RulesExponentialReduce = RuleSet {
+    alg {
+
+        rule(
+            "x^a * x^b = x^(a+b)",
+            target = pow(x, a) * pow(x, b),
+            result = pow(x, a + b)
+        )
+
         rule {
             name = "b^log_b(x) = x"
-            match {
-                alg {
-                    pow(b, log(b, x))
-                }
-            } to {
-                x
-            }
+            target = pow(b, log(b, x))
+            result = x
         }
 
-        rule {
-            name = "log_b(b^x) = x"
-            match {
-                alg {
-                    log(b.where(b gtr 0.e), pow(b, x))
-                }
-            } to {
-                x
-            }
-            where {
-                TODO()
-            }
-        }
+        rule(
+            "log_b(b^x) = x",
+            target = log(b.where(b gtr 0.e), pow(b, x)),
+            result = x
+        )
 
     }
 }

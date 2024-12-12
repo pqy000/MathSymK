@@ -1,91 +1,180 @@
 package io.github.ezrnest.mathsymk.symbolic
 
 
-interface RuleBuilder {
+interface RuleSetBuildingScope : NodeScopeMatcher {
+
+    fun rule(name : String = "Unnamed",f: SimRuleBuilderScope.() -> Unit)
+
+    fun rule(name: String, target: Node, result: Node, condition: Node? = null)
+
+    fun addRules(vararg rule: SimRule)
+
+    fun addRules(vararg rule: SimRuleProvider)
+}
+
+
+interface SimRuleBuilderScope {
 
     var name: String
 
-    fun matcher(buildMatcher: MatcherBuilderScope.() -> NodeMatcherT<Node>)
+    var target: Node?
 
-    fun match(buildMatch: NodeScopeMatcher.() -> Node)
+    var result: Node?
 
-    fun to(buildReplacement: NodeScopeMatched.() -> Node)
+    var condition: Node?
 
-    infix fun Unit.to(buildReplacement: NodeScopeMatched.() -> Node)
-
-
-    fun where(buildCondition: MatchResult.() -> Boolean) {
-        //TODO
+    fun target(f: () -> Node) {
+        target = f()
     }
+
+    fun result(f: () -> Node) {
+        result = f()
+    }
+
+    fun condition(f: () -> Node) {
+        condition = f()
+    }
+
+//    fun where(buildCondition: Matching.() -> Boolean)
 }
 
-internal class RuleBuilderImpl : RuleBuilder {
 
-    override var name: String = "Unnamed"
+fun RuleSet(f: RuleSetBuildingScope.() -> Unit): SimRuleProvider {
+    return RuleSetProvider(f)
+}
 
-    var afterRuleDepth: Int = Int.MAX_VALUE
+class RuleSetProvider(val buildingAction: RuleSetBuildingScope.() -> Unit) : SimRuleProvider {
 
-    private var matcher: NodeMatcherT<Node>? = null
-    private var matchNodeBuilder: (NodeScopeMatcher.() -> Node)? = null
-
-    private var replacement: RepBuilder? = null
-
-    private var remMatcher: MatcherRef? = null
-
-    override fun match(buildMatch: NodeScopeMatcher.() -> Node) {
-        matchNodeBuilder = buildMatch
+    internal class RuleBuilderImpl : SimRuleBuilderScope {
+        override var name: String = "Unnamed"
+        override var target: Node? = null
+            set(value) {
+                field = requireNotNull(value)
+            }
+        override var result: Node? = null
+            set(value) {
+                field = requireNotNull(value)
+            }
+        override var condition: Node? = null
+            set(value) {
+                field = requireNotNull(value)
+            }
     }
 
+    internal class RuleSetBuildingScopeImpl(val cal: ExprCal) :
+        NodeScopeMatcher.Companion.NodeScopeMatcherImpl(cal.context),
+        RuleSetBuildingScope {
+        val rules = mutableListOf<SimRule>()
 
-    override fun matcher(buildMatcher: MatcherBuilderScope.() -> NodeMatcherT<Node>): Unit {
-        val mat = buildMatcher(MatcherScopeAlg)
-        matcher = mat
-    }
-
-    private fun setRep(builder: RepBuilder) {
-        replacement = builder
-    }
-
-    override fun to(buildReplacement: NodeScopeMatched.() -> Node) {
-        setRep(buildReplacement)
-    }
-
-    override fun Unit.to(buildReplacement: NodeScopeMatched.() -> Node) {
-        setRep(buildReplacement)
-    }
-
-    fun build(): BuilderSimRule {
-        val matcher = this.matcher
-        val matchNodeBuilder = this.matchNodeBuilder
-        val replacement = this.replacement
-        require(matcher != null || matchNodeBuilder != null) { "Matcher or match node must be set" }
-        require(replacement != null) { "Replacement must be set" }
-        return if (matcher != null) { BuilderSimRule { NodeScopeMatcher.warpPartialMatcherReplace(matcher, replacement, name, afterRuleDepth) }
-        } else {
-            BuilderMatchNodeReplaceRule(matchNodeBuilder!!, replacement, name, afterRuleDepth)
+        override fun addRules(vararg rule: SimRuleProvider) {
+            rule.forEach {
+                rules.addAll(it.init(cal))
+            }
         }
+
+        override fun addRules(vararg rule: SimRule) {
+            rules.addAll(rule)
+        }
+
+        override fun rule(name: String, f: SimRuleBuilderScope.() -> Unit) {
+            val builder = RuleBuilderImpl()
+            builder.name = name
+            builder.f()
+            rule(builder.name, builder.target!!, builder.result!!, builder.condition)
+        }
+
+        override fun rule(name: String, target: Node, result: Node, condition: Node?) {
+            buildRule(name, target, result, condition)
+        }
+
+        private fun checkNodeReference(target: Node,matcher : NodeMatcher, result : Node){
+            val referredSymbols = matcher.refSymbols
+            val replacingSymbols = result.allSymbols()
+            for (symbol in replacingSymbols) {
+                if(symbol !in declaredRefs) continue // other constants not in the scope
+                require(referredSymbols.contains(symbol)) {
+                    "Reference to symbol $symbol in [$result] is not found in the target node $target."
+                }
+            }
+        }
+
+        @Suppress("NAME_SHADOWING")
+        private fun buildRule(name: String, target: Node, result: Node, condition: Node?){
+            // first reduce it
+            val target = cal.reduce(target)
+            val result = cal.reduce(result)
+
+            if(cal.directEquals(target,result)) return // no need to replace
+
+            val condition = condition?.let { cal.reduce(it) }
+
+            var matcher = NodeScopeMatcher.buildMatcher(this, target, cal)
+            if(condition != null) matcher = MatcherWithPostConditionNode(matcher,condition)
+            checkNodeReference(target,matcher, result)
+            val rule = MatcherNodeReplaceRule(name, matcher, result, Int.MAX_VALUE)
+            rules.add(rule)
+        }
+
+
     }
 
-}
-
-
-open class RuleList {
-
-    val list: MutableList<BuilderSimRule> = mutableListOf()
-
-    fun rule(f: RuleBuilder.() -> Unit) {
-        val builder = RuleBuilderImpl()
-        builder.f()
-        list.add(builder.build())
+    override fun init(cal: ExprCal): List<SimRule> {
+        val scope = RuleSetBuildingScopeImpl(cal)
+        scope.buildingAction()
+        return scope.rules
     }
 }
 
-fun rule(f: RuleBuilder.() -> Unit): BuilderSimRule {
-    val builder = RuleBuilderImpl()
-    builder.f()
-    return builder.build()
+
+/*
+DSL draft:
+
+val RulesExponentialReduce = RuleSet {
+
+   alg{
+      rule {
+         name = "b^log_b(x) = x"
+         target = pow(b, log(b, x))
+         result = x
+
+         target {
+            pow(b, log(b, x))
+         }
+         result {
+            x
+         }
+         where {
+            // TODO
+         }
+      }
+
+      rule("b^log_b(x) = x",
+            pow(b, log(b, x)),
+            x,
+            where = null,
+      )
+
+      addRule(ComputePow)
+
+      rule {
+         name = "log_b(b^x) = x"
+         match {
+            log(b.where(b gtr 0.e), pow(b, x))
+         } to {
+            x
+         }
+         where {
+            TODO()
+         }
+      }
+   }
+
+
+
 }
 
-fun BasicExprCal.addAllRules(rules: RuleList) {
-    rules.list.forEach { registerRule(it) }
-}
+
+
+
+
+ */

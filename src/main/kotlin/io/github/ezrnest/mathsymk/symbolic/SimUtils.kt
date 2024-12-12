@@ -5,8 +5,7 @@ import io.github.ezrnest.mathsymk.model.BigFracAsQuot
 import io.github.ezrnest.mathsymk.model.MTerm
 import io.github.ezrnest.mathsymk.model.TermChs
 import io.github.ezrnest.mathsymk.symbolic.alg.SymAlg
-import io.github.ezrnest.mathsymk.symbolic.alg.SymSets
-import io.github.ezrnest.mathsymk.symbolic.alg.buildAlg
+import io.github.ezrnest.mathsymk.symbolic.alg.alg
 import io.github.ezrnest.mathsymk.util.MathUtils
 import java.math.BigInteger
 import kotlin.contracts.ExperimentalContracts
@@ -139,14 +138,14 @@ object SimUtils {
 
     fun sqrt(n: Int): Node {
         if (n == 0) return SymAlg.ZERO
-        if (n < 0) return buildAlg { sqrt(n.e) }
+        if (n < 0) return alg { sqrt(n.e) }
 
         MathUtils.sqrtInt(n.toLong()).let {
             if (it * it == n.toLong()) {
-                return buildAlg { it.e }
+                return alg { it.e }
             }
         }
-        return buildAlg { sqrt(n.e) }.also { it[NodeMetas.simplified] = true }
+        return alg { sqrt(n.e) }.also { it[NodeMetas.simplified] = true }
 
     }
 

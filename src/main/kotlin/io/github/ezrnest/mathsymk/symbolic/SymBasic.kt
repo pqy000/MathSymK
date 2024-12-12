@@ -1,5 +1,7 @@
 package io.github.ezrnest.mathsymk.symbolic
 
+import io.github.ezrnest.mathsymk.symbolic.NodeScope.Companion.qualified
+
 
 object SymBasic {
 
@@ -23,6 +25,8 @@ object SymBasic {
         val False = ESymbol("false")
 
         val Tuple = ESymbol("")
+
+        val Eval = ESymbol("Eval")
 
     }
 
@@ -70,10 +74,33 @@ object SymBasic {
         return node3(name, nodeVars, condition, expr)
     }
 
+    fun eval(f : Node, vararg parameters : Node) : Node {
+        return eval(f, parameters.asList())
+    }
+
+    fun eval(f : Node, parameters : List<Node>) : Node {
+        return node2(Symbols.Eval, f, tuple(parameters))
+    }
 
 
-//    fun qualified(name: ESymbol, variable: Node, expr: Node): Node {
-//        return QualifiedConstrained(name, variable, TRUE, expr)
+
+    fun qualified(name: ESymbol, variable: NSymbol, expr: Node): Node {
+        return QualifiedConstrained(name, variable, TRUE, expr)
+    }
+
+}
+
+interface NScopeExtBasic {
+
+    infix fun Node.belongTo(set: Node): Node {
+        return SymBasic.node2(SymBasic.Symbols.BELONGS, this, set)
+    }
+
+//    fun NodeScope.qualified(name : ESymbol, varName : String, expr : Node) : Node {
+//        qualified(name, varName) { NSymbol(varName) } expr
 //    }
+
+
+
 
 }

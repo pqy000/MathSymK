@@ -43,6 +43,16 @@ sealed interface Node {
 
     fun traverse(depth: Int = Int.MAX_VALUE, action: (Node) -> Unit)
 
+    fun allSymbols() : Set<ESymbol> {
+        val res = mutableSetOf<ESymbol>()
+        traverse { node ->
+            if (node is SymbolNode) {
+                res.add(node.symbol)
+            }
+        }
+        return res
+    }
+
     /**
      * Check if the tree contains any node that satisfies the [action].
      */
@@ -76,8 +86,15 @@ sealed interface Node {
     /**
      * Replacing every occurrence of the symbol [src] with [dest] in the tree, including the symbol of the node.
      */
-    fun replaceSymbol(src: NSymbol, dest: NSymbol): Node
+    fun replaceSymbol(src: NSymbol, dest: NSymbol): Node {
+        return mapSymbol { if (it == src.symbol) dest.symbol else it }
+    }
+
+    fun mapSymbol(mapping: (ESymbol) -> ESymbol): Node
     // a bit more efficient than the general replace method
+
+    fun mapSymbolNode(mapping: (ESymbol) -> Node?): Node
+
 
     fun deepEquals(other: Node): Boolean
 
@@ -159,7 +176,11 @@ data class NRational(val value: BigFrac) : AbstractNode(), LeafNode {
         return "$nume/$deno"
     }
 
-    override fun replaceSymbol(src: NSymbol, dest: NSymbol): Node {
+    override fun mapSymbol(mapping: (ESymbol) -> ESymbol): Node {
+        return this
+    }
+
+    override fun mapSymbolNode(mapping: (ESymbol) -> Node?): Node {
         return this
     }
 }
@@ -181,8 +202,12 @@ data class NSymbol(
         return this === other || other is NSymbol && symbol == other.symbol
     }
 
-    override fun replaceSymbol(src: NSymbol, dest: NSymbol): Node {
-        return if (this == src) dest else this
+    override fun mapSymbol(mapping: (ESymbol) -> ESymbol): Node {
+        return mapping(symbol).let { if (it === symbol) this else NSymbol(it) }
+    }
+
+    override fun mapSymbolNode(mapping: (ESymbol) -> Node?): Node {
+        return mapping(symbol) ?: this
     }
 }
 
@@ -197,7 +222,11 @@ data class NOther(val name: String) : AbstractNode(), LeafNode {
         return name == other.name
     }
 
-    override fun replaceSymbol(src: NSymbol, dest: NSymbol): Node {
+    override fun mapSymbol(mapping: (ESymbol) -> ESymbol): Node {
+        return this
+    }
+
+    override fun mapSymbolNode(mapping: (ESymbol) -> Node?): Node {
         return this
     }
 }
@@ -289,12 +318,6 @@ data class Node1T<out C : Node>(override val symbol: ESymbol, val child: C) : Ab
         return newWithChildren(children[0])
     }
 
-    override fun replaceSymbol(src: NSymbol, dest: NSymbol): Node {
-        val newChild = child.replaceSymbol(src, dest)
-        if (symbol != src.symbol && newChild === child) return this
-        val newSymbol = if (symbol == src.symbol) dest.symbol else symbol
-        return Node1T(newSymbol, newChild)
-    }
 
     override fun deepEquals(other: Node): Boolean {
         if (this === other) return true
@@ -327,6 +350,22 @@ data class Node1T<out C : Node>(override val symbol: ESymbol, val child: C) : Ab
         if (depth <= 0) return false
         return child.recurAny(depth - 1, action)
     }
+
+    override fun mapSymbol(mapping: (ESymbol) -> ESymbol): Node {
+        val newChild = child.mapSymbol(mapping)
+        val newSymbol = mapping(symbol)
+        if (newSymbol == symbol && newChild === child) return this
+        return Node1T(symbol, newChild)
+    }
+
+    override fun mapSymbolNode(mapping: (ESymbol) -> Node?): Node {
+        val newChild = child.mapSymbolNode(mapping)
+        val func = mapping(symbol) ?: return if (newChild === child) this else Node1T(symbol, newChild)
+        if (func is NSymbol) {
+            return Node1T(func.symbol, newChild)
+        }
+        return SymBasic.eval(func, newChild)
+    }
 }
 
 typealias Node2 = Node2T<*, *>
@@ -353,6 +392,10 @@ data class Node2T<C1 : Node, C2 : Node>(
 
     override val childCount: Int get() = 2
 
+    override fun toString(): String {
+        return plainToString()
+    }
+
     override fun newWithChildren(children: List<Node>): NodeChilded {
         require(children.size == 2)
         return newWithChildren(children[0], children[1])
@@ -362,13 +405,6 @@ data class Node2T<C1 : Node, C2 : Node>(
         return Node2T(newSymbol, first, second)
     }
 
-    override fun replaceSymbol(src: NSymbol, dest: NSymbol): Node {
-        val new1 = first.replaceSymbol(src, dest)
-        val new2 = second.replaceSymbol(src, dest)
-        if (symbol != src.symbol && new1 === first && new2 === second) return this
-        val newSymbol = if (symbol == src.symbol) dest.symbol else symbol
-        return Node2T(newSymbol, new1, new2)
-    }
 
     override fun deepEquals(other: Node): Boolean {
         if (this === other) return true
@@ -395,9 +431,27 @@ data class Node2T<C1 : Node, C2 : Node>(
         return first.recurAny(depth - 1, action) || second.recurAny(depth - 1, action)
     }
 
-    override fun toString(): String {
-        return plainToString()
+
+    override fun mapSymbol(mapping: (ESymbol) -> ESymbol): Node {
+        val new1 = first.mapSymbol(mapping)
+        val new2 = second.mapSymbol(mapping)
+        val newSymbol = mapping(symbol)
+        if (newSymbol == symbol && new1 === first && new2 === second) return this
+        return Node2T(symbol, new1, new2)
     }
+
+    override fun mapSymbolNode(mapping: (ESymbol) -> Node?): Node {
+        val new1 = first.mapSymbolNode(mapping)
+        val new2 = second.mapSymbolNode(mapping)
+        val newSymbol = mapping(symbol)
+            ?: return if (new1 === first && new2 === second) this else Node2T(symbol, new1, new2)
+        if (newSymbol is NSymbol) {
+            return Node2T(newSymbol.symbol, new1, new2)
+        }
+        return SymBasic.eval(newSymbol, new1, new2)
+    }
+
+
 }
 
 typealias Node3 = Node3T<*, *, *>
@@ -425,14 +479,6 @@ data class Node3T<out C1 : Node, out C2 : Node, out C3 : Node>(
         return Node3T(newSymbol, first, second, third)
     }
 
-    override fun replaceSymbol(src: NSymbol, dest: NSymbol): Node {
-        val new1 = first.replaceSymbol(src, dest)
-        val new2 = second.replaceSymbol(src, dest)
-        val new3 = third.replaceSymbol(src, dest)
-        if (symbol != src.symbol && new1 === first && new2 === second && new3 === third) return this
-        val newSymbol = if (symbol == src.symbol) dest.symbol else symbol
-        return Node3T(newSymbol, new1, new2, new3)
-    }
 
     override fun deepEquals(other: Node): Boolean {
         if (this === other) return true
@@ -461,6 +507,29 @@ data class Node3T<out C1 : Node, out C2 : Node, out C3 : Node>(
         return first.recurAny(depth - 1, action)
                 || second.recurAny(depth - 1, action)
                 || third.recurAny(depth - 1, action)
+    }
+
+    override fun mapSymbol(mapping: (ESymbol) -> ESymbol): Node {
+        val new1 = first.mapSymbol(mapping)
+        val new2 = second.mapSymbol(mapping)
+        val new3 = third.mapSymbol(mapping)
+        val newSymbol = mapping(symbol)
+        if (newSymbol == symbol && new1 === first && new2 === second && new3 === third) return this
+        return Node3T(symbol, new1, new2, new3)
+    }
+
+    override fun mapSymbolNode(mapping: (ESymbol) -> Node?): Node {
+        val new1 = first.mapSymbolNode(mapping)
+        val new2 = second.mapSymbolNode(mapping)
+        val new3 = third.mapSymbolNode(mapping)
+        val newSymbol = mapping(symbol)
+            ?: return if (new1 === first && new2 === second && new3 === third) this else Node3T(
+                symbol, new1, new2, new3
+            )
+        if (newSymbol is NSymbol) {
+            return Node3T(newSymbol.symbol, new1, new2, new3)
+        }
+        return SymBasic.eval(newSymbol, new1, new2, new3)
     }
 }
 
@@ -510,16 +579,38 @@ data class NodeN(
         return children.any { it.recurAny(depth - 1, action) }
     }
 
-    override fun replaceSymbol(src: NSymbol, dest: NSymbol): Node {
+    override fun mapSymbol(mapping: (ESymbol) -> ESymbol): Node {
         var changed = false
         val newChildren = children.map { c ->
-            c.replaceSymbol(src, dest).also {
-                if (it !== src) changed = true
+            c.mapSymbol(mapping).also {
+                if (it !== c) changed = true
             }
         }
-        if (symbol != src.symbol && !changed) return this
-        val newSymbol = if (symbol == src.symbol) dest.symbol else symbol
-        return NodeN(newSymbol, newChildren)
+        val newSymbol = mapping(symbol)
+        return if (newSymbol != symbol) {
+            if (changed) NodeN(newSymbol, newChildren) else NodeN(newSymbol, children)
+        } else {
+            if (changed) NodeN(symbol, newChildren) else this
+        }
+    }
+
+    override fun mapSymbolNode(mapping: (ESymbol) -> Node?): Node {
+        val newChildren = run {
+            var changed = false
+            children.map { c ->
+                c.mapSymbolNode(mapping).also {
+                    if (it !== c) changed = true
+                }
+            }.let { if (changed) it else children }
+        }
+
+        val newSymbol = mapping(symbol)
+            ?: return if (newChildren !== children) NodeN(symbol, newChildren) else this
+        if (newSymbol is NSymbol) {
+            return if (newChildren !== children) NodeN(newSymbol.symbol, newChildren)
+            else NodeN(newSymbol.symbol, children)
+        }
+        return SymBasic.eval(newSymbol, newChildren)
     }
 }
 

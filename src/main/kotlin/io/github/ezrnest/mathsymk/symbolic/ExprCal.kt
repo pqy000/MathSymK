@@ -39,10 +39,7 @@ interface ExprCal {
 
     fun enterContext(root: Node, context: EContext): List<EContext>
 
-    fun getDefinition(symbol: ESymbol): SymbolDefinition? {
-        return null
-    }
-
+    fun getDefinition(symbol: ESymbol): SymbolDefinition?
 
     fun traverseCtx(root: Node, context: EContext, depth: Int = Int.MAX_VALUE, action: (Node, EContext) -> Unit) {
         TODO()
@@ -53,32 +50,68 @@ interface ExprCal {
     }
 
 
-    fun recurMapCtx(
+    /*
+    TODO
+
+        fun recurMapCtx(
         root: Node, context: EContext = this.context,
         depth: Int = Int.MAX_VALUE, mapping: (Node, EContext) -> Node?,
-    ): Node
+    ): Node {
+        if (depth <= 0) return mapping(root, context) ?: root
+        val depth1 = depth - 1
+        val res = when (root) {
+            is LeafNode -> root
+            is Node1 -> {
+                val ctx = enterContext(root, context)
+                val n1 = recurMapCtx(root.child, ctx[0], depth1, mapping)
+                if (n1 === root.child)
+                    root else root.newWithChildren(n1)
+            }
 
+            is Node2 -> {
+                val (_, c1, c2) = root
+                val (ctx1, ctx2) = enterContext(root, context)
+                val n1 = recurMapCtx(c1, ctx1, depth1, mapping)
+                val n2 = recurMapCtx(c2, ctx2, depth1, mapping)
+                if (n1 === c1 && n2 === c2) root
+                else root.newWithChildren(n1, n2)
+            }
 
-    fun substitute(node: Node, src: Node, dest: Node, rootCtx: EContext = this.context): Node {
-        TODO()
-//        return substitute(node, rootCtx) { it, ctx ->
-//            if (it == src) dest else null
-//        }
+            is Node3 -> {
+                val (symbol, c1, c2, c3) = root
+                val (ctx1, ctx2, ctx3) = enterContext(root, context)
+                val n1 = recurMapCtx(c1, ctx1, depth1, mapping)
+                val n2 = recurMapCtx(c2, ctx2, depth1, mapping)
+                val n3 = recurMapCtx(c3, ctx3, depth1, mapping)
+                if (n1 === c1 && n2 === c2 && n3 === c3) root
+                else root.newWithChildren(n1, n2, n3)
+            }
+
+            is NodeN -> {
+                var changed = false
+                val children = root.children
+                val childContext = enterContext(root, context)
+                val newChildren = children.indices.map { i ->
+                    val child = children[i]
+                    recurMapCtx(child, childContext[i], depth1, mapping).also { if (it !== child) changed = true }
+                }
+                if (!changed) root else root.newWithChildren(newChildren)
+            }
+        }
+        return mapping(res, context) ?: res
     }
+     */
 
-    fun substitute(root: Node, rootCtx: EContext = this.context, mapping: (Node, EContext) -> Node?): Node {
-        TODO()
-//        val normalized = normalizeQualifiedSymbols(root, rootCtx)
-//        return recurMapCtx(root, rootCtx, Int.MAX_VALUE) { n, ctx ->
-//            //TODO
-//            if (n is NSymbol && !ctx.isDefined(n)) mapping(n, ctx) else null
-//        }
-    }
+
+
+//    fun recurMap(root: Node, depth: Int = Int.MAX_VALUE, mapping: (Node) -> Node): Node{
+//        return recurMap
+//    }
+
 
     fun variablesOf(node: Node): Set<NSymbol> {
         TODO()
     }
-
 
     fun reduce(root: Node, depth: Int = Int.MAX_VALUE): Node {
         return reduceNode(root, context, depth)
@@ -113,12 +146,12 @@ interface ExprCal {
             return true
         }
 
-        private fun ExprCal.addQualifiedSymbols(
-            node: NodeChilded, symbolMap: MutableMap<ESymbol, ESymbol?>
+        private fun ExprCal.addQualifiedSymbolEq(
+            node: NodeChilded, symbolEq: MutableMap<ESymbol, ESymbol?>
         ) {
             val def = getDefinition(node.symbol) ?: return
             def.qualifiedVariables(node).forEach { symbol ->
-                symbolMap[symbol] = null
+                symbolEq[symbol] = null
             }
         }
 
@@ -136,14 +169,14 @@ interface ExprCal {
                 is Node1 -> {
                     if (n2 !is Node1) return false
                     if (!symbolEquals(n1.symbol, n2.symbol, symbolMap)) return false
-                    addQualifiedSymbols(n1, symbolMap)
+                    addQualifiedSymbolEq(n1, symbolMap)
                     return directEquals0(n1.child, n2.child, symbolMap)
                 }
 
                 is Node2 -> {
                     if (n2 !is Node2) return false
                     if (!symbolEquals(n1.symbol, n2.symbol, symbolMap)) return false
-                    addQualifiedSymbols(n1, symbolMap)
+                    addQualifiedSymbolEq(n1, symbolMap)
                     return directEquals0(n1.first, n2.first, symbolMap) &&
                             directEquals0(n1.second, n2.second, symbolMap)
                 }
@@ -151,7 +184,7 @@ interface ExprCal {
                 is Node3 -> {
                     if (n2 !is Node3) return false
                     if (!symbolEquals(n1.symbol, n2.symbol, symbolMap)) return false
-                    addQualifiedSymbols(n1, symbolMap)
+                    addQualifiedSymbolEq(n1, symbolMap)
                     return directEquals0(n1.first, n2.first, symbolMap) &&
                             directEquals0(n1.second, n2.second, symbolMap) &&
                             directEquals0(n1.third, n2.third, symbolMap)
@@ -160,7 +193,7 @@ interface ExprCal {
                 is NodeChilded -> {
                     if (n2 !is NodeChilded) return false
                     if (!symbolEquals(n1.symbol, n2.symbol, symbolMap)) return false
-                    addQualifiedSymbols(n1, symbolMap)
+                    addQualifiedSymbolEq(n1, symbolMap)
                     if (n1.children.size != n2.children.size) return false
                     return n1.children.indices.all { i ->
                         directEquals0(n1.children[i], n2.children[i], symbolMap)
@@ -170,6 +203,19 @@ interface ExprCal {
                 else -> return n1 == n2
             }
         }
+
+        private fun ExprCal.addQualifiedSymbolMap(
+            node: NodeChilded, symbolMap: MutableMap<ESymbol, ESymbol>
+        ) {
+            val def = getDefinition(node.symbol) ?: return
+            def.qualifiedVariables(node).forEach { symbol ->
+                symbolMap[symbol] = ESymbol(symbol.name) // create a new symbol
+            }
+        }
+
+//        internal fun ExprCal.recurMap0(
+//            root : Node, depth: Int = Int.MAX_VALUE, mapping: (Node) -> Node, symbolMap: MutableMap<ESymbol, ESymbol>
+//        )
     }
 }
 
@@ -218,8 +264,8 @@ open class BasicExprCal : ExprCal, NodeScopePredefinedSymbols {
 
     val transRules: TreeDispatcher<TransRule> = TreeDispatcher()
 
-//    val ctxInfo: TreeDispatcher<NodeProperties> = TreeDispatcher()
-    val symbolDefinitions : MutableMap<ESymbol, SymbolDefinition> = mutableMapOf()
+    //    val ctxInfo: TreeDispatcher<NodeProperties> = TreeDispatcher()
+    val symbolDefinitions: MutableMap<ESymbol, SymbolDefinition> = mutableMapOf()
 
 
     var verbose: Verbosity = Verbosity.NONE
@@ -257,22 +303,16 @@ open class BasicExprCal : ExprCal, NodeScopePredefinedSymbols {
         reduceRules.register(rule.matcher, rule)
     }
 
-    fun registerReduceRule(rb: BuilderSimRule) {
-        val rule = rb.init(this) ?: return
-        registerReduceRule(rule)
-    }
-
-    fun registerReduceRuleAll(rules: RuleList) {
-        rules.list.forEach { registerReduceRule(it) }
+    fun registerReduceRule(rb: SimRuleProvider) {
+        rb.init(this).forEach { registerReduceRule(it) }
     }
 
     fun registerRule(rule: TransRule) {
         transRules.register(rule.matcher, rule)
     }
 
-    fun registerRule(rb: BuilderTransRule) {
-        val rule = rb.init(this) ?: return
-        registerRule(rule)
+    fun registerRule(rb: TransRuleProvider) {
+        rb.init(this).forEach { registerRule(it) }
     }
 
     fun registerSymbol(info: SymbolDefinition) {
@@ -361,52 +401,6 @@ open class BasicExprCal : ExprCal, NodeScopePredefinedSymbols {
         return info.enterContext(root, context, this)
     }
 
-    override fun recurMapCtx(
-        root: Node, context: EContext, depth: Int, mapping: (Node, EContext) -> Node?
-    ): Node {
-        if (depth <= 0) return mapping(root, context) ?: root
-        val depth1 = depth - 1
-        val res = when (root) {
-            is LeafNode -> root
-            is Node1 -> {
-                val ctx = enterContext(root, context)
-                val n1 = recurMapCtx(root.child, ctx[0], depth1, mapping)
-                if (n1 === root.child)
-                    root else root.newWithChildren(n1)
-            }
-
-            is Node2 -> {
-                val (_, c1, c2) = root
-                val (ctx1, ctx2) = enterContext(root, context)
-                val n1 = recurMapCtx(c1, ctx1, depth1, mapping)
-                val n2 = recurMapCtx(c2, ctx2, depth1, mapping)
-                if (n1 === c1 && n2 === c2) root
-                else root.newWithChildren(n1, n2)
-            }
-
-            is Node3 -> {
-                val (symbol, c1, c2, c3) = root
-                val (ctx1, ctx2, ctx3) = enterContext(root, context)
-                val n1 = recurMapCtx(c1, ctx1, depth1, mapping)
-                val n2 = recurMapCtx(c2, ctx2, depth1, mapping)
-                val n3 = recurMapCtx(c3, ctx3, depth1, mapping)
-                if (n1 === c1 && n2 === c2 && n3 === c3) root
-                else root.newWithChildren(n1, n2, n3)
-            }
-
-            is NodeN -> {
-                var changed = false
-                val children = root.children
-                val childContext = enterContext(root, context)
-                val newChildren = children.indices.map { i ->
-                    val child = children[i]
-                    recurMapCtx(child, childContext[i], depth1, mapping).also { if (it !== child) changed = true }
-                }
-                if (!changed) root else root.newWithChildren(newChildren)
-            }
-        }
-        return mapping(res, context) ?: res
-    }
 
     private fun reduceRecur1(node: Node1, context: EContext, depth: Int): Node {
         val ctx = enterContext(node, context)

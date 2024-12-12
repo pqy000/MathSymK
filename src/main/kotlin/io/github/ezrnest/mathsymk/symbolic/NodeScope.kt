@@ -26,7 +26,7 @@ interface NodeScope {
 
     companion object {
 
-        internal class NodeScopeImpl(
+        internal open class NodeScopeImpl(
             override val context: EContext,
             override val namedSymbols: MutableMap<String, ESymbol> = mutableMapOf()
         ) : NodeScope {

@@ -7,10 +7,10 @@ import io.github.ezrnest.mathsymk.symbolic.NodeScope.Companion.qualifiedContaine
 import io.github.ezrnest.mathsymk.symbolic.NodeScope.Companion.qualifiedContainedRep
 import io.github.ezrnest.mathsymk.symbolic.alg.SymAlg.Symbols
 import io.github.ezrnest.mathsymk.symbolic.alg.SymAlg.Pow
-import io.github.ezrnest.mathsymk.symbolic.logic.ILogicScope
+import io.github.ezrnest.mathsymk.symbolic.logic.NScopeExtLogic
 import java.math.BigInteger
 
-interface NodeScopeAdd : NodeScope {
+interface NScopeExtAdd : NScopeExtBasic {
     fun add(x: Node, y: Node): Node {
         return sumOf(x, y)
     }
@@ -31,7 +31,7 @@ interface NodeScopeAdd : NodeScope {
 }
 
 
-interface IAlgebraScope : NodeScopeAdd, ILogicScope {
+interface NScopeExtAlgebra : NScopeExtAdd, NScopeExtLogic {
 
     val imagUnit: Node get() = SymAlg.IMAGINARY_I
 
@@ -66,16 +66,16 @@ interface IAlgebraScope : NodeScopeAdd, ILogicScope {
     val BigFrac.e: Node get() = SymAlg.Rational(this)
 
 
-    override fun constant(name: String): Node? {
-        return when (name) {
-            "pi", Symbols.π.name -> SymAlg.PI
-            "e", Symbols.Natural_e.name -> SymAlg.NATURAL_E
-            "i", Symbols.Imaginary_i.name -> SymAlg.IMAGINARY_I
-            else -> {
-                super<ILogicScope>.constant(name)
-            }
-        }
-    }
+//    override fun constant(name: String): Node? {
+//        return when (name) {
+//            "pi", Symbols.π.name -> SymAlg.PI
+//            "e", Symbols.Natural_e.name -> SymAlg.NATURAL_E
+//            "i", Symbols.Imaginary_i.name -> SymAlg.IMAGINARY_I
+//            else -> {
+//                super<NScopeExtLogic>.constant(name)
+//            }
+//        }
+//    }
 
 
     operator fun Node.minus(y: Node): Node {
@@ -179,19 +179,18 @@ interface IAlgebraScope : NodeScopeAdd, ILogicScope {
         return SymBasic.node2(Symbols.F2_GEQ, this, y)
     }
 
-    fun sum(x: Node, lower: Node = SymAlg.ONE, upper: Node = x, f: Node): Node {
+    fun NodeScope.sum(x: Node, lower: Node = SymAlg.ONE, upper: Node = x, f: Node): Node {
         val range = SymSets.intRange(lower, upper)
         return qualifiedContainedRep(Symbols.SUM, x, range, f)
     }
 
 
-    fun sum(lower: Node, upper: Node, varName: String = "i", f: (NSymbol) -> Node): Node {
+    fun NodeScope.sum(lower: Node, upper: Node, varName: String = "i", f: (NSymbol) -> Node): Node {
         val range = SymSets.intRange(lower, upper)
         return qualifiedContained(Symbols.SUM, varName = varName, set = range, clause = f)
     }
 
-    companion object {
-
+    companion object Instance : NScopeExtAlgebra
 
 //        inline fun IAlgebraScope.sum(lower: Node, upper: Node, varName: String = "i", f: (NSymbol) -> Node): Node {
 //            val range = SymSets.intRange(lower, upper)
@@ -199,36 +198,36 @@ interface IAlgebraScope : NodeScopeAdd, ILogicScope {
 //                Symbols.SUM, varName = varName, set = range, clause = f
 //            )
 //        }
-    }
+
 }
 
-class AlgebraScope(context: EContext) : AbstractNodeScope(context), IAlgebraScope, NodeScopePredefinedSymbols
+//class AlgebraScope(context: EContext) : AbstractNodeScope(context), NScopeExtAlgebra, NodeScopePredefinedSymbols
 
 
-inline fun buildAlg(context: EContext = EmptyEContext, builder: AlgebraScope.() -> Node): Node {
-    return AlgebraScope(context).builder()
+//inline fun buildAlg(context: EContext = EmptyEContext, builder: AlgebraScope.() -> Node): Node {
+//    return AlgebraScope(context).builder()
+//}
+
+inline fun <R> alg(builder: NScopeExtAlgebra.() -> R): R {
+    return NScopeExtAlgebra.Instance.builder()
 }
 
-inline fun <R> NodeScope.alg(builder: IAlgebraScope.() -> R): R {
-    return AlgebraScope(this.context).builder()
-}
-
-class AlgScopeMatcher(context: EContext) : AbstractNodeScopeMatcher(context), NodeScopeMatcher, IAlgebraScope {
-    constructor(scope: NodeScopeMatcher) : this(scope.context)
-}
-
-data class AlgScopeMatchedReferred(override val context: EContext, override val matchResult: MatchResult) :
-    IAlgebraScope, NodeScopeMatched {
-    constructor(scope: NodeScopeMatched) : this(scope.context, scope.matchResult)
-
-    override val namedSymbols: MutableMap<String, ESymbol> = mutableMapOf()
-}
-
-inline fun RuleBuilder.matchAlg(crossinline builder: AlgScopeMatcher.() -> Node) {
-    this.match { AlgScopeMatcher(this).builder() }
-}
-
-inline fun RuleBuilder.toAlg(crossinline builder: AlgScopeMatchedReferred.() -> Node) {
-    this.to { AlgScopeMatchedReferred(this).builder() }
-}
+//class AlgScopeMatcher(context: EContext) : AbstractNodeScopeMatcher(context), NodeScopeMatcher, NScopeExtAlgebra {
+//    constructor(scope: NodeScopeMatcher) : this(scope.context)
+//}
+//
+//data class AlgScopeMatchedReferred(override val context: EContext, override val matching: Matching) :
+//    NScopeExtAlgebra, NodeScopeMatched {
+//    constructor(scope: NodeScopeMatched) : this(scope.context, scope.matching)
+//
+//    override val namedSymbols: MutableMap<String, ESymbol> = mutableMapOf()
+//}
+//
+//inline fun RuleBuilder.matchAlg(crossinline builder: AlgScopeMatcher.() -> Node) {
+//    this.match { AlgScopeMatcher(this).builder() }
+//}
+//
+//inline fun RuleBuilder.toAlg(crossinline builder: AlgScopeMatchedReferred.() -> Node) {
+//    this.to { AlgScopeMatchedReferred(this).builder() }
+//}
 

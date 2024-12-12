@@ -4,18 +4,18 @@ import io.github.ezrnest.mathsymk.symbolic.*
 import io.github.ezrnest.mathsymk.symbolic.NodeScope.Companion.qualifiedConditioned
 import io.github.ezrnest.mathsymk.symbolic.NodeScope.Companion.qualifiedConditionedRep
 
-interface ILogicScope : NodeScope {
+interface NScopeExtLogic : NScopeExtBasic {
 
     val Boolean.n: Node
         get() = if (this) SymBasic.TRUE else SymBasic.FALSE
 
-    override fun constant(name: String): Node? {
-        return when (name) {
-            "true" -> SymBasic.TRUE
-            "false" -> SymBasic.FALSE
-            else -> super.constant(name)
-        }
-    }
+//    override fun constant(name: String): Node? {
+//        return when (name) {
+//            "true" -> SymBasic.TRUE
+//            "false" -> SymBasic.FALSE
+//            else -> super.constant(name)
+//        }
+//    }
 
 
     operator fun Node.not(): Node = SymLogic.Not(this)
@@ -42,36 +42,25 @@ interface ILogicScope : NodeScope {
     fun or(vararg nodes: Node): Node = SymLogic.Or(*nodes)
 
 
-    fun forAll(x: Node, condition: Node = SymBasic.TRUE, clause: Node): Node {
+    fun NodeScope.forAll(x: Node, condition: Node = SymBasic.TRUE, clause: Node): Node {
         return qualifiedConditionedRep(SymLogic.Symbols.FOR_ALL, x, condition, clause)
     }
 
-
-    companion object {
-
-        internal class LogicScopeImpl(context: EContext) : AbstractNodeScope(context), ILogicScope {
-
-        }
-
-        operator fun invoke(context: EContext): ILogicScope = LogicScopeImpl(context)
-
-//        inline fun ILogicScope.forAll(varName: String? = null, clause: (NSymbol) -> Node): Node {
-//            return qualified(SymLogic.Symbols.FOR_ALL, varName, clause)
-//        }
-
-        inline fun ILogicScope.forAll(
-            varName: String? = null, condition: (NSymbol) -> Node = { SymBasic.TRUE }, clause: (NSymbol) -> Node
-        ): Node {
-            return qualifiedConditioned(SymLogic.Symbols.FOR_ALL, varName, condition, clause)
-        }
-
-        inline fun ILogicScope.forAll(x: Node, condition: Node = SymBasic.TRUE, clause: () -> Node): Node {
-            return forAll(x, condition, clause())
-        }
+    fun NodeScope.forAll(
+        varName: String? = null, condition: (NSymbol) -> Node = { SymBasic.TRUE }, clause: (NSymbol) -> Node
+    ): Node {
+        return qualifiedConditioned(SymLogic.Symbols.FOR_ALL, varName, condition, clause)
     }
+
+    fun NodeScope.forAll(x: Node, condition: Node = SymBasic.TRUE, clause: () -> Node): Node {
+        return forAll(x, condition, clause())
+    }
+
+
+    companion object Instance : NScopeExtLogic
 }
 
 
-inline fun NodeScope.logic(builder: ILogicScope.() -> Node): Node {
-    return ILogicScope(this.context).builder()
+inline fun NodeScope.logic(builder: NScopeExtLogic.() -> Node): Node {
+    return NScopeExtLogic.Instance.builder()
 }

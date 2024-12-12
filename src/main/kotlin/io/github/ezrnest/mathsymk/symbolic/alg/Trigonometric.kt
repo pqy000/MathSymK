@@ -28,10 +28,10 @@ object TrigonometricUtils {
             values[half] = SymAlg.ONE
             val sqrt2 = SimUtils.sqrt(2)
             val sqrt3 = SimUtils.sqrt(3)
-            values[bfrac(1, 3)] = buildAlg { half.e * sqrt3 }
-            values[bfrac(1, 4)] = buildAlg { half.e * sqrt2 }
+            values[bfrac(1, 3)] = alg { half.e * sqrt3 }
+            values[bfrac(1, 4)] = alg { half.e * sqrt2 }
             values[bfrac(1, 6)] = SymAlg.Rational(half)
-            values[bfrac(1, 12)] = buildAlg {
+            values[bfrac(1, 12)] = alg {
                 product(bfrac(1, 4).e, sqrt2, sumOf(SymAlg.NEG_ONE, sqrt3))
             }
         }
@@ -62,7 +62,7 @@ object TrigonometricUtils {
             }
         }
         val res = sinTable[r] ?: return null
-        return if (pos) res else buildAlg { -res }
+        return if (pos) res else alg { -res }
     }
 
     fun cosRPi(k: BigFrac): Node? {
@@ -87,7 +87,7 @@ object TrigonometricUtils {
             val sqrt2 = SimUtils.sqrt(2)
             val sqrt3 = SimUtils.sqrt(3)
             values[ofN(0)] = SymAlg.ZERO
-            values[bfrac(1, 6)] = buildAlg { pow(3.e, (-half).e) }
+            values[bfrac(1, 6)] = alg { pow(3.e, (-half).e) }
             values[bfrac(1, 4)] = SymAlg.ONE
             values[bfrac(1, 3)] = sqrt3
             values[half] = SymBasic.UNDEFINED
@@ -109,7 +109,7 @@ object TrigonometricUtils {
             }
         }
         val res = tanTable[r] ?: return null
-        return if (pos) res else buildAlg(EmptyEContext) { -res }
+        return if (pos) res else alg { -res }
     }
 }
 
@@ -117,13 +117,15 @@ object TrigonometricUtils {
 class RuleSinSpecial : SimRuleMatched<Node1> {
     override val metaKeyApplied: TypedKey<Boolean> = TypedKey("RSinSpecial")
     override val description: String = "Simplify `sin(r π)`"
+
+    private val r = ESymbol("r")
     override val matcher: NodeMatcherT<Node1> = buildMatcher {
-        sin(rational.named("r") * π)
+        sin(rational.named(r) * π)
     }
 
 
-    override fun simplifyMatched(node: Node1, matchResult: MatchResult): WithInt<Node>? {
-        val r = (matchResult.refMap["r"] as NRational).value
+    override fun simplifyMatched(node: Node1, matching: Matching): WithInt<Node>? {
+        val r = (matching.getRef(r) as NRational).value
         val res = TrigonometricUtils.sinRPi(r) ?: return null
         return WithInt(Int.MAX_VALUE, res)
     }
@@ -136,12 +138,14 @@ class RuleCosSpecial : SimRuleMatched<Node1> {
     override val description: String
         get() = "Simplify `cos(r π)`"
 
+    private val r = ESymbol("r")
+
     override val matcher: NodeMatcherT<Node1> = buildMatcher {
-        cos(rational.named("r") * π)
+        cos(rational.named(r) * π)
     }
 
-    override fun simplifyMatched(node: Node1, matchResult: MatchResult): WithInt<Node>? {
-        val r = (matchResult.refMap["r"] as NRational).value
+    override fun simplifyMatched(node: Node1, matching: Matching): WithInt<Node>? {
+        val r = (matching.getRef(r) as NRational).value
         val res = TrigonometricUtils.cosRPi(r) ?: return null
         return WithInt(Int.MAX_VALUE, res)
     }
@@ -154,138 +158,73 @@ class RuleTanSpecial : SimRuleMatched<Node1> {
     override val description: String
         get() = "Simplify `tan(r π)`"
 
+    private val r = ESymbol("r")
+
     override val matcher: NodeMatcherT<Node1> = buildMatcher {
-        tan(rational.named("r") * π)
+        tan(rational.named(r) * π)
     }
 
-    override fun simplifyMatched(node: Node1, matchResult: MatchResult): WithInt<Node>? {
-        val r = (matchResult.refMap["r"] as NRational).value
+    override fun simplifyMatched(node: Node1, matching: Matching): WithInt<Node>? {
+        val r = (matching.getRef(r) as NRational).value
         val res = TrigonometricUtils.tanRPi(r) ?: return null
         return WithInt(Int.MAX_VALUE, res)
     }
 }
 
 
-class RulesTrigonometricReduce : RuleList() {
+val RulesTrigonometricReduce = RuleSet {
 
-    init {
-        list.add(BuilderSimRule { RuleSinSpecial() })
-        list.add(BuilderSimRule { RuleCosSpecial() })
-        list.add(BuilderSimRule { RuleTanSpecial() })
-    }
+    addRules(RuleSinSpecial(), RuleCosSpecial(), RuleTanSpecial())
 
-    init {
+
+    alg {
+
         rule {
             name = "Trig: sin^2(x) + cos^2(x) = 1"
-            match {
-                alg {
-                    pow(sin(x), 2.e) + pow(cos(x), 2.e)
-                }
-            } to {
-                alg {
-                    1.e
-                }
-            }
+            target = pow(sin(x), 2.e) + pow(cos(x), 2.e)
+            result = 1.e
         }
+
+
     }
 }
 
-class RulesTrigonometricTransform : RuleList() {
-
-    init {
-//        rule {
-//            name = "Trig: sin(x) = cos(π/2 - x)"
-//            match { alg {
-//                sin(x)
-//            }
-//            toAlg {
-//                cos(π / 2.e - x)
-//            }
-//        }
-//        rule {
-//            name = "Trig: cos(x) = sin(π/2 - x)"
-//            match { alg {
-//                cos(x)
-//            }
-//            toAlg {
-//                sin(π / 2.e - x)
-//            }
-//        }
+val RulesTrigonometricTransform = RuleSet {
+    alg {
         rule {
             name = "Trig: sin(x) = -sin(-x)"
-            match {
-                alg {
-                    sin(-x)
-                }
-            } to {
-                alg {
-                    -sin(x)
-                }
-            }
+            target = sin(-x)
+            result = -sin(x)
         }
+
         rule {
             name = "Trig: cos(x) = cos(-x)"
-            match {
-                alg {
-                    cos(-x)
-                }
-            } to {
-                alg {
-                    cos(x)
-                }
-
-            }
+            target = cos(-x)
+            result = cos(x)
         }
 
         rule {
             name = "Trig: sin(x+y) = sin(x)cos(y) + cos(x)sin(y)"
-            match {
-                alg {
-                    sin(x + y)
-                }
-            } to {
-                alg {
-                    sin(x) * cos(y) + cos(x) * sin(y)
-                }
-            }
+            target = sin(x + y)
+            result = sin(x) * cos(y) + cos(x) * sin(y)
         }
+
         rule {
             name = "Trig: sin(x)cos(y) + cos(x)sin(y) -> sin(x+y)"
-            match {
-                alg {
-                    sin(x) * cos(y) + cos(x) * sin(y)
-                }
-            } to {
-                alg {
-                    sin(x + y)
-                }
-            }
+            target = sin(x) * cos(y) + cos(x) * sin(y)
+            result = sin(x + y)
         }
 
         rule {
             name = "Trig: cos(x+y) = cos(x)cos(y) - sin(x)sin(y)"
-            matchAlg {
-                cos(x + y)
-            }
-            toAlg {
-                cos(x) * cos(y) - sin(x) * sin(y)
-            }
+            target = cos(x + y)
+            result = cos(x) * cos(y) - sin(x) * sin(y)
         }
 
         rule {
             name = "Trig: cos(x)cos(y) - sin(x)sin(y) -> cos(x+y)"
-            match {
-                alg {
-                    cos(x) * cos(y) - sin(x) * sin(y)
-                }
-            } to {
-                alg {
-                    cos(x + y)
-                }
-            }
+            target = cos(x) * cos(y) - sin(x) * sin(y)
+            result = cos(x + y)
         }
-
-
-    } // end of init block
-
+    }
 }

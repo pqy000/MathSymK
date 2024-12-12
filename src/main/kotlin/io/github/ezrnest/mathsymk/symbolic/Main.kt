@@ -38,7 +38,7 @@ fun main() {
                     sum(1.e,"N".ref){ x -> sin(x) / pow(x, 2.e) }
                 }
             }
-            println(matcher.matches(b,cal.context,MatchResult(cal)))
+            println(matcher.matches(b,cal))
         }
     }
 

@@ -22,6 +22,6 @@ interface TransRule {
 }
 
 @FunctionalInterface
-fun interface BuilderTransRule {
-    fun init(context: ExprCal): TransRule?
+fun interface TransRuleProvider {
+    fun init(cal: ExprCal): List<TransRule>
 }

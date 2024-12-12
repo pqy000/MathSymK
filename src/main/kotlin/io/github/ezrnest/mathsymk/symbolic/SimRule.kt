@@ -32,8 +32,8 @@ interface SimRule : TransRule {
 }
 
 @FunctionalInterface
-fun interface BuilderSimRule : BuilderTransRule{
-    override fun init(context: ExprCal): SimRule?
+fun interface SimRuleProvider : TransRuleProvider{
+    override fun init(cal: ExprCal): List<SimRule>
 }
 
 
