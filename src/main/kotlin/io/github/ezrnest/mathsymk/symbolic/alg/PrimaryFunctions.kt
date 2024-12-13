@@ -8,7 +8,7 @@ val RulesPrimaryFunctions = RuleSet {
         rule {
             target = abs(x)
             result = x
-            condition = x gtr 0.e
+            condition = x geq 0.e
         }
     }
 

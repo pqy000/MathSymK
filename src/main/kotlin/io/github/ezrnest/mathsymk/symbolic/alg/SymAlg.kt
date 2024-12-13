@@ -45,6 +45,7 @@ interface SymAlg : NScopeExtAdd, SymLogic,SymSets {
     val infinity: Node get() = SymAlg.Infinity
 
 
+
     object Symbols {
         val MUL = ESymbol("*")
         val ADD = ESymbol("+")
