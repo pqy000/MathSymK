@@ -105,6 +105,16 @@ interface SymAlg : NScopeExtAdd, SymLogic,SymSets {
     }
 
 
+    object Definitions{
+        val add = FunctionSymbolDef(Symbols.ADD)
+        val mul = FunctionSymbolDef(Symbols.MUL)
+        init{
+            add.setProp(SymbolDefinition.Properties.COMMUTATIVE, true)
+            mul.setProp(SymbolDefinition.Properties.COMMUTATIVE, true)
+        }
+    }
+
+
 
     fun intOf(value: Int): NRational {
         return NRational(BigFrac(value.toBigInteger(), BigInteger.ONE))

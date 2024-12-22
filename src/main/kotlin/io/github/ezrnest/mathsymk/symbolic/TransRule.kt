@@ -23,5 +23,5 @@ interface TransRule {
 
 @FunctionalInterface
 fun interface TransRuleProvider {
-    fun init(cal: ExprCal): List<TransRule>
+    fun init(cal: ExprCal): Iterable<TransRule>
 }

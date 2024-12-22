@@ -14,6 +14,7 @@ val RulesExponentialReduce = RuleSet {
             result = pow(x, a + b)
         )
 
+
         rule {
             name = "b^log_b(x) = x"
             target = pow(b, log(b, x))

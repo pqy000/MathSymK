@@ -411,9 +411,14 @@ object RuleExpandMul : RuleForSpecificN(SymAlg.Symbols.MUL) {
         val children = root.children
         val resultSize = children.fold(1) { s, n -> s * asFactorSize(n) }
         if (resultSize == 1 || resultSize >= defaultExpansionLimit) return null
-        val newChildren = ArrayList<Node>(resultSize)
-        IterUtils.prod(children.map { asFactor(it) }).forEach { newChildren.add(SymAlg.productOf(it)) }
-        val res = SymAlg.sumOf(newChildren)
-        return WithInt(1, res)
+        alg {
+            val newChildren = ArrayList<Node>(resultSize)
+            IterUtils.prod(children.map { asFactor(it) }).forEach {
+                newChildren.add(productOf(it))
+            }
+            val res = sumOf(newChildren)
+            return WithInt(1, res)
+        }
+
     }
 }

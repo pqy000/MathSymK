@@ -5,6 +5,7 @@ import io.github.ezrnest.mathsymk.symbolic.alg.ComputePow
 import io.github.ezrnest.mathsymk.symbolic.alg.FlattenPow
 import io.github.ezrnest.mathsymk.symbolic.alg.MergeAdditionRational
 import io.github.ezrnest.mathsymk.symbolic.alg.MergeProduct
+import io.github.ezrnest.mathsymk.symbolic.alg.RuleExpandMul
 import io.github.ezrnest.mathsymk.symbolic.alg.SymAlg
 import io.github.ezrnest.mathsymk.util.WithInt
 import java.util.*
@@ -39,7 +40,10 @@ interface ExprCal {
     }
 
 
-    fun isCommutative(name: ESymbol): Boolean // TODO
+    fun isCommutative(name: ESymbol): Boolean {
+        val def = getDefinition(name) ?: return false
+        return def.getProp(SymbolDefinition.Properties.COMMUTATIVE, false)
+    }
 
     fun enterContext(root: Node, context: EContext): List<EContext>
 
@@ -107,7 +111,6 @@ interface ExprCal {
      */
 
 
-
 //    fun recurMap(root: Node, depth: Int = Int.MAX_VALUE, mapping: (Node) -> Node): Node{
 //        return recurMap
 //    }
@@ -127,14 +130,13 @@ interface ExprCal {
     fun simplify(node: Node): List<Node>
 
 
-
     fun isSatisfied(ctx: EContext, condition: Node): Boolean {
 //        return false
-        val res =  reduceNode(condition, ctx, Int.MAX_VALUE)
+        val res = reduceNode(condition, ctx, Int.MAX_VALUE)
         return res == SymBasic.True || res in ctx.conditions
     }
 
-    fun assume(condition : Node) {
+    fun assume(condition: Node) {
         context.conditions.add(condition)
     }
 
@@ -304,6 +306,11 @@ open class BasicExprCal : ExprCal, NodeScopePredefinedSymbols {
         ).forEach {
             registerReduceRule(it)
         }
+
+        registerSymbol(SymAlg.Definitions.add)
+        registerSymbol(SymAlg.Definitions.mul)
+
+        registerRule(RuleExpandMul)
     }
 
     fun registerReduceRule(rule: SimRule) {
@@ -331,13 +338,13 @@ open class BasicExprCal : ExprCal, NodeScopePredefinedSymbols {
     }
 
 
-    override fun isCommutative(name: ESymbol): Boolean {
-        return when (name) {
-            SymAlg.Symbols.ADD -> true
-            SymAlg.Symbols.MUL -> true
-            else -> false
-        }
-    }
+//    override fun isCommutative(name: ESymbol): Boolean {
+//        return when (name) {
+//            SymAlg.Symbols.ADD -> true
+//            SymAlg.Symbols.MUL -> true
+//            else -> false
+//        }
+//    }
 
     private inline fun log(level: Verbosity, supplier: () -> String) {
         if (verbose >= level) {
