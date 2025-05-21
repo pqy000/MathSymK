@@ -422,3 +422,84 @@ object RuleExpandMul : RuleForSpecificN(SymAlg.Symbols.MUL) {
 
     }
 }
+
+/**
+ * ```
+ * x + 0 -> x
+ * 0 + x -> x
+ * ```
+ */
+object RemoveAddZero : RuleForSpecificN(SymAlg.Symbols.ADD) {
+    override val metaKeyApplied: TypedKey<Boolean> = TypedKey("Add0")
+
+    override val description: String
+        get() = "Remove zero in addition"
+
+    override fun simplifyN(root: NodeN, context: EContext, cal: ExprCal): WithInt<Node>? {
+        val children = root.children
+        val Q = BigFracAsQuot
+        var changed = false
+        val newChildren = ArrayList<Node>(children.size)
+        for (c in children) {
+            val keep = if (c is NRational) !Q.isZero(c.value) else c != SymAlg.ZERO
+            if (keep) newChildren.add(c) else changed = true
+        }
+        if (!changed) return null
+        if (newChildren.isEmpty()) return WithInt(-1, SymAlg.ZERO)
+        if (newChildren.size == 1) return WithInt(0, newChildren[0])
+        return WithInt(0, SymAlg.sumOf(newChildren))
+    }
+}
+
+/**
+ * ```
+ * x * 1 -> x
+ * 1 * x -> x
+ * ```
+ */
+object RemoveMulOne : RuleForSpecificN(SymAlg.Symbols.MUL) {
+    override val metaKeyApplied: TypedKey<Boolean> = TypedKey("Mul1")
+
+    override val description: String
+        get() = "Remove one in multiplication"
+
+    override fun simplifyN(root: NodeN, context: EContext, cal: ExprCal): WithInt<Node>? {
+        val children = root.children
+        val Q = BigFracAsQuot
+        var changed = false
+        val newChildren = ArrayList<Node>(children.size)
+        for (c in children) {
+            val keep = if (c is NRational) !Q.isOne(c.value) else c != SymAlg.ONE
+            if (keep) newChildren.add(c) else changed = true
+        }
+        if (!changed) return null
+        if (newChildren.isEmpty()) return WithInt(-1, SymAlg.ONE)
+        if (newChildren.size == 1) return WithInt(0, newChildren[0])
+        return WithInt(0, SymAlg.productOf(newChildren))
+    }
+}
+
+/**
+ * Simplify power with zero exponent.
+ *
+ * ```
+ * x^0 -> 1
+ * 0^0 -> undefined
+ * ```
+ */
+object PowExponentZero : RuleForSpecific2(SymAlg.Symbols.POW) {
+    override val metaKeyApplied: TypedKey<Boolean> = TypedKey("Pow0")
+
+    override val description: String
+        get() = "Simplify exponent zero"
+
+    override fun simplify2(root: Node2, context: EContext, cal: ExprCal): WithInt<Node>? {
+        val (_, base, exp) = root
+        if (exp !is NRational) return null
+        if (!BigFracAsQuot.isZero(exp.value)) return null
+        if (base is NRational && BigFracAsQuot.isZero(base.value)) {
+            return WithInt(Int.MAX_VALUE, SymBasic.Undefined)
+        }
+        return WithInt(Int.MAX_VALUE, SymAlg.ONE)
+    }
+}

@@ -300,9 +300,12 @@ open class BasicExprCal : ExprCal, NodeScopePredefinedSymbols {
             RuleSort(SymAlg.Symbols.ADD),
             RuleSort(SymAlg.Symbols.MUL),
             MergeAdditionRational,
+            RemoveAddZero,
             MergeProduct,
+            RemoveMulOne,
             ComputePow,
-            FlattenPow
+            FlattenPow,
+            PowExponentZero
         ).forEach {
             registerReduceRule(it)
         }
